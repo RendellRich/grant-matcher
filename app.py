@@ -56,10 +56,10 @@ st.set_page_config(page_title="Grant Matcher for small nonprofits", page_icon=":
 # Every text pair here passes WCAG AA on its own background; the theme follows the visitor's light or dark setting.
 TOKENS = {
     "light": {"muted": "#4b5753", "border": "#d5ddd9", "accent": "#2f6f5e", "caution": "#8a5a00",
-              "strong-bg": "#e2f1e9", "strong-fg": "#17543f", "possible-bg": "#fbf0d5", "possible-fg": "#6b3d0c",
+              "strong-bg": "#e2f1e9", "strong-fg": "#17543f", "possible-bg": "transparent", "possible-fg": "#2f6f5e", "surface": "#f4f6f5",
               "long-bg": "#edf0ef", "long-fg": "#3b4744"},
     "dark": {"muted": "#a7b2ae", "border": "#34403b", "accent": "#6cc0a5", "caution": "#e0b45a",
-             "strong-bg": "#173a2d", "strong-fg": "#a9e3c6", "possible-bg": "#3a2d10", "possible-fg": "#f1d391",
+             "strong-bg": "#173a2d", "strong-fg": "#a9e3c6", "possible-bg": "transparent", "possible-fg": "#6cc0a5", "surface": "#1b2220",
              "long-bg": "#252d2a", "long-fg": "#c6cfcb"},
 }
 _mode = "dark" if getattr(st.context.theme, "type", None) == "dark" else "light"
@@ -79,8 +79,18 @@ st.markdown(
 
     /* header */
     .gm-h1 {{font-size: clamp(1.75rem, 1.3rem + 1.6vw, 2.25rem) !important; letter-spacing: -0.01em; padding: 0 !important; margin: 0 0 .5rem;}}
-    .gm-lead {{font-size: 1.0625rem; line-height: 1.55; max-width: 65ch; margin: 0 0 .75rem;}}
-    .gm-notice {{font-size: .875rem; line-height: 1.5; color: var(--gm-muted); max-width: 72ch; margin: 0 0 1.25rem;}}
+    .stApp p.gm-lead {{font-size: 1.0625rem !important; line-height: 1.55; max-width: 65ch; margin: 0 0 .75rem;}}
+    .stApp p.gm-notice {{font-size: .875rem !important; line-height: 1.5; color: var(--gm-muted); max-width: 72ch;
+                         margin: 0 0 1rem;}}
+    .stApp .gm-note {{font-size: .9375rem !important; line-height: 1.5; max-width: 72ch; margin: 0 0 .75rem;
+                      padding: .625rem .875rem; border-radius: .5rem; background: var(--gm-surface);}}
+    .gm-note p {{margin: 0; font-size: inherit !important;}}
+    .gm-note ol {{margin: .5rem 0 0; padding-left: 1.25rem;}}
+    .gm-note li {{margin: 0 0 .25rem; font-size: inherit !important;}}
+    .gm-phone {{display: none;}}
+    @media (max-width: 768px) {{ .gm-phone {{display: inline;}} }}
+    .stApp p.gm-overview {{font-size: 1.0625rem !important; line-height: 1.5; max-width: 72ch; margin: .25rem 0 .75rem;}}
+    .gm-quiet {{color: var(--gm-muted);}}
 
     /* tabs: 44px targets, wrap instead of scrolling, selected tab underlined */
     [data-testid="stTabs"] [role="tablist"] {{flex-wrap: wrap; gap: 0 1.5rem; overflow: visible !important;
@@ -88,13 +98,16 @@ st.markdown(
     [data-testid="stTabs"] [role="tab"] {{min-height: 44px; padding: 0 .125rem; font-weight: 500; flex: none;}}
     [data-testid="stTabs"] [role="tab"][aria-selected="true"] {{box-shadow: inset 0 -2px 0 var(--gm-accent);}}
     [data-testid^="stTabsScroll"] {{display: none !important;}}
+    @media (max-width: 640px) {{ [data-testid="stTabs"] [role="tablist"] {{gap: 0 1rem;}} }}
     [data-testid="stTabs"] [role="tabpanel"] {{padding-top: 1.25rem;}}
 
     /* text */
     [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {{color: var(--gm-muted) !important; opacity: 1 !important;}}
-    .gm-tally {{font-size: 1.125rem !important; font-weight: 400 !important; padding: 0 !important; margin: 0 0 .25rem;}}
+    [data-testid="stMainBlockContainer"] [data-testid="stCaptionContainer"] {{max-width: 72ch;}}
+    .gm-tally {{font-size: 1.5625rem !important; font-weight: 400 !important; line-height: 1.25; padding: 0 !important;
+                margin: 0 0 .25rem;}}
     .gm-tally b {{font-weight: 650;}}
-    .gm-section {{font-size: 1.125rem !important; padding: 1.5rem 0 0 !important; margin: 0 0 .25rem;
+    .gm-section {{font-size: 1.5625rem !important; line-height: 1.25; padding: 1.5rem 0 0 !important; margin: 0 0 .25rem;
                   border-top: 1px solid var(--gm-border);}}
     .gm-section .gm-count {{color: var(--gm-muted); font-weight: 400;}}
     .gm-group {{font-size: .875rem !important; font-weight: 600 !important; color: var(--gm-muted);
@@ -117,14 +130,16 @@ st.markdown(
     .gm-head {{display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; margin: 0;}}
     .gm-badge {{display: inline-block; padding: .125rem .625rem; border-radius: 999px; font-size: .8125rem; font-weight: 600; line-height: 1.5;}}
     .gm-badge.Strong {{background: var(--gm-strong-bg); color: var(--gm-strong-fg);}}
-    .gm-badge.Possible {{background: var(--gm-possible-bg); color: var(--gm-possible-fg);}}
+    .gm-badge.Possible {{background: var(--gm-possible-bg); color: var(--gm-possible-fg);
+                         box-shadow: inset 0 0 0 1px var(--gm-possible-fg);}}
     .gm-badge.Long {{background: var(--gm-long-bg); color: var(--gm-long-fg);}}
     .gm-score {{font-size: .875rem; color: var(--gm-muted);}}
-    h3.gm-title {{font-size: 1.0625rem !important; line-height: 1.4; padding: 0 !important; margin: 0;}}
+    h3.gm-title {{font-size: 1.25rem !important; line-height: 1.35; padding: 0 !important; margin: 0;}}
+    @media (max-width: 640px) {{ .stApp p.gm-lead {{font-size: 1rem !important;}} }}
     h3.gm-title a {{display: block; padding: .5rem 0; min-height: 44px; box-sizing: border-box; color: inherit;
                     text-decoration-thickness: 1px; text-underline-offset: 3px; overflow-wrap: anywhere;}}
     h3.gm-title a:hover {{color: var(--gm-accent); text-decoration-thickness: 2px;}}
-    .gm-meta {{font-size: .875rem; line-height: 1.5; color: var(--gm-muted); margin: 0;}}
+    .stApp p.gm-meta {{font-size: .875rem !important; line-height: 1.5; color: var(--gm-muted); margin: 0;}}
     .gm-meta .sep {{padding: 0 .375rem;}}
     ul.gm-why {{list-style: none; padding: 0; margin: .25rem 0 0;}}
     ul.gm-why li {{display: flex; gap: .5rem; margin: 0 0 .3rem; line-height: 1.45; padding: 0;}}
@@ -141,8 +156,11 @@ st.markdown(
     [data-testid="stTextInputRootElement"], [data-testid="stSelectbox"] [role="group"],
     [data-testid="stMultiSelect"] [role="group"] {{min-height: 44px;}}
     [data-testid="stRadio"] label, [data-testid="stCheckbox"] label {{min-height: 44px; align-items: center;}}
-    button[aria-label^="Help for"] {{position: relative;}}
-    button[aria-label^="Help for"]::after {{content: ""; position: absolute; inset: -10px;}}
+    :is(button[aria-label^="Help for"], [data-testid="stMultiSelect"] button, [data-testid="stSlider"] [role="slider"])
+        {{position: relative;}}
+    :is(button[aria-label^="Help for"], [data-testid="stMultiSelect"] button, [data-testid="stSlider"] [role="slider"])::after
+        {{content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%);}}
+    .stApp main:focus-visible {{outline: 2px solid var(--gm-accent) !important; outline-offset: -2px;}}
     [data-testid="stSidebarCollapseButton"] button, [data-testid="stExpandSidebarButton"] {{min-width: 44px; min-height: 44px;}}
     [data-testid="stMultiSelect"] [data-tag] {{background: var(--gm-long-bg) !important; color: var(--gm-long-fg) !important;}}
     [data-testid="stMultiSelect"] [data-tag] svg {{fill: currentColor;}}
@@ -154,7 +172,7 @@ st.markdown(
 
     /* footer */
     .gm-footer {{margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--gm-border);
-                 font-size: .8125rem; line-height: 1.55; color: var(--gm-muted); max-width: 80ch;}}
+                 font-size: .8125rem; line-height: 1.55; color: var(--gm-muted); max-width: 72ch;}}
     .gm-footer p {{margin: 0 0 .5rem;}}
     .gm-footer a {{color: inherit; display: inline-block; padding: .75rem 0; min-height: 44px; box-sizing: border-box;
                    text-underline-offset: 3px;}}
@@ -254,7 +272,8 @@ def card_head(r, title: str, url: str, meta: list[str]) -> str:
     tier = r["tier"]
     return (f"<p class='gm-head'><span class='gm-badge {tier.split()[0]}'>{TIER_LABEL.get(tier, tier)}</span>"
             f"<span class='gm-score'>Score {int(r['score'])} of 100</span></p>"
-            f"<h3 class='gm-title'><a href='{_href(url)}' target='_blank' rel='noopener'>{_esc(title)}</a></h3>"
+            f"<h3 class='gm-title'><a href='{_href(url)}' target='_blank' rel='noopener'>{_esc(title)}"
+            f"<span class='sr-only'> (opens in a new tab)</span></a></h3>"
             f"<p class='gm-meta'>{SEP.join(_meta_item(m) for m in meta if m)}</p>")
 
 
@@ -293,9 +312,15 @@ def result_list(results: pd.DataFrame, card, noun: str, key: str, after_matches=
         st.markdown(f"<h2 class='gm-section'>Long shots <span class='gm-count'>{len(longs):,}</span></h2>",
                     unsafe_allow_html=True)
         st.caption("These fit on a few points and miss on others. Read the cautions before spending time on one.")
-        if st.toggle(f"Show the top {min(len(longs), 20)} long shots", key=key):
-            for _, r in longs.head(20).iterrows():
-                card(r)
+        long_shots(longs.head(20), card, key)
+
+
+@st.fragment
+def long_shots(longs: pd.DataFrame, card, key: str) -> None:
+    """Its own fragment, so the toggle reruns only this section instead of the whole page."""
+    if st.toggle(f"Show the top {len(longs)} long shots", key=key):
+        for _, r in longs.iterrows():
+            card(r)
 
 
 # ---------- header ----------
@@ -336,7 +361,35 @@ with st.sidebar:
             st.caption(f"Signed in as {who}" + ("" if store else ". This account doesn't have a workspace."))
             st.button("Sign out", on_click=st.logout)
     st.header("Your organization")
-    preset_slot = st.empty()  # drawn first, filled once we know whether a saved profile was loaded
+    ss = st.session_state
+
+    # Mission and key words keep their own state so switching examples never silently replaces edited text.
+    def _preset_text(name: str) -> tuple[str, str]:
+        p = PRESETS.get(name, {})
+        return p.get("mission", ""), p.get("keywords", "")
+
+    def _apply_preset(name: str) -> None:
+        ss["mission"], ss["keywords"] = _preset_text(name)
+        ss["_preset_applied"] = name
+        ss.pop("_preset_pending", None)
+
+    def _on_preset_change() -> None:
+        new, prev = ss["preset"], ss.get("_preset_applied")
+        current = (ss.get("mission", ""), ss.get("keywords", ""))
+        if prev is not None and any(t.strip() for t in current) and current != _preset_text(prev):
+            ss["_preset_pending"], ss["preset"] = new, prev
+        else:
+            _apply_preset(new)
+
+    def _replace_text() -> None:
+        new = ss["_preset_pending"]
+        _apply_preset(new)
+        ss["preset"] = new
+
+    if "_preset_applied" not in ss:
+        _apply_preset(next(iter(PRESETS)))
+
+    preset_slot = st.container()  # drawn first, filled once we know whether a saved profile was loaded
     with st.expander("Load a saved profile"):
         uploaded = st.file_uploader("Profile file (.json)", type="json",
                                     help="A profile you downloaded from this page earlier.")
@@ -346,20 +399,33 @@ with st.sidebar:
             saved = store.read(wsp.PROFILE_FILE)
         except StoreError as exc:
             st.warning(str(exc))
+    saved_sig = json.dumps(saved, sort_keys=True) if saved else None
+    if ss.get("_saved_sig") != saved_sig:  # a profile was just loaded or removed
+        if saved:
+            ss["mission"], ss["keywords"] = saved.get("mission", ""), saved.get("keywords", "")
+        elif ss.get("_saved_sig"):
+            _apply_preset(ss.get("preset", next(iter(PRESETS))))
+        ss["_saved_sig"] = saved_sig
     with preset_slot:
-        preset_name = st.selectbox("Start from an example", list(PRESETS), disabled=saved is not None,
+        preset_name = st.selectbox("Start from an example", list(PRESETS), key="preset", on_change=_on_preset_change,
+                                   disabled=saved is not None,
                                    help="Pick the one closest to your work and edit it, or start blank. "
                                         "A loaded profile replaces the example.")
+        if ss.get("_preset_pending"):
+            st.warning(f"Replace your mission and key words with the *{ss['_preset_pending']}* example?",
+                       icon=":material/warning:")
+            st.button("Replace my text", on_click=_replace_text, width="stretch")
+            st.button("Keep my text", on_click=lambda: ss.pop("_preset_pending", None), width="stretch")
     base = saved or PRESETS[preset_name]
 
     def group(title: str) -> None:
         st.markdown(f"<h3 class='gm-group'>{title}</h3>", unsafe_allow_html=True)
 
     group("About your work")
-    mission = st.text_area("Mission and programs", base.get("mission", ""), height=170,
+    mission = st.text_area("Mission and programs", key="mission", height=170,
                            placeholder="Who you serve, where, and what you do for them.",
                            help="Two or three sentences. This counts most in the ranking.")
-    keywords = st.text_area("Key words", base.get("keywords", ""), height=96,
+    keywords = st.text_area("Key words", key="keywords", height=96,
                             placeholder="For example: dyslexia, tutoring, after school",
                             help="Separate with commas. Use words a matching grant would use. "
                                  "Rare, specific words count more than common ones.")
@@ -394,16 +460,20 @@ with st.sidebar:
                        "application/json", width="stretch")
     st.caption("Load it here next time to pick up where you left off.")
 
-PANEL_HINT = "On a phone, open that panel with the arrow button at the top left."
+PHONE_HINT = "<span class='gm-phone'> On a phone, open that panel with the » button at the top left.</span>"
 if not mission.strip() and not keywords.strip():
-    st.info(f"Add your mission and a few key words under **Your organization** to see matches. {PANEL_HINT}",
-            icon=":material/edit_note:")
+    st.markdown(
+        "<div class='gm-note' role='note'><p><b>Tell us about your work to see matches.</b>" + PHONE_HINT + "</p>"
+        "<ol><li>Describe your mission and programs under <b>Your organization</b>.</li>"
+        "<li>Add a few key words a matching grant would use.</li>"
+        "<li>Set your state and, if you like, your cities or counties.</li></ol></div>",
+        unsafe_allow_html=True)
     st.stop()
 
-if saved is None and preset_name != "Start blank" and (mission, keywords) == (
-        PRESETS[preset_name]["mission"], PRESETS[preset_name]["keywords"]):
-    st.info(f"These matches are for the example profile, *{preset_name}*. Edit the mission and key words under "
-            f"**Your organization** to see your own. {PANEL_HINT}", icon=":material/info:")
+if saved is None and preset_name != "Start blank" and (mission, keywords) == _preset_text(preset_name):
+    st.markdown(
+        f"<p class='gm-note' role='note'>Showing the example <i>{_esc(preset_name)}</i>. Edit <b>Your organization</b> "
+        f"to see your own matches.{PHONE_HINT}</p>", unsafe_allow_html=True)
 
 profile = Profile(
     mission=mission,
@@ -413,26 +483,74 @@ profile = Profile(
 )
 query_text = mission + " " + keywords
 city_list = [c for c in cities.split(",") if c.strip()]
+KINDS_ALL = ["Private foundation", "Community foundation", "Public foundation", "United Way or federated fund"]
 
-tab_names = ["Federal grants", "Foundations", "Florida programs", "Before you apply"] + (["Workspace"] if store else [])
-tabs = st.tabs(tab_names)
-tab_fed, tab_fdn, tab_fl, tab_ready = tabs[:4]
+# ---------- score every source first, so the overview and tab order can use all three ----------
+with st.spinner("Updating matches"):
+    df, fetched_at, vectors = load_federal()
+    results = None if df.empty else score(df, profile, semantic=similarity(query_text, vectors))
+
+    records, f_fetched, f_vecs = load_foundations(state)
+    f_res = None
+    if records:
+        kinds = ss.get("fdn_kinds", KINDS_ALL)
+        chosen = [r for r in records if r["kind"] in kinds]
+        f_res = score_foundations(chosen, profile, state, city_list, similarity(query_text, f_vecs),
+                                  ss.get("fdn_pre", False))
+
+    programs, fy, fl_res = [], "", None
+    if state == "FL":
+        programs, fy, fl_vecs = load_florida()
+        if programs:
+            fl_res = score_florida(programs, profile, similarity(query_text, fl_vecs), ss.get("fl_ear", False))
+
+
+def _count(res, tier: str) -> int:
+    return 0 if res is None or res.empty else int((res["tier"] == tier).sum())
+
+
+SOURCES = {"fed": ("Federal grants", "federal grants", results), "fdn": ("Foundations", "foundations", f_res)}
+if state == "FL":
+    SOURCES["fl"] = ("Florida programs", "Florida programs", fl_res)
+strong = {k: _count(v[2], "Strong") for k, v in SOURCES.items()}
+possible = {k: _count(v[2], "Possible") for k, v in SOURCES.items()}
+
+# Most strong matches first. Keep the current order unless another source pulls ahead, so editing the
+# profile doesn't shuffle the tabs under someone who is reading one.
+ranked = sorted(SOURCES, key=lambda k: (-strong[k], -possible[k]))
+order = ss.get("_tab_order")
+if not order or sorted(order) != sorted(SOURCES) or strong[ranked[0]] > strong[order[0]]:
+    order = ranked
+ss["_tab_order"] = order
+
+total = sum(strong.values())
+parts = [f"{strong[k]:,} {SOURCES[k][1]}" for k in order]
+listing = ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1]
+if total:
+    overview = f"<b>{total:,} strong matches</b> for this profile: {listing}."
+else:
+    poss = ", ".join(f"{possible[k]:,} {SOURCES[k][1]}" for k in order)
+    overview = (f"<b>No strong matches yet.</b> Possible matches: {poss}. "
+                "More specific key words usually help.")
+st.markdown(f"<p class='gm-overview'>{overview} <span class='gm-quiet'>Tabs with the most strong matches come "
+            "first.</span></p>", unsafe_allow_html=True)
+
+tab_keys = order + ["ready"] + (["workspace"] if store else [])
+labels = {**{k: v[0] for k, v in SOURCES.items()}, "ready": "Before you apply", "workspace": "Workspace"}
+TAB = dict(zip(tab_keys, st.tabs([labels[k] for k in tab_keys])))
 
 # ---------- federal ----------
-with tab_fed:
-    df, fetched_at, vectors = load_federal()
-    if df.empty:
+with TAB["fed"]:
+    if results is None:
         st.error("The federal grant list could not be loaded right now. Try again in a few minutes.")
     else:
-        results = score(df, profile, semantic=similarity(query_text, vectors))
+        n_strong, _ = tally(results, "grants")
         updated = datetime.fromisoformat(fetched_at).strftime("%b %d, %Y") if fetched_at else ""
         st.caption(f"{len(df):,} open and forecasted federal opportunities that list nonprofits as eligible"
                    + (f", updated {updated}." if updated else "."))
-        n_strong, _ = tally(results, "grants")
         if n_strong == 0:
-            st.info("No strong federal matches right now. That is common for small direct-service nonprofits: much "
-                    "federal money for local programs is passed through state agencies, and foundations fund more "
-                    "early-stage work. Check the Foundations and Florida programs tabs.")
+            st.caption("No strong federal matches is common for small direct-service groups: much federal money "
+                       "for local programs passes through state agencies first.")
         with st.expander("How the score works"):
             st.markdown(
                 "- Up to 70 points for how closely the grant's description matches your mission, compared with how "
@@ -441,6 +559,7 @@ with tab_fed:
                 "- Points off for research grants, cost sharing you can't provide, award sizes far above your budget, "
                 "a 501(c)(3) requirement you don't meet, and programs aimed at tribes, states, or embassies abroad\n"
                 "- Strong is 60 and up, possible is 35 to 59")
+
         def fed_card(r):
             due = r["close"].strftime("%b %d, %Y") if pd.notna(r["close"]) and r["close"] else "not listed"
             label = "Est. due" if r["status"] == "forecasted" else "Due"
@@ -471,23 +590,17 @@ with tab_fed:
         result_list(results, fed_card, "grants", "fed_long", after_matches=fed_downloads)
 
 # ---------- foundations ----------
-with tab_fdn:
-    records, f_fetched, f_vecs = load_foundations(state)
+with TAB["fdn"]:
     if not records:
         st.warning(f"Foundation data for {state} is not available yet.")
     else:
-        kinds_all = ["Private foundation", "Community foundation", "Public foundation", "United Way or federated fund"]
         counts = pd.Series([r["kind"] for r in records]).value_counts()
-        c1, c2 = st.columns([3, 2])
-        kinds = c1.multiselect("Types", kinds_all, default=kinds_all,
-                               format_func=lambda k: f"{k} ({int(counts.get(k, 0)):,})")
-        show_pre = c2.checkbox("Include foundations that say they fund preselected groups only", value=False)
-        chosen = [r for r in records if r["kind"] in kinds]
-        f_res = score_foundations(chosen, profile, state, city_list, similarity(query_text, f_vecs), show_pre)
-        st.caption(f"{len(records):,} grantmakers that are based in {state} or gave grants there, from their latest IRS "
-                   "returns (Form 990-PF for private foundations, Form 990 Schedule I for community foundations and United "
-                   "Ways). Most funders back groups they already know, so start with an introduction.")
         tally(f_res, "foundations")
+        st.caption(f"{len(records):,} grantmakers based in {state} or giving there, from their latest IRS returns. "
+                   "Most funders back groups they already know, so start with an introduction.")
+        st.multiselect("Types", KINDS_ALL, default=KINDS_ALL, key="fdn_kinds",
+                       format_func=lambda k: f"{k} ({int(counts.get(k, 0)):,})")
+        st.checkbox("Include foundations that say they fund preselected groups only", value=False, key="fdn_pre")
         with st.expander("How the score works"):
             st.markdown(
                 "- Up to 60 points for how closely the foundation's past grant purposes match your mission\n"
@@ -496,6 +609,7 @@ with tab_fdn:
                 "- Points off when its typical grant is large for your budget, when it says it doesn't take "
                 "unsolicited requests, or when it mostly gives scholarships\n"
                 "- Data comes from the foundation's own tax return, usually one to two years old")
+
         def fdn_card(r):
             apply = r.get("apply") if isinstance(r.get("apply"), dict) else {}
             with st.container(border=True, key=f"card_fdn_{r['ein']}"):
@@ -554,21 +668,17 @@ with tab_fdn:
         result_list(f_res, fdn_card, "foundations", "fdn_long", after_matches=fdn_downloads)
 
 # ---------- Florida ----------
-with tab_fl:
-    if state != "FL":
-        st.info("State programs are available for Florida only so far.")
-    else:
-        programs, fy, fl_vecs = load_florida()
+if "fl" in TAB:
+    with TAB["fl"]:
         if not programs:
             st.warning("Florida program data is not available yet.")
         else:
-            show_ear = st.checkbox("Include programs the Legislature set aside for named organizations", value=False)
-            fl_res = score_florida(programs, profile, similarity(query_text, fl_vecs), show_ear)
-            open_n = sum(1 for p_ in programs if p_["nonprofit_eligible"] and not p_["earmark"])
-            st.caption(f"{open_n:,} of {len(programs):,} programs in Florida's Catalog of State Financial Assistance "
-                       f"(fiscal year {fy}) are open to nonprofits and not set aside for a named group. The catalog "
-                       "lists programs, not open calls: check the agency's site for the next application window.")
             tally(fl_res, "programs")
+            open_n = sum(1 for p_ in programs if p_["nonprofit_eligible"] and not p_["earmark"])
+            st.caption(f"{open_n:,} of {len(programs):,} Florida programs (fiscal year {fy}) are open to nonprofits. "
+                       "These are programs, not open calls: check each agency's site for the next window.")
+            st.checkbox("Include programs the Legislature set aside for named organizations", value=False,
+                        key="fl_ear")
 
             def fl_card(r):
                 with st.container(border=True, key=f"card_fl_{r['id']}"):
@@ -590,11 +700,11 @@ with tab_fl:
 
 # ---------- workspace ----------
 if store is not None:
-    with tabs[4]:
+    with TAB["workspace"]:
         uiw.render(store, who, ANTHROPIC)
 
 # ---------- checklist ----------
-with tab_ready:
+with TAB["ready"]:
     st.header("Getting ready to apply")
     st.markdown(
         """
