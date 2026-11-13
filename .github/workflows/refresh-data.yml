@@ -1,0 +1,38 @@
+name: Refresh grant data
+
+on:
+  schedule:
+    - cron: "17 8 * * *"   # nightly, about 3-4 AM Eastern
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Pull opportunities from Grants.gov
+        run: python -m grantmatch.fetch --out build/opportunities.json.gz
+      - name: Build semantic embeddings
+        run: python -m grantmatch.embed build/opportunities.json.gz build/embeddings.npz
+      - name: Publish as the data-latest release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || \
+            gh release create data-latest --title "Latest grant data" \
+              --notes "Refreshed nightly from the Grants.gov API. The app reads opportunities.json.gz and embeddings.npz from here."
+          gh release upload data-latest build/opportunities.json.gz build/embeddings.npz --clobber
+      - name: Keep this schedule from expiring
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/refresh-data.yml/enable"

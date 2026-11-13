@@ -1,0 +1,6 @@
+streamlit>=1.39
+pandas>=2.2
+scikit-learn>=1.5
+requests>=2.32
+fastembed>=0.4
+numpy>=1.26
