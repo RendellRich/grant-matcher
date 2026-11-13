@@ -27,6 +27,17 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Exports** your strong and possible matches to CSV and the deadlines to a calendar file (.ics).
 - **Saves your profile** as a small JSON file you can load next time. Nothing is stored on a server.
 
+## Private workspace (optional)
+
+The same app has a signed-in workspace for an organization's own team. It is off unless the deployment has the secrets in `.streamlit/secrets.toml.example`. With them, people on the allowed list can sign in with Google and get:
+
+- **Pipeline:** save any grant, foundation, or state program, then track status, deadlines, next steps, and notes
+- **Organization:** the facts every draft draws on (mission, programs, budget, outcomes, board)
+- **Write:** a letter of inquiry drafted for a saved funder from what it funded last year, or an uploaded application form with every question drafted, editable, and exported to Word (for a Word form, the answers are placed into a copy of the funder's own file)
+- **Answer library:** every answer you approve is saved and reused in the next draft, so drafts sound more like you over time
+
+Saved work lives in a separate private GitHub repository, not in this public one. Drafting uses the Claude API; drafts use only saved facts and approved answers, and missing facts become [bracketed placeholders] rather than guesses.
+
 ## How the federal score works
 
 | Part | Effect |
@@ -105,6 +116,10 @@ grantmatch/foundations.py  IRS 990-PF parsing, split by state
 grantmatch/community.py IRS 990 Schedule I for community foundations and United Ways
 grantmatch/florida.py   Florida Catalog of State Financial Assistance
 grantmatch/rank_more.py foundation and Florida scoring
+grantmatch/store.py     private workspace storage (GitHub repo or local folder)
+grantmatch/workspace.py pipeline, organization facts, answer library, documents
+grantmatch/writer.py    Claude drafting, Word export, and form filling
+grantmatch/ui_workspace.py  workspace screens
 tests/                  unit tests for scoring and parsing
 .github/workflows/      nightly data refresh and tests
 ```

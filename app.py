@@ -10,7 +10,12 @@ import pandas as pd
 import requests
 import streamlit as st
 
+import os
+
 from grantmatch import embed
+from grantmatch import ui_workspace as uiw
+from grantmatch import workspace as wsp
+from grantmatch.store import GitHubStore, LocalStore, StoreError
 from grantmatch.match import BUDGET_BANDS, CATEGORY_NAMES, Profile, _money, load_frame, score, to_ics
 from grantmatch.rank_more import score_florida, score_foundations
 
@@ -163,11 +168,42 @@ st.write("Grants a small nonprofit can realistically go after, from federal prog
          "state programs, ranked against your mission with the reasons spelled out.")
 st.markdown(f"<div class='notice'>{NOTICE}</div>", unsafe_allow_html=True)
 
+# ---------- workspace (sign-in) ----------
+def _secret(section: str):
+    try:
+        return st.secrets[section]
+    except Exception:
+        return None
+
+
+WS_CONF = _secret("workspace")
+AUTH_ON = WS_CONF is not None and _secret("auth") is not None
+store, who = None, ""
+if os.environ.get("GM_LOCAL_STORE"):  # development: a local folder stands in for the private repo
+    store, who = LocalStore(os.environ["GM_LOCAL_STORE"]), "local"
+elif AUTH_ON and st.user.is_logged_in:
+    who = (st.user.get("email") or "").lower()
+    allowed = [e.lower() for e in WS_CONF.get("allowed_emails", [])]
+    if who in allowed:
+        store = GitHubStore(WS_CONF["repo"], WS_CONF["github_token"])
+ANTHROPIC = (_secret("anthropic") or {}).get("api_key") if _secret("anthropic") else None
+
 # ---------- profile ----------
 with st.sidebar:
+    if AUTH_ON:
+        if not st.user.is_logged_in:
+            st.button("Sign in to your workspace", on_click=st.login, use_container_width=True)
+        else:
+            st.caption(f"Signed in as {who}" + ("" if store else ". This account doesn't have a workspace."))
+            st.button("Sign out", on_click=st.logout)
     st.header("Your organization")
     uploaded = st.file_uploader("Load a saved profile", type="json", help="A profile you downloaded from this page earlier.")
     saved = json.load(uploaded) if uploaded else None
+    if saved is None and store is not None:
+        try:
+            saved = store.read(wsp.PROFILE_FILE)
+        except StoreError as exc:
+            st.warning(str(exc))
     preset_name = st.selectbox("Start from an example", list(PRESETS), disabled=saved is not None)
     base = saved or PRESETS[preset_name]
 
@@ -194,7 +230,11 @@ with st.sidebar:
         "budget_band": budget_band, "can_cost_share": can_cost_share, "categories": categories,
         "include_forecasted": include_forecasted, "min_days_left": min_days,
     }
-    st.download_button("Save this profile", json.dumps(profile_dict, indent=2), "grant-profile.json", "application/json")
+    if store is not None:
+        if st.button("Save profile to workspace", use_container_width=True):
+            store.write(wsp.PROFILE_FILE, profile_dict, "Update search profile")
+            st.toast("Profile saved. It will load automatically next time.")
+    st.download_button("Download this profile", json.dumps(profile_dict, indent=2), "grant-profile.json", "application/json")
 
 if not mission.strip() and not keywords.strip():
     st.info("Add your mission and a few key words in the panel on the left to see matches.")
@@ -209,7 +249,9 @@ profile = Profile(
 query_text = mission + " " + keywords
 city_list = [c for c in cities.split(",") if c.strip()]
 
-tab_fed, tab_fdn, tab_fl, tab_ready = st.tabs(["Federal grants", "Foundations", "Florida programs", "Before you apply"])
+tab_names = ["Federal grants", "Foundations", "Florida programs", "Before you apply"] + (["Workspace"] if store else [])
+tabs = st.tabs(tab_names)
+tab_fed, tab_fdn, tab_fl, tab_ready = tabs[:4]
 
 # ---------- federal ----------
 with tab_fed:
@@ -244,6 +286,8 @@ with tab_fed:
                 st.markdown(f"<div class='meta'>{r['agency']} &nbsp;|&nbsp; {r['number']} &nbsp;|&nbsp; {label} {due}"
                             f" &nbsp;|&nbsp; Award {r['award_range']}</div>", unsafe_allow_html=True)
                 st.markdown(why(r), unsafe_allow_html=True)
+                if store is not None:
+                    uiw.save_button(store, who, "federal", r, key=f"save_fed_{r['id']}")
                 with st.expander("Summary"):
                     st.write(r["description"][:1500] + ("..." if len(r["description"]) > 1500 else ""))
                     if r["eligibility_text"]:
@@ -294,6 +338,8 @@ with tab_fdn:
                     f"{_money(r['grants_total'])} total &nbsp;|&nbsp; typical {_money(r['grant_median'])} &nbsp;|&nbsp; "
                     f"tax year {r['tax_year']}</div>", unsafe_allow_html=True)
                 st.markdown(why(r), unsafe_allow_html=True)
+                if store is not None:
+                    uiw.save_button(store, who, "foundation", r, key=f"save_fdn_{r['ein']}")
                 with st.expander("How to apply and past grants"):
                     if _s(r.get("mission")):
                         st.markdown(f"**Mission:** {html.escape(_s(r.get('mission')).capitalize())}")
@@ -360,6 +406,8 @@ with tab_fl:
                     st.markdown(f"<div class='meta'>{r['agency']} &nbsp;|&nbsp; CSFA {r['csfa']} &nbsp;|&nbsp; "
                                 f"{r['assistance']}</div>", unsafe_allow_html=True)
                     st.markdown(why(r), unsafe_allow_html=True)
+                    if store is not None:
+                        uiw.save_button(store, who, "florida", r, key=f"save_fl_{r['id']}")
                     with st.expander("Details"):
                         for label, key in (("Objectives", "objectives"), ("Who can apply", "applicant_types"),
                                            ("How to apply", "application"), ("How awards are made", "award"),
@@ -369,6 +417,11 @@ with tab_fl:
                                 st.markdown(f"**{label}:** {html.escape(r[key][:900])}")
                         if r["web"]:
                             st.markdown(f"**Agency site:** {r['web']}")
+
+# ---------- workspace ----------
+if store is not None:
+    with tabs[4]:
+        uiw.render(store, who, ANTHROPIC)
 
 # ---------- checklist ----------
 with tab_ready:
