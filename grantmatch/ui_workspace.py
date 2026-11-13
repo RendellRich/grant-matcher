@@ -118,6 +118,7 @@ def _organization(store, who: str) -> None:
             values[key] = widget(label, org.get(key, ""), help=help_ or None, key=f"org_{key}")
         if st.form_submit_button("Save organization facts", type="primary"):
             ws.save_org(store, values, who)
+            org = values
             st.success("Saved.")
     gaps = ws.missing_facts(org)
     if gaps:
