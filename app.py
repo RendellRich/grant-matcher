@@ -33,7 +33,7 @@ PRESETS = {
                    "ADHD and autism, so that cost is never a barrier for families.",
         "keywords": "literacy, reading, dyslexia, tutoring, speech, language, children, youth, students, ADHD, autism, disabilities, low-income families, after school",
         "categories": ["ED", "HL", "ISS"],
-        "state": "FL", "cities": "Tampa, Bradenton, Parrish, Sarasota, St. Petersburg",
+        "state": "FL", "cities": "Tampa, Bradenton, Sarasota, St. Petersburg",
     },
     "Community food pantry": {
         "mission": "We run a volunteer food pantry and weekend meal program for families facing food insecurity in our county.",
