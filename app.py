@@ -159,7 +159,7 @@ def tally(results: pd.DataFrame, noun: str) -> tuple[int, int]:
 
 # ---------- header ----------
 st.title("Grant Matcher")
-st.write("Grants a small nonprofit can realistically go after, from federal programs, private foundations, and Florida "
+st.write("Grants a small nonprofit can realistically go after, from federal programs, private and community foundations, and Florida "
          "state programs, ranked against your mission with the reasons spelled out.")
 st.markdown(f"<div class='notice'>{NOTICE}</div>", unsafe_allow_html=True)
 
@@ -320,7 +320,10 @@ with tab_fdn:
                             hide_index=True, use_container_width=True,
                             column_config={"Amount": st.column_config.NumberColumn(format="$%d")})
         if not f_res.empty:
-            picks = f_res[f_res["tier"] != "Long shot"]
+            picks = f_res[f_res["tier"] != "Long shot"].copy()
+            for col in ("apply", "website"):
+                if col not in picks:
+                    picks[col] = None
             if not picks.empty:
                 export = picks.assign(
                     reasons=picks["reasons"].apply("; ".join), cautions=picks["cautions"].apply("; ".join),
