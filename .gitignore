@@ -2,3 +2,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 *.pyc
+data/foundations/*
+!data/foundations/FL.json.gz
+!data/foundations/FL.npz
+data/foundations/_tmp/

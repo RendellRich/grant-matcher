@@ -1,0 +1,36 @@
+name: Refresh Florida programs
+
+on:
+  schedule:
+    - cron: "41 9 * * 1"   # Mondays
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Pull the Catalog of State Financial Assistance
+        run: python -m grantmatch.florida --out build/florida.json.gz
+      - name: Build semantic embeddings
+        run: python -m grantmatch.embed florida build/florida.json.gz build/florida.npz
+      - name: Publish as data-latest release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
+          gh release upload data-latest build/florida.json.gz build/florida.npz --clobber
+      - name: Keep this schedule from expiring
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/refresh-florida.yml/enable"

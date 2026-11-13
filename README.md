@@ -1,8 +1,12 @@
 # Grant Matcher for small nonprofits
 
-Finding a federal grant you can actually win is hard when you are a small nonprofit. Grants.gov lists over a thousand open and upcoming opportunities that nonprofits can apply for at any time, and most of them are research programs, multimillion-dollar awards, or grants that require matching funds a young organization does not have.
+Finding grants you can actually win is hard when you are a small nonprofit. Grants.gov lists over a thousand open and upcoming federal opportunities at any time, and most of them are research programs, multimillion-dollar awards, or grants that require matching funds a young organization does not have. Foundation money is spread across tens of thousands of private funders whose interests are buried in tax returns.
 
-Grant Matcher reads your mission, ranks every open and forecasted federal opportunity against it, and tells you in plain words why each one is or is not a fit.
+Grant Matcher reads your mission and ranks three kinds of funding against it, telling you in plain words why each one is or is not a fit:
+
+- **Federal grants:** every open and forecasted opportunity on Grants.gov that nonprofits can apply for
+- **Private foundations:** foundations that give in your state, from their own IRS Form 990-PF returns, with who they funded, typical grant size, and how to apply
+- **Florida state programs:** state programs open to nonprofits from Florida's Catalog of State Financial Assistance, with legislative earmarks filtered out
 
 **Try it:** [grant-matcher.streamlit.app](https://grant-matcher.streamlit.app)
 
@@ -23,7 +27,7 @@ Grant Matcher reads your mission, ranks every open and forecasted federal opport
 - **Exports** your strong and possible matches to CSV and the deadlines to a calendar file (.ics).
 - **Saves your profile** as a small JSON file you can load next time. Nothing is stored on a server.
 
-## How the score works
+## How the federal score works
 
 | Part | Effect |
 |---|---|
@@ -39,16 +43,45 @@ Grant Matcher reads your mission, ranks every open and forecasted federal opport
 
 Scores of 60 and up are labeled Strong, 35 to 59 Possible, and below 35 Long shot.
 
+## How foundations are scored
+
+| Part | Effect |
+|---|---|
+| Past grant purposes match your mission | Up to 55 points |
+| Your key words in its past grants | Up to 15 points |
+| Share of its grants that went to your state | Up to 25 points |
+| Funded groups in the cities you list | plus 5 |
+| Typical grant larger than your annual budget | minus 10 |
+| Says it does not accept unsolicited requests | minus 30 |
+| Mostly scholarships for individuals | minus 15 |
+
+Foundations that check the box saying they only fund preselected organizations are hidden unless you ask to see them.
+
+## Florida state programs
+
+Florida's Department of Financial Services keeps the Catalog of State Financial Assistance, a list of every state program that pays money to local governments, nonprofits, and businesses. Many entries are money the Legislature set aside for a named organization; those are flagged and hidden by default. The catalog lists programs rather than open calls, so each result links to the agency for its next application window.
+
 ## Data
 
 A GitHub Action runs every night and pulls every posted and forecasted opportunity open to nonprofits (eligibility codes 12, 13, 25 and 99) from the public [Grants.gov API](https://www.grants.gov/api/api-guide) using `search2` and `fetchOpportunity`. No API key is needed. The cleaned file and the opportunity embeddings are published as `data-latest` release assets, and the app reads them from there. A snapshot in `data/` is the fallback. If the embedding model cannot load, the app falls back to TF-IDF similarity.
+
+| Source | Refresh | Job |
+|---|---|---|
+| Grants.gov (`search2`, `fetchOpportunity`) | nightly | `refresh-data.yml` |
+| IRS Form 990-PF e-file XML ([Form 990 series downloads](https://www.irs.gov/charities-non-profits/form-990-series-downloads)), latest return per foundation, split by state | monthly | `refresh-foundations.yml` |
+| Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
 
 ## Run it yourself
 
 ```bash
 pip install -r requirements.txt
 python -m grantmatch.fetch --out data/opportunities.json.gz   # about 20 minutes; add --limit 50 for a quick test
-python -m grantmatch.embed data/opportunities.json.gz data/embeddings.npz
+python -m grantmatch.embed federal data/opportunities.json.gz data/embeddings.npz
+pip install -r requirements-data.txt
+python -m grantmatch.foundations --years 2025,2026 --out data/foundations      # about 15 minutes, 7 GB of downloads
+python -m grantmatch.embed foundations data/foundations/FL.json.gz data/foundations/FL.npz
+python -m grantmatch.florida --out data/florida.json.gz                        # about 25 minutes
+python -m grantmatch.embed florida data/florida.json.gz data/florida.npz
 streamlit run app.py
 python -m pytest -q
 ```
@@ -59,15 +92,18 @@ python -m pytest -q
 app.py                  Streamlit app
 grantmatch/fetch.py     Grants.gov pull and cleanup
 grantmatch/embed.py     semantic embeddings (nightly for grants, on demand for a mission)
-grantmatch/match.py     scoring, reasons, calendar export
+grantmatch/match.py     federal scoring, reasons, calendar export
+grantmatch/foundations.py  IRS 990-PF parsing, split by state
+grantmatch/florida.py   Florida Catalog of State Financial Assistance
+grantmatch/rank_more.py foundation and Florida scoring
 tests/                  unit tests for scoring and parsing
 .github/workflows/      nightly data refresh and tests
 ```
 
 ## Roadmap
 
-- Private and community foundation grants from IRS Form 990-PF data
-- State grant portals (starting with Florida)
+- Community foundations and other public charities that make grants (Form 990 Schedule I)
+- More states' grant catalogs
 - Email digest of new matches each week
 
 ## Why I built it

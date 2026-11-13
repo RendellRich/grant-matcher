@@ -1,7 +1,10 @@
-"""Semantic embeddings for opportunities (built nightly) and for a mission (built in the app).
+"""Semantic embeddings for grants, foundations and state programs (built offline) and for a
+mission (built in the app). Uses a small ONNX model through fastembed, so no GPU or PyTorch is needed.
 
-Uses a small ONNX model through fastembed, so no GPU or PyTorch is needed.
-Run:  python -m grantmatch.embed data/opportunities.json.gz data/embeddings.npz
+Run:
+  python -m grantmatch.embed federal data/opportunities.json.gz data/embeddings.npz
+  python -m grantmatch.embed florida data/florida.json.gz data/florida.npz
+  python -m grantmatch.embed foundations data/foundations/FL.json.gz data/foundations/FL.npz
 """
 from __future__ import annotations
 
@@ -27,9 +30,13 @@ def doc_text(rec: dict) -> str:
     return f"{rec['title']}. {cats}. {rec['description'][:1800]}"
 
 
-def embed_docs(records: list[dict]) -> np.ndarray:
-    vecs = np.array(list(_model().passage_embed([doc_text(r) for r in records], batch_size=64)), dtype=np.float32)
+def embed_texts(texts: list[str]) -> np.ndarray:
+    vecs = np.array(list(_model().passage_embed(texts, batch_size=64)), dtype=np.float32)
     return vecs / np.linalg.norm(vecs, axis=1, keepdims=True)
+
+
+def embed_docs(records: list[dict]) -> np.ndarray:
+    return embed_texts([doc_text(r) for r in records])
 
 
 def embed_query(text: str) -> np.ndarray:
@@ -48,10 +55,20 @@ def load(path) -> dict[str, np.ndarray]:
 
 
 def main() -> None:
-    src, out = Path(sys.argv[1]), Path(sys.argv[2])
-    records = json.load(gzip.open(src, "rt", encoding="utf-8"))["opportunities"]
-    vecs = embed_docs(records)
-    save([r["id"] for r in records], vecs, out)
+    from .rank_more import florida_doc, foundation_doc
+
+    kind, src, out = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3])
+    payload = json.load(gzip.open(src, "rt", encoding="utf-8"))
+    if kind == "federal":
+        records, key, doc = payload["opportunities"], "id", doc_text
+    elif kind == "florida":
+        records, key, doc = payload["programs"], "id", florida_doc
+    elif kind == "foundations":
+        records, key, doc = payload["foundations"], "ein", foundation_doc
+    else:
+        raise SystemExit(f"unknown kind {kind}")
+    vecs = embed_texts([doc(r)[:2000] for r in records])
+    save([r[key] for r in records], vecs, out)
     print(f"wrote {len(records)} embeddings to {out}")
 
 

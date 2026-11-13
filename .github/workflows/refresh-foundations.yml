@@ -1,0 +1,49 @@
+name: Refresh foundations
+
+on:
+  schedule:
+    - cron: "23 10 3 * *"   # monthly; the IRS posts new 990 batches about once a month
+  workflow_dispatch:
+    inputs:
+      years:
+        description: "IRS filing years, comma separated (blank = last year and this year)"
+        required: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt -r requirements-data.txt
+      - name: Parse 990-PF returns from IRS e-file batches
+        run: |
+          YEARS="${{ github.event.inputs.years }}"
+          if [ -z "$YEARS" ]; then YEARS="$(( $(date +%Y) - 1 )),$(date +%Y)"; fi
+          python -m grantmatch.foundations --years "$YEARS" --out build/foundations
+      - name: Build semantic embeddings for each state
+        run: |
+          for f in build/foundations/*.json.gz; do
+            st=$(basename "$f" .json.gz)
+            python -m grantmatch.embed foundations "$f" "build/foundations/$st.npz"
+          done
+      - name: Publish as data-latest release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
+          mkdir -p upload
+          for f in build/foundations/*.json.gz; do st=$(basename "$f" .json.gz); cp "$f" "upload/foundations-$st.json.gz"; cp "build/foundations/$st.npz" "upload/foundations-$st.npz"; done
+          gh release upload data-latest upload/* --clobber
+      - name: Keep this schedule from expiring
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/refresh-foundations.yml/enable"

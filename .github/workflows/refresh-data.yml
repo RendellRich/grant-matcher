@@ -22,7 +22,7 @@ jobs:
       - name: Pull opportunities from Grants.gov
         run: python -m grantmatch.fetch --out build/opportunities.json.gz
       - name: Build semantic embeddings
-        run: python -m grantmatch.embed build/opportunities.json.gz build/embeddings.npz
+        run: python -m grantmatch.embed federal build/opportunities.json.gz build/embeddings.npz
       - name: Publish as the data-latest release assets
         env:
           GH_TOKEN: ${{ github.token }}
