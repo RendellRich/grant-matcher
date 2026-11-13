@@ -115,3 +115,35 @@ def test_florida_named_recipients_and_scholarships():
                           "Department awards grants after program application and budget review.", "")
     out = score_florida([prog(id="fl-1"), prog(id="fl-2", title="Minority Teacher Scholarship Program")], PROFILE)
     assert any("Student aid" in c for c in out.set_index("id").loc["fl-2", "cautions"])
+
+
+def test_community_foundation_rules():
+    local_cf = fdn(ein="10", name="Manatee Community Foundation", city="BRADENTON", kind="Community foundation",
+                   apply=None, website="www.example.org", top_recipients=["reading club inc"])
+    far_cf = fdn(ein="11", name="Spokane Community Foundation", city="SPOKANE", state="WA", kind="Community foundation",
+                 apply=None, website="", recipient_states={"WA": 8, "FL": 1})
+    out = score_foundations([local_cf, far_cf], PROFILE, "FL", ["Bradenton"]).set_index("ein")
+    assert any("Based in Bradenton" in r for r in out.loc["10", "reasons"])
+    assert any("website" in r for r in out.loc["10", "reasons"])
+    assert not any("No grants to FL" in c for c in out.loc["10", "cautions"])
+    assert any("outside FL" in c for c in out.loc["11", "cautions"])
+    assert out.loc["10", "score"] > out.loc["11", "score"]
+
+
+SAMPLE_990 = b"""<?xml version="1.0" encoding="utf-8"?>
+<Return xmlns="http://www.irs.gov/efile"><ReturnHeader><TaxYr>2024</TaxYr><Filer><EIN>650833500</EIN>
+<BusinessName><BusinessNameLine1Txt>MANATEE COMMUNITY FOUNDATION INC</BusinessNameLine1Txt></BusinessName><PhoneNum>9415550100</PhoneNum>
+<USAddress><CityNm>BRADENTON</CityNm><StateAbbreviationCd>FL</StateAbbreviationCd><ZIPCd>34205</ZIPCd></USAddress></Filer></ReturnHeader>
+<ReturnData><IRS990><WebsiteAddressTxt>WWW.EXAMPLE.ORG</WebsiteAddressTxt><ActivityOrMissionDesc>STRENGTHEN OUR COMMUNITY</ActivityOrMissionDesc></IRS990>
+<IRS990ScheduleI><RecipientTable><RecipientBusinessName><BusinessNameLine1Txt>READING CLUB INC</BusinessNameLine1Txt></RecipientBusinessName>
+<USAddress><CityNm>BRADENTON</CityNm><StateAbbreviationCd>FL</StateAbbreviationCd></USAddress><CashGrantAmt>12000</CashGrantAmt>
+<PurposeOfGrantTxt>PROGRAM SUPPORT</PurposeOfGrantTxt></RecipientTable></IRS990ScheduleI></ReturnData></Return>"""
+
+
+def test_990_schedule_i_parsing():
+    from grantmatch.community import parse_return as parse_990, summarize as summarize_990
+    rec = summarize_990(parse_990(SAMPLE_990), "Community foundation")
+    assert rec["name"] == "MANATEE COMMUNITY FOUNDATION INC" and rec["phone"] == "9415550100"
+    assert rec["website"] == "WWW.EXAMPLE.ORG" and rec["mission"] == "STRENGTHEN OUR COMMUNITY"
+    assert rec["grant_count"] == 1 and rec["top_recipients"] == ["reading club inc"]
+    assert rec["kind"] == "Community foundation"

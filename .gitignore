@@ -6,3 +6,6 @@ data/foundations/*
 !data/foundations/FL.json.gz
 !data/foundations/FL.npz
 data/foundations/_tmp/
+data/community/*
+!data/community/FL.json.gz
+!data/community/FL.npz

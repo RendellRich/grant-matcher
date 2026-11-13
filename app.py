@@ -95,12 +95,18 @@ def load_federal():
 
 @st.cache_data(ttl=24 * 3600, show_spinner="Loading foundations")
 def load_foundations(state: str):
-    raw = _fetch(f"foundations-{state}.json.gz", f"foundations/{state}.json.gz")
-    if raw is None:
-        return [], "", {}
-    payload = json.loads(gzip.decompress(raw))
-    vecs = _vectors(f"foundations-{state}.npz", f"foundations/{state}.npz")
-    return payload["foundations"], payload.get("fetched_at", ""), vecs
+    records, vecs, stamp = [], {}, ""
+    for prefix, folder in (("foundations", "foundations"), ("community", "community")):
+        raw = _fetch(f"{prefix}-{state}.json.gz", f"{folder}/{state}.json.gz")
+        if raw is None:
+            continue
+        payload = json.loads(gzip.decompress(raw))
+        for rec in payload["foundations"]:
+            rec.setdefault("kind", "Private foundation")
+        records += payload["foundations"]
+        stamp = stamp or payload.get("fetched_at", "")
+        vecs.update(_vectors(f"{prefix}-{state}.npz", f"{folder}/{state}.npz"))
+    return records, stamp, vecs
 
 
 @st.cache_data(ttl=24 * 3600, show_spinner="Loading Florida programs")
@@ -126,6 +132,11 @@ def similarity(text: str, vectors: dict) -> dict:
         return {}
     ids = list(vectors)
     return dict(zip(ids, (np.stack([vectors[i] for i in ids]) @ q).tolist()))
+
+
+def _s(value) -> str:
+    """Text value from a mixed DataFrame row (missing values come back as NaN)."""
+    return value if isinstance(value, str) else ""
 
 
 def badge(r) -> str:
@@ -252,10 +263,17 @@ with tab_fdn:
     if not records:
         st.warning(f"Foundation data for {state} is not available yet.")
     else:
-        show_pre = st.checkbox("Include foundations that say they fund preselected groups only", value=False)
-        f_res = score_foundations(records, profile, state, city_list, similarity(query_text, f_vecs), show_pre)
-        st.caption(f"{len(records):,} private foundations that are based in {state} or gave grants there, from their "
-                   "latest IRS Form 990-PF. Most foundations fund groups they already know, so start with an introduction.")
+        kinds_all = ["Private foundation", "Community foundation", "Public foundation", "United Way or federated fund"]
+        counts = pd.Series([r["kind"] for r in records]).value_counts()
+        c1, c2 = st.columns([3, 2])
+        kinds = c1.multiselect("Types", kinds_all, default=kinds_all,
+                               format_func=lambda k: f"{k} ({int(counts.get(k, 0)):,})")
+        show_pre = c2.checkbox("Include foundations that say they fund preselected groups only", value=False)
+        chosen = [r for r in records if r["kind"] in kinds]
+        f_res = score_foundations(chosen, profile, state, city_list, similarity(query_text, f_vecs), show_pre)
+        st.caption(f"{len(records):,} grantmakers that are based in {state} or gave grants there, from their latest IRS "
+                   "returns (Form 990-PF for private foundations, Form 990 Schedule I for community foundations and United "
+                   "Ways). Most funders back groups they already know, so start with an introduction.")
         tally(f_res, "foundations")
         with st.expander("How the score works"):
             st.markdown(
@@ -272,11 +290,15 @@ with tab_fdn:
             with st.container(border=True):
                 st.markdown(f"{badge(r)}&nbsp; **[{r['name'].title()}]({r['url']})**", unsafe_allow_html=True)
                 st.markdown(
-                    f"<div class='meta'>{r['city'].title()}, {r['state']} &nbsp;|&nbsp; {r['grant_count']} grants, "
+                    f"<div class='meta'>{r['kind']} &nbsp;|&nbsp; {r['city'].title()}, {r['state']} &nbsp;|&nbsp; {r['grant_count']} grants, "
                     f"{_money(r['grants_total'])} total &nbsp;|&nbsp; typical {_money(r['grant_median'])} &nbsp;|&nbsp; "
                     f"tax year {r['tax_year']}</div>", unsafe_allow_html=True)
                 st.markdown(why(r), unsafe_allow_html=True)
                 with st.expander("How to apply and past grants"):
+                    if _s(r.get("mission")):
+                        st.markdown(f"**Mission:** {html.escape(_s(r.get('mission')).capitalize())}")
+                    if _s(r.get("phone")) and not apply:
+                        st.markdown(f"**Phone:** {_s(r.get('phone'))}")
                     if apply:
                         lines = []
                         for label, key in (("Contact", "contact"), ("Phone", "phone"), ("Email", "email"),
@@ -285,10 +307,10 @@ with tab_fdn:
                             if apply.get(key):
                                 lines.append(f"**{label}:** {html.escape(apply[key])}")
                         st.markdown("  \n".join(lines) or "No application details listed.")
-                    else:
+                    elif r["kind"] == "Private foundation":
                         st.write("No application details listed on the return.")
-                    if r.get("website"):
-                        st.markdown(f"**Website:** {r['website']}")
+                    if _s(r.get("website")):
+                        st.markdown(f"**Website:** {_s(r.get('website'))}")
                     grants = pd.DataFrame(r["sample_grants"])
                     if not grants.empty:
                         local = grants[grants["state"] == state]
@@ -306,7 +328,7 @@ with tab_fdn:
                     email=picks["apply"].apply(lambda a: (a or {}).get("email", "") if isinstance(a, dict) else ""),
                     phone=picks["apply"].apply(lambda a: (a or {}).get("phone", "") if isinstance(a, dict) else ""),
                     deadlines=picks["apply"].apply(lambda a: (a or {}).get("deadlines", "") if isinstance(a, dict) else ""),
-                )[["score", "tier", "name", "city", "state", "ein", "grant_count", "grant_median", "in_state",
+                )[["score", "tier", "kind", "name", "city", "state", "ein", "website", "grant_count", "grant_median", "in_state",
                    "contact", "email", "phone", "deadlines", "reasons", "cautions", "url"]]
                 st.download_button("Download foundation matches (CSV)", export.to_csv(index=False),
                                    "foundation-matches.csv", "text/csv")
@@ -374,7 +396,7 @@ with tab_ready:
 st.markdown("---")
 st.markdown(
     f"<div class='meta'>{NOTICE} Federal data from the Grants.gov API, refreshed nightly. Foundation data from IRS Form "
-    "990-PF e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance. "
+    "990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance. "
     "Scores are a starting point for your own review, not a guarantee of eligibility. "
     "Source code: <a href='https://github.com/RendellRich/grant-matcher'>github.com/RendellRich/grant-matcher</a></div>",
     unsafe_allow_html=True,

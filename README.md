@@ -5,7 +5,7 @@ Finding grants you can actually win is hard when you are a small nonprofit. Gran
 Grant Matcher reads your mission and ranks three kinds of funding against it, telling you in plain words why each one is or is not a fit:
 
 - **Federal grants:** every open and forecasted opportunity on Grants.gov that nonprofits can apply for
-- **Private foundations:** foundations that give in your state, from their own IRS Form 990-PF returns, with who they funded, typical grant size, and how to apply
+- **Foundations:** private foundations (IRS Form 990-PF) plus community foundations, public foundations, and United Ways (Form 990 Schedule I) that give in your state, with who they funded, typical grant size, and how to apply
 - **Florida state programs:** state programs open to nonprofits from Florida's Catalog of State Financial Assistance, with legislative earmarks filtered out
 
 **Try it:** [grant-matcher.streamlit.app](https://grant-matcher.streamlit.app)
@@ -51,8 +51,11 @@ Scores of 60 and up are labeled Strong, 35 to 59 Possible, and below 35 Long sho
 | Your key words in its past grants | Up to 15 points |
 | Share of its grants that went to your state | Up to 20 points |
 | Funded groups in the cities you list | plus 5, or plus 10 for three or more |
+| Based in one of your cities | plus 5 |
+| Community foundation serving your area | plus 15 |
+| Community foundation in another state | minus 25 |
 | Gives mostly outside your state (under 10% of grants) or not at all | minus 15 to 20 |
-| Fewer than three grants last year | minus 10 |
+| Fewer than three grants last year | minus 20, and never rated Strong |
 | Typical grant larger than your annual budget | minus 10 |
 | Says it does not accept unsolicited requests | minus 30 |
 | Mostly scholarships for individuals | minus 15 |
@@ -71,6 +74,7 @@ A GitHub Action runs every night and pulls every posted and forecasted opportuni
 |---|---|---|
 | Grants.gov (`search2`, `fetchOpportunity`) | nightly | `refresh-data.yml` |
 | IRS Form 990-PF e-file XML ([Form 990 series downloads](https://www.irs.gov/charities-non-profits/form-990-series-downloads)), latest return per foundation, split by state | monthly | `refresh-foundations.yml` |
+| IRS Form 990 Schedule I for organizations the [Exempt Organizations Business Master File](https://www.irs.gov/charities-non-profits/exempt-organizations-business-master-file-extract-eo-bmf) codes T31 (community foundations), T30 (public foundations), and T70 (United Ways and federated funds) | monthly | `refresh-foundations.yml` |
 | Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
 
 ## Run it yourself
@@ -82,6 +86,8 @@ python -m grantmatch.embed federal data/opportunities.json.gz data/embeddings.np
 pip install -r requirements-data.txt
 python -m grantmatch.foundations --years 2025,2026 --out data/foundations      # about 15 minutes, 7 GB of downloads
 python -m grantmatch.embed foundations data/foundations/FL.json.gz data/foundations/FL.npz
+python -m grantmatch.community --years 2025,2026 --out data/community          # about 5 minutes
+python -m grantmatch.embed foundations data/community/FL.json.gz data/community/FL.npz
 python -m grantmatch.florida --out data/florida.json.gz                        # about 25 minutes
 python -m grantmatch.embed florida data/florida.json.gz data/florida.npz
 streamlit run app.py
@@ -96,6 +102,7 @@ grantmatch/fetch.py     Grants.gov pull and cleanup
 grantmatch/embed.py     semantic embeddings (nightly for grants, on demand for a mission)
 grantmatch/match.py     federal scoring, reasons, calendar export
 grantmatch/foundations.py  IRS 990-PF parsing, split by state
+grantmatch/community.py IRS 990 Schedule I for community foundations and United Ways
 grantmatch/florida.py   Florida Catalog of State Financial Assistance
 grantmatch/rank_more.py foundation and Florida scoring
 tests/                  unit tests for scoring and parsing
@@ -104,7 +111,6 @@ tests/                  unit tests for scoring and parsing
 
 ## Roadmap
 
-- Community foundations and other public charities that make grants (Form 990 Schedule I)
 - More states' grant catalogs
 - Email digest of new matches each week
 

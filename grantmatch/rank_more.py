@@ -42,7 +42,10 @@ def _tier(points: float) -> str:
 
 def foundation_doc(rec: dict) -> str:
     restr = (rec.get("apply") or {}).get("restrictions", "")
-    return f"{rec['name']}. Grants for: " + "; ".join(rec.get("top_purposes", [])[:20]) + f". {restr}"
+    text = f"{rec['name']}. {rec.get('mission', '')} Grants for: " + "; ".join(rec.get("top_purposes", [])[:20]) + f". {restr}"
+    if rec.get("top_recipients"):
+        text += " Grantees: " + "; ".join(rec["top_recipients"][:40])
+    return text
 
 
 def score_foundations(records: list[dict], p: Profile, state: str, cities: list[str],
@@ -50,7 +53,15 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
     if not records:
         return pd.DataFrame()
     df = pd.DataFrame(records)
-    df["purpose_text"] = df.apply(lambda r: " ".join(r["top_purposes"]) + " " + " ".join(g["purpose"] for g in r["sample_grants"]), axis=1)
+    if "kind" not in df:
+        df["kind"] = "Private foundation"
+    df["kind"] = df["kind"].fillna("Private foundation")
+    if "top_recipients" not in df:
+        df["top_recipients"] = [[] for _ in range(len(df))]
+    df["top_recipients"] = df["top_recipients"].apply(lambda v: v if isinstance(v, list) else [])
+    df["purpose_text"] = df.apply(
+        lambda r: " ".join(r["top_purposes"]) + " " + " ".join(g["purpose"] for g in r["sample_grants"])
+        + " " + " ".join(r["top_recipients"]), axis=1)
     weights, best3 = _keyword_weights(p.keywords, df["purpose_text"])
     fit = _scale(semantic, df["ein"])
     budget = BUDGET_BANDS.get(p.budget_band, 250_000)
@@ -81,18 +92,28 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
             cautions.append(f"Only {in_state} of its {n} grants went to {state}")
         elif r["state"] == state:
             points += 6
-            reasons.append(f"Based in {r['city'].title()}, {state}")
         else:
             points -= 20
             cautions.append(f"No grants to {state} in its latest return")
+        public = r["kind"] != "Private foundation"
+        if r["kind"] == "Community foundation" and r["state"] != state:
+            points -= 25
+            cautions.append(f"Serves a community outside {state}; its grants here are usually from donors' own funds")
+        if str(r["city"]).lower() in city_set and r["state"] == state:
+            points += 5
+            reasons.append(f"Based in {r['city'].title()}, one of your cities")
         if n < 3:
-            points -= 10
+            points -= 20
             cautions.append(f"Made only {n} grant{'s' if n != 1 else ''} last year, so its interests are hard to read")
         local = [g for g in r["sample_grants"] if g["city"].lower() in city_set and g["state"] == state]
         if local:
             points += 10 if len(local) >= 3 else 5
             names = sorted({g["city"].title() for g in local})
             reasons.append(f"Funded {len(local)} group{'s' if len(local) > 1 else ''} in {', '.join(names)}")
+        serves_you = r["state"] == state and (str(r["city"]).lower() in city_set or len(local) >= 3)
+        if r["kind"] == "Community foundation" and serves_you:
+            points += 15
+            reasons.insert(0, "A community foundation serving your area; these often run grant cycles for local nonprofits")
 
         med = r["grant_median"]
         if med and med > budget:
@@ -103,6 +124,8 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
         elif med:
             reasons.append(f"Typical grant {_money(med)}")
 
+        if public and isinstance(r.get("website"), str) and r.get("website"):
+            reasons.append("Check its website for open grant cycles")
         if r["preselected_only"]:
             if not show_preselected:
                 continue
@@ -118,6 +141,8 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
             points -= 15
             cautions.append("Mostly scholarships for individuals")
 
+        if n < 3:
+            points = min(points, 55)  # too little history to call it a strong match
         final = max(0.0, min(100.0, points))
         rows.append({**r.drop(labels=["purpose_text"]).to_dict(), "score": round(final), "tier": _tier(final),
                      "reasons": reasons, "cautions": cautions, "matched": matched, "in_state": in_state})

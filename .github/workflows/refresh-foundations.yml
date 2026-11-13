@@ -28,11 +28,14 @@ jobs:
           YEARS="${{ github.event.inputs.years }}"
           if [ -z "$YEARS" ]; then YEARS="$(( $(date +%Y) - 1 )),$(date +%Y)"; fi
           python -m grantmatch.foundations --years "$YEARS" --out build/foundations
+          python -m grantmatch.community --years "$YEARS" --out build/community
       - name: Build semantic embeddings for each state
         run: |
-          for f in build/foundations/*.json.gz; do
-            st=$(basename "$f" .json.gz)
-            python -m grantmatch.embed foundations "$f" "build/foundations/$st.npz"
+          for dir in foundations community; do
+            for f in build/$dir/*.json.gz; do
+              st=$(basename "$f" .json.gz)
+              python -m grantmatch.embed foundations "$f" "build/$dir/$st.npz"
+            done
           done
       - name: Publish as data-latest release assets
         env:
@@ -40,7 +43,9 @@ jobs:
         run: |
           gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
           mkdir -p upload
-          for f in build/foundations/*.json.gz; do st=$(basename "$f" .json.gz); cp "$f" "upload/foundations-$st.json.gz"; cp "build/foundations/$st.npz" "upload/foundations-$st.npz"; done
+          for dir in foundations community; do
+            for f in build/$dir/*.json.gz; do st=$(basename "$f" .json.gz); cp "$f" "upload/$dir-$st.json.gz"; cp "build/$dir/$st.npz" "upload/$dir-$st.npz"; done
+          done
           gh release upload data-latest upload/* --clobber
       - name: Keep this schedule from expiring
         if: always()
