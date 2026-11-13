@@ -45,6 +45,14 @@ class LocalStore:
         (self.root / name).unlink(missing_ok=True)
 
 
+
+def _hint(code: int) -> str:
+    if code == 401:
+        return ". GitHub rejected the token: check github_token in the app's Secrets"
+    if code in (403, 404):
+        return ". The token cannot reach the workspace repo: check the repo name and the token's repository access"
+    return ""
+
 class GitHubStore:
     API = "https://api.github.com"
 
@@ -52,7 +60,7 @@ class GitHubStore:
         self.repo, self.branch = repo, branch
         self.session = requests.Session()
         self.session.headers.update({
-            "Authorization": f"Bearer {token}",
+            "Authorization": f"Bearer {token.strip()}",
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
         })
@@ -67,7 +75,7 @@ class GitHubStore:
             self._sha.pop(name, None)
             return default
         if not r.ok:
-            raise StoreError(f"Could not read {name} (HTTP {r.status_code})")
+            raise StoreError(f"Could not read {name} (HTTP {r.status_code})" + _hint(r.status_code))
         body = r.json()
         self._sha[name] = body["sha"]
         return json.loads(base64.b64decode(body["content"]).decode("utf-8"))
@@ -89,14 +97,14 @@ class GitHubStore:
                 self.read(name)
                 time.sleep(0.5)
                 continue
-            raise StoreError(f"Could not save {name} (HTTP {r.status_code})")
+            raise StoreError(f"Could not save {name} (HTTP {r.status_code})" + _hint(r.status_code))
 
     def list(self, folder: str) -> list[str]:
         r = self.session.get(self._url(folder), params={"ref": self.branch}, timeout=30)
         if r.status_code == 404:
             return []
         if not r.ok:
-            raise StoreError(f"Could not list {folder} (HTTP {r.status_code})")
+            raise StoreError(f"Could not list {folder} (HTTP {r.status_code})" + _hint(r.status_code))
         return sorted(item["name"] for item in r.json() if item["name"].endswith(".json"))
 
     def delete(self, name: str, message: str = "") -> None:
@@ -105,5 +113,5 @@ class GitHubStore:
         r = self.session.delete(self._url(name), json={"message": message or f"Delete {name}",
                                                        "sha": self._sha[name], "branch": self.branch}, timeout=30)
         if not r.ok:
-            raise StoreError(f"Could not delete {name} (HTTP {r.status_code})")
+            raise StoreError(f"Could not delete {name} (HTTP {r.status_code})" + _hint(r.status_code))
         self._sha.pop(name, None)

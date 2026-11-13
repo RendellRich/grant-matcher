@@ -183,10 +183,10 @@ if os.environ.get("GM_LOCAL_STORE"):  # development: a local folder stands in fo
     store, who = LocalStore(os.environ["GM_LOCAL_STORE"]), "local"
 elif AUTH_ON and st.user.is_logged_in:
     who = (st.user.get("email") or "").lower()
-    allowed = [e.lower() for e in WS_CONF.get("allowed_emails", [])]
+    allowed = [e.strip().lower() for e in WS_CONF.get("allowed_emails", [])]
     if who in allowed:
-        store = GitHubStore(WS_CONF["repo"], WS_CONF["github_token"])
-ANTHROPIC = (_secret("anthropic") or {}).get("api_key") if _secret("anthropic") else None
+        store = GitHubStore(WS_CONF["repo"].strip(), WS_CONF["github_token"])
+ANTHROPIC = (_secret("anthropic") or {}).get("api_key", "").strip() or None if _secret("anthropic") else None
 
 # ---------- profile ----------
 with st.sidebar:
