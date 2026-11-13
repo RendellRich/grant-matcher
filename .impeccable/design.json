@@ -1,0 +1,502 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-13T21:32:35+00:00",
+  "title": "Design System: Grant Matcher",
+  "extensions": {
+    "colorMeta": {
+      "evergreen": {
+        "role": "primary",
+        "displayName": "Evergreen",
+        "canonical": "#2f6f5e",
+        "tonalRamp": [
+          "#1c312b",
+          "#2e594d",
+          "#3e8371",
+          "#4bb095",
+          "#76bfac",
+          "#a1cfc3",
+          "#c9e1db",
+          "#eff5f4"
+        ]
+      },
+      "evergreen-night": {
+        "role": "primary",
+        "displayName": "Evergreen (dark mode)",
+        "canonical": "#6cc0a5",
+        "tonalRamp": [
+          "#1c312a",
+          "#2e594b",
+          "#3e836d",
+          "#4cb090",
+          "#77bfa8",
+          "#a1cfc0",
+          "#c9e1d9",
+          "#eff5f3"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#434343",
+          "#616161",
+          "#7e7e7e",
+          "#9b9b9b",
+          "#b8b8b8",
+          "#d5d5d5",
+          "#f2f2f2"
+        ]
+      },
+      "mist": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "#f4f6f5",
+        "tonalRamp": [
+          "#242926",
+          "#3e4943",
+          "#586961",
+          "#718a7e",
+          "#92a49b",
+          "#b2beb8",
+          "#d2d8d5",
+          "#f1f3f2"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1c2421",
+        "tonalRamp": [
+          "#232a27",
+          "#3d4a45",
+          "#566b63",
+          "#6e8d82",
+          "#90a69e",
+          "#b1bfba",
+          "#d1d9d6",
+          "#f1f3f2"
+        ]
+      },
+      "slate": {
+        "role": "neutral",
+        "displayName": "Slate",
+        "canonical": "#4b5753",
+        "tonalRamp": [
+          "#242827",
+          "#3f4745",
+          "#5a6763",
+          "#748781",
+          "#94a29d",
+          "#b4bcb9",
+          "#d3d7d6",
+          "#f2f3f2"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#d5ddd9",
+        "tonalRamp": [
+          "#232926",
+          "#3e4943",
+          "#576a61",
+          "#718b7e",
+          "#91a49b",
+          "#b2beb8",
+          "#d2d8d5",
+          "#f1f3f2"
+        ]
+      },
+      "caution-amber": {
+        "role": "status",
+        "displayName": "Caution amber",
+        "canonical": "#8a5a00",
+        "tonalRamp": [
+          "#402e0c",
+          "#78540e",
+          "#b77b0b",
+          "#fba401",
+          "#f5b640",
+          "#f1c97f",
+          "#f2deb8",
+          "#faf5eb"
+        ]
+      },
+      "strong-tint": {
+        "role": "status",
+        "displayName": "Strong tint",
+        "canonical": "#e2f1e9",
+        "tonalRamp": [
+          "#1d2f26",
+          "#315642",
+          "#437f5f",
+          "#52a97b",
+          "#7bba99",
+          "#a4ccb7",
+          "#cbdfd4",
+          "#f0f5f2"
+        ]
+      },
+      "strong-ink": {
+        "role": "status",
+        "displayName": "Strong ink",
+        "canonical": "#17543f",
+        "tonalRamp": [
+          "#17352b",
+          "#25624d",
+          "#309270",
+          "#36c594",
+          "#67ceab",
+          "#98d8c2",
+          "#c4e6da",
+          "#eef7f4"
+        ]
+      },
+      "long-tint": {
+        "role": "neutral",
+        "displayName": "Long tint",
+        "canonical": "#edf0ef",
+        "tonalRamp": [
+          "#242927",
+          "#3f4845",
+          "#596863",
+          "#728981",
+          "#93a39e",
+          "#b3bdba",
+          "#d2d8d6",
+          "#f2f3f2"
+        ]
+      },
+      "long-ink": {
+        "role": "neutral",
+        "displayName": "Long ink",
+        "canonical": "#3b4744",
+        "tonalRamp": [
+          "#242927",
+          "#3e4846",
+          "#596865",
+          "#728983",
+          "#92a39f",
+          "#b3bdbb",
+          "#d2d8d6",
+          "#f2f3f3"
+        ]
+      },
+      "night": {
+        "role": "neutral",
+        "displayName": "Night",
+        "canonical": "#121715",
+        "tonalRamp": [
+          "#232927",
+          "#3d4a45",
+          "#566b63",
+          "#6e8d81",
+          "#90a69d",
+          "#b1bfb9",
+          "#d2d9d6",
+          "#f1f3f2"
+        ]
+      },
+      "night-surface": {
+        "role": "neutral",
+        "displayName": "Night surface",
+        "canonical": "#1b2220",
+        "tonalRamp": [
+          "#232928",
+          "#3d4946",
+          "#576a65",
+          "#6f8c84",
+          "#90a59f",
+          "#b1bebb",
+          "#d2d8d7",
+          "#f1f3f3"
+        ]
+      },
+      "night-ink": {
+        "role": "neutral",
+        "displayName": "Night ink",
+        "canonical": "#e6ebe9",
+        "tonalRamp": [
+          "#232927",
+          "#3d4945",
+          "#576a62",
+          "#708c80",
+          "#91a59d",
+          "#b2beb9",
+          "#d2d8d6",
+          "#f1f3f2"
+        ]
+      },
+      "night-slate": {
+        "role": "neutral",
+        "displayName": "Night slate",
+        "canonical": "#a7b2ae",
+        "tonalRamp": [
+          "#252827",
+          "#404744",
+          "#5b6662",
+          "#758680",
+          "#95a19c",
+          "#b4bcb9",
+          "#d3d7d6",
+          "#f2f3f2"
+        ]
+      },
+      "night-rule": {
+        "role": "neutral",
+        "displayName": "Night rule",
+        "canonical": "#34403b",
+        "tonalRamp": [
+          "#242927",
+          "#3e4944",
+          "#586962",
+          "#718b80",
+          "#91a49c",
+          "#b2beb9",
+          "#d2d8d6",
+          "#f1f3f2"
+        ]
+      },
+      "caution-amber-night": {
+        "role": "status",
+        "displayName": "Caution amber (dark mode)",
+        "canonical": "#e0b45a",
+        "tonalRamp": [
+          "#382c14",
+          "#68501f",
+          "#9b7526",
+          "#d39b28",
+          "#d9b05d",
+          "#dfc591",
+          "#e9dcc1",
+          "#f7f4ed"
+        ]
+      },
+      "strong-tint-night": {
+        "role": "status",
+        "displayName": "Strong tint (dark mode)",
+        "canonical": "#173a2d",
+        "tonalRamp": [
+          "#1b3229",
+          "#2c5a49",
+          "#3b866a",
+          "#48b48c",
+          "#74c2a5",
+          "#9fd1be",
+          "#c8e2d8",
+          "#eff6f3"
+        ]
+      },
+      "strong-ink-night": {
+        "role": "status",
+        "displayName": "Strong ink (dark mode)",
+        "canonical": "#a9e3c6",
+        "tonalRamp": [
+          "#193426",
+          "#285e43",
+          "#358c61",
+          "#3ebd7e",
+          "#6dc99b",
+          "#9bd5b8",
+          "#c6e4d5",
+          "#eef6f2"
+        ]
+      },
+      "long-tint-night": {
+        "role": "neutral",
+        "displayName": "Long tint (dark mode)",
+        "canonical": "#252d2a",
+        "tonalRamp": [
+          "#242927",
+          "#3e4945",
+          "#586963",
+          "#718a81",
+          "#92a49d",
+          "#b2beb9",
+          "#d2d8d6",
+          "#f2f3f2"
+        ]
+      },
+      "long-ink-night": {
+        "role": "neutral",
+        "displayName": "Long ink (dark mode)",
+        "canonical": "#c6cfcb",
+        "tonalRamp": [
+          "#242826",
+          "#3f4844",
+          "#596861",
+          "#73887f",
+          "#93a39c",
+          "#b3bdb9",
+          "#d3d8d5",
+          "#f2f3f2"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The page title only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Tab tallies and section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Result card titles, which are also links."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "The intro and the overview line."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reasons, details values and checklist text."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Meta lines, notices, captions and the score."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "container",
+        "value": "1080px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Every action: plain, bordered, at least 44px tall, labelled with a verb.",
+      "html": "<button class=\"ds-btn\">Save to pipeline</button>",
+      "css": ".ds-btn { font: 400 1rem/1.5 'Source Sans', sans-serif; color: #1c2421; background: #ffffff; border: 1px solid #d5ddd9; border-radius: 8px; min-height: 44px; padding: 0 14px; cursor: pointer; transition: border-color .15s, color .15s; } .ds-btn:hover { border-color: #2f6f5e; color: #2f6f5e; } .ds-btn:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; } .ds-btn:active { background: #f4f6f5; }"
+    },
+    {
+      "name": "Text input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Profile fields: paper, 1px rule, slate example placeholder, evergreen focus outline.",
+      "html": "<label class=\"ds-field\"><span>Cities or counties (optional)</span><input class=\"ds-input\" placeholder=\"For example: Tampa, Hillsborough\"></label>",
+      "css": ".ds-field { display: grid; gap: 6px; font: 400 .875rem/1.4 'Source Sans', sans-serif; color: #1c2421; } .ds-input { font: 400 1rem 'Source Sans', sans-serif; min-height: 44px; padding: 0 12px; border: 1px solid #d5ddd9; border-radius: 8px; background: #ffffff; color: #1c2421; } .ds-input::placeholder { color: #4b5753; opacity: 1; } .ds-input:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 1px; border-color: #2f6f5e; }"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "tab-selected",
+      "description": "Source tabs, ordered by strong matches; the selected one is evergreen with a 2px underline.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">Florida programs</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Foundations</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Federal grants</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Before you apply</button></div>",
+      "css": ".ds-tabs { display: flex; flex-wrap: wrap; gap: 0 24px; border-bottom: 1px solid #d5ddd9; } .ds-tab { font: 500 .875rem 'Source Sans', sans-serif; min-height: 44px; padding: 0 2px; border: 0; background: none; color: #1c2421; cursor: pointer; } .ds-tab[aria-selected=true] { color: #2f6f5e; box-shadow: inset 0 -2px 0 #2f6f5e; } .ds-tab:hover { color: #2f6f5e; } .ds-tab:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; }"
+    },
+    {
+      "name": "Tier badges",
+      "kind": "chip",
+      "refersTo": "badge-strong",
+      "description": "Strong is filled, Possible is outlined in evergreen, Long shot is neutral. Never amber.",
+      "html": "<span class=\"ds-badge ds-strong\">Strong match</span> <span class=\"ds-badge ds-possible\">Possible match</span> <span class=\"ds-badge ds-long\">Long shot</span>",
+      "css": ".ds-badge { display: inline-block; font: 600 .8125rem/1.5 'Source Sans', sans-serif; padding: 2px 10px; border-radius: 999px; } .ds-strong { background: #e2f1e9; color: #17543f; } .ds-possible { color: #2f6f5e; box-shadow: inset 0 0 0 1px #2f6f5e; } .ds-long { background: #edf0ef; color: #3b4744; }"
+    },
+    {
+      "name": "Result card",
+      "kind": "card",
+      "refersTo": "result-card",
+      "description": "The signature component: badge row, title link, dot-separated meta line, and fits, cautions and status with drawn icons.",
+      "html": "<article class=\"ds-card\"><p class=\"ds-head\"><span class=\"ds-badge ds-strong\">Strong match</span><span class=\"ds-score\">Score 87 of 100</span></p><h3 class=\"ds-title\"><a href=\"#\">White Family Foundation</a></h3><p class=\"ds-meta\">Private foundation<span aria-hidden=\"true\"> · </span>Tarpon Springs, FL<span aria-hidden=\"true\"> · </span>typical $10k</p><ul class=\"ds-why\"><li class=\"ds-fit\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>Past grants mention literacy, children</li><li class=\"ds-warn\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3.5 2.5 20h19z\"/><path d=\"M12 10v4.5M12 17.5v.01\"/></svg>Says it does not take unsolicited requests</li><li class=\"ds-status\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"8.5\"/><path d=\"M12 7.5V12l3 2\"/></svg>Forecast, not open yet</li></ul></article>",
+      "css": ".ds-card { font-family: 'Source Sans', sans-serif; color: #1c2421; background: #ffffff; border: 1px solid #d5ddd9; border-radius: 8px; padding: 18px 20px 14px; } .ds-head { display: flex; gap: 12px; align-items: center; margin: 0; } .ds-score { font-size: .875rem; color: #4b5753; } .ds-badge { font: 600 .8125rem/1.5 'Source Sans', sans-serif; padding: 2px 10px; border-radius: 999px; } .ds-strong { background: #e2f1e9; color: #17543f; } .ds-title { font-size: 1.25rem; font-weight: 600; line-height: 1.35; margin: 0; } .ds-title a { display: block; padding: 8px 0; color: inherit; text-underline-offset: 3px; } .ds-title a:hover { color: #2f6f5e; text-decoration-thickness: 2px; } .ds-title a:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; } .ds-meta { font-size: .875rem; color: #4b5753; margin: 0 0 8px; } .ds-why { list-style: none; padding: 0; margin: 0; } .ds-why li { display: flex; gap: 8px; line-height: 1.45; margin: 0 0 5px; } .ds-why svg { flex: none; width: 16px; height: 16px; margin-top: 3px; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; } .ds-fit svg { stroke: #2f6f5e; } .ds-warn svg { stroke: #8a5a00; } .ds-status { color: #4b5753; } .ds-status svg { stroke: #4b5753; }"
+    },
+    {
+      "name": "Details list",
+      "kind": "custom",
+      "refersTo": "result-card",
+      "description": "Application details as label and value pairs; empty values dropped; phones, emails and sites as links.",
+      "html": "<dl class=\"ds-details\"><dt>Contact</dt><dd>Amy Stanton</dd><dt>Phone</dt><dd><a href=\"tel:+17275550123\">727-555-0123</a></dd><dt>What to send</dt><dd>By letter describing the purpose and needs of the organization.</dd></dl>",
+      "css": ".ds-details { display: grid; grid-template-columns: minmax(7rem, max-content) 1fr; gap: 6px 16px; margin: 0; font: 400 .9375rem/1.5 'Source Sans', sans-serif; color: #1c2421; } .ds-details dt { color: #4b5753; font-weight: 500; } .ds-details dd { margin: 0; } .ds-details a { color: inherit; text-underline-offset: 3px; } .ds-details a:hover { color: #2f6f5e; } .ds-details a:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; }"
+    },
+    {
+      "name": "Note",
+      "kind": "custom",
+      "refersTo": "note",
+      "description": "Short notices on the mist surface: the example-profile note and the blank-start steps.",
+      "html": "<p class=\"ds-note\">Showing the example <i>Youth literacy and learning support</i>. Edit <b>Your organization</b> to see your own matches.</p>",
+      "css": ".ds-note { font: 400 .9375rem/1.5 'Source Sans', sans-serif; color: #1c2421; background: #f4f6f5; border-radius: 8px; padding: 10px 14px; max-width: 72ch; margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Honest Ledger",
+    "overview": "Grant Matcher shows its working. Every result carries its reasons and its cautions side by side, a plain score, and the source it came from, the way a careful bookkeeper writes notes next to each line. The visitor is a small-nonprofit staffer, often without grant-writing experience. They should finish a visit knowing which funders to approach first and why, without being sold anything.\n\nThe surface is a task tool, so the look is quiet and dense in information rather than in decoration. Flat paper and mist surfaces, thin rules, one evergreen accent, and the stock Source Sans face. Expression lives in precise details: the drawn check, caution and clock icons; the dot-separated meta line; the outlined \"Possible match\" badge; a focus ring that always shows. Light and dark follow the visitor's system setting and are tuned separately, never inverted.\n\nThe page leads with the answer. An overview line counts strong matches across all sources, tabs are ordered by where those matches are, and each tab opens with its own tally before any filters.",
+    "keyCharacteristics": [
+      "Plain and sturdy: flat surfaces, 1px rules, 44px targets, nothing decorative.",
+      "One accent, used for action and fit; amber only for cautions.",
+      "Every claim on a card is a sentence a person can check.",
+      "The same order on every tab: tally, source, one expander for filters and scoring, then cards.",
+      "Raw source data is tidied for reading, never rewritten."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Evergreen is the only hue that signals fit or action. If a second colour starts carrying meaning, it is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Amber Means Caution Rule",
+        "body": "Amber appears only next to a reason to hesitate. A badge, chip or button is never amber.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink Link Rule",
+        "body": "Links are ink with an underline and turn evergreen on hover. A blue link is a bug.",
+        "section": "colors"
+      },
+      {
+        "name": "The Step Rule",
+        "body": "Adjacent roles differ by at least 1.25 in size: 16, 20, 25px. A 17px heading over 16px body is a missing step.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Shouting Rule",
+        "body": "All-caps text from tax returns is converted for display (title case for names, cities and addresses; sentence case for missions and instructions). The interface itself never uses all caps.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Ledger Rule",
+        "body": "If something needs to stand out, give it a rule, a tint or a heavier weight. Never a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do lead every screen with the answer: the overview line, then the tally.",
+      "Do put reasons and cautions on the card itself, with drawn icons and screen-reader prefixes.",
+      "Do keep every target at least 44px, every focus ring visible (2px evergreen), and every text pair at AA in both themes.",
+      "Do escape every value that comes from an API or a tax return before it reaches HTML.",
+      "Do tidy raw data for display (casing, empty placeholders, links) without changing what it says.",
+      "Do write in sentence case, with buttons that start with a verb and no em dashes."
+    ],
+    "donts": [
+      "Don't add a second accent colour or a blue link.",
+      "Don't use amber anywhere except cautions.",
+      "Don't use shadows, gradients or decorative imagery.",
+      "Don't nest a bordered box inside a card.",
+      "Don't change the wording or placement of the Grants.gov notice: \"This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.\"",
+      "Don't show more than 40 results at once without saying how many there are."
+    ]
+  }
+}
