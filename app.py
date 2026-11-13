@@ -259,9 +259,9 @@ with tab_fdn:
         tally(f_res, "foundations")
         with st.expander("How the score works"):
             st.markdown(
-                "- Up to 55 points for how closely the foundation's past grant purposes match your mission\n"
+                "- Up to 60 points for how closely the foundation's past grant purposes match your mission\n"
                 "- Up to 15 points for your key words in its past grants\n"
-                f"- Up to 25 points for how much it gives in {state}, plus 5 if it funded groups in your cities\n"
+                f"- Up to 20 points for how much it gives in {state}, plus up to 10 if it funded groups in your cities\n"
                 "- Points off when its typical grant is large for your budget, when it says it doesn't take "
                 "unsolicited requests, or when it mostly gives scholarships\n"
                 "- Data comes from the foundation's own tax return, usually one to two years old")

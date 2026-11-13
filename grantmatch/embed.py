@@ -59,15 +59,16 @@ def main() -> None:
 
     kind, src, out = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3])
     payload = json.load(gzip.open(src, "rt", encoding="utf-8"))
+    limit = 2000
     if kind == "federal":
         records, key, doc = payload["opportunities"], "id", doc_text
     elif kind == "florida":
         records, key, doc = payload["programs"], "id", florida_doc
     elif kind == "foundations":
-        records, key, doc = payload["foundations"], "ein", foundation_doc
+        records, key, doc, limit = payload["foundations"], "ein", foundation_doc, 1000
     else:
         raise SystemExit(f"unknown kind {kind}")
-    vecs = embed_texts([doc(r)[:2000] for r in records])
+    vecs = embed_texts([doc(r)[:limit] for r in records])
     save([r[key] for r in records], vecs, out)
     print(f"wrote {len(records)} embeddings to {out}")
 

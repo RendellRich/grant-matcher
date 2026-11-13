@@ -63,7 +63,7 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
         reasons, cautions = [], []
         matched = _keyword_hits(p.keywords, r["purpose_text"])
         coverage = min(1.0, sum(weights.get(m, 0.15) for m in matched) / best3)
-        points = 55 * fit.loc[i] + 15 * coverage
+        points = 60 * fit.loc[i] + 15 * coverage
         if matched:
             reasons.append("Past grants mention " + ", ".join(matched[:5]))
 
@@ -71,22 +71,26 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
         in_state = r["recipient_states"].get(state, 0)
         share = in_state / n if n else 0
         if share >= 0.5:
-            points += 25
+            points += 20
             reasons.append(f"{in_state} of its {n} grants went to {state} organizations")
         elif share >= 0.2:
-            points += 15
+            points += 12
             reasons.append(f"{in_state} of its {n} grants went to {state} organizations")
         elif in_state:
-            points += 6
+            points -= 15 if share < 0.1 and r["state"] != state else 5
             cautions.append(f"Only {in_state} of its {n} grants went to {state}")
         elif r["state"] == state:
-            points += 8
+            points += 6
             reasons.append(f"Based in {r['city'].title()}, {state}")
         else:
+            points -= 20
             cautions.append(f"No grants to {state} in its latest return")
+        if n < 3:
+            points -= 10
+            cautions.append(f"Made only {n} grant{'s' if n != 1 else ''} last year, so its interests are hard to read")
         local = [g for g in r["sample_grants"] if g["city"].lower() in city_set and g["state"] == state]
         if local:
-            points += 5
+            points += 10 if len(local) >= 3 else 5
             names = sorted({g["city"].title() for g in local})
             reasons.append(f"Funded {len(local)} group{'s' if len(local) > 1 else ''} in {', '.join(names)}")
 

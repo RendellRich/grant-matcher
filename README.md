@@ -47,10 +47,12 @@ Scores of 60 and up are labeled Strong, 35 to 59 Possible, and below 35 Long sho
 
 | Part | Effect |
 |---|---|
-| Past grant purposes match your mission | Up to 55 points |
+| Past grant purposes match your mission | Up to 60 points |
 | Your key words in its past grants | Up to 15 points |
-| Share of its grants that went to your state | Up to 25 points |
-| Funded groups in the cities you list | plus 5 |
+| Share of its grants that went to your state | Up to 20 points |
+| Funded groups in the cities you list | plus 5, or plus 10 for three or more |
+| Gives mostly outside your state (under 10% of grants) or not at all | minus 15 to 20 |
+| Fewer than three grants last year | minus 10 |
 | Typical grant larger than your annual budget | minus 10 |
 | Says it does not accept unsolicited requests | minus 30 |
 | Mostly scholarships for individuals | minus 15 |
