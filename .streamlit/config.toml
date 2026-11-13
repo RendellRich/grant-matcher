@@ -1,9 +1,47 @@
+# Light and dark follow the visitor's system setting. One accent (green);
+# yellow and red stay for cautions and errors; "blue" info boxes are neutral.
 [theme]
-base = "light"
+baseFontSize = 16
+headingFontSizes = ["2rem", "1.375rem", "1.125rem", "1rem", "1rem", "1rem"]
+headingFontWeights = [650, 600, 600, 600, 600, 600]
+baseRadius = "0.5rem"
+buttonRadius = "0.5rem"
+linkUnderline = true
+showSidebarBorder = true
+
+[theme.light]
 primaryColor = "#2f6f5e"
 backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f3f6f4"
-textColor = "#1f2933"
+secondaryBackgroundColor = "#f4f6f5"
+textColor = "#1c2421"
+linkColor = "#1c2421"
+borderColor = "#d5ddd9"
+blueColor = "#4b5753"
+blueBackgroundColor = "#f4f6f5"
+blueTextColor = "#1c2421"
+greenColor = "#2f6f5e"
+yellowColor = "#8a5a00"
+
+[theme.light.sidebar]
+backgroundColor = "#f4f6f5"
+secondaryBackgroundColor = "#ffffff"
+
+[theme.dark]
+primaryColor = "#6cc0a5"
+backgroundColor = "#121715"
+secondaryBackgroundColor = "#1b2220"
+textColor = "#e6ebe9"
+linkColor = "#e6ebe9"
+borderColor = "#34403b"
+blueColor = "#a7b2ae"
+blueBackgroundColor = "#1b2220"
+blueTextColor = "#e6ebe9"
+greenColor = "#6cc0a5"
+yellowColor = "#e0b45a"
+
+[theme.dark.sidebar]
+backgroundColor = "#1b2220"
+secondaryBackgroundColor = "#121715"
 
 [browser]
 gatherUsageStats = false
