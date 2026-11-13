@@ -81,7 +81,7 @@ def _pipeline(store, who: str) -> None:
     df["deadline"] = pd.to_datetime(df["deadline"], errors="coerce").dt.date
     edited = st.data_editor(
         df[["id", "name", "funder", "status", "deadline", "next_step", "notes", "amount", "url"]],
-        hide_index=True, use_container_width=True, key="pipeline_editor",
+        hide_index=True, width="stretch", key="pipeline_editor",
         column_config={
             "id": None,
             "name": st.column_config.TextColumn("Opportunity", disabled=True),
