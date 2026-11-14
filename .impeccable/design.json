@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-14T01:06:40+00:00",
+  "generatedAt": "2026-11-14T02:13:31+00:00",
   "title": "Design System: Grant Matcher",
   "extensions": {
     "colorMeta": {
@@ -32,6 +32,21 @@
           "#a1cfc0",
           "#c9e1d9",
           "#eff5f3"
+        ]
+      },
+      "on-evergreen-night": {
+        "role": "neutral",
+        "displayName": "Text on evergreen (dark mode)",
+        "canonical": "#121715",
+        "tonalRamp": [
+          "#232927",
+          "#3d4a45",
+          "#566b63",
+          "#6e8d81",
+          "#90a69d",
+          "#b1bfb9",
+          "#d2d9d6",
+          "#f1f3f2"
         ]
       },
       "paper": {
@@ -493,6 +508,11 @@
       "Raw source data is tidied for reading, never rewritten."
     ],
     "rules": [
+      {
+        "name": "The Ten Possible Rule",
+        "body": "Possible matches (35 to 59) are a long tail. Show ten after the strong ones and let the visitor ask for more; never open with hundreds.",
+        "section": "colors"
+      },
       {
         "name": "The One Voice Rule",
         "body": "Evergreen is the only hue that signals fit or action. If a second colour starts carrying meaning, it is wrong.",

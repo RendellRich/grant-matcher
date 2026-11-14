@@ -54,10 +54,10 @@ st.set_page_config(page_title="Grant Matcher for small nonprofits", page_icon=":
 # Colour tokens for the few things the theme in .streamlit/config.toml can't reach (badges, meta text, icons).
 # Every text pair here passes WCAG AA on its own background; the theme follows the visitor's light or dark setting.
 TOKENS = {
-    "light": {"muted": "#4b5753", "border": "#d5ddd9", "control": "#7d8984", "accent": "#2f6f5e", "caution": "#8a5a00",
+    "light": {"on-accent": "#ffffff", "muted": "#4b5753", "border": "#d5ddd9", "control": "#7d8984", "accent": "#2f6f5e", "caution": "#8a5a00",
               "strong-bg": "#e2f1e9", "strong-fg": "#17543f", "possible-bg": "transparent", "possible-fg": "#2f6f5e", "surface": "#f4f6f5",
               "long-bg": "#edf0ef", "long-fg": "#3b4744"},
-    "dark": {"muted": "#a7b2ae", "border": "#34403b", "control": "#6a7a75", "accent": "#6cc0a5", "caution": "#e0b45a",
+    "dark": {"on-accent": "#121715", "muted": "#a7b2ae", "border": "#34403b", "control": "#6a7a75", "accent": "#6cc0a5", "caution": "#e0b45a",
              "strong-bg": "#173a2d", "strong-fg": "#a9e3c6", "possible-bg": "transparent", "possible-fg": "#6cc0a5", "surface": "#1b2220",
              "long-bg": "#252d2a", "long-fg": "#c6cfcb"},
 }
@@ -102,7 +102,8 @@ st.markdown(
     .stApp p.gm-guard {{display: flex; gap: .5rem; margin: 0 0 .5rem; font-size: .875rem !important; line-height: 1.45;}}
     .gm-guard::before {{content: ""; flex: none; width: 1rem; height: 1rem; margin-top: .15rem; background: var(--gm-caution);
                         -webkit-mask: {_ALERT} center / contain no-repeat; mask: {_ALERT} center / contain no-repeat;}}
-    [data-testid="InputInstructions"] {{display: none;}}  /* "Press Ctrl+Enter": the Update matches button says it */
+    [data-testid="InputInstructions"] {{display: none;}}
+    .stApp button[kind="primary"], .stApp button[kind="primary"] p {{color: var(--gm-on-accent) !important;}}  /* "Press Ctrl+Enter": the Update matches button says it */
     .stApp :is(p.gm-lead, p.gm-notice, p.gm-overview, .gm-note, [data-testid="stCaptionContainer"] p) {{text-wrap: pretty;}}
     .stApp p.gm-overview {{font-size: 1.0625rem !important; line-height: 1.5; max-width: 72ch; margin: .25rem 0 .75rem;}}
     .gm-quiet {{color: var(--gm-muted);}}
@@ -183,6 +184,14 @@ st.markdown(
     ul.gm-grants .place {{white-space: nowrap;}}
     .stApp p.gm-jump-status {{margin: 0; font-size: .875rem !important; color: var(--gm-muted); max-width: 72ch;}}
     .stApp p.gm-jump {{margin: 0; font-size: .875rem !important;}}
+    .stApp p.gm-form-status {{margin: .25rem 0 0; font-size: .875rem !important; font-weight: 600;}}
+    .gm-skip {{margin: 0;}}
+    .gm-skip a {{position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);}}
+    .gm-skip a:focus {{position: static; width: auto; height: auto; clip: auto; display: inline-block; padding: .625rem 0;
+                       min-height: 44px; box-sizing: border-box;}}
+    .stApp :is([role="tab"] p, .stButton p, .stDownloadButton p, [data-testid="stExpander"] summary p)
+        {{font-size: 1rem !important;}}
+    .stApp :is(.gm-footer p, p.gm-jump-status) {{text-wrap: pretty;}}
     .gm-jump a {{display: inline-block; padding: .625rem 0; min-height: 44px; box-sizing: border-box; text-underline-offset: 3px;}}
 
     /* control edges at 3:1 against the page and the sidebar (WCAG 1.4.11); dividers keep the lighter rule */
@@ -211,7 +220,7 @@ st.markdown(
         {{outline: 2px solid var(--gm-accent) !important; outline-offset: 2px; box-shadow: none !important;}}
     .stApp :is([data-testid="stTextInputRootElement"], [data-testid="stTextAreaRootElement"],
                [data-testid="stSelectbox"] [role="group"], [data-testid="stMultiSelect"] [role="group"]):focus-within
-        {{outline: 2px solid var(--gm-accent); outline-offset: 1px;}}
+        {{outline: 2px solid var(--gm-accent); outline-offset: -2px;}}  /* inside, so the sidebar can't clip it */
 
     /* footer */
     .gm-footer {{margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--gm-border);
@@ -360,6 +369,15 @@ def email_html(value) -> str:
     return f"<a href='mailto:{html.escape(addr, quote=True)}'>{_esc(addr)}</a>"
 
 
+def site_url(value) -> str:
+    """The organization's own site as an https link, or '' when the return lists none."""
+    site = _present(value)
+    if not site or " " in site.strip() or "." not in site:
+        return ""
+    site = site.lower() if _shouting(site) else site
+    return site if site.lower().startswith(("http://", "https://")) else "https://" + site
+
+
 def website_html(value) -> str:
     site = _present(value)
     if not site:
@@ -379,19 +397,26 @@ def details_html(rows: list[tuple[str, str]]) -> str:
 def tally(results: pd.DataFrame, noun: str) -> tuple[int, int]:
     counts = results["tier"].value_counts() if not results.empty else {}
     s, p_, l = (int(counts.get(t, 0)) for t in ("Strong", "Possible", "Long shot"))
-    st.markdown(f"<h2 class='gm-tally'><b>{s}</b> strong, <b>{p_}</b> possible, <b>{l:,}</b> long-shot {noun}</h2>",
+    st.markdown(f"<h2 class='gm-tally'><b>{s}</b> strong, <b>{p_}</b> possible {noun}</h2>",  # long shots: own section
                 unsafe_allow_html=True)
     return s, p_
 
 
-def result_list(results: pd.DataFrame, card, noun: str, key: str, after_matches=None) -> None:
-    """Strong and possible matches first, then long shots in their own section behind a toggle."""
+def result_list(results: pd.DataFrame, card, noun: str, key: str, after_matches=None, sorts=None) -> None:
+    """Strong and possible matches first, then long shots in their own section behind a toggle.
+
+    sorts maps a label to (column, ascending); the first label keeps the ranking order."""
     good = results[results["tier"] != "Long shot"] if not results.empty else results
     longs = results[results["tier"] == "Long shot"] if not results.empty else results
     if good.empty:
         st.info(f"No strong or possible {noun} for this profile yet. Try more specific key words in your profile, "
                 "or look through the long shots below.", icon=":material/search:")
     else:
+        if sorts:
+            choice = st.selectbox("Sort by", list(sorts), key=f"{key}_sort", width=300)
+            if sorts[choice]:
+                col, ascending = sorts[choice]
+                good = good.sort_values(col, ascending=ascending, na_position="last", kind="stable")
         matches(good, card, noun, key, after_matches is not None)
     if after_matches is not None:
         after_matches()
@@ -403,32 +428,43 @@ def result_list(results: pd.DataFrame, card, noun: str, key: str, after_matches=
 
 
 PAGE = 40
+FIRST_POSSIBLE = 10  # possible matches shown before "Show more", so the strong ones are not buried
 
 
 @st.fragment
 def matches(good: pd.DataFrame, card, noun: str, key: str, has_download: bool) -> None:
-    """Strong and possible matches, 40 at a time. Its own fragment, so "Show more" reruns only this list."""
-    shown_key = f"{key}_shown"
-    shown = min(st.session_state.get(shown_key, PAGE), len(good))
+    """Every strong match (up to 40) and the first 10 possible ones, then 40 more at a time.
+
+    Its own fragment, so "Show more" reruns only this list."""
+    shown_key, batch_key = f"{key}_shown", f"{key}_batch"
+    n_strong = int((good["tier"] == "Strong").sum())
+    first = min(n_strong, PAGE) + FIRST_POSSIBLE
+    shown = min(st.session_state.get(shown_key, first), len(good))
+    # Keyboard users can step over the whole list in one move.
+    st.markdown(f"<p class='gm-skip'><a href='#gm-{key}-end'>Skip past these {noun}</a></p>", unsafe_allow_html=True)
     for i, (_, r) in enumerate(good.head(shown).iterrows(), start=1):
         r = r.copy()
         r["_anchor"] = f"gm-{key}-{i}"
         card(r)
-    batch = shown - PAGE + 1 if shown > PAGE else 0  # first card of the batch "Show more" just added
-    if shown < len(good) or batch:
-        # A live region, so a screen reader hears the new count; the link takes keyboard users to the new cards.
+    batch = st.session_state.get(batch_key, 0) if shown > first else 0  # first card "Show more" just added
+    # A live region, so a screen reader hears the new count; the link takes keyboard users to the new cards.
+    if shown < len(good):
         status = f"Showing the top {shown:,} of {len(good):,} strong and possible {noun}."
-        if shown < len(good) and has_download:
+        if has_download:
             status += " The download below has all of them."
-        st.markdown(f"<p class='gm-jump-status' role='status'>{status}</p>", unsafe_allow_html=True)
-        if batch:
-            st.markdown(f"<p class='gm-jump'><a href='#gm-{key}-{batch}'>Go to result {batch}</a></p>",
-                        unsafe_allow_html=True)
+    else:
+        status = f"Showing all {len(good):,} strong and possible {noun}."
+    st.markdown(f"<p class='gm-jump-status' id='gm-{key}-end' tabindex='-1' role='status'>{status}</p>",
+                unsafe_allow_html=True)
+    if batch:
+        st.markdown(f"<p class='gm-jump'><a href='#gm-{key}-{batch}'>Go to result {batch}</a></p>",
+                    unsafe_allow_html=True)
     if shown < len(good):
         more = min(PAGE, len(good) - shown)
 
         def show_more():
             st.session_state[shown_key] = shown + more
+            st.session_state[batch_key] = shown + 1
 
         st.button(f"Show {more} more", key=f"{key}_more", on_click=show_more)
 
@@ -586,6 +622,9 @@ def group(title: str) -> None:
     st.markdown(f"<h3 class='gm-group'>{title}</h3>", unsafe_allow_html=True)
 
 
+FORM_STATUS: dict = {}
+
+
 def profile_form(w: str) -> None:
     """One copy of the profile form. w is "side" or "main"."""
     def key(field: str) -> str:
@@ -601,7 +640,7 @@ def profile_form(w: str) -> None:
         new = ss["_preset_pending"]
         ask = ("Clear your mission, key words and cities to start blank?" if new == "Start blank" else
                f"Replace your mission, key words and cities with the <i>{_esc(new)}</i> example?")
-        st.markdown(f"<p class='gm-guard' role='alert'>{ask}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p class='gm-guard' role='alert'><span>{ask}</span></p>", unsafe_allow_html=True)
         st.button("Keep my text", key=key("keep"), on_click=_keep_text, width="stretch")
         st.button("Clear my text" if new == "Start blank" else "Replace my text", key=key("replace"),
                   on_click=_replace_text, width="stretch")
@@ -619,6 +658,7 @@ def profile_form(w: str) -> None:
                       "Rare, specific words count more than common ones.", **changed("keywords"))
     st.button("Update matches", key=key("update"), type="primary", width="stretch",
               on_click=lambda: ss.update(_asked=True))
+    FORM_STATUS[w] = st.empty()  # "Updated: 31 strong matches" right where the button was pressed
     group("Where you work")
     st.selectbox("State you serve", STATES, **changed("state"))
     st.text_input("Cities or counties (optional)", placeholder="For example: Tampa, Hillsborough",
@@ -712,10 +752,12 @@ elif example:
 
 with st.container(key="gm-phone-profile"):  # phones only; wider screens use the sidebar copy
     with st.expander("Edit your organization", expanded=blank):
+        st.markdown("<h2 class='sr-only'>Your organization</h2>", unsafe_allow_html=True)
         profile_form("main")
 
 if blank:
-    checklist()
+    with st.expander("Getting ready to apply"):
+        checklist()
     footer()
     st.stop()
 
@@ -776,7 +818,8 @@ def _n(count: int, noun: str) -> str:
 
 
 total = sum(strong.values())
-parts = [_n(strong[k], SOURCES[k][1]) for k in order]
+parts = [_n(strong[k], SOURCES[k][1]) if strong[k] or not possible[k]
+         else f"no strong {SOURCES[k][1]} ({possible[k]:,} possible)" for k in order]
 listing = ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1]
 if total:
     overview = f"<b>{_n(total, 'strong matches')}</b> for this profile: {listing}."
@@ -787,12 +830,19 @@ else:
 # Say when the matches changed, so an edit never updates the page silently. The paragraph is a live region,
 # so screen readers read the new line out.
 sig = json.dumps(profile_dict, sort_keys=True, default=str)
-updated_now = ss.get("_last_sig") not in (None, sig) or ss.pop("_asked", False)
+updated_now = ss.get("_last_sig") not in (None, sig)
+asked = ss.pop("_asked", False)
 ss["_last_sig"] = sig
 lead_in = "<b class='gm-updated'>Updated.</b> " if updated_now else ""
-st.markdown(f"<p class='gm-overview' role='status'>{lead_in}{overview} <span class='gm-quiet gm-wide'>A strong match "
-            "scores 60 or more out of 100. Tabs with the most strong matches come first.</span></p>",
-            unsafe_allow_html=True)
+st.markdown(f"<p class='gm-overview' role='status'>{lead_in}{overview}<span class='gm-wide'> A strong match scores "
+            "60 or more out of 100.</span> <span class='gm-quiet gm-wide'>Tabs with the most strong matches come "
+            "first.</span></p>", unsafe_allow_html=True)
+# The overview is the live region screen readers hear; this visible line sits under the button that was pressed.
+form_note = (f"Updated: {_n(total, 'strong matches')}." if updated_now
+             else "No changes to your profile." if asked else "")
+for slot in FORM_STATUS.values():
+    if form_note:
+        slot.markdown(f"<p class='gm-form-status'>{form_note}</p>", unsafe_allow_html=True)
 
 tab_keys = order + ["ready"] + (["workspace"] if store else [])
 labels = {**{k: v[0] for k, v in SOURCES.items()}, "ready": "Before you apply", "workspace": "Workspace"}
@@ -850,7 +900,8 @@ with TAB["fed"]:
             d2.download_button("Add deadlines to your calendar (.ics)", to_ics(picks), "grant-deadlines.ics",
                                "text/calendar", width="stretch")
 
-        result_list(results, fed_card, "grants", "fed_long", after_matches=fed_downloads)
+        result_list(results, fed_card, "grants", "fed_long", after_matches=fed_downloads,
+                    sorts={"Best fit": None, "Closing soonest": ("close", True), "Largest award": ("award_ceiling", False)})
 
 # ---------- foundations ----------
 with TAB["fdn"]:
@@ -878,7 +929,7 @@ with TAB["fdn"]:
         def fdn_card(r):
             apply = r.get("apply") if isinstance(r.get("apply"), dict) else {}
             with st.container(border=True, key=f"card_fdn_{r['ein']}"):
-                st.markdown(card_head(r, tidy_name(r["name"]), r["url"], [
+                st.markdown(card_head(r, tidy_name(r["name"]), site_url(r.get("website")) or r["url"], [
                     r["kind"], f"{tidy_name(r['city'], 'city')}, {r['state']}",
                     f"{r['grant_count']} grants, {_money(r['grants_total'])} total",
                     f"typical {_money(r['grant_median'])}", f"tax year {r['tax_year']}"]) + why(r),
@@ -894,7 +945,9 @@ with TAB["fdn"]:
                             ("What to send", _esc(tidy_text(apply.get("materials")))),
                             ("Deadlines", _esc(tidy_text(apply.get("deadlines")))),
                             ("Restrictions", _esc(tidy_text(apply.get("restrictions")))),
-                            ("Website", website_html(r.get("website")))]
+                            ("Website", website_html(r.get("website"))),
+                            ("Tax filings", f"<a href='{_href(r['url'])}' target='_blank' rel='noopener'>"
+                                            "ProPublica Nonprofit Explorer</a>" if r.get("url") else "")]
                     body = details_html(rows)
                     if not any(_present(apply.get(k)) for k in ("contact", "materials", "deadlines")):
                         body = "<p class='gm-quiet'>No application details listed on the return.</p>" + body
@@ -932,7 +985,9 @@ with TAB["fdn"]:
                 st.download_button("Download foundation matches (CSV)", export.to_csv(index=False),
                                    "foundation-matches.csv", "text/csv")
 
-        result_list(f_res, fdn_card, "foundations", "fdn_long", after_matches=fdn_downloads)
+        result_list(f_res, fdn_card, "foundations", "fdn_long", after_matches=fdn_downloads,
+                    sorts={"Best fit": None, f"Most grants in {state}": ("in_state", False),
+                           "Largest typical grant": ("grant_median", False)})
 
 # ---------- Florida ----------
 if "fl" in TAB:
@@ -969,7 +1024,17 @@ if "fl" in TAB:
                         rows.append(("Agency site", website_html(r["web"])))
                         st.markdown(details_html(rows), unsafe_allow_html=True)
 
-            result_list(fl_res, fl_card, "programs", "fl_long")
+            def fl_downloads():
+                picks = fl_res[fl_res["tier"] != "Long shot"]
+                if picks.empty:
+                    return
+                cols = [c for c in ("score", "tier", "title", "agency", "csfa", "assistance", "web", "url") if c in picks]
+                export = picks.assign(reasons=picks["reasons"].apply("; ".join),
+                                      cautions=picks["cautions"].apply("; ".join))[cols + ["reasons", "cautions"]]
+                st.download_button("Download Florida matches (CSV)", export.to_csv(index=False),
+                                   "florida-matches.csv", "text/csv")
+
+            result_list(fl_res, fl_card, "programs", "fl_long", after_matches=fl_downloads)
 
 # ---------- workspace ----------
 if store is not None:
