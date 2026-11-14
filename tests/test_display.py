@@ -116,3 +116,24 @@ def test_assistance_label(raw, want):
 def test_format_address(raw, city, want):
     from grantmatch.display import format_address
     assert format_address(raw, city) == want
+
+
+def test_bracket_caps_restores_acronyms():
+    from grantmatch.display import bracket_caps
+    assert bracket_caps("Centers for Independent Living (cils)") == "Centers for Independent Living (CILS)"
+    assert bracket_caps("Inclusive Transition and Employment Management(item)") == \
+        "Inclusive Transition and Employment Management (ITEM)"
+    assert bracket_caps("Children and Families in Need of Services (cins/fins)").endswith("(CINS/FINS)")
+    assert bracket_caps("Blue 4 Blue (fco Project)") == "Blue 4 Blue (FCO Project)"
+    assert bracket_caps("Revisions (september 2023)") == "Revisions (September 2023)"
+    assert bracket_caps("Foundation (the Able Trust)") == "Foundation (The Able Trust)"
+    assert bracket_caps("Brave (be Resilient and Voice Emotions) Program") == "Brave (Be Resilient and Voice Emotions) Program"
+    assert bracket_caps("Seaport Grant Programs (55.005)") == "Seaport Grant Programs (55.005)"
+    assert bracket_caps("Already Right (SNAP)") == "Already Right (SNAP)"
+
+
+def test_plural():
+    from grantmatch.display import plural
+    assert plural(1, "grant") == "1 grant"
+    assert plural(2, "grant") == "2 grants"
+    assert plural(1200, "grant") == "1,200 grants"

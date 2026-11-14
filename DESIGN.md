@@ -197,7 +197,7 @@ A cool, near-neutral paper palette with one evergreen accent and a single amber 
 
 ### Hierarchy
 - **Display** (650, `clamp(1.75rem, 1.3rem + 1.6vw, 2.25rem)`, 1.2): the page title only.
-- **Headline** (400 with 650 numerals, 1.5625rem, 1.25): each tab's tally ("17 strong, 30 possible, 160 long-shot programs") and section headings such as "Long shots (160)".
+- **Headline** (400 with 650 numerals, 1.5625rem, 1.25): each tab's tally ("17 strong, 30 possible programs"; a zero is not bolded) and section headings such as "Long shots (160)".
 - **Title** (600, 1.25rem, 1.35): result card titles, which are also the card's link.
 - **Lead** (400, 1.0625rem, 1.55, max 65ch; 1rem under 640px): the intro and the overview line.
 - **Body** (400, 1rem, 1.5): reasons, details values, checklist text. Notes and captions cap at 72ch.
@@ -212,9 +212,9 @@ A cool, near-neutral paper palette with one evergreen accent and a single amber 
 
 ## Layout
 
-A single reading column, at most 1080px wide, beside Streamlit's sidebar. The sidebar holds only the profile, grouped under small headings (About your work, Where you work, Eligibility, Keep this profile) separated by 1px rules.
+A single reading column, at most 1080px wide, beside Streamlit's sidebar. The sidebar holds only the profile, grouped under small headings (About your work, Where you work, Eligibility, Keep this profile) separated by 1px rules. Federal funding areas sit under About your work, because they shape the profile, not one tab. The mission and key word boxes grow to fit their text.
 
-The profile form exists twice: in the sidebar from 768px up, and as an "Edit your organization" expander above the results under 768px, where a sidebar would cover the results it changes. CSS shows one copy; both write to the same values, so they never disagree.
+The profile form exists twice: in the sidebar from 768px up, and as an "Edit your organization" expander above the results under 768px, where a sidebar would cover the results it changes. CSS shows one copy; both hold the same draft, so they never disagree. What the visitor types or picks is a draft until "Update matches" applies it; only picking an example or loading a saved profile applies at once. The last scored result is kept, so leaving a field or opening a tab reruns in about a second instead of scoring again.
 
 The main column follows a fixed rhythm: title, lead, the Grants.gov notice, an optional note, the phone profile row (under 768px), the overview line, tabs, then per tab the tally, a source caption, one "Filters and how the score works" expander, and the cards. Cards stack with 12px between their parts. Every strong result (up to 40) shows, then the first 10 possible ones, then "Show 40 more". A "Sort by" select above the cards offers best fit plus one or two orders that matter for that source (closing soonest and largest award for federal; most grants in the state and largest typical grant for foundations). The tally counts strong and possible only; long shots are counted in their own section behind a toggle.
 
@@ -236,9 +236,9 @@ Gently rounded (8px) on cards, buttons, inputs, notes and info boxes. Badges are
 ### Buttons
 - **Character:** plain and sturdy.
 - **Shape:** gently rounded (8px), at least 44px tall.
-- **Default:** paper background, 1px rule border, ink text. Labels start with a verb ("Save to pipeline", "Download matches (CSV)", "Show 40 more", "Keep my text").
+- **Default:** paper background, 1px rule border, ink text. Labels start with a verb ("Save to pipeline", "Download matches (CSV)", "Show 40 more", "Keep my text"). After the last batch, "Show more" becomes "Show the first 28 again" in the same place, so keyboard focus never falls back to the top of the page.
 - **Hover / Focus:** Streamlit's border shift on hover; a 2px evergreen outline with 2px offset on keyboard focus.
-- **Primary:** one only, "Update matches" under the key words: evergreen fill with paper text in light, evergreen-night fill with night text in dark (white on the light green fails AA). It commits typed text, so the form never needs a keyboard shortcut hint. A bold line under it answers the press where it happened: "Updated: 31 strong matches." or "No changes to your profile."
+- **Primary:** one only, "Update matches" at the end of the profile fields, pinned to the bottom of the form while it scrolls (mist band with a 1px rule above it) so it is in reach from every field: evergreen fill with paper text in light, evergreen-night fill with night text in dark (white on the light green fails AA). It applies the draft. While scoring, the spinner sits under it, not above the results. A bold line under it answers the press where it happened: "Updated: 31 strong matches." or "Your matches are already up to date."; before the press, a slate line says "You have changes. Press Update matches to see them."
 - **Safe first:** when a choice protects the visitor's work, the safe option comes first ("Keep my text" before "Replace my text" or "Clear my text").
 
 ### Chips
@@ -260,12 +260,13 @@ Gently rounded (8px) on cards, buttons, inputs, notes and info boxes. Badges are
 - **Tabs:** sentence-case labels at 1rem and 500 weight, at least 44px tall, wrapping onto a second row instead of scrolling. The selected tab is evergreen with a 2px evergreen underline. Tabs are ordered by strong matches; "Before you apply" is always last.
 
 ### Result card (signature)
-Badge row (tier badge plus "Score N of 100" in slate), the title link (title type, ink, underlined, at least 44px tall, announces that it opens a new tab; for a foundation it goes to the funder's own site when the return lists one, with the tax filing linked in the details), the meta line (meta type, slate, items separated by a dot; short facts never break), then the reasons list:
-- **Fits:** drawn check in evergreen.
-- **Cautions:** drawn triangle in caution amber.
+Badge row (tier badge plus "Score N of 100" in slate; in the page it follows the title, so heading navigation lands on a title and hears its own score next, and CSS draws it above), the title link (title type, ink, underlined, at least 44px tall, announces that it opens a new tab; for a foundation it goes to the funder's own site when the return lists one, with the tax filing linked in the details), the meta line (meta type, slate, items separated by a dot that screen readers hear as a comma; short facts never break), then the reasons list, in this order:
+- **Fits** (what matches your work: your key words, your categories, your state or cities): drawn check in evergreen.
+- **Cautions:** drawn triangle in caution amber. When none of your key words appear in the grant's text, that is the first caution.
+- **Facts** (who can apply, typical grant size, how awards are made): drawn check in slate, slate text. True and useful, but not a reason it fits.
 - **Status** (timing facts such as forecasts): drawn clock in slate, slate text.
 
-Each item carries hidden "Fits:", "Caution:" or "Status:" text for screen readers. Then "Save to pipeline" when signed in, and the Summary or Details row.
+Each item carries hidden "Fits:", "Caution:", "Also:" or "Status:" text for screen readers. The Summary or Details row names its card for screen readers ("Details for Family Café"). Then "Save to pipeline" when signed in, and the Summary or Details row.
 
 ### Details list
 Label and value pairs in a two-column definition list (slate labels, ink values), stacking under 640px. Empty values and return placeholders (NONE, N/A) are dropped. Phones become `tel:` links, emails `mailto:` links, websites lowercase links. Past grants are a short ruled list of up to eight: recipient in bold, then city, amount and purpose separated by dots.
@@ -274,9 +275,11 @@ Label and value pairs in a two-column definition list (slate labels, ink values)
 Mist background, 8px radius, 72ch maximum, detail type. One sentence where possible. Used for the example-profile notice ("This is an example." first, so nobody mistakes a sample's matches for their own) and the blank-start steps.
 
 ### Status and guard
-- **Overview line:** a live region (`role="status"`). After any profile change it starts with a bold "Updated." so the change is seen and heard. The strong-match threshold sits here once, so no tab has to be remembered.
+- **Overview line:** counts only. The strong-match threshold sits here once, so no tab has to be remembered.
+- **Spoken answers are alerts.** Streamlit redraws a paragraph whenever its text changes, and a redrawn `role="status"` region is only sometimes read out. So the line under "Update matches" and the count after "Show more" are `role="alert"` on the run that answers a press, and plain text otherwise.
 - **Edit guard:** switching examples over typed text asks first, as a caution-icon line with `role="alert"`, then "Keep my text" and "Replace my text".
-- **Show more:** the count under the list is a live region; after a batch loads, "Go to result N" moves keyboard focus to the first new card.
+- **Show more:** the count under the list is read out after each press; after a batch loads, "Go to result N" moves keyboard focus to the first new card.
+- **Keeping the profile:** a caption under "Download this profile" says the profile clears on refresh. Nothing is stored in the address or the browser.
 - **Skip link:** each result list starts with a link that appears on focus and jumps past the list to its count.
 
 ## Do's and Don'ts

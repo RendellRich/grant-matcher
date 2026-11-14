@@ -9,7 +9,18 @@ STATES = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI"
           "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR",
           "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
 
-EMPTY_VALUES = {"", "NONE", "N/A", "NA", "NOT APPLICABLE", "0", "-", "NULL"}
+STATE_NAMES = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California", "CO": "Colorado",
+    "CT": "Connecticut", "DC": "District of Columbia", "DE": "Delaware", "FL": "Florida", "GA": "Georgia",
+    "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky",
+    "LA": "Louisiana", "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
+    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire",
+    "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota",
+    "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "PR": "Puerto Rico", "RI": "Rhode Island",
+    "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont",
+    "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"}
+
+EMPTY_VALUES ={"", "NONE", "N/A", "NA", "NOT APPLICABLE", "0", "-", "NULL"}
 # Kept in capitals wherever they appear.
 ACRONYMS = {"PO", "LLC", "LLP", "USA", "US", "YMCA", "YWCA", "II", "III", "IV", "CPA", "MD", "PA", "PC",
             "FBO", "DBA", "FKA", "AKA", "UA", "UAD", "IRA", "TTEE", "JTWROS", "PHD", "DDS", "VA", "MBA", "LGBTQ", "USF", "UCF",
@@ -111,6 +122,39 @@ def tidy_name(value, kind: str = "name") -> str:
             word = _word(up)
         out.append(lead + word + tail)
     return " ".join(out)
+
+
+NOT_ACRONYM = {"the", "a", "an", "be", "new", "for", "of", "in", "and"}
+
+
+def _bracket(inner: str) -> str:
+    tokens = inner.split(" ")
+    first = tokens[0]
+    letters = sum(c.isalpha() for c in first)
+    if len(tokens) == 1:  # (cils), (s.a.f.e.), (cins/fins)
+        short = all(sum(c.isalpha() for c in part) <= 6 for part in first.split("/"))
+    else:  # (fco Project), (hf 1936); not (september 2023)
+        short = letters <= 3
+    short = short and first.lower() not in NOT_ACRONYM
+    if short and first == first.lower():
+        tokens[0] = first.upper()  # (cils), (fco Project), (hf 1936)
+    elif first[:1].islower():
+        tokens[0] = first[:1].upper() + first[1:]  # (florida Forever ...), (the Able Trust)
+    return " ".join(tokens)
+
+
+def bracket_caps(value) -> str:
+    """Florida titles arrive title-cased with the first word in brackets lowercased: "Living (cils)",
+    "(florida Forever Funded Grant Program)". Short ones are acronyms and go back to capitals; longer
+    ones get a capital first letter. A missing space before the bracket ("Management(item)") is put back."""
+    text = re.sub(r"(\w)\(", r"\1 (", present(value))
+    return re.sub(r"\(([^()]+)\)", lambda m: f"({_bracket(m.group(1))})", text)
+
+
+def plural(count, noun: str, many: str = "") -> str:
+    """'1 grant', '3 grants'. many is the plural when it isn't noun + 's'."""
+    n = int(count)
+    return f"{n:,} {noun if n == 1 else (many or noun + 's')}"
 
 
 def tidy_text(value) -> str:
