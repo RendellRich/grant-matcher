@@ -1,3 +1,4 @@
+import contextlib
 import gzip
 import html
 import io
@@ -13,8 +14,8 @@ import streamlit as st
 import os
 
 from grantmatch import embed
-from grantmatch.display import (STATES, assistance_label, format_address, present, shouting as _shouting,
-                                tidy_name, tidy_text)
+from grantmatch.display import (STATE_NAMES, STATES, assistance_label, bracket_caps, format_address, plural,
+                                present, shouting as _shouting, tidy_name, tidy_text)
 from grantmatch import ui_workspace as uiw
 from grantmatch import workspace as wsp
 from grantmatch.store import GitHubStore, LocalStore, StoreError
@@ -54,10 +55,10 @@ st.set_page_config(page_title="Grant Matcher for small nonprofits", page_icon=":
 # Colour tokens for the few things the theme in .streamlit/config.toml can't reach (badges, meta text, icons).
 # Every text pair here passes WCAG AA on its own background; the theme follows the visitor's light or dark setting.
 TOKENS = {
-    "light": {"on-accent": "#ffffff", "muted": "#4b5753", "border": "#d5ddd9", "control": "#7d8984", "accent": "#2f6f5e", "caution": "#8a5a00",
+    "light": {"page": "#ffffff", "on-accent": "#ffffff","muted": "#4b5753", "border": "#d5ddd9", "control": "#7d8984", "accent": "#2f6f5e", "caution": "#8a5a00",
               "strong-bg": "#e2f1e9", "strong-fg": "#17543f", "possible-bg": "transparent", "possible-fg": "#2f6f5e", "surface": "#f4f6f5",
               "long-bg": "#edf0ef", "long-fg": "#3b4744"},
-    "dark": {"on-accent": "#121715", "muted": "#a7b2ae", "border": "#34403b", "control": "#6a7a75", "accent": "#6cc0a5", "caution": "#e0b45a",
+    "dark": {"page": "#121715", "on-accent": "#121715","muted": "#a7b2ae", "border": "#34403b", "control": "#6a7a75", "accent": "#6cc0a5", "caution": "#e0b45a",
              "strong-bg": "#173a2d", "strong-fg": "#a9e3c6", "possible-bg": "transparent", "possible-fg": "#6cc0a5", "surface": "#1b2220",
              "long-bg": "#252d2a", "long-fg": "#c6cfcb"},
 }
@@ -105,7 +106,7 @@ st.markdown(
     [data-testid="InputInstructions"] {{display: none;}}
     .stApp button[kind="primary"], .stApp button[kind="primary"] p {{color: var(--gm-on-accent) !important;}}  /* "Press Ctrl+Enter": the Update matches button says it */
     .stApp :is(p.gm-lead, p.gm-notice, p.gm-overview, .gm-note, [data-testid="stCaptionContainer"] p) {{text-wrap: pretty;}}
-    .stApp p.gm-overview {{font-size: 1.0625rem !important; line-height: 1.5; max-width: 72ch; margin: .25rem 0 .75rem;}}
+    .stApp p.gm-overview {{font-size: 1.0625rem !important; line-height: 1.5; max-width: 62ch; margin: .25rem 0 .75rem;}}
     .gm-quiet {{color: var(--gm-muted);}}
 
     /* tabs: 44px targets, wrap instead of scrolling, selected tab underlined */
@@ -136,6 +137,8 @@ st.markdown(
     [class*="st-key-card_"] [data-testid="stExpander"] details {{border: none; border-top: 1px solid var(--gm-border);
                                                               border-radius: 0; margin: 0 -1.25rem; width: calc(100% + 2.5rem);}}
     [class*="st-key-card_"] [data-testid="stExpander"] summary {{padding-left: 1.25rem; padding-right: 1.25rem;}}
+    [class*="st-key-card_"] [data-testid="stExpander"] summary em {{position: absolute; width: 1px; height: 1px;
+        overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;}}
     [class*="st-key-card_"] [data-testid="stExpanderDetails"] {{padding-left: 1.25rem; padding-right: 1.25rem;}}
     @media (max-width: 640px) {{
         [class*="st-key-card_"] {{padding: 1rem 1rem .5rem;}}
@@ -144,6 +147,8 @@ st.markdown(
         [class*="st-key-card_"] [data-testid="stExpanderDetails"] {{padding-left: 1rem; padding-right: 1rem;}}
     }}
     .gm-meta .item {{white-space: nowrap;}}
+    .gm-top {{display: flex; flex-direction: column;}}
+    .gm-top .gm-head {{order: -1;}}
     .gm-head {{display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; margin: 0;}}
     .gm-badge {{display: inline-block; padding: .125rem .625rem; border-radius: 999px; font-size: .8125rem; font-weight: 600; line-height: 1.5;}}
     .gm-badge.Strong {{background: var(--gm-strong-bg); color: var(--gm-strong-fg);}}
@@ -164,6 +169,8 @@ st.markdown(
                            -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat;}}
     ul.gm-why li.good::before {{--icon: {_CHECK}; background: var(--gm-accent);}}
     ul.gm-why li.warn::before {{--icon: {_ALERT}; background: var(--gm-caution);}}
+    ul.gm-why li.fact {{color: var(--gm-muted);}}
+    ul.gm-why li.fact::before {{--icon: {_CHECK}; background: var(--gm-muted);}}
     ul.gm-why li.status {{color: var(--gm-muted);}}
     ul.gm-why li.status::before {{--icon: {_CLOCK}; background: var(--gm-muted);}}
     dl.gm-details {{display: grid; grid-template-columns: minmax(7rem, max-content) 1fr; gap: .375rem 1rem;
@@ -185,6 +192,12 @@ st.markdown(
     .stApp p.gm-jump-status {{margin: 0; font-size: .875rem !important; color: var(--gm-muted); max-width: 72ch;}}
     .stApp p.gm-jump {{margin: 0; font-size: .875rem !important;}}
     .stApp p.gm-form-status {{margin: .25rem 0 0; font-size: .875rem !important; font-weight: 600;}}
+    .stApp p.gm-form-status:empty {{margin: 0;}}
+    /* the wrapper Streamlit puts around a container is what has to stick */
+    [data-testid="stLayoutWrapper"]:has(> [class*="st-key-gm-apply-"]) {{position: sticky; bottom: 0; z-index: 2;}}
+    [class*="st-key-gm-apply-"] {{gap: 0; padding: .75rem 0; border-top: 1px solid var(--gm-border); background: var(--gm-page);}}
+    [data-testid="stSidebar"] [class*="st-key-gm-apply-"] {{background: var(--gm-surface);}}
+    .stApp p.gm-form-status .gm-pending {{font-weight: 400; color: var(--gm-muted);}}
     .gm-skip {{margin: 0;}}
     .gm-skip a {{position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);}}
     .gm-skip a:focus {{position: static; width: auto; height: auto; clip: auto; display: inline-block; padding: .625rem 0;
@@ -307,7 +320,7 @@ def _s(value) -> str:
 
 
 TIER_LABEL = {"Strong": "Strong match", "Possible": "Possible match", "Long shot": "Long shot"}
-SEP = "<span class='sep' aria-hidden='true'>·</span>"
+SEP = "<span class='sr-only'>, </span><span class='sep' aria-hidden='true'>·</span>"
 
 
 def _esc(value) -> str:
@@ -323,11 +336,23 @@ def card_head(r, title: str, url: str, meta: list[str]) -> str:
     """Badge, score, title link and meta line for one result. Every value from the data is escaped."""
     tier = r["tier"]
     anchor = f" id='{_esc(r['_anchor'])}'" if r.get("_anchor") else ""
-    return (f"<p class='gm-head'><span class='gm-badge {tier.split()[0]}'>{TIER_LABEL.get(tier, tier)}</span>"
-            f"<span class='gm-score'>Score {int(r['score'])} of 100</span></p>"
+    # The title comes first in the page so heading navigation lands on it with its own score next;
+    # CSS puts the badge back above the title on screen.
+    return (f"<div class='gm-top'>"
             f"<h3 class='gm-title'><a{anchor} href='{_href(url)}' target='_blank' rel='noopener'>{_esc(title)}"
             f"<span class='sr-only'> (opens in a new tab)</span></a></h3>"
-            f"<p class='gm-meta'>{SEP.join(_meta_item(m) for m in meta if m)}</p>")
+            f"<p class='gm-head'><span class='gm-badge {tier.split()[0]}'>{TIER_LABEL.get(tier, tier)}</span>"
+            f"<span class='sr-only'>, </span><span class='gm-score'>Score {int(r['score'])} of 100</span></p>"
+            f"<p class='gm-meta'>{SEP.join(_meta_item(m) for m in meta if m)}</p></div>")
+
+
+MD_SPECIAL = set("*_[]()#+-.!|~<>$:{}" + chr(96) + chr(92))  # characters Streamlit label markdown treats as syntax
+
+
+def expander_label(label: str, title: str) -> str:
+    """'Details' on screen, 'Details for <title>' to a screen reader (the em is hidden by CSS)."""
+    escaped = "".join(chr(92) + c if c in MD_SPECIAL else c for c in str(title))
+    return f"{label} *for {escaped}*"
 
 
 def _meta_item(text) -> str:
@@ -339,11 +364,23 @@ def _meta_item(text) -> str:
 STATUS_PREFIXES = ("Forecast, not open yet",)  # facts about timing, not reasons a grant fits
 
 
-def why(r) -> str:
-    fits = [x for x in r["reasons"] if not x.startswith(STATUS_PREFIXES)]
-    status = [x for x in r["reasons"] if x.startswith(STATUS_PREFIXES)]
+# Reasons about your work come first; practical facts (who can apply, grant size) follow, quieter.
+FIT_PREFIXES = ("Mentions ", "Past grants mention ", "In your categories", "Funded ", "Based in ")
+WORDS_PREFIXES = ("Mentions ", "Past grants mention ")
+
+
+def why(r, words_in: str = "", has_keywords: bool = True) -> str:
+    """words_in names where key words were looked for ("its description"), for the line that says none matched."""
+    reasons = list(r["reasons"])
+    status = [x for x in reasons if x.startswith(STATUS_PREFIXES)]
+    fits = [x for x in reasons if x.startswith(FIT_PREFIXES) or " grants went to " in x or x.startswith("Its only grant")]
+    facts = [x for x in reasons if x not in fits and x not in status]
+    cautions = list(r["cautions"])
+    if words_in and has_keywords and not any(x.startswith(WORDS_PREFIXES) for x in reasons):
+        cautions.insert(0, f"None of your key words appear in {words_in}")
     items = "".join(f"<li class='good'><span class='sr-only'>Fits: </span>{_esc(x)}</li>" for x in fits)
-    items += "".join(f"<li class='warn'><span class='sr-only'>Caution: </span>{_esc(x)}</li>" for x in r["cautions"])
+    items += "".join(f"<li class='warn'><span class='sr-only'>Caution: </span>{_esc(x)}</li>" for x in cautions)
+    items += "".join(f"<li class='fact'><span class='sr-only'>Also: </span>{_esc(x)}</li>" for x in facts)
     items += "".join(f"<li class='status'><span class='sr-only'>Status: </span>{_esc(x)}</li>" for x in status)
     return f"<ul class='gm-why'>{items}</ul>"
 
@@ -397,7 +434,8 @@ def details_html(rows: list[tuple[str, str]]) -> str:
 def tally(results: pd.DataFrame, noun: str) -> tuple[int, int]:
     counts = results["tier"].value_counts() if not results.empty else {}
     s, p_, l = (int(counts.get(t, 0)) for t in ("Strong", "Possible", "Long shot"))
-    st.markdown(f"<h2 class='gm-tally'><b>{s}</b> strong, <b>{p_}</b> possible {noun}</h2>",  # long shots: own section
+    strong_html = f"<b>{s:,}</b> strong" if s else "0 strong"  # no bold on bad news
+    st.markdown(f"<h2 class='gm-tally'>{strong_html}, <b>{p_:,}</b> possible {noun}</h2>",  # long shots: own section
                 unsafe_allow_html=True)
     return s, p_
 
@@ -447,14 +485,17 @@ def matches(good: pd.DataFrame, card, noun: str, key: str, has_download: bool) -
         r["_anchor"] = f"gm-{key}-{i}"
         card(r)
     batch = st.session_state.get(batch_key, 0) if shown > first else 0  # first card "Show more" just added
-    # A live region, so a screen reader hears the new count; the link takes keyboard users to the new cards.
+    pressed = st.session_state.pop(f"{key}_pressed", False)
+    # Read out (as an alert, see the profile status) right after Show more or fewer; the link takes keyboard
+    # users to the new cards.
     if shown < len(good):
         status = f"Showing the top {shown:,} of {len(good):,} strong and possible {noun}."
         if has_download:
             status += " The download below has all of them."
     else:
         status = f"Showing all {len(good):,} strong and possible {noun}."
-    st.markdown(f"<p class='gm-jump-status' id='gm-{key}-end' tabindex='-1' role='status'>{status}</p>",
+    role = " role='alert'" if pressed else ""
+    st.markdown(f"<p class='gm-jump-status' id='gm-{key}-end' tabindex='-1'{role}>{status}</p>",
                 unsafe_allow_html=True)
     if batch:
         st.markdown(f"<p class='gm-jump'><a href='#gm-{key}-{batch}'>Go to result {batch}</a></p>",
@@ -465,8 +506,18 @@ def matches(good: pd.DataFrame, card, noun: str, key: str, has_download: bool) -
         def show_more():
             st.session_state[shown_key] = shown + more
             st.session_state[batch_key] = shown + 1
+            st.session_state[f"{key}_pressed"] = True
 
         st.button(f"Show {more} more", key=f"{key}_more", on_click=show_more)
+    elif len(good) > first:
+        # The same button, relabelled, so keyboard focus stays here after the last batch instead of
+        # falling back to the top of the page.
+        def show_fewer():
+            st.session_state[shown_key] = first
+            st.session_state[batch_key] = 0
+            st.session_state[f"{key}_pressed"] = True
+
+        st.button(f"Show the first {first} again", key=f"{key}_more", on_click=show_fewer)
 
 
 @st.fragment
@@ -511,8 +562,14 @@ ANTHROPIC = (_secret("anthropic") or {}).get("api_key", "").strip() or None if _
 # The form is drawn twice: in the sidebar on wider screens, and above the results on phones, where the
 # sidebar would cover them. CSS shows one copy. Each copy has its own widget keys; the values that count
 # live in session state under the plain field names, and every change is copied back into both copies.
+#
+# What you type is a draft until you press "Update matches": the widgets hold the draft (side_mission and
+# so on), and the plain field names hold the profile the matches use. Picking an example or loading a
+# saved profile applies at once.
 ss = st.session_state
-FIELDS = ("mission", "keywords", "state", "cities", "has_501c3", "budget_band", "can_cost_share", "preset")
+FIELDS = ("mission", "keywords", "fed_categories", "state", "cities", "has_501c3", "budget_band", "can_cost_share",
+          "preset")
+DRAFTS = FIELDS[:-1]
 COPIES = ("side", "main")
 DEFAULTS = {"state": "FL", "cities": "", "has_501c3": "Yes", "budget_band": "$50k to $250k", "can_cost_share": False}
 
@@ -537,17 +594,27 @@ def _apply_preset(name: str) -> None:
     _push()
 
 
+def _draft(field: str):
+    return ss.get(f"side_{field}", ss[field])  # both copies hold the same draft
+
+
 def _edited() -> bool:
-    """True when the person has typed their own mission, key words or cities over the example."""
-    current = (ss["mission"], ss["keywords"], ss["cities"])
+    """True when the person has typed their own mission, key words or cities over the example (applied or not)."""
+    current = (_draft("mission"), _draft("keywords"), _draft("cities"))
     return any(t.strip() for t in current) and current != _preset_text(ss["_preset_applied"])
+
+
+def _pending() -> bool:
+    """True when a draft differs from the profile the matches use."""
+    return any(_draft(f) != ss[f] for f in DRAFTS)
 
 
 def _on_preset_change(w: str) -> None:
     new = ss[f"{w}_preset"]
     if _edited():
         ss["_preset_pending"] = new
-        _push()  # the select goes back to the example in use until the person decides
+        for c in COPIES:  # the select goes back to the example in use until the person decides
+            ss[f"{c}_preset"] = ss["preset"]
     else:
         _apply_preset(new)
 
@@ -560,9 +627,19 @@ def _replace_text() -> None:
     _apply_preset(ss["_preset_pending"])
 
 
-def _on_field_change(w: str, field: str) -> None:
-    ss[field] = ss[f"{w}_{field}"]
+def _on_draft(w: str, field: str) -> None:
+    """Keep the other copy of the form showing the same draft."""
+    for c in COPIES:
+        if c != w:
+            ss[f"{c}_{field}"] = ss[f"{w}_{field}"]
+
+
+def _apply(w: str) -> None:
+    """Update matches: the draft becomes the profile."""
+    for f in DRAFTS:
+        ss[f] = ss[f"{w}_{f}"]
     _push()
+    ss["_asked"] = True
 
 
 def _load_profile(data: dict) -> None:
@@ -631,7 +708,7 @@ def profile_form(w: str) -> None:
         return f"{w}_{field}"
 
     def changed(field: str) -> dict:
-        return {"key": key(field), "on_change": _on_field_change, "args": (w, field)}
+        return {"key": key(field), "on_change": _on_draft, "args": (w, field)}
 
     st.selectbox("Start from an example", list(PRESETS), key=key("preset"), on_change=_on_preset_change, args=(w,),
                  disabled=bool(ss.get("_loaded")),
@@ -651,16 +728,15 @@ def profile_form(w: str) -> None:
             st.error(ss["_upload_error"], icon=":material/error:")
 
     group("About your work")
-    st.text_area("Mission and programs", height=170, placeholder="Who you serve, where, and what you do for them.",
+    st.text_area("Mission and programs", height="content", placeholder="Who you serve, where, and what you do for them.",
                  help="Two or three sentences. This counts most in the ranking.", **changed("mission"))
-    st.text_area("Key words", height=96, placeholder="For example: dyslexia, tutoring, after school",
+    st.text_area("Key words", height="content", placeholder="For example: dyslexia, tutoring, after school",
                  help="Separate with commas. Use words a matching grant would use. "
                       "Rare, specific words count more than common ones.", **changed("keywords"))
-    st.button("Update matches", key=key("update"), type="primary", width="stretch",
-              on_click=lambda: ss.update(_asked=True))
-    FORM_STATUS[w] = st.empty()  # "Updated: 31 strong matches" right where the button was pressed
+    st.multiselect("Federal funding areas (optional)", list(CATEGORY_NAMES), format_func=lambda c: CATEGORY_NAMES[c],
+                   placeholder="Any area", help="Federal grants in these areas score higher.", **changed("fed_categories"))
     group("Where you work")
-    st.selectbox("State you serve", STATES, **changed("state"))
+    st.selectbox("State you serve", STATES, format_func=lambda c: f"{STATE_NAMES.get(c, c)} ({c})", **changed("state"))
     st.text_input("Cities or counties (optional)", placeholder="For example: Tampa, Hillsborough",
                   help="Separate with commas. Used to find foundations that already fund groups near you.",
                   **changed("cities"))
@@ -668,6 +744,10 @@ def profile_form(w: str) -> None:
     st.radio("501(c)(3) status", ["Yes", "Pending", "No"], horizontal=True, **changed("has_501c3"))
     st.selectbox("Annual budget", list(BUDGET_BANDS), **changed("budget_band"))
     st.checkbox("We can provide matching funds", **changed("can_cost_share"))
+    # Pinned to the bottom of the form while it scrolls, so the button is in reach from every field.
+    with st.container(key=f"gm-apply-{w}"):
+        st.button("Update matches", key=key("update"), type="primary", width="stretch", on_click=_apply, args=(w,))
+        FORM_STATUS[w] = st.empty()  # "Updated: 31 strong matches" right where the button was pressed
 
     group("Keep this profile")
     if store is not None:
@@ -676,7 +756,8 @@ def profile_form(w: str) -> None:
             st.toast("Profile saved. It will load automatically next time.")
     st.download_button("Download this profile", json.dumps(profile_dict, indent=2), "grant-profile.json",
                        "application/json", key=key("download"), width="stretch")
-    st.caption("Load it here next time to pick up where you left off.")
+    st.caption("Your profile clears when you refresh or close this page. Download it, then load it here next "
+               "time to pick up where you left off.")
 
 
 with st.sidebar:
@@ -736,15 +817,16 @@ blank = not mission.strip() and not keywords.strip()
 example = (not ss.get("_loaded") and ss["_preset_applied"] != "Start blank"
            and (mission, keywords, cities) == _preset_text(ss["_preset_applied"]))
 WHERE = "<b class='gm-wide'>Your organization</b><b class='gm-phone'>Edit your organization</b>"
+note = st.empty()  # always drawn, so the elements below keep their place (and screen readers their live region)
 if blank:
-    st.markdown(
+    note.markdown(
         "<div class='gm-note' role='note'><p><b>Tell us about your work to see matches.</b></p>"
         f"<ol><li>Describe your mission and programs under {WHERE}.</li>"
         "<li>Add a few key words a matching grant would use.</li>"
         "<li>Set your state and, if you like, your cities or counties.</li></ol></div>",
         unsafe_allow_html=True)
 elif example:
-    st.markdown(
+    note.markdown(
         f"<p class='gm-note' role='note'><b>This is an example.</b><span class='gm-wide'> These matches are for a "
         f"sample organization, <i>{_esc(ss['_preset_applied'])}</i>.</span> Describe your own work under {WHERE} "
         "to see yours.</p>",
@@ -768,27 +850,37 @@ profile = Profile(
     include_forecasted=include_forecasted, min_days_left=min_days,
 )
 query_text = mission + " " + keywords
+has_kw = bool(profile.keywords)
 city_list = [c for c in cities.split(",") if c.strip()]
 KINDS_ALL = ["Private foundation", "Community foundation", "Public foundation", "United Way or federated fund"]
 
 # ---------- score every source first, so the overview and tab order can use all three ----------
-with st.spinner("Updating matches"):
-    df, fetched_at, vectors = load_federal()
-    results = None if df.empty else score(df, profile, semantic=similarity(query_text, vectors))
-
-    records, f_fetched, f_vecs = load_foundations(state)
-    f_res = None
-    if records:
-        kinds = ss.get("fdn_kinds", KINDS_ALL)
-        chosen = [r for r in records if r["kind"] in kinds]
-        f_res = score_foundations(chosen, profile, state, city_list, similarity(query_text, f_vecs),
-                                  ss.get("fdn_pre", False))
-
-    programs, fy, fl_res = [], "", None
-    if state == "FL":
-        programs, fy, fl_vecs = load_florida()
+df, fetched_at, vectors = load_federal()
+records, f_fetched, f_vecs = load_foundations(state)
+programs, fy, fl_vecs = load_florida() if state == "FL" else ([], "", {})
+# Scoring takes several seconds, so keep the last result and only score again when the profile, the
+# filters or the data changed. Leaving a text box or opening a tab then reruns in well under a second.
+memo_key = json.dumps([profile_dict, ss.get("fdn_kinds", KINDS_ALL), ss.get("fdn_pre", False), ss.get("fl_ear", False),
+                       fetched_at, f_fetched, fy], sort_keys=True, default=str)
+memo = ss.get("_scored")
+if memo and memo[0] == memo_key:
+    results, f_res, fl_res = memo[1]
+else:
+    with contextlib.ExitStack() as busy:  # the spinner shows under the button that was pressed
+        for slot in FORM_STATUS.values():
+            busy.enter_context(slot.container())
+            busy.enter_context(st.spinner("Updating matches"))
+        results = None if df.empty else score(df, profile, semantic=similarity(query_text, vectors))
+        f_res = None
+        if records:
+            kinds = ss.get("fdn_kinds", KINDS_ALL)
+            chosen = [r for r in records if r["kind"] in kinds]
+            f_res = score_foundations(chosen, profile, state, city_list, similarity(query_text, f_vecs),
+                                      ss.get("fdn_pre", False))
+        fl_res = None
         if programs:
             fl_res = score_florida(programs, profile, similarity(query_text, fl_vecs), ss.get("fl_ear", False))
+    ss["_scored"] = (memo_key, (results, f_res, fl_res))
 
 
 def _count(res, tier: str) -> int:
@@ -827,22 +919,27 @@ else:
     poss = ", ".join(_n(possible[k], SOURCES[k][1]) for k in order)
     overview = (f"<b>No strong matches yet.</b> Possible matches: {poss}. "
                 "More specific key words usually help.")
-# Say when the matches changed, so an edit never updates the page silently. The paragraph is a live region,
-# so screen readers read the new line out.
+# Say when the matches changed, so an edit never updates the page silently. Streamlit redraws a paragraph
+# whenever its text changes, and a redrawn live region is only sometimes read out; an alert is read when it
+# appears. So the answer to pressing the button is an alert, and the reminder about unapplied changes is not.
 sig = json.dumps(profile_dict, sort_keys=True, default=str)
 updated_now = ss.get("_last_sig") not in (None, sig)
 asked = ss.pop("_asked", False)
 ss["_last_sig"] = sig
-lead_in = "<b class='gm-updated'>Updated.</b> " if updated_now else ""
-st.markdown(f"<p class='gm-overview' role='status'>{lead_in}{overview}<span class='gm-wide'> A strong match scores "
+st.markdown(f"<p class='gm-overview'>{overview}<span class='gm-wide'> A strong match scores "
             "60 or more out of 100.</span> <span class='gm-quiet gm-wide'>Tabs with the most strong matches come "
             "first.</span></p>", unsafe_allow_html=True)
-# The overview is the live region screen readers hear; this visible line sits under the button that was pressed.
-form_note = (f"Updated: {_n(total, 'strong matches')}." if updated_now
-             else "No changes to your profile." if asked else "")
+role = " role='alert'"
+if updated_now:
+    form_note = f"Updated: {_n(total, 'strong matches')}."
+elif asked:
+    form_note = "Your matches are already up to date."
+elif _pending():
+    form_note, role = "<span class='gm-pending'>You have changes. Press Update matches to see them.</span>", ""
+else:
+    form_note, role = "", ""
 for slot in FORM_STATUS.values():
-    if form_note:
-        slot.markdown(f"<p class='gm-form-status'>{form_note}</p>", unsafe_allow_html=True)
+    slot.markdown(f"<p class='gm-form-status'{role}>{form_note}</p>", unsafe_allow_html=True)
 
 tab_keys = order + ["ready"] + (["workspace"] if store else [])
 labels = {**{k: v[0] for k, v in SOURCES.items()}, "ready": "Before you apply", "workspace": "Workspace"}
@@ -861,8 +958,7 @@ with TAB["fed"]:
             st.caption("No strong federal matches is common for small direct-service groups: much federal money "
                        "for local programs passes through state agencies first.")
         with st.expander("Filters and how the score works"):
-            st.multiselect("Funding categories", list(CATEGORY_NAMES), key="fed_categories",
-                           format_func=lambda c: CATEGORY_NAMES[c])
+            st.caption("Federal funding areas are part of your profile, under About your work.")
             st.checkbox("Include forecasts (not open yet)", key="fed_forecast")
             st.slider("Hide deadlines sooner than (days)", 0, 60, key="fed_min_days")
             st.markdown(
@@ -878,11 +974,11 @@ with TAB["fed"]:
             label = "Est. due" if r["status"] == "forecasted" else "Due"
             with st.container(border=True, key=f"card_fed_{r['id']}"):
                 st.markdown(card_head(r, r["title"], r["url"], [r["agency"], r["number"], f"{label} {due}",
-                                                                 f"Award {r['award_range']}"]) + why(r),
+                                                                 f"Award {r['award_range']}"]) + why(r, "its description", has_kw),
                             unsafe_allow_html=True)
                 if store is not None:
                     uiw.save_button(store, who, "federal", r, key=f"save_fed_{r['id']}")
-                with st.expander("Summary"):
+                with st.expander(expander_label("Summary", r["title"])):
                     st.write(r["description"][:1500] + ("..." if len(r["description"]) > 1500 else ""))
                     if r["eligibility_text"]:
                         st.markdown("**Eligibility notes:** " + r["eligibility_text"][:800])
@@ -931,12 +1027,12 @@ with TAB["fdn"]:
             with st.container(border=True, key=f"card_fdn_{r['ein']}"):
                 st.markdown(card_head(r, tidy_name(r["name"]), site_url(r.get("website")) or r["url"], [
                     r["kind"], f"{tidy_name(r['city'], 'city')}, {r['state']}",
-                    f"{r['grant_count']} grants, {_money(r['grants_total'])} total",
-                    f"typical {_money(r['grant_median'])}", f"tax year {r['tax_year']}"]) + why(r),
+                    f"{plural(r['grant_count'], 'grant')}, {_money(r['grants_total'])} total",
+                    f"typical {_money(r['grant_median'])}", f"tax year {r['tax_year']}"]) + why(r, "its past grants", has_kw),
                     unsafe_allow_html=True)
                 if store is not None:
                     uiw.save_button(store, who, "foundation", r, key=f"save_fdn_{r['ein']}")
-                with st.expander("How to apply and past grants"):
+                with st.expander(expander_label("How to apply and past grants", tidy_name(r["name"]))):
                     rows = [("Mission", _esc(tidy_text(r.get("mission")))),
                             ("Contact", _esc(tidy_name(apply.get("contact")))),
                             ("Phone", phone_html(apply.get("phone") or r.get("phone"))),
@@ -1011,11 +1107,12 @@ if "fl" in TAB:
 
             def fl_card(r):
                 with st.container(border=True, key=f"card_fl_{r['id']}"):
-                    st.markdown(card_head(r, r["title"], r["url"], [r["agency"], f"State catalog no. {r['csfa']}",
-                                                                    assistance_label(r["assistance"])]) + why(r), unsafe_allow_html=True)
+                    st.markdown(card_head(r, bracket_caps(r["title"]), r["url"], [r["agency"], f"State catalog no. {r['csfa']}",
+                                                                    assistance_label(r["assistance"])]) + why(r, "its title or objectives", has_kw),
+                                unsafe_allow_html=True)
                     if store is not None:
                         uiw.save_button(store, who, "florida", r, key=f"save_fl_{r['id']}")
-                    with st.expander("Details"):
+                    with st.expander(expander_label("Details", bracket_caps(r["title"]))):
                         rows = [(label, _esc(_present(r[key])[:900]))
                                 for label, key in (("Objectives", "objectives"), ("Who can apply", "applicant_types"),
                                                    ("How to apply", "application"), ("How awards are made", "award"),

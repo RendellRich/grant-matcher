@@ -84,10 +84,10 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
         share = in_state / n if n else 0
         if share >= 0.5:
             points += 20
-            reasons.append(f"{in_state} of its {n} grants went to {state} organizations")
+            reasons.append(f"Its only grant went to a {state} organization" if n == 1 else f"{in_state} of its {n} grants went to {state} organizations")
         elif share >= 0.2:
             points += 12
-            reasons.append(f"{in_state} of its {n} grants went to {state} organizations")
+            reasons.append(f"Its only grant went to a {state} organization" if n == 1 else f"{in_state} of its {n} grants went to {state} organizations")
         elif in_state:
             points -= 15 if share < 0.1 and r["state"] != state else 5
             cautions.append(f"Only {in_state} of its {n} grants went to {state}")
