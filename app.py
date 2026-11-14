@@ -67,6 +67,9 @@ _vars = "".join(f"--gm-{k}:{v};" for k, v in TOKENS[_mode].items())
 _CHECK = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' "
           "stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 "
           "4.5L19 7.5'/%3E%3C/svg%3E\")")
+_CLOCK = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' "
+          "stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' "
+          "r='8.5'/%3E%3Cpath d='M12 7.5V12l3 2'/%3E%3C/svg%3E\")")
 _ALERT = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' "
           "stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5 2.5 "
           "20h19z'/%3E%3Cpath d='M12 10v4.5M12 17.5v.01'/%3E%3C/svg%3E\")")
@@ -147,6 +150,21 @@ st.markdown(
                            -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat;}}
     ul.gm-why li.good::before {{--icon: {_CHECK}; background: var(--gm-accent);}}
     ul.gm-why li.warn::before {{--icon: {_ALERT}; background: var(--gm-caution);}}
+    ul.gm-why li.status {{color: var(--gm-muted);}}
+    ul.gm-why li.status::before {{--icon: {_CLOCK}; background: var(--gm-muted);}}
+    dl.gm-details {{display: grid; grid-template-columns: minmax(7rem, max-content) 1fr; gap: .375rem 1rem;
+                    margin: 0 0 .75rem; font-size: .9375rem; line-height: 1.5;}}
+    dl.gm-details dt {{color: var(--gm-muted); font-weight: 500;}}
+    dl.gm-details dd {{margin: 0; overflow-wrap: anywhere;}}
+    @media (max-width: 640px) {{
+        dl.gm-details {{grid-template-columns: 1fr; gap: 0;}}
+        dl.gm-details dd {{margin-bottom: .5rem;}}
+    }}
+    .stApp p.gm-sub {{font-weight: 600; margin: .75rem 0 .25rem; font-size: .9375rem !important;}}
+    ul.gm-grants {{list-style: none; padding: 0; margin: 0; font-size: .9375rem; line-height: 1.5;}}
+    ul.gm-grants li {{padding: .375rem 0; border-top: 1px solid var(--gm-border); margin: 0;}}
+    ul.gm-grants .sep, .gm-meta .sep {{padding: 0 .375rem; color: var(--gm-muted);}}
+    :is(dl.gm-details, ul.gm-grants) a {{text-underline-offset: 3px; overflow-wrap: anywhere;}}
 
     .stApp :is(input, textarea)::placeholder {{color: var(--gm-muted); opacity: 1;}}
 
@@ -283,10 +301,89 @@ def _meta_item(text) -> str:
     return f"<span class='item'>{_esc(text)}</span>" if len(text) <= 28 else _esc(text)
 
 
+STATUS_PREFIXES = ("Forecast, not open yet",)  # facts about timing, not reasons a grant fits
+
+
 def why(r) -> str:
-    items = "".join(f"<li class='good'><span class='sr-only'>Fits: </span>{_esc(x)}</li>" for x in r["reasons"])
+    fits = [x for x in r["reasons"] if not x.startswith(STATUS_PREFIXES)]
+    status = [x for x in r["reasons"] if x.startswith(STATUS_PREFIXES)]
+    items = "".join(f"<li class='good'><span class='sr-only'>Fits: </span>{_esc(x)}</li>" for x in fits)
     items += "".join(f"<li class='warn'><span class='sr-only'>Caution: </span>{_esc(x)}</li>" for x in r["cautions"])
+    items += "".join(f"<li class='status'><span class='sr-only'>Status: </span>{_esc(x)}</li>" for x in status)
     return f"<ul class='gm-why'>{items}</ul>"
+
+
+# ---------- tidy raw IRS text for display (display only; the data and ranking are untouched) ----------
+EMPTY_VALUES = {"", "NONE", "N/A", "NA", "NOT APPLICABLE", "0", "-", "NULL"}
+KEEP_UPPER = {"NE", "NW", "SE", "SW", "PO", "LLC", "USA", "US", "YMCA", "YWCA", "II", "III", "IV"} | set(STATES)
+SMALL_WORDS = {"and", "of", "the", "for", "in", "to", "a", "an", "at", "by", "on", "or"}
+
+
+def _present(value) -> str:
+    """The value as text, or '' when the return left it empty or wrote NONE or N/A."""
+    text = _s(value).strip()
+    return "" if text.upper() in EMPTY_VALUES else text
+
+
+def _shouting(text: str) -> bool:
+    letters = [c for c in text if c.isalpha()]
+    return len(letters) > 3 and sum(c.isupper() for c in letters) / len(letters) > 0.8
+
+
+def tidy_name(value) -> str:
+    """Title case for ALL CAPS names, cities and addresses, keeping state codes and directions."""
+    text = _present(value)
+    if not _shouting(text):
+        return text
+    words = []
+    for i, w in enumerate(text.split()):
+        core = w.strip(".,")
+        if core in KEEP_UPPER:
+            words.append(w)
+        elif i and core.lower() in SMALL_WORDS:
+            words.append(w.lower())
+        else:
+            words.append(w.capitalize())
+    return " ".join(words)
+
+
+def tidy_text(value) -> str:
+    """Sentence case for ALL CAPS sentences such as missions, purposes and instructions."""
+    text = _present(value)
+    return text[:1].upper() + text[1:].lower() if _shouting(text) else text
+
+
+def phone_html(value) -> str:
+    digits = "".join(c for c in _present(value) if c.isdigit())
+    if len(digits) == 11 and digits.startswith("1"):
+        digits = digits[1:]
+    if len(digits) != 10:
+        return _esc(_present(value))
+    shown = f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
+    return f"<a href='tel:+1{digits}'>{shown}</a>"
+
+
+def email_html(value) -> str:
+    addr = _present(value).lower()
+    if "@" not in addr or " " in addr:
+        return _esc(addr)
+    return f"<a href='mailto:{html.escape(addr, quote=True)}'>{_esc(addr)}</a>"
+
+
+def website_html(value) -> str:
+    site = _present(value)
+    if not site:
+        return ""
+    site = site.lower() if _shouting(site) else site
+    url = site if site.lower().startswith(("http://", "https://")) else "https://" + site
+    shown = url.split("://", 1)[1].rstrip("/").lower()
+    return f"<a href='{_href(url)}' target='_blank' rel='noopener'>{_esc(shown)}</a>"
+
+
+def details_html(rows: list[tuple[str, str]]) -> str:
+    """Label and value pairs as a definition list. Values must already be escaped HTML."""
+    items = "".join(f"<dt>{_esc(label)}</dt><dd>{value}</dd>" for label, value in rows if value)
+    return f"<dl class='gm-details'>{items}</dl>" if items else ""
 
 
 def tally(results: pd.DataFrame, noun: str) -> tuple[int, int]:
@@ -304,15 +401,36 @@ def result_list(results: pd.DataFrame, card, noun: str, key: str, after_matches=
     if good.empty:
         st.info(f"No strong or possible {noun} for this profile yet. Try more specific key words in your profile, "
                 "or look through the long shots below.", icon=":material/search:")
-    for _, r in good.head(40).iterrows():
-        card(r)
+    else:
+        matches(good, card, noun, key, after_matches is not None)
     if after_matches is not None:
         after_matches()
     if not longs.empty:
-        st.markdown(f"<h2 class='gm-section'>Long shots <span class='gm-count'>{len(longs):,}</span></h2>",
+        st.markdown(f"<h2 class='gm-section'>Long shots <span class='gm-count'>({len(longs):,})</span></h2>",
                     unsafe_allow_html=True)
         st.caption("These fit on a few points and miss on others. Read the cautions before spending time on one.")
         long_shots(longs.head(20), card, key)
+
+
+PAGE = 40
+
+
+@st.fragment
+def matches(good: pd.DataFrame, card, noun: str, key: str, has_download: bool) -> None:
+    """Strong and possible matches, 40 at a time. Its own fragment, so "Show more" reruns only this list."""
+    shown_key = f"{key}_shown"
+    shown = min(st.session_state.get(shown_key, PAGE), len(good))
+    for _, r in good.head(shown).iterrows():
+        card(r)
+    if shown < len(good):
+        st.caption(f"Showing the top {shown} of {len(good):,} strong and possible {noun}."
+                   + (" The download below has all of them." if has_download else ""))
+        more = min(PAGE, len(good) - shown)
+
+        def show_more():
+            st.session_state[shown_key] = shown + more
+
+        st.button(f"Show {more} more", key=f"{key}_more", on_click=show_more)
 
 
 @st.fragment
@@ -370,6 +488,7 @@ with st.sidebar:
 
     def _apply_preset(name: str) -> None:
         ss["mission"], ss["keywords"] = _preset_text(name)
+        ss["fed_categories"] = list(PRESETS.get(name, {}).get("categories", []))
         ss["_preset_applied"] = name
         ss.pop("_preset_pending", None)
 
@@ -403,6 +522,9 @@ with st.sidebar:
     if ss.get("_saved_sig") != saved_sig:  # a profile was just loaded or removed
         if saved:
             ss["mission"], ss["keywords"] = saved.get("mission", ""), saved.get("keywords", "")
+            ss["fed_categories"] = [c for c in saved.get("categories", []) if c in CATEGORY_NAMES]
+            ss["fed_forecast"] = bool(saved.get("include_forecasted", True))
+            ss["fed_min_days"] = int(saved.get("min_days_left", 14))
         elif ss.get("_saved_sig"):
             _apply_preset(ss.get("preset", next(iter(PRESETS))))
         ss["_saved_sig"] = saved_sig
@@ -414,8 +536,8 @@ with st.sidebar:
         if ss.get("_preset_pending"):
             st.warning(f"Replace your mission and key words with the *{ss['_preset_pending']}* example?",
                        icon=":material/warning:")
-            st.button("Replace my text", on_click=_replace_text, width="stretch")
             st.button("Keep my text", on_click=lambda: ss.pop("_preset_pending", None), width="stretch")
+            st.button("Replace my text", on_click=_replace_text, width="stretch")
     base = saved or PRESETS[preset_name]
 
     def group(title: str) -> None:
@@ -440,11 +562,11 @@ with st.sidebar:
     budget_band = st.selectbox("Annual budget", list(BUDGET_BANDS),
                                index=list(BUDGET_BANDS).index(base.get("budget_band", "$50k to $250k")))
     can_cost_share = st.checkbox("We can provide matching funds", value=base.get("can_cost_share", False))
-    with st.expander("Federal filters"):
-        categories = st.multiselect("Funding categories", list(CATEGORY_NAMES), default=base.get("categories", []),
-                                    format_func=lambda c: CATEGORY_NAMES[c])
-        include_forecasted = st.checkbox("Include forecasts (not open yet)", value=base.get("include_forecasted", True))
-        min_days = st.slider("Hide deadlines sooner than (days)", 0, 60, base.get("min_days_left", 14))
+    # Federal filters sit in the Federal tab; their values live in session state so scoring can read them first.
+    ss.setdefault("fed_categories", [c for c in base.get("categories", []) if c in CATEGORY_NAMES])
+    ss.setdefault("fed_forecast", bool(base.get("include_forecasted", True)))
+    ss.setdefault("fed_min_days", int(base.get("min_days_left", 14)))
+    categories, include_forecasted, min_days = ss["fed_categories"], ss["fed_forecast"], ss["fed_min_days"]
 
     profile_dict = {
         "mission": mission, "keywords": keywords, "state": state, "cities": cities, "has_501c3": has_501c3,
@@ -460,6 +582,49 @@ with st.sidebar:
                        "application/json", width="stretch")
     st.caption("Load it here next time to pick up where you left off.")
 
+
+def footer() -> None:
+    st.markdown(
+        f"<div class='gm-footer' role='contentinfo'><p>{NOTICE}</p>"
+        "<p>Federal data from the Grants.gov API, refreshed nightly. Foundation data from IRS Form 990-PF and Form 990 "
+        "Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial "
+        "Assistance.</p>"
+        "<p>Scores are a starting point for your own review, not a guarantee of eligibility.</p>"
+        "<p>Source code: <a href='https://github.com/RendellRich/grant-matcher'>github.com/RendellRich/grant-matcher</a></p>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def checklist() -> None:
+    """The "Before you apply" checklist, shown in its tab and under the blank-start steps."""
+    st.header("Getting ready to apply")
+    st.markdown(
+        """
+### For any funder
+1. **Your IRS determination letter** showing 501(c)(3) status.
+2. **A one-page organization summary:** mission, programs, who you serve, and the results you track.
+3. **A simple annual budget** and, for larger requests, your most recent financial statements.
+4. **Your board list** and a short bio for your director.
+
+### For federal grants
+These registrations take weeks, so start early.
+
+1. **SAM.gov registration and a Unique Entity ID (UEI).** Free, required for every federal applicant, and renewed every year. Start at [sam.gov](https://sam.gov).
+2. **A Grants.gov applicant account** linked to your organization. See [Grants.gov applicant registration](https://www.grants.gov/applicants/applicant-registration).
+
+### For foundations
+- Read the "How to apply" notes. Many want a short letter of inquiry first, not a full proposal.
+- Look at who they funded last year. If they fund groups like yours near you, mention that connection.
+- Community foundations in your county are often the best first call, and many run small grant cycles for new nonprofits.
+
+### For Florida state programs
+- The state pays grants and contracts to registered vendors. Register at [MyFloridaMarketPlace](https://www.myfloridamarketplace.com) and keep a Florida Substitute W-9 on file with the Department of Financial Services.
+- Each agency posts its own application windows. Use the agency link on each program to find the next one.
+        """
+    )
+
+
 PHONE_HINT = "<span class='gm-phone'> On a phone, open that panel with the » button at the top left.</span>"
 if not mission.strip() and not keywords.strip():
     st.markdown(
@@ -468,6 +633,8 @@ if not mission.strip() and not keywords.strip():
         "<li>Add a few key words a matching grant would use.</li>"
         "<li>Set your state and, if you like, your cities or counties.</li></ol></div>",
         unsafe_allow_html=True)
+    checklist()
+    footer()
     st.stop()
 
 if saved is None and preset_name != "Start blank" and (mission, keywords) == _preset_text(preset_name):
@@ -551,7 +718,11 @@ with TAB["fed"]:
         if n_strong == 0:
             st.caption("No strong federal matches is common for small direct-service groups: much federal money "
                        "for local programs passes through state agencies first.")
-        with st.expander("How the score works"):
+        with st.expander("Filters and how the score works"):
+            st.multiselect("Funding categories", list(CATEGORY_NAMES), key="fed_categories",
+                           format_func=lambda c: CATEGORY_NAMES[c])
+            st.checkbox("Include forecasts (not open yet)", key="fed_forecast")
+            st.slider("Hide deadlines sooner than (days)", 0, 60, key="fed_min_days")
             st.markdown(
                 "- Up to 70 points for how closely the grant's description matches your mission, compared with how "
                 "your mission matches grants in general\n"
@@ -598,10 +769,10 @@ with TAB["fdn"]:
         tally(f_res, "foundations")
         st.caption(f"{len(records):,} grantmakers based in {state} or giving there, from their latest IRS returns. "
                    "Most funders back groups they already know, so start with an introduction.")
-        st.multiselect("Types", KINDS_ALL, default=KINDS_ALL, key="fdn_kinds",
-                       format_func=lambda k: f"{k} ({int(counts.get(k, 0)):,})")
-        st.checkbox("Include foundations that say they fund preselected groups only", value=False, key="fdn_pre")
-        with st.expander("How the score works"):
+        with st.expander("Filters and how the score works"):
+            st.multiselect("Types", KINDS_ALL, default=KINDS_ALL, key="fdn_kinds",
+                           format_func=lambda k: f"{k} ({int(counts.get(k, 0)):,})")
+            st.checkbox("Include foundations that say they fund preselected groups only", value=False, key="fdn_pre")
             st.markdown(
                 "- Up to 60 points for how closely the foundation's past grant purposes match your mission\n"
                 "- Up to 15 points for your key words in its past grants\n"
@@ -613,38 +784,39 @@ with TAB["fdn"]:
         def fdn_card(r):
             apply = r.get("apply") if isinstance(r.get("apply"), dict) else {}
             with st.container(border=True, key=f"card_fdn_{r['ein']}"):
-                st.markdown(card_head(r, r["name"].title(), r["url"], [
-                    r["kind"], f"{r['city'].title()}, {r['state']}",
+                st.markdown(card_head(r, tidy_name(r["name"]), r["url"], [
+                    r["kind"], f"{tidy_name(r['city'])}, {r['state']}",
                     f"{r['grant_count']} grants, {_money(r['grants_total'])} total",
                     f"typical {_money(r['grant_median'])}", f"tax year {r['tax_year']}"]) + why(r),
                     unsafe_allow_html=True)
                 if store is not None:
                     uiw.save_button(store, who, "foundation", r, key=f"save_fdn_{r['ein']}")
                 with st.expander("How to apply and past grants"):
-                    if _s(r.get("mission")):
-                        st.markdown(f"**Mission:** {html.escape(_s(r.get('mission')).capitalize())}")
-                    if _s(r.get("phone")) and not apply:
-                        st.markdown(f"**Phone:** {_s(r.get('phone'))}")
-                    if apply:
-                        lines = []
-                        for label, key in (("Contact", "contact"), ("Phone", "phone"), ("Email", "email"),
-                                           ("Address", "address"), ("What to send", "materials"),
-                                           ("Deadlines", "deadlines"), ("Restrictions", "restrictions")):
-                            if apply.get(key):
-                                lines.append(f"**{label}:** {html.escape(apply[key])}")
-                        st.markdown("  \n".join(lines) or "No application details listed.")
-                    elif r["kind"] == "Private foundation":
-                        st.write("No application details listed on the return.")
-                    if _s(r.get("website")):
-                        st.markdown(f"**Website:** {_s(r.get('website'))}")
-                    grants = pd.DataFrame(r["sample_grants"])
-                    if not grants.empty:
-                        local = grants[grants["state"] == state]
-                        st.markdown(f"**Largest grants** ({len(local)} of these in {state})")
-                        st.dataframe(grants[["to", "city", "state", "amount", "purpose"]].head(15).rename(columns={
-                            "to": "Recipient", "city": "City", "state": "State", "amount": "Amount", "purpose": "Purpose"}),
-                            hide_index=True, width="stretch",
-                            column_config={"Amount": st.column_config.NumberColumn(format="$%d")})
+                    rows = [("Mission", _esc(tidy_text(r.get("mission")))),
+                            ("Contact", _esc(tidy_name(apply.get("contact")))),
+                            ("Phone", phone_html(apply.get("phone") or r.get("phone"))),
+                            ("Email", email_html(apply.get("email"))),
+                            ("Address", _esc(tidy_name(apply.get("address")))),
+                            ("What to send", _esc(tidy_text(apply.get("materials")))),
+                            ("Deadlines", _esc(tidy_text(apply.get("deadlines")))),
+                            ("Restrictions", _esc(tidy_text(apply.get("restrictions")))),
+                            ("Website", website_html(r.get("website")))]
+                    body = details_html(rows)
+                    if not any(_present(apply.get(k)) for k in ("contact", "materials", "deadlines")):
+                        body = "<p class='gm-quiet'>No application details listed on the return.</p>" + body
+                    grants = [g for g in (r.get("sample_grants") or []) if isinstance(g, dict)][:8]
+                    if grants:
+                        local = sum(1 for g in grants if g.get("state") == state)
+                        items = "".join(
+                            f"<li><b>{_esc(tidy_name(g.get('to')))}</b>"
+                            f"{SEP}{_esc(tidy_name(g.get('city')))}, {_esc(g.get('state', ''))}"
+                            f"{SEP}${float(g.get('amount') or 0):,.0f}"
+                            + (f"{SEP}{_esc(tidy_text(g.get('purpose')))}" if _present(g.get("purpose")) else "")
+                            + "</li>" for g in grants)
+                        where = f"all in {state}" if local == len(grants) else f"{local} of {len(grants)} in {state}"
+                        body += (f"<p class='gm-sub'>Largest grants ({where})</p>"
+                                 f"<ul class='gm-grants'>{items}</ul>")
+                    st.markdown(body, unsafe_allow_html=True)
 
         def fdn_downloads():
             if f_res.empty:
@@ -677,24 +849,30 @@ if "fl" in TAB:
             open_n = sum(1 for p_ in programs if p_["nonprofit_eligible"] and not p_["earmark"])
             st.caption(f"{open_n:,} of {len(programs):,} Florida programs (fiscal year {fy}) are open to nonprofits. "
                        "These are programs, not open calls: check each agency's site for the next window.")
-            st.checkbox("Include programs the Legislature set aside for named organizations", value=False,
-                        key="fl_ear")
+            with st.expander("Filters and how the score works"):
+                st.checkbox("Include programs the Legislature set aside for named organizations", value=False,
+                            key="fl_ear")
+                st.markdown(
+                    "- Up to 75 points for how closely the program's objectives match your mission\n"
+                    "- Up to 25 points for your key words in its title and objectives, with rare words worth more\n"
+                    "- Points off for student aid paid to individuals or schools, and for programs the Legislature "
+                    "set aside for a named organization\n"
+                    "- Strong is 60 and up, possible is 35 to 59")
 
             def fl_card(r):
                 with st.container(border=True, key=f"card_fl_{r['id']}"):
-                    st.markdown(card_head(r, r["title"], r["url"], [r["agency"], f"CSFA {r['csfa']}", r["assistance"]])
-                                + why(r), unsafe_allow_html=True)
+                    st.markdown(card_head(r, r["title"], r["url"], [r["agency"], f"State catalog no. {r['csfa']}",
+                                                                    r["assistance"]]) + why(r), unsafe_allow_html=True)
                     if store is not None:
                         uiw.save_button(store, who, "florida", r, key=f"save_fl_{r['id']}")
                     with st.expander("Details"):
-                        for label, key in (("Objectives", "objectives"), ("Who can apply", "applicant_types"),
-                                           ("How to apply", "application"), ("How awards are made", "award"),
-                                           ("Deadlines", "deadlines"), ("Restrictions", "restrictions"),
-                                           ("Contact", "contact")):
-                            if r[key] and r[key].strip().upper() not in ("N/A", "NA", "NONE"):
-                                st.markdown(f"**{label}:** {html.escape(r[key][:900])}")
-                        if r["web"]:
-                            st.markdown(f"**Agency site:** {r['web']}")
+                        rows = [(label, _esc(_present(r[key])[:900]))
+                                for label, key in (("Objectives", "objectives"), ("Who can apply", "applicant_types"),
+                                                   ("How to apply", "application"), ("How awards are made", "award"),
+                                                   ("Deadlines", "deadlines"), ("Restrictions", "restrictions"),
+                                                   ("Contact", "contact"))]
+                        rows.append(("Agency site", website_html(r["web"])))
+                        st.markdown(details_html(rows), unsafe_allow_html=True)
 
             result_list(fl_res, fl_card, "programs", "fl_long")
 
@@ -705,39 +883,6 @@ if store is not None:
 
 # ---------- checklist ----------
 with TAB["ready"]:
-    st.header("Getting ready to apply")
-    st.markdown(
-        """
-### For any funder
-1. **Your IRS determination letter** showing 501(c)(3) status.
-2. **A one-page organization summary:** mission, programs, who you serve, and the results you track.
-3. **A simple annual budget** and, for larger requests, your most recent financial statements.
-4. **Your board list** and a short bio for your director.
+    checklist()
 
-### For federal grants
-These registrations take weeks, so start early.
-
-1. **SAM.gov registration and a Unique Entity ID (UEI).** Free, required for every federal applicant, and renewed every year. Start at [sam.gov](https://sam.gov).
-2. **A Grants.gov applicant account** linked to your organization. See [Grants.gov applicant registration](https://www.grants.gov/applicants/applicant-registration).
-
-### For foundations
-- Read the "How to apply" notes. Many want a short letter of inquiry first, not a full proposal.
-- Look at who they funded last year. If they fund groups like yours near you, mention that connection.
-- Community foundations in your county are often the best first call, and many run small grant cycles for new nonprofits.
-
-### For Florida state programs
-- The state pays grants and contracts to registered vendors. Register at [MyFloridaMarketPlace](https://www.myfloridamarketplace.com) and keep a Florida Substitute W-9 on file with the Department of Financial Services.
-- Each agency posts its own application windows. Use the agency link on each program to find the next one.
-        """
-    )
-
-st.markdown(
-    f"<div class='gm-footer' role='contentinfo'><p>{NOTICE}</p>"
-    "<p>Federal data from the Grants.gov API, refreshed nightly. Foundation data from IRS Form 990-PF and Form 990 "
-    "Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial "
-    "Assistance.</p>"
-    "<p>Scores are a starting point for your own review, not a guarantee of eligibility.</p>"
-    "<p>Source code: <a href='https://github.com/RendellRich/grant-matcher'>github.com/RendellRich/grant-matcher</a></p>"
-    "</div>",
-    unsafe_allow_html=True,
-)
+footer()
