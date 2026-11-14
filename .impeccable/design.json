@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-13T21:32:35+00:00",
+  "generatedAt": "2026-11-14T01:06:40+00:00",
   "title": "Design System: Grant Matcher",
   "extensions": {
     "colorMeta": {
@@ -107,6 +107,21 @@
           "#b2beb8",
           "#d2d8d5",
           "#f1f3f2"
+        ]
+      },
+      "control-edge": {
+        "role": "neutral",
+        "displayName": "Control edge",
+        "canonical": "#7d8984",
+        "tonalRamp": [
+          "#252826",
+          "#414644",
+          "#5c6561",
+          "#78847f",
+          "#969f9c",
+          "#b5bbb8",
+          "#d4d7d5",
+          "#f2f3f2"
         ]
       },
       "caution-amber": {
@@ -259,6 +274,21 @@
           "#f1f3f2"
         ]
       },
+      "control-edge-night": {
+        "role": "neutral",
+        "displayName": "Control edge (dark mode)",
+        "canonical": "#6a7a75",
+        "tonalRamp": [
+          "#242827",
+          "#404745",
+          "#5b6763",
+          "#758681",
+          "#94a19d",
+          "#b4bcb9",
+          "#d3d7d6",
+          "#f2f3f2"
+        ]
+      },
       "caution-amber-night": {
         "role": "status",
         "displayName": "Caution amber (dark mode)",
@@ -356,9 +386,13 @@
         "displayName": "Body",
         "purpose": "Reasons, details values and checklist text."
       },
+      "detail": {
+        "displayName": "Detail",
+        "purpose": "Details lists, past grants and notes inside cards."
+      },
       "meta": {
         "displayName": "Meta",
-        "purpose": "Meta lines, notices, captions and the score."
+        "purpose": "Meta lines, notices, captions, the score and the edit guard."
       },
       "label": {
         "displayName": "Label",
@@ -384,6 +418,14 @@
   },
   "components": [
     {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action, Update matches: evergreen fill, paper text, full width in the form.",
+      "html": "<button class=\"ds-btn-primary\">Update matches</button>",
+      "css": ".ds-btn-primary { font: 400 1rem/1.5 'Source Sans', sans-serif; color: #ffffff; background: #2f6f5e; border: 1px solid #2f6f5e; border-radius: 8px; min-height: 44px; padding: 0 14px; width: 100%; cursor: pointer; } .ds-btn-primary:hover { background: #17543f; } .ds-btn-primary:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; }"
+    },
+    {
       "name": "Button",
       "kind": "button",
       "refersTo": "button",
@@ -395,9 +437,9 @@
       "name": "Text input",
       "kind": "input",
       "refersTo": "input",
-      "description": "Profile fields: paper, 1px rule, slate example placeholder, evergreen focus outline.",
+      "description": "Profile fields: paper, 1px control edge at 3:1, slate example placeholder, evergreen focus outline.",
       "html": "<label class=\"ds-field\"><span>Cities or counties (optional)</span><input class=\"ds-input\" placeholder=\"For example: Tampa, Hillsborough\"></label>",
-      "css": ".ds-field { display: grid; gap: 6px; font: 400 .875rem/1.4 'Source Sans', sans-serif; color: #1c2421; } .ds-input { font: 400 1rem 'Source Sans', sans-serif; min-height: 44px; padding: 0 12px; border: 1px solid #d5ddd9; border-radius: 8px; background: #ffffff; color: #1c2421; } .ds-input::placeholder { color: #4b5753; opacity: 1; } .ds-input:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 1px; border-color: #2f6f5e; }"
+      "css": ".ds-field { display: grid; gap: 6px; font: 400 .875rem/1.4 'Source Sans', sans-serif; color: #1c2421; } .ds-input { font: 400 1rem 'Source Sans', sans-serif; min-height: 44px; padding: 0 12px; border: 1px solid #7d8984; border-radius: 8px; background: #ffffff; color: #1c2421; } .ds-input::placeholder { color: #4b5753; opacity: 1; } .ds-input:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 1px; border-color: #2f6f5e; }"
     },
     {
       "name": "Tabs",
@@ -468,7 +510,7 @@
       },
       {
         "name": "The Step Rule",
-        "body": "Adjacent roles differ by at least 1.25 in size: 16, 20, 25px. A 17px heading over 16px body is a missing step.",
+        "body": "Adjacent heading roles differ by at least 1.25 in size: 16, 20, 25px. A 17px heading over 16px body is a missing step. Detail (15px) is a reading size inside cards, never a heading.",
         "section": "typography"
       },
       {

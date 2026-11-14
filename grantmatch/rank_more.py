@@ -35,6 +35,7 @@ def _keyword_weights(keywords: list[str], texts: pd.Series) -> tuple[dict[str, f
 
 
 def _tier(points: float) -> str:
+    """Callers pass the rounded score, so the tier always agrees with the score on the card."""
     return "Strong" if points >= 60 else "Possible" if points >= 35 else "Long shot"
 
 
@@ -144,7 +145,7 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
         if n < 3:
             points = min(points, 55)  # too little history to call it a strong match
         final = max(0.0, min(100.0, points))
-        rows.append({**r.drop(labels=["purpose_text"]).to_dict(), "score": round(final), "tier": _tier(final),
+        rows.append({**r.drop(labels=["purpose_text"]).to_dict(), "score": round(final), "tier": _tier(round(final)),
                      "reasons": reasons, "cautions": cautions, "matched": matched, "in_state": in_state})
     out = pd.DataFrame(rows)
     if out.empty:
@@ -190,6 +191,6 @@ def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | 
             points -= 40
             cautions.append("Set aside by the Legislature for a named organization")
         final = max(0.0, min(100.0, points))
-        rows.append({**r.to_dict(), "score": round(final), "tier": _tier(final),
+        rows.append({**r.to_dict(), "score": round(final), "tier": _tier(round(final)),
                      "reasons": reasons, "cautions": cautions, "matched": matched})
     return pd.DataFrame(rows).sort_values("score", ascending=False).reset_index(drop=True)

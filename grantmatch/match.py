@@ -209,7 +209,8 @@ def score(df: pd.DataFrame, p: Profile, semantic: dict[str, float] | None = None
             cautions.append("No close date listed; check the notice")
 
         final = max(0.0, min(100.0, points))
-        tier = "Strong" if final >= 60 else "Possible" if final >= 35 else "Long shot"
+        shown = round(final)  # the tier follows the score people see, so "Score 35" is never a long shot
+        tier = "Strong" if shown >= 60 else "Possible" if shown >= 35 else "Long shot"
         rows.append({
             "score": round(final),
             "tier": tier,

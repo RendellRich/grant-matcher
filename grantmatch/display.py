@@ -78,7 +78,8 @@ def tidy_name(value, kind: str = "name") -> str:
     only before a ZIP code or as the last word, so "OR" and "IN" inside a name read as words.
     """
     text = present(value)
-    if not shouting(text):
+    short_caps = kind == "city" and text.isupper()  # RYE, LEE: too short for shouting() to notice
+    if not (shouting(text) or short_caps):
         return text
     tokens = text.split()
     out = []
@@ -97,8 +98,9 @@ def tidy_name(value, kind: str = "name") -> str:
         elif up in STATES and (ZIP.match(nxt) or (last and i) or nxt.upper() in STATE_SCHOOL or (up == "UT" and i == 0)
                                   or (i and tokens[i - 1].upper() in ("NE", "NW", "SE", "SW"))):
             word = up  # "Boston MA 02199", "Seattle WA", "GA State University", "National MS Society", "UT Dallas"
-        elif up == "A" and i and tokens[i - 1].strip(".,").upper().rstrip("'") in BEFORE_ARTICLE | {"CHASIN"}                 or up == "A" and i and re.search(r"(ING|IN')$", tokens[i - 1].upper()):
-            word = "a"
+        elif up == "A" and i and (tokens[i - 1].strip(".,").upper() in BEFORE_ARTICLE
+                                  or re.search(r"(ING|IN')$", tokens[i - 1].upper())):
+            word = "a"  # the article after a verb ("Make a Wish", "Chasin a Dream"); otherwise an initial
         elif up in ("NE", "NW", "SE", "SW") or (kind == "address" and up in DIRECTIONS):
             word = up
         elif lead.startswith("(") and tail.startswith(")") and len(core) <= 6 and core.isalpha():
@@ -115,3 +117,32 @@ def tidy_text(value) -> str:
     """Sentence case for ALL CAPS sentences such as missions, purposes and instructions."""
     text = present(value)
     return text[:1].upper() + text[1:].lower() if shouting(text) else text
+
+
+ASSISTANCE = ("Cooperative Agreements", "Direct Appropriations", "Loan Guarantees", "Loans", "Grants", "Property", "Other")
+
+
+def assistance_label(value) -> str:
+    """Florida's assistance types run together ("Cooperative Agreements Grants"); list them plainly."""
+    text, found = present(value), []
+    for term in ASSISTANCE:
+        if term in text:
+            found.append("other assistance" if term == "Other" else term.lower())
+            text = text.replace(term, " ")
+    if not found:
+        return ""
+    joined = found[0] if len(found) == 1 else ", ".join(found[:-1]) + " and " + found[-1]
+    return "Paid as " + joined
+
+
+def format_address(value, city: str = "") -> str:
+    """Tidy an address and add the commas the return leaves out: "1 Main St, Tampa, FL 33602"."""
+    text = tidy_name(value, "address")
+    m = re.search(r"\s([A-Z]{2})\s(\d{5}(?:-\d{4})?)$", text)
+    if not m or m.group(1) not in STATES:
+        return text
+    head = text[:m.start()]
+    town = tidy_name(city, "city") if city else ""
+    if town and head.lower().endswith(" " + town.lower()) and len(head) > len(town) + 1:
+        head = head[: -len(town) - 1].rstrip(",") + ", " + head[-len(town):]
+    return f"{head}, {m.group(1)} {m.group(2)}"

@@ -91,3 +91,28 @@ def test_more_names_from_the_data(raw, kind, want):
 ])
 def test_last_edge_cases(raw, want):
     assert tidy_name(raw) == want
+
+
+def test_short_caps_cities():
+    assert tidy_name("RYE", "city") == "Rye" and tidy_name("Rye", "city") == "Rye"
+
+
+@pytest.mark.parametrize("raw, want", [
+    ("Grants", "Paid as grants"),
+    ("Cooperative Agreements Grants", "Paid as cooperative agreements and grants"),
+    ("Direct Appropriations Grants Other", "Paid as direct appropriations, grants and other assistance"),
+    ("", ""),
+])
+def test_assistance_label(raw, want):
+    from grantmatch.display import assistance_label
+    assert assistance_label(raw) == want
+
+
+@pytest.mark.parametrize("raw, city, want", [
+    ("622 EAST TARPON AVENUE TARPON SPRINGS FL 34689", "TARPON SPRINGS", "622 East Tarpon Avenue, Tarpon Springs, FL 34689"),
+    ("PO BOX 1272 MCMURRAY PA 15317", "", "PO Box 1272 McMurray, PA 15317"),
+    ("SEE ATTACHED", "TAMPA", "See Attached"),
+])
+def test_format_address(raw, city, want):
+    from grantmatch.display import format_address
+    assert format_address(raw, city) == want
