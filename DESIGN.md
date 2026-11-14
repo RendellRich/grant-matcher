@@ -9,6 +9,7 @@ colors:
   ink: "#1c2421"
   slate: "#4b5753"
   rule: "#d5ddd9"
+  control-edge: "#7d8984"
   caution-amber: "#8a5a00"
   strong-tint: "#e2f1e9"
   strong-ink: "#17543f"
@@ -19,6 +20,7 @@ colors:
   night-ink: "#e6ebe9"
   night-slate: "#a7b2ae"
   night-rule: "#34403b"
+  control-edge-night: "#6a7a75"
   caution-amber-night: "#e0b45a"
   strong-tint-night: "#173a2d"
   strong-ink-night: "#a9e3c6"
@@ -49,6 +51,11 @@ typography:
   body:
     fontFamily: "Source Sans, sans-serif"
     fontSize: "1rem"
+    fontWeight: 400
+    lineHeight: 1.5
+  detail:
+    fontFamily: "Source Sans, sans-serif"
+    fontSize: "0.9375rem"
     fontWeight: 400
     lineHeight: 1.5
   meta:
@@ -84,6 +91,12 @@ components:
   input:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
+    borderColor: "{colors.control-edge}"
+    rounded: "{rounded.md}"
+    height: "44px"
+  button-primary:
+    backgroundColor: "{colors.evergreen}"
+    textColor: "{colors.paper}"
     rounded: "{rounded.md}"
     height: "44px"
   result-card:
@@ -152,7 +165,8 @@ A cool, near-neutral paper palette with one evergreen accent and a single amber 
 - **Mist** and **Night surface** (`mist`, `night-surface`): the sidebar, notes and info boxes. Tonal layering instead of shadow.
 - **Ink** and **Night ink** (`ink`, `night-ink`): body text, titles, and links (links are ink with an underline, not a second colour).
 - **Slate** and **Night slate** (`slate`, `night-slate`): meta lines, captions, notices, the score, details labels and placeholders. Passes AA on every surface it sits on.
-- **Rule** and **Night rule** (`rule`, `night-rule`): card borders, dividers between card body and expander, tab baseline, footer rule.
+- **Rule** and **Night rule** (`rule`, `night-rule`): card borders, dividers between card body and expander, tab baseline, footer rule. Decorative only, so it may sit below 3:1.
+- **Control edge** (`control-edge`, `control-edge-night`): the edge of anything you type into or toggle: text fields, selects, the file drop zone, unchecked boxes and radios, the off track of a toggle. At least 3:1 against both paper and mist (WCAG 1.4.11).
 
 ### Status
 - **Caution amber** (`caution-amber`, `caution-amber-night`): the caution icon on card reasons only. Not used for badges, buttons or decoration.
@@ -179,11 +193,12 @@ A cool, near-neutral paper palette with one evergreen accent and a single amber 
 - **Title** (600, 1.25rem, 1.35): result card titles, which are also the card's link.
 - **Lead** (400, 1.0625rem, 1.55, max 65ch; 1rem under 640px): the intro and the overview line.
 - **Body** (400, 1rem, 1.5): reasons, details values, checklist text. Notes and captions cap at 72ch.
-- **Meta** (400, 0.875rem, 1.5): the dot-separated meta line, notices, captions, the score.
+- **Detail** (400, 0.9375rem, 1.5): dense reading inside a card or note: details lists, past grants, notes.
+- **Meta** (400, 0.875rem, 1.5): the dot-separated meta line, notices, captions, the score, the edit guard.
 - **Label** (600, 0.8125rem): badges.
 
 ### Named Rules
-**The Step Rule.** Adjacent roles differ by at least 1.25 in size: 16, 20, 25px. A 17px heading over 16px body is a missing step.
+**The Step Rule.** Adjacent heading roles differ by at least 1.25 in size: 16, 20, 25px. A 17px heading over 16px body is a missing step. Detail (15px) is a reading size inside cards, never a heading.
 
 **The No Shouting Rule.** All-caps text from tax returns is converted for display (title case for names, cities and addresses; sentence case for missions and instructions). The interface itself never uses all caps.
 
@@ -191,9 +206,11 @@ A cool, near-neutral paper palette with one evergreen accent and a single amber 
 
 A single reading column, at most 1080px wide, beside Streamlit's sidebar. The sidebar holds only the profile, grouped under small headings (About your work, Where you work, Eligibility, Keep this profile) separated by 1px rules.
 
-The main column follows a fixed rhythm: title, lead, the Grants.gov notice, an optional note, the overview line, tabs, then per tab the tally, a source caption, one "Filters and how the score works" expander, and the cards. Cards stack with 12px between their parts. The first 40 strong and possible results show, with "Show 40 more"; long shots sit in their own section behind a toggle.
+The profile form exists twice: in the sidebar from 768px up, and as an "Edit your organization" expander above the results under 768px, where a sidebar would cover the results it changes. CSS shows one copy; both write to the same values, so they never disagree.
 
-Under 768px the phone tip in notes appears and the sidebar collapses behind its button. Under 640px tabs wrap with tighter gaps, card padding tightens to 16px and details lists stack label over value. Nothing scrolls sideways at 320px.
+The main column follows a fixed rhythm: title, lead, the Grants.gov notice, an optional note, the phone profile row (under 768px), the overview line, tabs, then per tab the tally, a source caption, one "Filters and how the score works" expander, and the cards. Cards stack with 12px between their parts. The first 40 strong and possible results show, with "Show 40 more"; long shots sit in their own section behind a toggle.
+
+Under 768px the sidebar and its button are hidden, the profile moves into the main column, the lead drops its list of sources, the example note shortens to one line and the overview keeps only its count. Under 640px tabs wrap with tighter gaps, card padding tightens to 16px and details lists stack label over value. Nothing scrolls sideways at 320px.
 
 ## Elevation & Depth
 
@@ -213,7 +230,8 @@ Gently rounded (8px) on cards, buttons, inputs, notes and info boxes. Badges are
 - **Shape:** gently rounded (8px), at least 44px tall.
 - **Default:** paper background, 1px rule border, ink text. Labels start with a verb ("Save to pipeline", "Download matches (CSV)", "Show 40 more", "Keep my text").
 - **Hover / Focus:** Streamlit's border shift on hover; a 2px evergreen outline with 2px offset on keyboard focus.
-- **Primary:** not used. When a choice protects the visitor's work, the safe option comes first ("Keep my text" before "Replace my text").
+- **Primary:** one only, "Update matches" under the key words: evergreen fill, paper text. It commits typed text, so the form never needs a keyboard shortcut hint.
+- **Safe first:** when a choice protects the visitor's work, the safe option comes first ("Keep my text" before "Replace my text" or "Clear my text").
 
 ### Chips
 - **Style:** the multiselect's selected values use the neutral long tint and long ink, never the accent.
@@ -226,7 +244,7 @@ Gently rounded (8px) on cards, buttons, inputs, notes and info boxes. Badges are
 - **Internal Padding:** 18px top, 20px sides (16px under 640px), 8px bottom where the expander row sits flush.
 
 ### Inputs / Fields
-- **Style:** paper background, 1px rule border, 8px radius, at least 44px tall. Placeholders in slate, written as examples ("For example: dyslexia, tutoring, after school").
+- **Style:** paper background, 1px control-edge border, 8px radius, at least 44px tall. Placeholders in slate, written as examples ("For example: dyslexia, tutoring, after school").
 - **Focus:** a 2px evergreen outline on the field wrapper.
 - **Help:** each "?" icon has a 44px hit area centred on it.
 
@@ -245,7 +263,12 @@ Each item carries hidden "Fits:", "Caution:" or "Status:" text for screen reader
 Label and value pairs in a two-column definition list (slate labels, ink values), stacking under 640px. Empty values and return placeholders (NONE, N/A) are dropped. Phones become `tel:` links, emails `mailto:` links, websites lowercase links. Past grants are a short ruled list of up to eight: recipient in bold, then city, amount and purpose separated by dots.
 
 ### Notes
-Mist background, 8px radius, 72ch maximum. One sentence where possible. Used for the example-profile notice and the blank-start steps.
+Mist background, 8px radius, 72ch maximum, detail type. One sentence where possible. Used for the example-profile notice ("This is an example." first, so nobody mistakes a sample's matches for their own) and the blank-start steps.
+
+### Status and guard
+- **Overview line:** a live region (`role="status"`). After any profile change it starts with a bold "Updated." so the change is seen and heard. The strong-match threshold sits here once, so no tab has to be remembered.
+- **Edit guard:** switching examples over typed text asks first, as a caution-icon line with `role="alert"`, then "Keep my text" and "Replace my text".
+- **Show more:** the count under the list is a live region; after a batch loads, "Go to result 41" moves keyboard focus to the first new card.
 
 ## Do's and Don'ts
 

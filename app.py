@@ -13,6 +13,8 @@ import streamlit as st
 import os
 
 from grantmatch import embed
+from grantmatch.display import (STATES, assistance_label, format_address, present, shouting as _shouting,
+                                tidy_name, tidy_text)
 from grantmatch import ui_workspace as uiw
 from grantmatch import workspace as wsp
 from grantmatch.store import GitHubStore, LocalStore, StoreError
@@ -22,9 +24,6 @@ from grantmatch.rank_more import score_florida, score_foundations
 RELEASE = "https://github.com/RendellRich/grant-matcher/releases/download/data-latest/"
 LOCAL_DIR = Path(__file__).parent / "data"
 NOTICE = "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services."
-STATES = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA",
-          "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR",
-          "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
 
 PRESETS = {
     "Youth literacy and learning support": {
@@ -55,10 +54,10 @@ st.set_page_config(page_title="Grant Matcher for small nonprofits", page_icon=":
 # Colour tokens for the few things the theme in .streamlit/config.toml can't reach (badges, meta text, icons).
 # Every text pair here passes WCAG AA on its own background; the theme follows the visitor's light or dark setting.
 TOKENS = {
-    "light": {"muted": "#4b5753", "border": "#d5ddd9", "accent": "#2f6f5e", "caution": "#8a5a00",
+    "light": {"muted": "#4b5753", "border": "#d5ddd9", "control": "#7d8984", "accent": "#2f6f5e", "caution": "#8a5a00",
               "strong-bg": "#e2f1e9", "strong-fg": "#17543f", "possible-bg": "transparent", "possible-fg": "#2f6f5e", "surface": "#f4f6f5",
               "long-bg": "#edf0ef", "long-fg": "#3b4744"},
-    "dark": {"muted": "#a7b2ae", "border": "#34403b", "accent": "#6cc0a5", "caution": "#e0b45a",
+    "dark": {"muted": "#a7b2ae", "border": "#34403b", "control": "#6a7a75", "accent": "#6cc0a5", "caution": "#e0b45a",
              "strong-bg": "#173a2d", "strong-fg": "#a9e3c6", "possible-bg": "transparent", "possible-fg": "#6cc0a5", "surface": "#1b2220",
              "long-bg": "#252d2a", "long-fg": "#c6cfcb"},
 }
@@ -90,8 +89,21 @@ st.markdown(
     .gm-note p {{margin: 0; font-size: inherit !important;}}
     .gm-note ol {{margin: .5rem 0 0; padding-left: 1.25rem;}}
     .gm-note li {{margin: 0 0 .25rem; font-size: inherit !important;}}
+    /* phones get the profile form above the results instead of a sidebar that would cover them */
     .gm-phone {{display: none;}}
-    @media (max-width: 768px) {{ .gm-phone {{display: inline;}} }}
+    .st-key-gm-phone-profile {{display: none;}}
+    @media (max-width: 767.98px) {{
+        .gm-phone {{display: inline;}}
+        .gm-wide {{display: none;}}
+        .st-key-gm-phone-profile {{display: block;}}
+        [data-testid="stSidebar"], [data-testid="stExpandSidebarButton"] {{display: none !important;}}
+    }}
+    .st-key-gm-phone-profile [data-testid="stExpander"] summary {{font-weight: 600;}}
+    .stApp p.gm-guard {{display: flex; gap: .5rem; margin: 0 0 .5rem; font-size: .875rem !important; line-height: 1.45;}}
+    .gm-guard::before {{content: ""; flex: none; width: 1rem; height: 1rem; margin-top: .15rem; background: var(--gm-caution);
+                        -webkit-mask: {_ALERT} center / contain no-repeat; mask: {_ALERT} center / contain no-repeat;}}
+    [data-testid="InputInstructions"] {{display: none;}}  /* "Press Ctrl+Enter": the Update matches button says it */
+    .stApp :is(p.gm-lead, p.gm-notice, p.gm-overview, .gm-note, [data-testid="stCaptionContainer"] p) {{text-wrap: pretty;}}
     .stApp p.gm-overview {{font-size: 1.0625rem !important; line-height: 1.5; max-width: 72ch; margin: .25rem 0 .75rem;}}
     .gm-quiet {{color: var(--gm-muted);}}
 
@@ -99,6 +111,7 @@ st.markdown(
     [data-testid="stTabs"] [role="tablist"] {{flex-wrap: wrap; gap: 0 1.5rem; overflow: visible !important;
                                                border-bottom: 1px solid var(--gm-border);}}
     [data-testid="stTabs"] [role="tab"] {{min-height: 44px; padding: 0 .125rem; font-weight: 500; flex: none;}}
+    [data-testid="stTabs"] [role="tab"] p {{font-weight: 500 !important;}}
     [data-testid="stTabs"] [role="tab"][aria-selected="true"] {{box-shadow: inset 0 -2px 0 var(--gm-accent);}}
     [data-testid^="stTabsScroll"] {{display: none !important;}}
     @media (max-width: 640px) {{ [data-testid="stTabs"] [role="tablist"] {{gap: 0 1rem;}} }}
@@ -113,7 +126,7 @@ st.markdown(
     .gm-section {{font-size: 1.5625rem !important; line-height: 1.25; padding: 1.5rem 0 0 !important; margin: 0 0 .25rem;
                   border-top: 1px solid var(--gm-border);}}
     .gm-section .gm-count {{color: var(--gm-muted); font-weight: 400;}}
-    .gm-group {{font-size: .875rem !important; font-weight: 600 !important; color: var(--gm-muted);
+    .gm-group {{font-size: .875rem !important; font-weight: 600 !important; color: var(--gm-muted) !important;
                 padding: 1rem 0 .375rem !important; margin: .5rem 0 0 !important; border-top: 1px solid var(--gm-border);}}
     .sr-only {{position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;}}
 
@@ -167,6 +180,18 @@ st.markdown(
     :is(dl.gm-details, ul.gm-grants) a {{text-underline-offset: 3px; overflow-wrap: anywhere;}}
 
     .stApp :is(input, textarea)::placeholder {{color: var(--gm-muted); opacity: 1;}}
+    ul.gm-grants .place {{white-space: nowrap;}}
+    .stApp p.gm-jump-status {{margin: 0; font-size: .875rem !important; color: var(--gm-muted); max-width: 72ch;}}
+    .stApp p.gm-jump {{margin: 0; font-size: .875rem !important;}}
+    .gm-jump a {{display: inline-block; padding: .625rem 0; min-height: 44px; box-sizing: border-box; text-underline-offset: 3px;}}
+
+    /* control edges at 3:1 against the page and the sidebar (WCAG 1.4.11); dividers keep the lighter rule */
+    .stApp :is([data-testid="stTextAreaRootElement"], [data-testid="stTextInputRootElement"],
+               [data-testid="stSelectbox"] [role="group"], [data-testid="stMultiSelect"] [role="group"],
+               [data-testid="stFileUploaderDropzone"]) {{border-color: var(--gm-control) !important;}}
+    .stApp label:has(> span > input:is([type="checkbox"], [type="radio"]):not(:checked)) > div:first-of-type
+        {{border-color: var(--gm-control) !important;}}
+    .stApp label:has(> span > input[role="switch"]:not(:checked)) > div:first-of-type {{background: var(--gm-control) !important;}}
 
     /* 44px targets and a visible focus ring everywhere */
     .stButton button, .stDownloadButton button, [data-testid="stFileUploader"] button,
@@ -288,9 +313,10 @@ def _href(url) -> str:
 def card_head(r, title: str, url: str, meta: list[str]) -> str:
     """Badge, score, title link and meta line for one result. Every value from the data is escaped."""
     tier = r["tier"]
+    anchor = f" id='{_esc(r['_anchor'])}'" if r.get("_anchor") else ""
     return (f"<p class='gm-head'><span class='gm-badge {tier.split()[0]}'>{TIER_LABEL.get(tier, tier)}</span>"
             f"<span class='gm-score'>Score {int(r['score'])} of 100</span></p>"
-            f"<h3 class='gm-title'><a href='{_href(url)}' target='_blank' rel='noopener'>{_esc(title)}"
+            f"<h3 class='gm-title'><a{anchor} href='{_href(url)}' target='_blank' rel='noopener'>{_esc(title)}"
             f"<span class='sr-only'> (opens in a new tab)</span></a></h3>"
             f"<p class='gm-meta'>{SEP.join(_meta_item(m) for m in meta if m)}</p>")
 
@@ -313,44 +339,8 @@ def why(r) -> str:
     return f"<ul class='gm-why'>{items}</ul>"
 
 
-# ---------- tidy raw IRS text for display (display only; the data and ranking are untouched) ----------
-EMPTY_VALUES = {"", "NONE", "N/A", "NA", "NOT APPLICABLE", "0", "-", "NULL"}
-KEEP_UPPER = {"NE", "NW", "SE", "SW", "PO", "LLC", "USA", "US", "YMCA", "YWCA", "II", "III", "IV"} | set(STATES)
-SMALL_WORDS = {"and", "of", "the", "for", "in", "to", "a", "an", "at", "by", "on", "or"}
-
-
-def _present(value) -> str:
-    """The value as text, or '' when the return left it empty or wrote NONE or N/A."""
-    text = _s(value).strip()
-    return "" if text.upper() in EMPTY_VALUES else text
-
-
-def _shouting(text: str) -> bool:
-    letters = [c for c in text if c.isalpha()]
-    return len(letters) > 3 and sum(c.isupper() for c in letters) / len(letters) > 0.8
-
-
-def tidy_name(value) -> str:
-    """Title case for ALL CAPS names, cities and addresses, keeping state codes and directions."""
-    text = _present(value)
-    if not _shouting(text):
-        return text
-    words = []
-    for i, w in enumerate(text.split()):
-        core = w.strip(".,")
-        if core in KEEP_UPPER:
-            words.append(w)
-        elif i and core.lower() in SMALL_WORDS:
-            words.append(w.lower())
-        else:
-            words.append(w.capitalize())
-    return " ".join(words)
-
-
-def tidy_text(value) -> str:
-    """Sentence case for ALL CAPS sentences such as missions, purposes and instructions."""
-    text = _present(value)
-    return text[:1].upper() + text[1:].lower() if _shouting(text) else text
+# ---------- tidy raw IRS text for display: see grantmatch/display.py ----------
+_present = present
 
 
 def phone_html(value) -> str:
@@ -420,11 +410,21 @@ def matches(good: pd.DataFrame, card, noun: str, key: str, has_download: bool) -
     """Strong and possible matches, 40 at a time. Its own fragment, so "Show more" reruns only this list."""
     shown_key = f"{key}_shown"
     shown = min(st.session_state.get(shown_key, PAGE), len(good))
-    for _, r in good.head(shown).iterrows():
+    for i, (_, r) in enumerate(good.head(shown).iterrows(), start=1):
+        r = r.copy()
+        r["_anchor"] = f"gm-{key}-{i}"
         card(r)
+    batch = shown - PAGE + 1 if shown > PAGE else 0  # first card of the batch "Show more" just added
+    if shown < len(good) or batch:
+        # A live region, so a screen reader hears the new count; the link takes keyboard users to the new cards.
+        status = f"Showing the top {shown:,} of {len(good):,} strong and possible {noun}."
+        if shown < len(good) and has_download:
+            status += " The download below has all of them."
+        st.markdown(f"<p class='gm-jump-status' role='status'>{status}</p>", unsafe_allow_html=True)
+        if batch:
+            st.markdown(f"<p class='gm-jump'><a href='#gm-{key}-{batch}'>Go to result {batch}</a></p>",
+                        unsafe_allow_html=True)
     if shown < len(good):
-        st.caption(f"Showing the top {shown} of {len(good):,} strong and possible {noun}."
-                   + (" The download below has all of them." if has_download else ""))
         more = min(PAGE, len(good) - shown)
 
         def show_more():
@@ -444,8 +444,9 @@ def long_shots(longs: pd.DataFrame, card, key: str) -> None:
 # ---------- header ----------
 st.markdown(
     "<h1 class='gm-h1'>Grant Matcher</h1>"
-    "<p class='gm-lead'>Grants a small nonprofit can realistically go after, from federal programs, private and community "
-    "foundations, and Florida state programs, ranked against your mission with the reasons spelled out.</p>"
+    "<p class='gm-lead'>Grants a small nonprofit can realistically go after,<span class='gm-wide'> from federal "
+    "programs, private and community foundations, and Florida state programs,</span> ranked against your mission "
+    "with the reasons spelled out.</p>"
     f"<p class='gm-notice'>{NOTICE}</p>",
     unsafe_allow_html=True,
 )
@@ -471,6 +472,173 @@ elif AUTH_ON and st.user.is_logged_in:
 ANTHROPIC = (_secret("anthropic") or {}).get("api_key", "").strip() or None if _secret("anthropic") else None
 
 # ---------- profile ----------
+# The form is drawn twice: in the sidebar on wider screens, and above the results on phones, where the
+# sidebar would cover them. CSS shows one copy. Each copy has its own widget keys; the values that count
+# live in session state under the plain field names, and every change is copied back into both copies.
+ss = st.session_state
+FIELDS = ("mission", "keywords", "state", "cities", "has_501c3", "budget_band", "can_cost_share", "preset")
+COPIES = ("side", "main")
+DEFAULTS = {"state": "FL", "cities": "", "has_501c3": "Yes", "budget_band": "$50k to $250k", "can_cost_share": False}
+
+
+def _push() -> None:
+    for w in COPIES:
+        for f in FIELDS:
+            ss[f"{w}_{f}"] = ss[f]
+
+
+def _preset_text(name: str) -> tuple[str, str, str]:
+    p = PRESETS.get(name, {})
+    return p.get("mission", ""), p.get("keywords", ""), p.get("cities", "")
+
+
+def _apply_preset(name: str) -> None:
+    ss["mission"], ss["keywords"], ss["cities"] = _preset_text(name)
+    ss["state"] = PRESETS.get(name, {}).get("state", "FL")
+    ss["fed_categories"] = list(PRESETS.get(name, {}).get("categories", []))
+    ss["preset"] = ss["_preset_applied"] = name
+    ss.pop("_preset_pending", None)
+    _push()
+
+
+def _edited() -> bool:
+    """True when the person has typed their own mission, key words or cities over the example."""
+    current = (ss["mission"], ss["keywords"], ss["cities"])
+    return any(t.strip() for t in current) and current != _preset_text(ss["_preset_applied"])
+
+
+def _on_preset_change(w: str) -> None:
+    new = ss[f"{w}_preset"]
+    if _edited():
+        ss["_preset_pending"] = new
+        _push()  # the select goes back to the example in use until the person decides
+    else:
+        _apply_preset(new)
+
+
+def _keep_text() -> None:
+    ss.pop("_preset_pending", None)
+
+
+def _replace_text() -> None:
+    _apply_preset(ss["_preset_pending"])
+
+
+def _on_field_change(w: str, field: str) -> None:
+    ss[field] = ss[f"{w}_{field}"]
+    _push()
+
+
+def _load_profile(data: dict) -> None:
+    ss["mission"], ss["keywords"] = str(data.get("mission", "")), str(data.get("keywords", ""))
+    ss["cities"] = str(data.get("cities", ""))
+    if data.get("state") in STATES:
+        ss["state"] = data["state"]
+    if data.get("has_501c3") in ("Yes", "Pending", "No"):
+        ss["has_501c3"] = data["has_501c3"]
+    if data.get("budget_band") in BUDGET_BANDS:
+        ss["budget_band"] = data["budget_band"]
+    ss["can_cost_share"] = bool(data.get("can_cost_share", False))
+    ss["fed_categories"] = [c for c in data.get("categories", []) if c in CATEGORY_NAMES]
+    ss["fed_forecast"] = bool(data.get("include_forecasted", True))
+    ss["fed_min_days"] = int(data.get("min_days_left", 14))
+    ss["_loaded"] = True
+    _push()
+
+
+def _on_upload(w: str) -> None:
+    ss.pop("_upload_error", None)
+    file = ss.get(f"{w}_upload")
+    if file is None:  # the file was removed: go back to the example
+        ss.pop("_loaded", None)
+        _apply_preset(ss["_preset_applied"])
+        return
+    try:
+        _load_profile(json.load(file))
+    except (ValueError, AttributeError, TypeError):
+        ss["_upload_error"] = "That file isn't a profile from this page. Save one with Download this profile."
+
+
+if "_preset_applied" not in ss:
+    ss.update(DEFAULTS)
+    _apply_preset(next(iter(PRESETS)))
+    if store is not None:
+        try:
+            if saved_profile := store.read(wsp.PROFILE_FILE):
+                _load_profile(saved_profile)
+        except StoreError as exc:
+            ss["_upload_error"] = str(exc)
+ss.setdefault("fed_categories", [])
+ss.setdefault("fed_forecast", True)
+ss.setdefault("fed_min_days", 14)
+
+mission, keywords, state, cities = ss["mission"], ss["keywords"], ss["state"], ss["cities"]
+has_501c3, budget_band, can_cost_share = ss["has_501c3"], ss["budget_band"], ss["can_cost_share"]
+categories, include_forecasted, min_days = ss["fed_categories"], ss["fed_forecast"], ss["fed_min_days"]
+profile_dict = {
+    "mission": mission, "keywords": keywords, "state": state, "cities": cities, "has_501c3": has_501c3,
+    "budget_band": budget_band, "can_cost_share": can_cost_share, "categories": categories,
+    "include_forecasted": include_forecasted, "min_days_left": min_days,
+}
+
+
+def group(title: str) -> None:
+    st.markdown(f"<h3 class='gm-group'>{title}</h3>", unsafe_allow_html=True)
+
+
+def profile_form(w: str) -> None:
+    """One copy of the profile form. w is "side" or "main"."""
+    def key(field: str) -> str:
+        return f"{w}_{field}"
+
+    def changed(field: str) -> dict:
+        return {"key": key(field), "on_change": _on_field_change, "args": (w, field)}
+
+    st.selectbox("Start from an example", list(PRESETS), key=key("preset"), on_change=_on_preset_change, args=(w,),
+                 disabled=bool(ss.get("_loaded")),
+                 help="Pick the one closest to your work and edit it, or start blank. A loaded profile replaces the example.")
+    if ss.get("_preset_pending"):
+        new = ss["_preset_pending"]
+        ask = ("Clear your mission, key words and cities to start blank?" if new == "Start blank" else
+               f"Replace your mission, key words and cities with the <i>{_esc(new)}</i> example?")
+        st.markdown(f"<p class='gm-guard' role='alert'>{ask}</p>", unsafe_allow_html=True)
+        st.button("Keep my text", key=key("keep"), on_click=_keep_text, width="stretch")
+        st.button("Clear my text" if new == "Start blank" else "Replace my text", key=key("replace"),
+                  on_click=_replace_text, width="stretch")
+    with st.expander("Load a saved profile"):
+        st.file_uploader("Saved profile file", type="json", key=key("upload"), on_change=_on_upload, args=(w,),
+                         help="The file you saved with Download this profile.")
+        if ss.get("_upload_error"):
+            st.error(ss["_upload_error"], icon=":material/error:")
+
+    group("About your work")
+    st.text_area("Mission and programs", height=170, placeholder="Who you serve, where, and what you do for them.",
+                 help="Two or three sentences. This counts most in the ranking.", **changed("mission"))
+    st.text_area("Key words", height=96, placeholder="For example: dyslexia, tutoring, after school",
+                 help="Separate with commas. Use words a matching grant would use. "
+                      "Rare, specific words count more than common ones.", **changed("keywords"))
+    st.button("Update matches", key=key("update"), type="primary", width="stretch",
+              on_click=lambda: ss.update(_asked=True))
+    group("Where you work")
+    st.selectbox("State you serve", STATES, **changed("state"))
+    st.text_input("Cities or counties (optional)", placeholder="For example: Tampa, Hillsborough",
+                  help="Separate with commas. Used to find foundations that already fund groups near you.",
+                  **changed("cities"))
+    group("Eligibility")
+    st.radio("501(c)(3) status", ["Yes", "Pending", "No"], horizontal=True, **changed("has_501c3"))
+    st.selectbox("Annual budget", list(BUDGET_BANDS), **changed("budget_band"))
+    st.checkbox("We can provide matching funds", **changed("can_cost_share"))
+
+    group("Keep this profile")
+    if store is not None:
+        if st.button("Save profile to workspace", key=key("save"), width="stretch"):
+            store.write(wsp.PROFILE_FILE, profile_dict, "Update search profile")
+            st.toast("Profile saved. It will load automatically next time.")
+    st.download_button("Download this profile", json.dumps(profile_dict, indent=2), "grant-profile.json",
+                       "application/json", key=key("download"), width="stretch")
+    st.caption("Load it here next time to pick up where you left off.")
+
+
 with st.sidebar:
     if AUTH_ON:
         if not st.user.is_logged_in:
@@ -479,108 +647,7 @@ with st.sidebar:
             st.caption(f"Signed in as {who}" + ("" if store else ". This account doesn't have a workspace."))
             st.button("Sign out", on_click=st.logout)
     st.header("Your organization")
-    ss = st.session_state
-
-    # Mission and key words keep their own state so switching examples never silently replaces edited text.
-    def _preset_text(name: str) -> tuple[str, str]:
-        p = PRESETS.get(name, {})
-        return p.get("mission", ""), p.get("keywords", "")
-
-    def _apply_preset(name: str) -> None:
-        ss["mission"], ss["keywords"] = _preset_text(name)
-        ss["fed_categories"] = list(PRESETS.get(name, {}).get("categories", []))
-        ss["_preset_applied"] = name
-        ss.pop("_preset_pending", None)
-
-    def _on_preset_change() -> None:
-        new, prev = ss["preset"], ss.get("_preset_applied")
-        current = (ss.get("mission", ""), ss.get("keywords", ""))
-        if prev is not None and any(t.strip() for t in current) and current != _preset_text(prev):
-            ss["_preset_pending"], ss["preset"] = new, prev
-        else:
-            _apply_preset(new)
-
-    def _replace_text() -> None:
-        new = ss["_preset_pending"]
-        _apply_preset(new)
-        ss["preset"] = new
-
-    if "_preset_applied" not in ss:
-        _apply_preset(next(iter(PRESETS)))
-
-    preset_slot = st.container()  # drawn first, filled once we know whether a saved profile was loaded
-    with st.expander("Load a saved profile"):
-        uploaded = st.file_uploader("Profile file (.json)", type="json",
-                                    help="A profile you downloaded from this page earlier.")
-    saved = json.load(uploaded) if uploaded else None
-    if saved is None and store is not None:
-        try:
-            saved = store.read(wsp.PROFILE_FILE)
-        except StoreError as exc:
-            st.warning(str(exc))
-    saved_sig = json.dumps(saved, sort_keys=True) if saved else None
-    if ss.get("_saved_sig") != saved_sig:  # a profile was just loaded or removed
-        if saved:
-            ss["mission"], ss["keywords"] = saved.get("mission", ""), saved.get("keywords", "")
-            ss["fed_categories"] = [c for c in saved.get("categories", []) if c in CATEGORY_NAMES]
-            ss["fed_forecast"] = bool(saved.get("include_forecasted", True))
-            ss["fed_min_days"] = int(saved.get("min_days_left", 14))
-        elif ss.get("_saved_sig"):
-            _apply_preset(ss.get("preset", next(iter(PRESETS))))
-        ss["_saved_sig"] = saved_sig
-    with preset_slot:
-        preset_name = st.selectbox("Start from an example", list(PRESETS), key="preset", on_change=_on_preset_change,
-                                   disabled=saved is not None,
-                                   help="Pick the one closest to your work and edit it, or start blank. "
-                                        "A loaded profile replaces the example.")
-        if ss.get("_preset_pending"):
-            st.warning(f"Replace your mission and key words with the *{ss['_preset_pending']}* example?",
-                       icon=":material/warning:")
-            st.button("Keep my text", on_click=lambda: ss.pop("_preset_pending", None), width="stretch")
-            st.button("Replace my text", on_click=_replace_text, width="stretch")
-    base = saved or PRESETS[preset_name]
-
-    def group(title: str) -> None:
-        st.markdown(f"<h3 class='gm-group'>{title}</h3>", unsafe_allow_html=True)
-
-    group("About your work")
-    mission = st.text_area("Mission and programs", key="mission", height=170,
-                           placeholder="Who you serve, where, and what you do for them.",
-                           help="Two or three sentences. This counts most in the ranking.")
-    keywords = st.text_area("Key words", key="keywords", height=96,
-                            placeholder="For example: dyslexia, tutoring, after school",
-                            help="Separate with commas. Use words a matching grant would use. "
-                                 "Rare, specific words count more than common ones.")
-    group("Where you work")
-    state = st.selectbox("State you serve", STATES, index=STATES.index(base.get("state", "FL")))
-    cities = st.text_input("Cities or counties (optional)", base.get("cities", ""),
-                           placeholder="For example: Tampa, Hillsborough",
-                           help="Separate with commas. Used to find foundations that already fund groups near you.")
-    group("Eligibility")
-    has_501c3 = st.radio("501(c)(3) status", ["Yes", "Pending", "No"],
-                         index=["Yes", "Pending", "No"].index(base.get("has_501c3", "Yes")), horizontal=True)
-    budget_band = st.selectbox("Annual budget", list(BUDGET_BANDS),
-                               index=list(BUDGET_BANDS).index(base.get("budget_band", "$50k to $250k")))
-    can_cost_share = st.checkbox("We can provide matching funds", value=base.get("can_cost_share", False))
-    # Federal filters sit in the Federal tab; their values live in session state so scoring can read them first.
-    ss.setdefault("fed_categories", [c for c in base.get("categories", []) if c in CATEGORY_NAMES])
-    ss.setdefault("fed_forecast", bool(base.get("include_forecasted", True)))
-    ss.setdefault("fed_min_days", int(base.get("min_days_left", 14)))
-    categories, include_forecasted, min_days = ss["fed_categories"], ss["fed_forecast"], ss["fed_min_days"]
-
-    profile_dict = {
-        "mission": mission, "keywords": keywords, "state": state, "cities": cities, "has_501c3": has_501c3,
-        "budget_band": budget_band, "can_cost_share": can_cost_share, "categories": categories,
-        "include_forecasted": include_forecasted, "min_days_left": min_days,
-    }
-    group("Keep this profile")
-    if store is not None:
-        if st.button("Save profile to workspace", width="stretch"):
-            store.write(wsp.PROFILE_FILE, profile_dict, "Update search profile")
-            st.toast("Profile saved. It will load automatically next time.")
-    st.download_button("Download this profile", json.dumps(profile_dict, indent=2), "grant-profile.json",
-                       "application/json", width="stretch")
-    st.caption("Load it here next time to pick up where you left off.")
+    profile_form("side")
 
 
 def footer() -> None:
@@ -625,22 +692,32 @@ These registrations take weeks, so start early.
     )
 
 
-PHONE_HINT = "<span class='gm-phone'> On a phone, open that panel with the » button at the top left.</span>"
-if not mission.strip() and not keywords.strip():
+blank = not mission.strip() and not keywords.strip()
+example = (not ss.get("_loaded") and ss["_preset_applied"] != "Start blank"
+           and (mission, keywords, cities) == _preset_text(ss["_preset_applied"]))
+WHERE = "<b class='gm-wide'>Your organization</b><b class='gm-phone'>Edit your organization</b>"
+if blank:
     st.markdown(
-        "<div class='gm-note' role='note'><p><b>Tell us about your work to see matches.</b>" + PHONE_HINT + "</p>"
-        "<ol><li>Describe your mission and programs under <b>Your organization</b>.</li>"
+        "<div class='gm-note' role='note'><p><b>Tell us about your work to see matches.</b></p>"
+        f"<ol><li>Describe your mission and programs under {WHERE}.</li>"
         "<li>Add a few key words a matching grant would use.</li>"
         "<li>Set your state and, if you like, your cities or counties.</li></ol></div>",
         unsafe_allow_html=True)
+elif example:
+    st.markdown(
+        f"<p class='gm-note' role='note'><b>This is an example.</b><span class='gm-wide'> These matches are for a "
+        f"sample organization, <i>{_esc(ss['_preset_applied'])}</i>.</span> Describe your own work under {WHERE} "
+        "to see yours.</p>",
+        unsafe_allow_html=True)
+
+with st.container(key="gm-phone-profile"):  # phones only; wider screens use the sidebar copy
+    with st.expander("Edit your organization", expanded=blank):
+        profile_form("main")
+
+if blank:
     checklist()
     footer()
     st.stop()
-
-if saved is None and preset_name != "Start blank" and (mission, keywords) == _preset_text(preset_name):
-    st.markdown(
-        f"<p class='gm-note' role='note'>Showing the example <i>{_esc(preset_name)}</i>. Edit <b>Your organization</b> "
-        f"to see your own matches.{PHONE_HINT}</p>", unsafe_allow_html=True)
 
 profile = Profile(
     mission=mission,
@@ -690,17 +767,32 @@ if not order or sorted(order) != sorted(SOURCES) or strong[ranked[0]] > strong[o
     order = ranked
 ss["_tab_order"] = order
 
+SINGULAR = {"federal grants": "federal grant", "foundations": "foundation", "Florida programs": "Florida program",
+            "strong matches": "strong match"}
+
+
+def _n(count: int, noun: str) -> str:
+    return f"{count:,} {SINGULAR.get(noun, noun) if count == 1 else noun}"
+
+
 total = sum(strong.values())
-parts = [f"{strong[k]:,} {SOURCES[k][1]}" for k in order]
+parts = [_n(strong[k], SOURCES[k][1]) for k in order]
 listing = ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1]
 if total:
-    overview = f"<b>{total:,} strong matches</b> for this profile: {listing}."
+    overview = f"<b>{_n(total, 'strong matches')}</b> for this profile: {listing}."
 else:
-    poss = ", ".join(f"{possible[k]:,} {SOURCES[k][1]}" for k in order)
+    poss = ", ".join(_n(possible[k], SOURCES[k][1]) for k in order)
     overview = (f"<b>No strong matches yet.</b> Possible matches: {poss}. "
                 "More specific key words usually help.")
-st.markdown(f"<p class='gm-overview'>{overview} <span class='gm-quiet'>Tabs with the most strong matches come "
-            "first.</span></p>", unsafe_allow_html=True)
+# Say when the matches changed, so an edit never updates the page silently. The paragraph is a live region,
+# so screen readers read the new line out.
+sig = json.dumps(profile_dict, sort_keys=True, default=str)
+updated_now = ss.get("_last_sig") not in (None, sig) or ss.pop("_asked", False)
+ss["_last_sig"] = sig
+lead_in = "<b class='gm-updated'>Updated.</b> " if updated_now else ""
+st.markdown(f"<p class='gm-overview' role='status'>{lead_in}{overview} <span class='gm-quiet gm-wide'>A strong match "
+            "scores 60 or more out of 100. Tabs with the most strong matches come first.</span></p>",
+            unsafe_allow_html=True)
 
 tab_keys = order + ["ready"] + (["workspace"] if store else [])
 labels = {**{k: v[0] for k, v in SOURCES.items()}, "ready": "Before you apply", "workspace": "Workspace"}
@@ -774,18 +866,20 @@ with TAB["fdn"]:
                            format_func=lambda k: f"{k} ({int(counts.get(k, 0)):,})")
             st.checkbox("Include foundations that say they fund preselected groups only", value=False, key="fdn_pre")
             st.markdown(
-                "- Up to 60 points for how closely the foundation's past grant purposes match your mission\n"
-                "- Up to 15 points for your key words in its past grants\n"
-                f"- Up to 20 points for how much it gives in {state}, plus up to 10 if it funded groups in your cities\n"
+                "- Up to 75 points for fit: 60 for how closely its past grant purposes match your mission, "
+                "15 for your key words\n"
+                f"- Up to 20 points for how much it gives in {state}, and more if it funds groups in your cities "
+                "or is a community foundation serving your area\n"
                 "- Points off when its typical grant is large for your budget, when it says it doesn't take "
                 "unsolicited requests, or when it mostly gives scholarships\n"
+                "- Scores stop at 100. Strong is 60 and up, possible is 35 to 59\n"
                 "- Data comes from the foundation's own tax return, usually one to two years old")
 
         def fdn_card(r):
             apply = r.get("apply") if isinstance(r.get("apply"), dict) else {}
             with st.container(border=True, key=f"card_fdn_{r['ein']}"):
                 st.markdown(card_head(r, tidy_name(r["name"]), r["url"], [
-                    r["kind"], f"{tidy_name(r['city'])}, {r['state']}",
+                    r["kind"], f"{tidy_name(r['city'], 'city')}, {r['state']}",
                     f"{r['grant_count']} grants, {_money(r['grants_total'])} total",
                     f"typical {_money(r['grant_median'])}", f"tax year {r['tax_year']}"]) + why(r),
                     unsafe_allow_html=True)
@@ -796,7 +890,7 @@ with TAB["fdn"]:
                             ("Contact", _esc(tidy_name(apply.get("contact")))),
                             ("Phone", phone_html(apply.get("phone") or r.get("phone"))),
                             ("Email", email_html(apply.get("email"))),
-                            ("Address", _esc(tidy_name(apply.get("address")))),
+                            ("Address", _esc(format_address(apply.get("address"), r.get("city", "")))),
                             ("What to send", _esc(tidy_text(apply.get("materials")))),
                             ("Deadlines", _esc(tidy_text(apply.get("deadlines")))),
                             ("Restrictions", _esc(tidy_text(apply.get("restrictions")))),
@@ -809,7 +903,8 @@ with TAB["fdn"]:
                         local = sum(1 for g in grants if g.get("state") == state)
                         items = "".join(
                             f"<li><b>{_esc(tidy_name(g.get('to')))}</b>"
-                            f"{SEP}{_esc(tidy_name(g.get('city')))}, {_esc(g.get('state', ''))}"
+                            f"{SEP}<span class='place'>{_esc(tidy_name(g.get('city'), 'city'))}, "
+                            f"{_esc(g.get('state', ''))}</span>"
                             f"{SEP}${float(g.get('amount') or 0):,.0f}"
                             + (f"{SEP}{_esc(tidy_text(g.get('purpose')))}" if _present(g.get("purpose")) else "")
                             + "</li>" for g in grants)
@@ -862,7 +957,7 @@ if "fl" in TAB:
             def fl_card(r):
                 with st.container(border=True, key=f"card_fl_{r['id']}"):
                     st.markdown(card_head(r, r["title"], r["url"], [r["agency"], f"State catalog no. {r['csfa']}",
-                                                                    r["assistance"]]) + why(r), unsafe_allow_html=True)
+                                                                    assistance_label(r["assistance"])]) + why(r), unsafe_allow_html=True)
                     if store is not None:
                         uiw.save_button(store, who, "florida", r, key=f"save_fl_{r['id']}")
                     with st.expander("Details"):

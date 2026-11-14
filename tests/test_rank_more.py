@@ -147,3 +147,9 @@ def test_990_schedule_i_parsing():
     assert rec["website"] == "WWW.EXAMPLE.ORG" and rec["mission"] == "STRENGTHEN OUR COMMUNITY"
     assert rec["grant_count"] == 1 and rec["top_recipients"] == ["reading club inc"]
     assert rec["kind"] == "Community foundation"
+
+
+def test_tier_follows_the_shown_score():
+    from grantmatch.rank_more import _tier
+    # the card shows round(points); a 34.6 shows "Score 35", so it must be a possible match, not a long shot
+    assert _tier(round(34.6)) == "Possible" and _tier(round(59.6)) == "Strong" and _tier(round(34.4)) == "Long shot"
