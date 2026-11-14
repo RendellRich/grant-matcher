@@ -13,6 +13,7 @@ import streamlit as st
 import os
 
 from grantmatch import embed
+from grantmatch.display import STATES, present, shouting as _shouting, tidy_name, tidy_text
 from grantmatch import ui_workspace as uiw
 from grantmatch import workspace as wsp
 from grantmatch.store import GitHubStore, LocalStore, StoreError
@@ -22,9 +23,6 @@ from grantmatch.rank_more import score_florida, score_foundations
 RELEASE = "https://github.com/RendellRich/grant-matcher/releases/download/data-latest/"
 LOCAL_DIR = Path(__file__).parent / "data"
 NOTICE = "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services."
-STATES = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA",
-          "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR",
-          "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
 
 PRESETS = {
     "Youth literacy and learning support": {
@@ -313,44 +311,8 @@ def why(r) -> str:
     return f"<ul class='gm-why'>{items}</ul>"
 
 
-# ---------- tidy raw IRS text for display (display only; the data and ranking are untouched) ----------
-EMPTY_VALUES = {"", "NONE", "N/A", "NA", "NOT APPLICABLE", "0", "-", "NULL"}
-KEEP_UPPER = {"NE", "NW", "SE", "SW", "PO", "LLC", "USA", "US", "YMCA", "YWCA", "II", "III", "IV"} | set(STATES)
-SMALL_WORDS = {"and", "of", "the", "for", "in", "to", "a", "an", "at", "by", "on", "or"}
-
-
-def _present(value) -> str:
-    """The value as text, or '' when the return left it empty or wrote NONE or N/A."""
-    text = _s(value).strip()
-    return "" if text.upper() in EMPTY_VALUES else text
-
-
-def _shouting(text: str) -> bool:
-    letters = [c for c in text if c.isalpha()]
-    return len(letters) > 3 and sum(c.isupper() for c in letters) / len(letters) > 0.8
-
-
-def tidy_name(value) -> str:
-    """Title case for ALL CAPS names, cities and addresses, keeping state codes and directions."""
-    text = _present(value)
-    if not _shouting(text):
-        return text
-    words = []
-    for i, w in enumerate(text.split()):
-        core = w.strip(".,")
-        if core in KEEP_UPPER:
-            words.append(w)
-        elif i and core.lower() in SMALL_WORDS:
-            words.append(w.lower())
-        else:
-            words.append(w.capitalize())
-    return " ".join(words)
-
-
-def tidy_text(value) -> str:
-    """Sentence case for ALL CAPS sentences such as missions, purposes and instructions."""
-    text = _present(value)
-    return text[:1].upper() + text[1:].lower() if _shouting(text) else text
+# ---------- tidy raw IRS text for display: see grantmatch/display.py ----------
+_present = present
 
 
 def phone_html(value) -> str:
@@ -785,7 +747,7 @@ with TAB["fdn"]:
             apply = r.get("apply") if isinstance(r.get("apply"), dict) else {}
             with st.container(border=True, key=f"card_fdn_{r['ein']}"):
                 st.markdown(card_head(r, tidy_name(r["name"]), r["url"], [
-                    r["kind"], f"{tidy_name(r['city'])}, {r['state']}",
+                    r["kind"], f"{tidy_name(r['city'], 'city')}, {r['state']}",
                     f"{r['grant_count']} grants, {_money(r['grants_total'])} total",
                     f"typical {_money(r['grant_median'])}", f"tax year {r['tax_year']}"]) + why(r),
                     unsafe_allow_html=True)
@@ -796,7 +758,7 @@ with TAB["fdn"]:
                             ("Contact", _esc(tidy_name(apply.get("contact")))),
                             ("Phone", phone_html(apply.get("phone") or r.get("phone"))),
                             ("Email", email_html(apply.get("email"))),
-                            ("Address", _esc(tidy_name(apply.get("address")))),
+                            ("Address", _esc(tidy_name(apply.get("address"), "address"))),
                             ("What to send", _esc(tidy_text(apply.get("materials")))),
                             ("Deadlines", _esc(tidy_text(apply.get("deadlines")))),
                             ("Restrictions", _esc(tidy_text(apply.get("restrictions")))),
@@ -809,7 +771,7 @@ with TAB["fdn"]:
                         local = sum(1 for g in grants if g.get("state") == state)
                         items = "".join(
                             f"<li><b>{_esc(tidy_name(g.get('to')))}</b>"
-                            f"{SEP}{_esc(tidy_name(g.get('city')))}, {_esc(g.get('state', ''))}"
+                            f"{SEP}{_esc(tidy_name(g.get('city'), 'city'))}, {_esc(g.get('state', ''))}"
                             f"{SEP}${float(g.get('amount') or 0):,.0f}"
                             + (f"{SEP}{_esc(tidy_text(g.get('purpose')))}" if _present(g.get("purpose")) else "")
                             + "</li>" for g in grants)
