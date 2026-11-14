@@ -4,6 +4,7 @@ description: A calm, plain search tool that shows small nonprofits which grants 
 colors:
   evergreen: "#2f6f5e"
   evergreen-night: "#6cc0a5"
+  on-evergreen-night: "#121715"
   paper: "#ffffff"
   mist: "#f4f6f5"
   ink: "#1c2421"
@@ -99,6 +100,11 @@ components:
     textColor: "{colors.paper}"
     rounded: "{rounded.md}"
     height: "44px"
+  button-primary-night:
+    backgroundColor: "{colors.evergreen-night}"
+    textColor: "{colors.on-evergreen-night}"
+    rounded: "{rounded.md}"
+    height: "44px"
   result-card:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
@@ -174,6 +180,8 @@ A cool, near-neutral paper palette with one evergreen accent and a single amber 
 - **Long tint and ink** (`long-tint`, `long-ink` and night pair): the "Long shot" badge and the neutral multiselect chips.
 
 ### Named Rules
+**The Ten Possible Rule.** Possible matches (35 to 59) are a long tail. Show ten after the strong ones and let the visitor ask for more; never open with hundreds.
+
 **The One Voice Rule.** Evergreen is the only hue that signals fit or action. If a second colour starts carrying meaning, it is wrong.
 
 **The Amber Means Caution Rule.** Amber appears only next to a reason to hesitate. A badge, chip or button is never amber.
@@ -208,7 +216,7 @@ A single reading column, at most 1080px wide, beside Streamlit's sidebar. The si
 
 The profile form exists twice: in the sidebar from 768px up, and as an "Edit your organization" expander above the results under 768px, where a sidebar would cover the results it changes. CSS shows one copy; both write to the same values, so they never disagree.
 
-The main column follows a fixed rhythm: title, lead, the Grants.gov notice, an optional note, the phone profile row (under 768px), the overview line, tabs, then per tab the tally, a source caption, one "Filters and how the score works" expander, and the cards. Cards stack with 12px between their parts. The first 40 strong and possible results show, with "Show 40 more"; long shots sit in their own section behind a toggle.
+The main column follows a fixed rhythm: title, lead, the Grants.gov notice, an optional note, the phone profile row (under 768px), the overview line, tabs, then per tab the tally, a source caption, one "Filters and how the score works" expander, and the cards. Cards stack with 12px between their parts. Every strong result (up to 40) shows, then the first 10 possible ones, then "Show 40 more". A "Sort by" select above the cards offers best fit plus one or two orders that matter for that source (closing soonest and largest award for federal; most grants in the state and largest typical grant for foundations). The tally counts strong and possible only; long shots are counted in their own section behind a toggle.
 
 Under 768px the sidebar and its button are hidden, the profile moves into the main column, the lead drops its list of sources, the example note shortens to one line and the overview keeps only its count. Under 640px tabs wrap with tighter gaps, card padding tightens to 16px and details lists stack label over value. Nothing scrolls sideways at 320px.
 
@@ -230,7 +238,7 @@ Gently rounded (8px) on cards, buttons, inputs, notes and info boxes. Badges are
 - **Shape:** gently rounded (8px), at least 44px tall.
 - **Default:** paper background, 1px rule border, ink text. Labels start with a verb ("Save to pipeline", "Download matches (CSV)", "Show 40 more", "Keep my text").
 - **Hover / Focus:** Streamlit's border shift on hover; a 2px evergreen outline with 2px offset on keyboard focus.
-- **Primary:** one only, "Update matches" under the key words: evergreen fill, paper text. It commits typed text, so the form never needs a keyboard shortcut hint.
+- **Primary:** one only, "Update matches" under the key words: evergreen fill with paper text in light, evergreen-night fill with night text in dark (white on the light green fails AA). It commits typed text, so the form never needs a keyboard shortcut hint. A bold line under it answers the press where it happened: "Updated: 31 strong matches." or "No changes to your profile."
 - **Safe first:** when a choice protects the visitor's work, the safe option comes first ("Keep my text" before "Replace my text" or "Clear my text").
 
 ### Chips
@@ -249,10 +257,10 @@ Gently rounded (8px) on cards, buttons, inputs, notes and info boxes. Badges are
 - **Help:** each "?" icon has a 44px hit area centred on it.
 
 ### Navigation
-- **Tabs:** sentence-case labels at 500 weight, at least 44px tall, wrapping onto a second row instead of scrolling. The selected tab is evergreen with a 2px evergreen underline. Tabs are ordered by strong matches; "Before you apply" is always last.
+- **Tabs:** sentence-case labels at 1rem and 500 weight, at least 44px tall, wrapping onto a second row instead of scrolling. The selected tab is evergreen with a 2px evergreen underline. Tabs are ordered by strong matches; "Before you apply" is always last.
 
 ### Result card (signature)
-Badge row (tier badge plus "Score N of 100" in slate), the title link (title type, ink, underlined, at least 44px tall, announces that it opens a new tab), the meta line (meta type, slate, items separated by a dot; short facts never break), then the reasons list:
+Badge row (tier badge plus "Score N of 100" in slate), the title link (title type, ink, underlined, at least 44px tall, announces that it opens a new tab; for a foundation it goes to the funder's own site when the return lists one, with the tax filing linked in the details), the meta line (meta type, slate, items separated by a dot; short facts never break), then the reasons list:
 - **Fits:** drawn check in evergreen.
 - **Cautions:** drawn triangle in caution amber.
 - **Status** (timing facts such as forecasts): drawn clock in slate, slate text.
@@ -268,7 +276,8 @@ Mist background, 8px radius, 72ch maximum, detail type. One sentence where possi
 ### Status and guard
 - **Overview line:** a live region (`role="status"`). After any profile change it starts with a bold "Updated." so the change is seen and heard. The strong-match threshold sits here once, so no tab has to be remembered.
 - **Edit guard:** switching examples over typed text asks first, as a caution-icon line with `role="alert"`, then "Keep my text" and "Replace my text".
-- **Show more:** the count under the list is a live region; after a batch loads, "Go to result 41" moves keyboard focus to the first new card.
+- **Show more:** the count under the list is a live region; after a batch loads, "Go to result N" moves keyboard focus to the first new card.
+- **Skip link:** each result list starts with a link that appears on focus and jumps past the list to its count.
 
 ## Do's and Don'ts
 
