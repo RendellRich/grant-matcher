@@ -14,10 +14,12 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 
 ![Grant Matcher on a desktop in light mode. The sidebar holds the organization's mission, key words and funding areas above an Update matches button. The results start with a one-line answer, 30 strong matches for this profile, then tabs for Florida programs, foundations, federal grants and tips, and the first ranked card.](docs/images/desktop-light.png)
 
+![One foundation result in dark mode: a Strong match label and a score of 61 of 100, the foundation's name, a line of facts about its giving, three reasons it fits, one caution that none of the key words appear in its past grants, and a How to apply and past grants section to expand.](docs/images/card-dark.png)
+
 <table>
   <tr>
-    <td width="62%" valign="top"><img src="docs/images/card-dark.png" alt="One foundation result in dark mode: a Strong match label and a score of 61 of 100, the foundation's name, a line of facts about its giving, three reasons it fits, one caution that none of the key words appear in its past grants, and a How to apply and past grants section to expand."></td>
-    <td width="38%" valign="top"><img src="docs/images/phone-dark.png" alt="Grant Matcher on a phone in dark mode, with the same one-line answer, the result tabs, and the profile form folded into an Edit your organization section."></td>
+    <td width="50%" valign="top"><img src="docs/images/phone-light.png" alt="Grant Matcher on a phone in light mode with the Edit your organization section open: the example picker, the mission text, and the Update matches button pinned at the bottom of the screen."></td>
+    <td width="50%" valign="top"><img src="docs/images/phone-dark.png" alt="Grant Matcher on a phone in dark mode with the profile folded away: the one-line answer, the result tabs, the Florida tally, and the top of the first card."></td>
   </tr>
 </table>
 
