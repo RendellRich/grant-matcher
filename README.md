@@ -12,6 +12,15 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 
 > This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.
 
+![Grant Matcher on a desktop in light mode. The sidebar holds the organization's mission, key words and funding areas above an Update matches button. The results start with a one-line answer, 30 strong matches for this profile, then tabs for Florida programs, foundations, federal grants and tips, and the first ranked card.](docs/images/desktop-light.png)
+
+<table>
+  <tr>
+    <td width="62%" valign="top"><img src="docs/images/card-dark.png" alt="One foundation result in dark mode: a Strong match label and a score of 61 of 100, the foundation's name, a line of facts about its giving, three reasons it fits, one caution that none of the key words appear in its past grants, and a How to apply and past grants section to expand."></td>
+    <td width="38%" valign="top"><img src="docs/images/phone-dark.png" alt="Grant Matcher on a phone in dark mode, with the same one-line answer, the result tabs, and the profile form folded into an Edit your organization section."></td>
+  </tr>
+</table>
+
 ## What it does
 
 - **Ranks by meaning, not just key words.** Your mission is compared with each opportunity's title, summary, and categories using a small semantic embedding model (BAAI/bge-small-en-v1.5 through fastembed, no GPU needed), plus coverage of your key words. Rare, specific words like "dyslexia" count for more than common ones like "children".
@@ -25,7 +34,20 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Explains every score** with reasons and cautions, so the ranking is a starting point for your judgment, not a black box.
 - **Shows forecasts**, grants that are announced but not open yet, which give you the most time to prepare.
 - **Exports** your strong and possible matches to CSV and the deadlines to a calendar file (.ics).
-- **Saves your profile** as a small JSON file you can load next time. Nothing is stored on a server.
+- **Saves your profile** as a small JSON file you can load next time. Nothing is stored on a server, so the profile clears when you close the page.
+
+## Design and accessibility
+
+The people using this are often one-person development teams at small nonprofits, working late, on a phone as often as a laptop, and some use a screen reader. The design follows from that.
+
+- **The answer comes first.** One line says how many strong matches there are and where. Each tab opens with its own count, and each card leads with the name, a Strong, Possible or Long shot label, and the score.
+- **Every card explains itself** in the same order: what fits your work, then cautions, then plain facts such as typical grant size, in a quieter color. If none of your key words appear in a funder's past grants, that is the first caution.
+- **Nothing changes until you ask.** Edits to the profile stay a draft until you press Update matches. The button stays pinned at the bottom of the form, and a line under it confirms the update or says your changes are not applied yet.
+- **One accent color.** Green is the only accent. Amber marks cautions and red marks errors; neither is used for decoration. Light and dark follow the visitor's system setting, and text meets WCAG AA contrast in both.
+- **Works by keyboard and on small screens.** Focus is always visible, controls have 44 pixel targets, each long list has a link to skip past it, and the layout works down to 320 pixels wide with no sideways scrolling.
+- **Tested with a screen reader.** I ran the main tasks with NVDA 2026.3 in Microsoft Edge and fixed what it found. Pressing Update matches is now announced. Show more keeps focus in place instead of sending NVDA back to the top. Each card's title is read before its score, and the button that opens a card's details names that card.
+
+The colors, type, components and rules are written down in [DESIGN.md](DESIGN.md).
 
 ## Private workspace (optional)
 
@@ -121,6 +143,8 @@ grantmatch/workspace.py pipeline, organization facts, answer library, documents
 grantmatch/writer.py    Claude drafting, Word export, and form filling
 grantmatch/ui_workspace.py  workspace screens
 tests/                  unit tests for scoring and parsing
+DESIGN.md               design system: colors, type, components, and accessibility rules
+docs/images/            README screenshots
 .github/workflows/      nightly data refresh and tests
 ```
 
