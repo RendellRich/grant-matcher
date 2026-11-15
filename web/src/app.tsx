@@ -9,13 +9,14 @@ import { download, toCsv, toIcs } from "./exports";
 import { exampleForm, ProfileFormView } from "./form";
 import { BLANK, sameForm, splitList, STATE_NAMES, type ProfileForm } from "./profile";
 import {
-  scoreFederal, scoreFlorida, scoreFoundations,
+  closeDate, fmtDate, scoreFederal, scoreFlorida, scoreFoundations,
   type FederalRec, type FloridaRec, type FoundationRec, type Profile,
 } from "./score";
-import { EntryView, IconDownload, IconMark, ResultList } from "./ui";
+import { EntryView, IconAlert, IconDownload, IconMark, ResultList } from "./ui";
 import { markNew, newSince, type Fresh } from "./seen";
 import {
-  dropSubmitted, parseShortlist, setStage, STAGE_LABEL, STAGES, submittedKeys, toggle as toggleItem, type Item, type Stage,
+  byDeadline, comingUp, deadline, dropSubmitted, dueText, daysUntil, listedNow, parseShortlist, setDue, setStage, shortlistIcs,
+  STAGE_LABEL, STAGES, submittedKeys, toggle as toggleItem, type Item, type Listed, type Stage,
 } from "./shortlist";
 import { similarities } from "./vectors";
 
@@ -47,6 +48,7 @@ function useShortlist() {
     items, keys, done,
     toggle: (e: Entry) => save(toggleItem(items, e)),
     stage: (key: string, s: Stage) => save(setStage(items, key, s)),
+    due: (key: string, d: string) => save(setDue(items, key, d)),
     clear: () => { setItems([]); try { localStorage.removeItem("gm-shortlist"); } catch { /* */ } },
   };
 }
@@ -153,6 +155,11 @@ export function App() {
   const flOut = useMemo(() => dropSubmitted(flAll, shortlist.done), [flAll, shortlist.done]);
   const fedEntries = fedOut.entries, fdnEntries = fdnOut.entries, flEntries = flOut.entries;
   const hiddenDone: Record<SourceKey, number> = { fed: fedOut.hidden, fdn: fdnOut.hidden, fl: flOut.hidden };
+  // Today's Grants.gov dates for shortlisted federal grants, so a moved or withdrawn deadline shows.
+  const listed = useMemo(() => listedNow(shortlist.items, fed.state === "ready"
+    ? fed.data.records.map((r) => ({ id: String(r.id), close: closeDate(r.close_date, profile.today ?? new Date()) })) : null),
+  [shortlist.items, fed, profile.today]);
+  const dueSoon = useMemo(() => comingUp(shortlist.items, listed, new Date(), 7), [shortlist.items, listed]);
 
   const lists: Partial<Record<SourceKey, Entry[] | null>> = { fed: fedEntries, fdn: fdnEntries };
   if (st === "FL") lists.fl = flEntries;
@@ -289,6 +296,13 @@ export function App() {
         </aside>
 
         <main id="results" tabIndex={-1} class="main">
+          {dueSoon.length && tab !== "shortlist" ? (
+            <p class="note due-soon">
+              <strong>{dueSoon.length === 1 ? "1 grant on your shortlist is" : `${dueSoon.length} grants on your shortlist are`} due within a week</strong>
+              {dueSoon[0].days < 0 ? ", and one is past due" : ""}.{" "}
+              <button type="button" class="link-btn" onClick={() => setTab("shortlist")}>Open your shortlist</button>
+            </p>
+          ) : null}
           {isExample ? (
             <p class="note"><strong>This is an example.</strong> These matches are for a sample organization,{" "}
               <i>{examples![exampleKey].label}</i>. Describe your own work under Your organization to see yours.</p>
@@ -328,7 +342,7 @@ export function App() {
   );
 
   function panel(k: string) {
-    if (k === "shortlist") return <ShortlistPanel list={shortlist} />;
+    if (k === "shortlist") return <ShortlistPanel list={shortlist} listed={listed} />;
     if (k === "fed") return federalPanel();
     if (k === "fdn") return foundationPanel();
     return floridaPanel();
@@ -609,7 +623,10 @@ function fmtStamp(iso: string): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
-function ShortlistPanel({ list }: { list: Shortlist }) {
+const fmtYmd = (d: string) => fmtDate(new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)));
+const fmtIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+function ShortlistPanel({ list, listed }: { list: Shortlist; listed: Listed }) {
   const [confirm, setConfirm] = useState(false);
   const [moved, setMoved] = useState<{ key: string; text: string } | null>(null);
   // Changing a stage moves the entry to another group; keep focus on its stage control there.
@@ -622,7 +639,13 @@ function ShortlistPanel({ list }: { list: Shortlist }) {
       </div>
     );
   }
-  const groups = STAGES.map((s) => ({ ...s, items: list.items.filter((e) => e.stage === s.id) })).filter((g) => g.items.length);
+  const today = new Date();
+  const groups = STAGES.map((s) => {
+    const items = list.items.filter((e) => e.stage === s.id);
+    return { ...s, items: s.id === "submitted" ? [...items].reverse() : byDeadline(items, listed) };
+  }).filter((g) => g.items.length);
+  const soon = comingUp(list.items, listed, today, 30);
+  const ahead = list.items.some((x) => x.stage !== "submitted" && (deadline(x, listed)?.date ?? "") >= fmtIso(today));
   function move(e: Item, s: Stage) {
     list.stage(e.key, s);
     setMoved({ key: e.key, text: s === "submitted" ? "Moved to Submitted. It no longer shows in your results." : `Moved to ${STAGE_LABEL[s]}.` });
@@ -634,18 +657,38 @@ function ShortlistPanel({ list }: { list: Shortlist }) {
         <p class="quiet">{groups.map((g) => `${g.items.length} ${g.label.toLowerCase()}`).join(", ")}. Kept in this browser on this device. Scores are from when you added each one.</p>
         <p class="sr-only" role="status">{moved?.text ?? ""}</p>
       </div>
+      {soon.length ? (
+        <section class="coming-up" aria-labelledby="coming-up-h">
+          <h3 id="coming-up-h" class="section-head">Coming up <span class="quiet">(next 30 days)</span></h3>
+          <ul>
+            {soon.map(({ item, days, d }) => (
+              <li key={item.key} class={days < 0 ? "past" : days <= 7 ? "near" : ""}>
+                <span class="when">{dueText(days)}</span>
+                <a href={`#sl-${item.key}`}>{item.title}</a>
+                <span class="quiet">{STAGE_LABEL[item.stage]}{d.own ? ", your deadline" : ""}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       {groups.map((g) => (
         <section class="stage-group" aria-labelledby={`stage-h-${g.id}`} key={g.id}>
           <h3 id={`stage-h-${g.id}`} class="section-head">{g.label} <span class="quiet">({g.items.length})</span></h3>
           {g.id === "submitted" ? <p class="quiet">These no longer show in your results. Set one back to Applying to see it there again.</p> : null}
           <ol class="entries">
             {g.items.map((e) => (
-              <li key={e.key}><EntryView e={e} marked onMark={list.toggle} stage={<StagePicker e={e} onChange={(s) => move(e, s)} />} /></li>
+              <li key={e.key}><EntryView e={e} marked onMark={list.toggle} id={`sl-${e.key}`}
+                stage={<StagePicker e={e} listed={listed} today={today} onChange={(s) => move(e, s)} onDue={(d) => list.due(e.key, d)} />} /></li>
             ))}
           </ol>
         </section>
       ))}
       <div class="exports">
+        {ahead ? (
+          <button type="button" class="btn" onClick={() => download("shortlist-deadlines.ics", shortlistIcs(list.items, listed, today), "text/calendar")}>
+            <IconDownload />Add shortlist deadlines to your calendar (.ics)
+          </button>
+        ) : null}
         <button type="button" class="btn" onClick={() => download("shortlist.csv", entriesCsv(list.items, true), "text/csv")}>
           <IconDownload />Download your shortlist (CSV)
         </button>
@@ -656,20 +699,43 @@ function ShortlistPanel({ list }: { list: Shortlist }) {
           </span>
         ) : <button type="button" class="btn quiet-btn" onClick={() => setConfirm(true)}>Clear the shortlist</button>}
       </div>
+      {ahead ? <p class="quiet">The calendar file reminds you two weeks and three days before each deadline. Download it again after you change a date.</p> : null}
     </>
   );
 }
 
-function StagePicker({ e, onChange }: { e: Item; onChange: (s: Stage) => void }) {
+function StagePicker({ e, listed, today, onChange, onDue }: {
+  e: Item; listed: Listed; today: Date; onChange: (s: Stage) => void; onDue: (d: string) => void;
+}) {
   const since = STAGES.find((s) => s.id === e.stage)?.since;
+  const d = deadline(e, listed);
+  const open = e.stage !== "submitted";
+  const now = listed.get(e.key);
   return (
-    <div class="stage-row">
-      <label class="stage">Stage<span class="sr-only"> for {e.title}</span>
-        <select id={`stage-${e.key}`} value={e.stage} onChange={(ev) => onChange((ev.target as HTMLSelectElement).value as Stage)}>
-          {STAGES.map((s) => <option value={s.id} key={s.id}>{s.label}</option>)}
-        </select>
-      </label>
-      {e.stageAt ? <span class="quiet">{since} {fmtStamp(e.stageAt)}</span> : null}
+    <div class="stage-box">
+      <div class="stage-row">
+        <label class="stage">Stage<span class="sr-only"> for {e.title}</span>
+          <select id={`stage-${e.key}`} value={e.stage} onChange={(ev) => onChange((ev.target as HTMLSelectElement).value as Stage)}>
+            {STAGES.map((s) => <option value={s.id} key={s.id}>{s.label}</option>)}
+          </select>
+        </label>
+        {e.stageAt ? <span class="quiet">{since} {fmtStamp(e.stageAt)}</span> : null}
+      </div>
+      {open ? (
+        <div class="stage-row">
+          <label class="stage">Your deadline<span class="sr-only"> for {e.title}</span>
+            <input type="date" value={e.due ?? ""} onChange={(ev) => onDue((ev.target as HTMLInputElement).value)} />
+          </label>
+          {d?.date ? (
+            <span class={`due${daysUntil(d.date, today) <= 7 ? " near" : ""}`}>{dueText(daysUntil(d.date, today))}{d.own ? "" : ` (${fmtYmd(d.date)})`}</span>
+          ) : <span class="quiet">Set a date to see it under Coming up.</span>}
+        </div>
+      ) : null}
+      {open && d?.gone ? (
+        <p class="due-note"><IconAlert /><span>No longer listed on Grants.gov. It may have closed or been withdrawn; check the notice.</span></p>
+      ) : open && d?.changedFrom && typeof now === "string" ? (
+        <p class="due-note"><IconAlert /><span>Grants.gov moved the deadline from {fmtYmd(d.changedFrom)} to {fmtYmd(now)}.</span></p>
+      ) : null}
     </div>
   );
 }
