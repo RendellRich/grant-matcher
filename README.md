@@ -125,6 +125,9 @@ A GitHub Action runs twice a day and pulls every posted and forecasted opportuni
 | IRS Form 990-PF e-file XML ([Form 990 series downloads](https://www.irs.gov/charities-non-profits/form-990-series-downloads)), latest return per foundation, split by state, every state | monthly | `refresh-foundations.yml` |
 | IRS Form 990 Schedule I for organizations the [Exempt Organizations Business Master File](https://www.irs.gov/charities-non-profits/exempt-organizations-business-master-file-extract-eo-bmf) codes T31 (community foundations), T30 (public foundations), and T70 (United Ways and federated funds) | monthly | `refresh-foundations.yml` |
 | Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
+| Each foundation's own website (the home page and the grants or apply page it links to), for an open cycle, a deadline ahead, an application link, or a note that it isn't taking requests | weekly | `refresh-websites.yml` |
+
+The website check (`grantmatch/cycles.py`) honors robots.txt, identifies itself, reads at most two pages per site, and visits a site shared by several funders once. The site quotes the sentence it found, with the page and the date checked, since a page can change after it was read. It never changes a score.
 
 ## Run it yourself
 

@@ -365,6 +365,16 @@ export interface FoundationRec {
   sample_grants: SampleGrant[]; url: string;
   _name?: string; _city?: string; _city_title?: string; _mission?: string; _site?: string;
   _apply?: Record<string, string>;
+  /** What its website said at the last weekly check (grantmatch.cycles); display only, never scored. */
+  _cycle?: WebsiteCycle;
+}
+
+export interface WebsiteCycle {
+  s: "open" | "deadline" | "closed" | "apply"; // applications open, a deadline ahead, not taking requests, an apply link
+  d?: string; // yyyy-mm-dd, the next deadline it gave
+  q?: string; // the words found
+  u?: string; // the page they were on
+  at: string; // yyyy-mm-dd, when it was checked
 }
 
 export type FoundationOut = FoundationRec & { in_state: number };

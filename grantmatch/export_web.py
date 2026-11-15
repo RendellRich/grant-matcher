@@ -80,6 +80,22 @@ def foundation_states() -> list[str]:
     return sorted(listed | local)
 
 
+def website_cycles() -> dict[str, dict]:
+    """What each foundation's website said at the last weekly check (grantmatch.cycles), by EIN, with the
+    check's date as "at". Display only: scores never read it. Sites that said nothing or couldn't be
+    reached are left out."""
+    raw = None if LOCAL_ONLY else fetch("cycles.json.gz")
+    if not raw:
+        return {}
+    try:
+        payload = json.loads(gzip.decompress(raw))
+    except (OSError, ValueError):
+        return {}
+    at = str(payload.get("checked_at", ""))[:10]
+    return {ein: {**r, "at": at} for ein, r in (payload.get("sites") or {}).items()
+            if isinstance(r, dict) and r.get("s") in ("open", "deadline", "closed", "apply")}
+
+
 def vectors(raw: bytes | None) -> tuple[list[str], np.ndarray]:
     if not raw:
         return [], np.zeros((0, 384), dtype=np.float16)
@@ -164,6 +180,7 @@ def main() -> None:
 
     # Foundations: private (990-PF) and community/public (Schedule I), one file per state.
     states = foundation_states()
+    cycles = website_cycles()
     for state in states:
         records, all_ids, all_vecs, stamp = [], [], [], ""
         for prefix in ("foundations", "community"):
@@ -174,6 +191,9 @@ def main() -> None:
             for rec in payload["foundations"]:
                 rec.setdefault("kind", "Private foundation")
                 tidy_foundation(rec)
+                found = cycles.get(str(rec.get("ein")))
+                if found:
+                    rec["_cycle"] = found
             records += payload["foundations"]
             stamp = stamp or payload.get("fetched_at", "")
             ids, vecs = vectors(fetch(f"{prefix}-{state}.npz", f"{prefix}/{state}.npz"))
