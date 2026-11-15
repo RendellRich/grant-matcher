@@ -54,7 +54,7 @@ def test_requires_501c3_when_org_has_none():
 
 
 def test_large_floor_flagged_for_small_budget():
-    p = Profile(**{**PROFILE.__dict__, "budget_band": "Under $50k"})
+    p = Profile(**{**PROFILE.__dict__, "budget_band": "Under $10k"})
     out = ranked(opp(award_floor=1_000_000.0, award_ceiling=3_000_000.0), profile=p)
     assert any("large for your budget" in c for c in out.loc[0, "cautions"])
 

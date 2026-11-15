@@ -44,9 +44,19 @@ def test_no_unsolicited_and_preselected_rules():
 
 
 def test_large_typical_grant_is_flagged():
-    p = Profile(**{**PROFILE.__dict__, "budget_band": "Under $50k"})
+    p = Profile(**{**PROFILE.__dict__, "budget_band": "Under $10k"})
     out = score_foundations([fdn(grant_median=250_000.0)], p, "FL", [])
     assert any("large next to your budget" in c for c in out.iloc[0]["cautions"])
+
+
+def test_small_bands_split_at_ten_thousand():
+    def flagged(band):
+        p = Profile(**{**PROFILE.__dict__, "budget_band": band})
+        out = score_foundations([fdn(grant_median=20_000.0)], p, "FL", [])
+        return any("large next to your budget" in c for c in out.iloc[0]["cautions"])
+    assert flagged("Under $10k")
+    assert not flagged("$10k to $50k")
+    assert not flagged("Under $50k")  # saved before the split, read as $10k to $50k
 
 
 def prog(**kw):

@@ -10,11 +10,21 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 BUDGET_BANDS = {
-    "Under $50k": 50_000,
+    "Under $10k": 10_000,
+    "$10k to $50k": 50_000,
     "$50k to $250k": 250_000,
     "$250k to $1M": 1_000_000,
     "Over $1M": 5_000_000,
 }
+# Band names saved in profiles before the small bands were split, mapped to the band that took their place.
+OLD_BUDGET_BANDS = {"Under $50k": "$10k to $50k"}
+
+
+def current_band(name):
+    """The band a saved name means today, so profiles saved before a rename still load."""
+    return OLD_BUDGET_BANDS.get(name, name)
+
+
 CATEGORY_NAMES = {
     "AG": "Agriculture", "AR": "Arts", "BC": "Business and commerce", "CD": "Community development",
     "CP": "Consumer protection", "DPR": "Disaster prevention and relief", "ED": "Education",
@@ -142,7 +152,7 @@ def score(df: pd.DataFrame, p: Profile, semantic: dict[str, float] | None = None
         weights[kw] = 1.0 - min(0.85, share * 8)  # a word in 10%+ of grants keeps only 15% weight
     best3 = sum(sorted(weights.values(), reverse=True)[:3]) or 1.0
 
-    budget = BUDGET_BANDS.get(p.budget_band, 250_000)
+    budget = BUDGET_BANDS.get(current_band(p.budget_band), 250_000)
     rows = []
     for sim, (_, r) in zip(sims, work.iterrows()):
         matched = _keyword_hits(p.keywords, r["title"] + " " + r["description"])
