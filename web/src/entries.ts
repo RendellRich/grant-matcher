@@ -32,6 +32,13 @@ export interface Entry {
   sortAward?: number | null;
   sortInState?: number;
   sortMedian?: number | null;
+  // for the filters, which narrow the list and never change a score
+  agency?: string;
+  amountLow?: number | null; // federal award floor (or ceiling when no floor)
+  amountHigh?: number | null; // federal award ceiling (or floor when no ceiling)
+  publishesApply?: boolean;
+  closedToUnsolicited?: boolean;
+  local?: boolean; // based in, or has funded groups in, one of the person's cities
 }
 
 const STATUS = ["Forecast, not open yet"];
@@ -91,6 +98,9 @@ export function federalEntry(s: Scored<FederalRec & FederalExtra>, hasKw: boolea
     eligibility: r.eligibility_text ? r.eligibility_text.slice(0, 800) : "",
     sortClose: r.close ? r.close.getTime() : null,
     sortAward: r.award_ceiling ?? null,
+    agency: r.agency,
+    amountLow: (r.award_floor && r.award_floor > 0 ? r.award_floor : null) ?? (r.award_ceiling || null),
+    amountHigh: (r.award_ceiling && r.award_ceiling > 0 ? r.award_ceiling : null) ?? (r.award_floor || null),
   };
 }
 
@@ -129,6 +139,9 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
     })),
     grantsWhere: grants.length ? (local === grants.length ? `all in ${state}` : `${local} of ${grants.length} in ${state}`) : "",
     sortInState: r.in_state, sortMedian: r.grant_median ?? null,
+    publishesApply: s.reasons.includes("Publishes how to apply"),
+    closedToUnsolicited: s.cautions.includes("Says it does not accept unsolicited requests"),
+    local: s.reasons.some((x) => x.startsWith("Funded ") || x.startsWith("Based in ")),
   };
 }
 
@@ -149,7 +162,76 @@ export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean): Entry {
   return {
     key: `fl:${r.id}`, source: "fl", title: r._title || r.title, url: safeUrl(r.url), catalog: `CSFA ${r.csfa}`,
     facts: [r.agency, r._assist || ""].filter(Boolean),
-    side: "",
+    side: "", agency: r.agency,
     score: s.score, tier: s.tier, ...why, rows,
   };
+}
+
+// ---------- filters ----------
+
+export interface Narrow {
+  q: string; // words to find anywhere in an entry
+  size: string; // "" or a band key from SIZE_BANDS
+  before: string; // "" or yyyy-mm-dd: federal deadlines on or before this day
+  agency: string; // "" or an agency name
+  apply: boolean; // foundations that publish how to apply
+  open: boolean; // foundations that don't say no to unsolicited requests
+  local: boolean; // foundations based in or funding groups in the person's cities
+}
+
+export const NO_NARROW: Narrow = { q: "", size: "", before: "", agency: "", apply: false, open: false, local: false };
+
+export const SIZE_BANDS: Record<string, [string, number, number]> = {
+  s: ["Up to $50k", 0, 50_000],
+  m: ["$50k to $250k", 50_000, 250_000],
+  l: ["$250k to $1M", 250_000, 1_000_000],
+  xl: ["Over $1M", 1_000_000, Infinity],
+};
+
+const haystacks = new WeakMap<Entry, string>();
+
+function haystack(e: Entry): string {
+  let h = haystacks.get(e);
+  if (h === undefined) {
+    h = [e.title, e.catalog, ...e.facts, e.side, ...e.fits, ...e.cautions, ...e.also, ...e.status, e.summary ?? "", e.eligibility ?? "",
+      ...(e.rows ?? []).map((r) => `${r.text ?? ""} ${r.linkText ?? ""}`),
+      ...(e.grants ?? []).map((g) => `${g.to} ${g.place} ${g.purpose}`)].join(" \n ").toLowerCase();
+    haystacks.set(e, h);
+  }
+  return h;
+}
+
+export function isNarrowed(n: Narrow): boolean {
+  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local);
+}
+
+/** Entries that pass every filter that applies to their source. Every word typed must appear. */
+export function narrow(entries: Entry[], n: Narrow): Entry[] {
+  if (!isNarrowed(n)) return entries;
+  const words = n.q.toLowerCase().split(/\s+/).filter(Boolean);
+  const band = SIZE_BANDS[n.size];
+  const before = n.before ? new Date(`${n.before}T23:59:59`).getTime() : null;
+  return entries.filter((e) => {
+    if (words.length && !words.every((w) => haystack(e).includes(w))) return false;
+    if (n.agency && e.agency !== n.agency) return false;
+    if (band) {
+      const [, lo, hi] = band;
+      if (e.source === "fed") {
+        // the award range overlaps the band
+        if (e.amountLow == null && e.amountHigh == null) return false;
+        const a = e.amountLow ?? e.amountHigh!, b = e.amountHigh ?? e.amountLow!;
+        if (b < lo || a > hi) return false;
+      } else if (e.source === "fdn") {
+        const m = e.sortMedian;
+        if (m == null || m < lo || m > hi) return false;
+      }
+    }
+    if (before !== null && e.source === "fed" && (e.sortClose == null || e.sortClose > before)) return false;
+    if (e.source === "fdn") {
+      if (n.apply && !e.publishesApply) return false;
+      if (n.open && e.closedToUnsolicited) return false;
+      if (n.local && !e.local) return false;
+    }
+    return true;
+  });
 }

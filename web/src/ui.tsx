@@ -124,7 +124,7 @@ const FIRST_POSSIBLE = 10;
 /** Strong matches (up to 40) and the first 10 possible ones, then 40 more at a time; long shots behind a switch. */
 export function ResultList(p: {
   name: string; noun: string; entries: Entry[]; marked: Set<string>; onMark: (e: Entry) => void;
-  sorts?: [string, ((a: Entry, b: Entry) => number) | null][]; exports?: preact.ComponentChildren;
+  sorts?: [string, ((a: Entry, b: Entry) => number) | null][]; exports?: preact.ComponentChildren; narrowed?: boolean;
 }) {
   const [sortIdx, setSortIdx] = useState(0);
   const good0 = p.entries.filter((e) => e.tier !== "Long shot");
@@ -151,7 +151,9 @@ export function ResultList(p: {
   return (
     <div class="results">
       {good.length === 0 ? (
-        <p class="empty">No strong or possible {p.noun} for this profile yet. Try more specific key words, or look through the long shots below.</p>
+        <p class="empty">{p.narrowed
+          ? `No strong or possible ${p.noun} match these filters. Clear a filter to see more.`
+          : `No strong or possible ${p.noun} for this profile yet. Try more specific key words, or look through the long shots below.`}</p>
       ) : (
         <>
           <div class="list-tools">

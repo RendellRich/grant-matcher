@@ -4,7 +4,7 @@ import {
   type Example, type Meta, type Source,
 } from "./data";
 import { embedMission } from "./embed";
-import { federalEntry, floridaEntry, foundationEntry, type Entry, type SourceKey } from "./entries";
+import { federalEntry, floridaEntry, foundationEntry, isNarrowed, narrow, NO_NARROW, SIZE_BANDS, type Entry, type Narrow, type SourceKey } from "./entries";
 import { download, toCsv, toIcs } from "./exports";
 import { exampleForm, ProfileFormView } from "./form";
 import { BLANK, sameForm, splitList, STATE_NAMES, type ProfileForm } from "./profile";
@@ -60,6 +60,9 @@ export function App() {
   const [fdnKinds, setFdnKinds] = useState<string[]>(KINDS);
   const [fdnPre, setFdnPre] = useState(false);
   const [flEar, setFlEar] = useState(false);
+  // Filters narrow what is shown; they never change a score. The search words apply on every tab.
+  const [q, setQ] = useState("");
+  const [nar, setNar] = useState<Record<SourceKey, Narrow>>({ fed: NO_NARROW, fdn: NO_NARROW, fl: NO_NARROW });
   const [tab, setTab] = useState<string>("");
   const [order, setOrder] = useState<SourceKey[]>([]);
   const [phoneOpen, setPhoneOpen] = useState(false);
@@ -325,6 +328,73 @@ export function App() {
     );
   }
 
+  function cur(k: SourceKey): Narrow {
+    return { ...nar[k], q };
+  }
+
+  function narrowed(k: SourceKey, entries: Entry[]): Entry[] {
+    return narrow(entries, cur(k));
+  }
+
+  function setN(k: SourceKey, patch: Partial<Narrow>) {
+    setNar({ ...nar, [k]: { ...nar[k], ...patch } });
+  }
+
+  /** The visible filters for one source: search, then the source's own choices, then what they hide. */
+  function narrowBar(k: SourceKey, all: Entry[], shown: Entry[], noun: string) {
+    const n = nar[k];
+    const agencies = k === "fdn" ? [] : [...new Set(all.map((e) => e.agency).filter(Boolean) as string[])].sort();
+    const on = isNarrowed(cur(k));
+    const id = (s: string) => `${k}-${s}`;
+    return (
+      <div class="narrow">
+        <div class="narrow-row">
+          <div class="field grow">
+            <label for={id("q")}>Search these results</label>
+            <input id={id("q")} type="search" value={q} placeholder="For example: after school, Hillsborough"
+                   onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
+          </div>
+          {k !== "fl" ? (
+            <div class="field">
+              <label for={id("size")}>{k === "fed" ? "Award size" : "Typical grant"}</label>
+              <select id={id("size")} value={n.size} onChange={(e) => setN(k, { size: (e.target as HTMLSelectElement).value })}>
+                <option value="">Any size</option>
+                {Object.entries(SIZE_BANDS).map(([v, [label]]) => <option value={v} key={v}>{label}</option>)}
+              </select>
+            </div>
+          ) : null}
+          {k === "fed" ? (
+            <div class="field">
+              <label for={id("before")}>Closes by</label>
+              <input id={id("before")} type="date" value={n.before} onInput={(e) => setN(k, { before: (e.target as HTMLInputElement).value })} />
+            </div>
+          ) : null}
+          {agencies.length > 1 ? (
+            <div class="field">
+              <label for={id("agency")}>Agency</label>
+              <select id={id("agency")} value={n.agency} onChange={(e) => setN(k, { agency: (e.target as HTMLSelectElement).value })}>
+                <option value="">Any agency</option>
+                {agencies.map((a) => <option value={a} key={a}>{a}</option>)}
+              </select>
+            </div>
+          ) : null}
+        </div>
+        {k === "fdn" ? (
+          <fieldset class="narrow-checks">
+            <legend class="sr-only">Show only foundations that</legend>
+            <label class="check"><input type="checkbox" checked={n.apply} onChange={(e) => setN(k, { apply: (e.target as HTMLInputElement).checked })} /><span>Publish how to apply</span></label>
+            <label class="check"><input type="checkbox" checked={n.open} onChange={(e) => setN(k, { open: (e.target as HTMLInputElement).checked })} /><span>Don't refuse unsolicited requests</span></label>
+            <label class="check"><input type="checkbox" checked={n.local} onChange={(e) => setN(k, { local: (e.target as HTMLInputElement).checked })} /><span>Based in or funding your cities</span></label>
+          </fieldset>
+        ) : null}
+        <p class="narrowed" role="status">
+          {on ? <>Showing {shown.length.toLocaleString("en-US")} of {all.length.toLocaleString("en-US")} {noun}.{" "}
+            <button type="button" class="link-btn" onClick={() => { setQ(""); setNar({ ...nar, [k]: NO_NARROW }); }}>Clear filters</button></> : null}
+        </p>
+      </div>
+    );
+  }
+
   function loading(what: string) {
     return <p class="loading" role="status">Loading {what}.</p>;
   }
@@ -333,13 +403,16 @@ export function App() {
     if (fed.state === "error") return <p class="error">The federal grant list could not be loaded right now. Try again in a few minutes.</p>;
     if (!fedEntries || fed.state !== "ready") return loading("federal grants");
     const updated = fed.data.fetchedAt ? fmtStamp(fed.data.fetchedAt) : "";
-    const picks = (fedScored ?? []).filter((s) => s.tier !== "Long shot");
+    const shown = narrowed("fed", fedEntries);
+    const shownKeys = new Set(shown.map((e) => e.key));
+    const picks = (fedScored ?? []).filter((s) => s.tier !== "Long shot" && shownKeys.has(`fed:${s.rec.id}`));
     return (
       <>
         {tally("fed", `${fed.data.records.length.toLocaleString("en-US")} open and forecasted federal opportunities that list nonprofits as eligible${updated ? `, updated ${updated}` : ""}.`
           + (strong.fed ? "" : " No strong federal matches is common for small direct-service groups: much federal money for local programs passes through state agencies first."))}
+        {narrowBar("fed", fedEntries, shown, "grants")}
         <details class="filters">
-          <summary>Filters and how the score works</summary>
+          <summary>More filters and how the score works</summary>
           <div class="filters-body">
             <label class="check">
               <input type="checkbox" checked={applied.include_forecasted}
@@ -359,7 +432,7 @@ export function App() {
             </ul>
           </div>
         </details>
-        <ResultList name="fed" noun="grants" entries={fedEntries} marked={shortlist.keys} onMark={shortlist.toggle}
+        <ResultList name="fed" noun="grants" entries={shown} narrowed={isNarrowed(cur("fed"))} marked={shortlist.keys} onMark={shortlist.toggle}
           sorts={[["Best fit", null],
             ["Closing soonest", (a, b) => (a.sortClose ?? Infinity) - (b.sortClose ?? Infinity)],
             ["Largest award", (a, b) => (b.sortAward ?? -Infinity) - (a.sortAward ?? -Infinity)]]}
@@ -385,12 +458,14 @@ export function App() {
     if (!fdnEntries || fdnSrc?.state !== "ready") return loading("foundations");
     const recs = fdnSrc.data.records;
     const kindCount = (k: string) => recs.filter((r) => (r.kind || "Private foundation") === k).length;
-    const picks = fdnEntries.filter((e) => e.tier !== "Long shot");
+    const shown = narrowed("fdn", fdnEntries);
+    const picks = shown.filter((e) => e.tier !== "Long shot");
     return (
       <>
         {tally("fdn", `${recs.length.toLocaleString("en-US")} grantmakers based in ${st} or giving there, from their latest IRS returns. Most funders back groups they already know, so start with an introduction.`)}
+        {narrowBar("fdn", fdnEntries, shown, "foundations")}
         <details class="filters">
-          <summary>Filters and how the score works</summary>
+          <summary>More filters and how the score works</summary>
           <div class="filters-body">
             <fieldset class="field">
               <legend class="label">Types</legend>
@@ -415,7 +490,7 @@ export function App() {
             </ul>
           </div>
         </details>
-        <ResultList name="fdn" noun="foundations" entries={fdnEntries} marked={shortlist.keys} onMark={shortlist.toggle}
+        <ResultList name="fdn" noun="foundations" entries={shown} narrowed={isNarrowed(cur("fdn"))} marked={shortlist.keys} onMark={shortlist.toggle}
           sorts={[["Best fit", null],
             [`Most grants in ${st}`, (a, b) => (b.sortInState ?? 0) - (a.sortInState ?? 0)],
             ["Largest typical grant", (a, b) => (b.sortMedian ?? -Infinity) - (a.sortMedian ?? -Infinity)]]}
@@ -435,12 +510,14 @@ export function App() {
     if (!flEntries || fl.state !== "ready") return loading("Florida programs");
     const all = fl.data.records;
     const open = all.filter((r) => r.nonprofit_eligible && !r.earmark).length;
-    const picks = flEntries.filter((e) => e.tier !== "Long shot");
+    const shown = narrowed("fl", flEntries);
+    const picks = shown.filter((e) => e.tier !== "Long shot");
     return (
       <>
         {tally("fl", `${open.toLocaleString("en-US")} of ${all.length.toLocaleString("en-US")} Florida programs (fiscal year ${fl.data.fiscalYear}) are open to nonprofits. These are programs, not open calls: check each agency's site for the next window.`)}
+        {narrowBar("fl", flEntries, shown, "programs")}
         <details class="filters">
-          <summary>Filters and how the score works</summary>
+          <summary>More filters and how the score works</summary>
           <div class="filters-body">
             <label class="check">
               <input type="checkbox" checked={flEar} onChange={(e) => setFlEar((e.target as HTMLInputElement).checked)} />
@@ -454,7 +531,7 @@ export function App() {
             </ul>
           </div>
         </details>
-        <ResultList name="fl" noun="programs" entries={flEntries} marked={shortlist.keys} onMark={shortlist.toggle}
+        <ResultList name="fl" noun="programs" entries={shown} narrowed={isNarrowed(cur("fl"))} marked={shortlist.keys} onMark={shortlist.toggle}
           exports={picks.length ? (
             <div class="exports">
               <button type="button" class="btn" onClick={() => download("florida-matches.csv", entriesCsv(picks), "text/csv")}>
