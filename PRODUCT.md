@@ -28,8 +28,8 @@ It reads the funders' own records (tax returns, the federal and state catalogs) 
 - The visitor describes their work (mission, key words, funding areas, state, cities, 501(c)(3) status, budget, matching funds), then reads results grouped by source.
 - Results are ranked Strong (60 and up), Possible (35 to 59) and Long shot. Each result shows a score out of 100, reasons it fits, cautions, facts, and details such as how to apply and past grants.
 - Exports: CSV of matches and a calendar file (.ics) of federal deadlines. A profile can be downloaded as JSON and loaded later; nothing is stored on a server.
-- Data refreshes: Grants.gov nightly, Florida weekly, foundations monthly (GitHub Actions).
-- Foundation data exists for Florida only at present; other states say so.
+- Data refreshes: Grants.gov twice a day, Florida weekly, foundations monthly for every state (GitHub Actions).
+- Foundation data covers every state once the monthly refresh has run; a state with no file says so.
 
 ## Capabilities and Constraints
 

@@ -2,7 +2,7 @@ name: Refresh grant data
 
 on:
   schedule:
-    - cron: "17 8 * * *"   # nightly, about 3-4 AM Eastern
+    - cron: "17 8,20 * * *"   # twice a day, about 3-4 AM and 3-4 PM Eastern
   workflow_dispatch:
 
 permissions:
@@ -29,7 +29,7 @@ jobs:
         run: |
           gh release view data-latest >/dev/null 2>&1 || \
             gh release create data-latest --title "Latest grant data" \
-              --notes "Refreshed nightly from the Grants.gov API. The app reads opportunities.json.gz and embeddings.npz from here."
+              --notes "Refreshed twice a day from the Grants.gov API. The app reads opportunities.json.gz and embeddings.npz from here."
           gh release upload data-latest build/opportunities.json.gz build/embeddings.npz --clobber
       - name: Keep this schedule from expiring
         if: always()

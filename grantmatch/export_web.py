@@ -69,6 +69,17 @@ def fetch(name: str, local: str | None = None) -> bytes | None:
     return path.read_bytes() if path.exists() else None
 
 
+def foundation_states() -> list[str]:
+    """The states with foundation files: the release's list when there is one, else the snapshot in data/."""
+    local = {p.name.split(".")[0] for d in ("foundations", "community") for p in (LOCAL / d).glob("*.json.gz")}
+    raw = None if LOCAL_ONLY else fetch("states.json")
+    try:
+        listed = set(json.loads(raw)) if raw else set()
+    except ValueError:
+        listed = set()
+    return sorted(listed | local)
+
+
 def vectors(raw: bytes | None) -> tuple[list[str], np.ndarray]:
     if not raw:
         return [], np.zeros((0, 384), dtype=np.float16)
@@ -116,7 +127,10 @@ def tidy_program(rec: dict) -> dict:
 
 def write(out: Path, name: str, payload: dict, ids: list[str], vecs: np.ndarray) -> None:
     payload = {**payload, "vec_ids": ids, "dim": int(vecs.shape[1]) if len(ids) else 384}
-    (out / f"{name}.json").write_text(json.dumps(payload, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+    # Stored gzipped: with every state's foundations the plain JSON would pass GitHub Pages' 1 GB limit.
+    # The browser unpacks it (data.ts); mtime=0 keeps the bytes the same when the data hasn't changed.
+    text = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    (out / f"{name}.json.gz").write_bytes(gzip.compress(text, compresslevel=9, mtime=0))
     (out / f"{name}.f16").write_bytes(np.ascontiguousarray(vecs, dtype="<f2").tobytes())
     print(f"{name}: {len(payload.get('records', []))} records, {len(ids)} vectors")
 
@@ -149,7 +163,7 @@ def main() -> None:
         meta["florida"] = payload.get("fiscal_year", "")
 
     # Foundations: private (990-PF) and community/public (Schedule I), one file per state.
-    states = sorted({p.name.split(".")[0] for d in ("foundations", "community") for p in (LOCAL / d).glob("*.json.gz")})
+    states = foundation_states()
     for state in states:
         records, all_ids, all_vecs, stamp = [], [], [], ""
         for prefix in ("foundations", "community"):
@@ -180,6 +194,8 @@ def main() -> None:
         examples[key] = {**ex, "vector": [round(float(x), 6) for x in vec]}
     (out / "examples.json").write_text(json.dumps(examples, separators=(",", ":")), encoding="utf-8")
     (out / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+    total = sum(p.stat().st_size for p in out.iterdir() if p.is_file())
+    print(f"data folder: {total / 1e6:.0f} MB")
     print("meta:", meta)
     if args.golden:
         golden(out, examples, args.golden)
@@ -204,7 +220,7 @@ def golden(out: Path, examples: dict, path: Path) -> None:
     from .rank_more import score_florida, score_foundations
 
     def load(name):
-        payload = json.loads((out / f"{name}.json").read_text(encoding="utf-8"))
+        payload = json.loads(gzip.decompress((out / f"{name}.json.gz").read_bytes()))
         vecs = np.frombuffer((out / f"{name}.f16").read_bytes(), dtype="<f2").reshape(-1, payload["dim"]).astype(np.float32)
         return payload["records"], payload["vec_ids"], vecs
 
