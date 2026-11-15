@@ -10,3 +10,6 @@ data/community/*
 !data/community/FL.json.gz
 !data/community/FL.npz
 .streamlit/secrets.toml
+
+# Local output from the data scripts
+build/

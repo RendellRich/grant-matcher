@@ -1,0 +1,38 @@
+name: Refresh funder websites
+
+# Reads each foundation's own website for an open grant cycle, a deadline still ahead, or a note that it
+# isn't taking requests, and publishes the findings as cycles.json.gz on the data-latest release.
+# Weekly, after the Monday Florida refresh; about an hour for every state.
+
+on:
+  schedule:
+    - cron: "23 10 * * 3"   # Wednesdays
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Read every foundation website
+        run: python -m grantmatch.cycles --out build/cycles.json.gz --workers 64
+      - name: Publish as a data-latest release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
+          gh release upload data-latest build/cycles.json.gz --clobber
+      - name: Keep this schedule from expiring
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/refresh-websites.yml/enable"
