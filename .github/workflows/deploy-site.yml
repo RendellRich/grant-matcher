@@ -1,0 +1,65 @@
+name: Deploy site
+
+# Builds the static site in web/ with the latest data and publishes it to GitHub Pages.
+# Runs when the site or scoring code changes on main, and after each data refresh.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "grantmatch/export_web.py"
+      - "grantmatch/display.py"
+      - "grantmatch/embed.py"
+      - ".github/workflows/deploy-site.yml"
+  workflow_run:
+    workflows: ["Refresh grant data", "Refresh Florida programs", "Refresh foundations"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Export the latest data for the browser
+        run: python -m grantmatch.export_web web/public/data
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build
+        working-directory: web
+        run: |
+          npm ci
+          npm run model
+          npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

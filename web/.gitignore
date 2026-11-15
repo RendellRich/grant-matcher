@@ -1,0 +1,6 @@
+node_modules/
+dist/
+# made by grantmatch/export_web.py and scripts/fetch-model.mjs at build time
+public/data/
+public/models/
+test-data/

@@ -8,18 +8,18 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Foundations:** private foundations (IRS Form 990-PF) plus community foundations, public foundations, and United Ways (Form 990 Schedule I) that give in your state, with who they funded, typical grant size, and how to apply
 - **Florida state programs:** state programs open to nonprofits from Florida's Catalog of State Financial Assistance, with legislative earmarks filtered out
 
-**Try it:** [grant-matcher.streamlit.app](https://grant-matcher.streamlit.app)
+**Try it:** [rendellrich.github.io/grant-matcher](https://rendellrich.github.io/grant-matcher/). It runs in your browser: your mission is never sent to a server.
 
 > This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.
 
-![Grant Matcher on a desktop in light mode. The sidebar holds the organization's mission, key words and funding areas above an Update matches button. The results start with a one-line answer, 30 strong matches for this profile, then tabs for Florida programs, foundations, federal grants and tips, and the first ranked card.](docs/images/desktop-light.png)
+![Grant Matcher on a desktop in light mode. A navy band at the top gives the answer, 30 strong matches for this profile: 18 Florida programs, 12 foundations and no strong federal grants, above the Grants.gov notice. Below, the profile form sits in a column on the left with Update matches pinned at its foot, and on the right are index tabs with counts and the first ranked Florida program.](docs/images/desktop-light.png)
 
-![One foundation result in dark mode: a Strong match label and a score of 61 of 100, the foundation's name, a line of facts about its giving, three reasons it fits, one caution that none of the key words appear in its past grants, and a How to apply and past grants section to expand.](docs/images/card-dark.png)
+![One federal grant entry in dark mode: a Possible match label, a score rule filled to 52 with marks at 35 and 60, the estimated due date set to the right, the program name, its opportunity number and agency, reasons it fits, and a Summary section to expand beside Add to shortlist.](docs/images/card-dark.png)
 
 <table>
   <tr>
-    <td width="50%" valign="top"><img src="docs/images/phone-light.png" alt="Grant Matcher on a phone in light mode with the Edit your organization section open: the example picker, the mission text, and the Update matches button pinned at the bottom of the screen."></td>
-    <td width="50%" valign="top"><img src="docs/images/phone-dark.png" alt="Grant Matcher on a phone in dark mode with the profile folded away: the one-line answer, the result tabs, the Florida tally, and the top of the first card."></td>
+    <td width="50%" valign="top"><img src="docs/images/phone-light.png" alt="Grant Matcher on a phone in light mode with Edit your organization open: the example picker, the mission text, and Update matches pinned at the bottom of the screen."></td>
+    <td width="50%" valign="top"><img src="docs/images/phone-dark.png" alt="Grant Matcher on a phone in dark mode: the result tabs as a two by two grid, the Florida tally with its 0 to 100 score key, and the first ranked program."></td>
   </tr>
 </table>
 
@@ -36,16 +36,27 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Explains every score** with reasons and cautions, so the ranking is a starting point for your judgment, not a black box.
 - **Shows forecasts**, grants that are announced but not open yet, which give you the most time to prepare.
 - **Exports** your strong and possible matches to CSV and the deadlines to a calendar file (.ics).
+- **Narrows the list** without changing any score: search words across every result and its details, award size, deadline and agency for federal grants, agency for Florida programs, and for foundations their typical grant, whether they publish how to apply, whether they refuse unsolicited requests, and whether they're based in or fund your cities.
+- **Keeps a shortlist** of the results you mark, saved in your browser on your device, with its own CSV.
 - **Saves your profile** as a small JSON file you can load next time. Nothing is stored on a server, so the profile clears when you close the page.
+
+## How it runs
+
+The public site is a static site in `web/` (Vite, TypeScript, Preact) on GitHub Pages, with no server of its own.
+
+- **Matching happens in the browser.** The first time you search with your own mission, the page downloads the same embedding model the data pipeline uses (BAAI/bge-small-en-v1.5, about 67 MB, once) and runs it on your device with [transformers.js](https://github.com/huggingface/transformers.js). Your mission, key words and profile never leave the page. The three examples are scored without the download.
+- **The scoring is the Python scoring, ported.** `web/src/score.ts` is a line-by-line TypeScript port of `grantmatch/match.py` and `grantmatch/rank_more.py`. A parity test scores nine example profiles in both and requires the same results, reasons and cautions.
+- **The data is published with the site.** After each refresh, `grantmatch/export_web.py` writes the records and their embeddings (as float16) for the browser, and the deploy workflow rebuilds the site.
 
 ## Design and accessibility
 
 The people using this are often one-person development teams at small nonprofits, working late, on a phone as often as a laptop, and some use a screen reader. The design follows from that.
 
-- **The answer comes first.** One line says how many strong matches there are and where. Each tab opens with its own count, and each card leads with the name, a Strong, Possible or Long shot label, and the score.
-- **Every card explains itself** in the same order: what fits your work, then cautions, then plain facts such as typical grant size, in a quieter color. If none of your key words appear in a funder's past grants, that is the first caution.
+- **It reads like a funding directory.** The look is modelled on the printed grant catalogs nonprofits used to find at the library: a navy band, Public Sans (the typeface of U.S. government sites) for working text, a serif for funder names, and ruled entries that each lead with their catalog number, EIN or opportunity number.
+- **The answer comes first.** The first line on the page says how many strong matches there are and where. Each tab carries its count, and each entry leads with a Strong, Possible or Long shot label and its score on the same 0 to 100 scale, with the 35 and 60 marks drawn in, so entries compare at a glance. Deadlines sit right-aligned.
+- **Every entry explains itself** in the same order: what fits your work, then cautions, then plain facts such as typical grant size, in a quieter color. If none of your key words appear in a funder's past grants, that is the first caution.
 - **Nothing changes until you ask.** Edits to the profile stay a draft until you press Update matches. The button stays pinned at the bottom of the form, and a line under it confirms the update or says your changes are not applied yet.
-- **One accent color.** Green is the only accent. Amber marks cautions and red marks errors; neither is used for decoration. Light and dark follow the visitor's system setting, and text meets WCAG AA contrast in both.
+- **One accent color.** Blue is the only accent. Amber marks cautions and red marks errors; neither is used for decoration. Light and dark follow the visitor's system setting, and text meets WCAG AA contrast in both.
 - **Works by keyboard and on small screens.** Focus is always visible, controls have 44 pixel targets, each long list has a link to skip past it, and the layout works down to 320 pixels wide with no sideways scrolling.
 - **Tested with a screen reader.** I ran the main tasks with NVDA 2026.3 in Microsoft Edge and fixed what it found. Pressing Update matches is now announced. Show more keeps focus in place instead of sending NVDA back to the top. Each card's title is read before its score, and the button that opens a card's details names that card.
 
@@ -53,7 +64,7 @@ The colors, type, components and rules are written down in [DESIGN.md](DESIGN.md
 
 ## Private workspace (optional)
 
-The same app has a signed-in workspace for an organization's own team. It is off unless the deployment has the secrets in `.streamlit/secrets.toml.example`. With them, people on the allowed list can sign in with Google and get:
+The Streamlit app (`app.py`, at [grant-matcher.streamlit.app](https://grant-matcher.streamlit.app)) still runs and has a signed-in workspace for an organization's own team. It is off unless the deployment has the secrets in `.streamlit/secrets.toml.example`. With them, people on the allowed list can sign in with Google and get:
 
 - **Pipeline:** save any grant, foundation, or state program, then track status, deadlines, next steps, and notes
 - **Organization:** the facts every draft draws on (mission, programs, budget, outcomes, board)
@@ -125,14 +136,29 @@ python -m grantmatch.community --years 2025,2026 --out data/community          #
 python -m grantmatch.embed foundations data/community/FL.json.gz data/community/FL.npz
 python -m grantmatch.florida --out data/florida.json.gz                        # about 25 minutes
 python -m grantmatch.embed florida data/florida.json.gz data/florida.npz
-streamlit run app.py
 python -m pytest -q
+
+# the public site
+python -m grantmatch.export_web web/public/data   # add --local to use only the snapshot in data/
+cd web
+npm ci
+npm run model    # puts the matching model beside the site
+npm run dev
+
+# the parity test: Python's scores for the examples, then the same profiles in TypeScript
+python -m grantmatch.export_web web/test-data --local --golden web/test-data/golden.json
+cd web && npm test
+
+# the Streamlit app and workspace
+streamlit run app.py
 ```
 
 ## Project layout
 
 ```
-app.py                  Streamlit app
+web/                    the public site: Preact app, TypeScript scoring, parity test
+grantmatch/export_web.py  data and embeddings for the site, and Python's scores for the parity test
+app.py                  Streamlit app (public search and the signed-in workspace)
 grantmatch/fetch.py     Grants.gov pull and cleanup
 grantmatch/embed.py     semantic embeddings (nightly for grants, on demand for a mission)
 grantmatch/match.py     federal scoring, reasons, calendar export
@@ -145,9 +171,10 @@ grantmatch/workspace.py pipeline, organization facts, answer library, documents
 grantmatch/writer.py    Claude drafting, Word export, and form filling
 grantmatch/ui_workspace.py  workspace screens
 tests/                  unit tests for scoring and parsing
+PRODUCT.md              who it's for and the product's rules
 DESIGN.md               design system: colors, type, components, and accessibility rules
 docs/images/            README screenshots
-.github/workflows/      nightly data refresh and tests
+.github/workflows/      data refreshes, tests, and the site deploy
 ```
 
 ## Roadmap

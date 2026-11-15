@@ -1,0 +1,467 @@
+// Scoring for federal grants, foundations and Florida programs. A line-by-line port of
+// grantmatch/match.py and grantmatch/rank_more.py; tests/parity.test.ts checks it against Python.
+// Python rounds halves to even and formats with its own rules, so those are copied too.
+
+export const BUDGET_BANDS: Record<string, number> = {
+  "Under $50k": 50_000,
+  "$50k to $250k": 250_000,
+  "$250k to $1M": 1_000_000,
+  "Over $1M": 5_000_000,
+};
+
+export const CATEGORY_NAMES: Record<string, string> = {
+  AG: "Agriculture", AR: "Arts", BC: "Business and commerce", CD: "Community development",
+  CP: "Consumer protection", DPR: "Disaster prevention and relief", ED: "Education",
+  ELT: "Employment, labor and training", EN: "Energy", ENV: "Environment",
+  FN: "Food and nutrition", HL: "Health", HO: "Housing", HU: "Humanities",
+  ISS: "Income security and social services", IS: "Information and statistics",
+  LJL: "Law, justice and legal services", NR: "Natural resources", O: "Other",
+  RD: "Regional development", RT: "Recreation and tourism",
+  ST: "Science, technology and research", T: "Transportation",
+};
+
+const RESEARCH_NUMBER = /^(RFA|PAR|PA|NOT)-/i;
+const TARGETED: [RegExp, string, number][] = [
+  [/\b(tribal|tribes|native american|indian health|alaska native)\b/i,
+    "Appears limited to tribal organizations or tribal communities", 25],
+  [/\b(state awards|state agencies|state arts agencies|states and territories|state and local governments)\b/i,
+    "Appears aimed at state agencies", 20],
+  [/\b(embassy|consulate|public diplomacy|mission \w+ public affairs)\b/i,
+    "Run by a U.S. embassy for programs abroad", 25],
+  [/\bindemnity\b/i, "Insurance for museum exhibitions, not a cash grant", 35],
+];
+const RESEARCH_TITLE = /\b(research|investigators?|scientists?|fellowships?|clinical trials?)\b/i;
+export const SEMANTIC_SPREAD = 0.14;
+
+const NO_UNSOLICITED = new RegExp(
+  "(no|not accept\\w*|does not (accept|consider)|do not (accept|consider)) unsolicited|unsolicited (requests|applications|proposals) (are )?not"
+  + "|by invitation only|invitation only|only to pre-?selected|preselected", "i");
+const SCHOLARSHIP = /\bscholarships?\b|\btuition\b|\bstudent aid\b/i;
+const SCHOLARSHIP_G = /\bscholarships?\b|\btuition\b|\bstudent aid\b/gi;
+const COMPETITIVE = /\b(competitive|request for (applications|proposals)|rfa|rfp|solicitation|notice of funding|scored|review panel)\b/i;
+const STUDENT_GRANT = /\bstudent (assistance|aid) grant|tuition/i;
+
+export type Tier = "Strong" | "Possible" | "Long shot";
+
+export interface Profile {
+  mission: string;
+  keywords: string[];
+  has501c3: "Yes" | "Pending" | "No";
+  budgetBand: string;
+  canCostShare: boolean;
+  categories: string[];
+  includeForecasted: boolean;
+  minDaysLeft: number;
+  today: Date; // a local calendar date; only the year, month and day are used
+}
+
+export interface Scored<T> {
+  rec: T;
+  score: number;
+  tier: Tier;
+  reasons: string[];
+  cautions: string[];
+  matched: string[];
+}
+
+// ---------- Python behaviour ----------
+
+/** Python's round(): halves go to the even neighbour. */
+export function pyRound(x: number): number {
+  const f = Math.floor(x);
+  const diff = x - f;
+  if (diff > 0.5) return f + 1;
+  if (diff < 0.5) return f;
+  return f % 2 === 0 ? f : f + 1;
+}
+
+/** Python's f"{x:.{d}f}": exact ties (only possible for values a double holds exactly) go to even. */
+function pyFixed(x: number, d: number): string {
+  // toFixed already rounds the exact binary value; it differs from Python only on an exact tie, where
+  // it rounds up and Python rounds to even. Test for a tie exactly: x = m * 2^e, so x * 10^d is a tie
+  // when m * 10^d leaves exactly half of 2^-e as remainder.
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, Math.abs(x));
+  const bits = view.getBigUint64(0);
+  const exp = Number((bits >> 52n) & 0x7ffn);
+  const frac = bits & ((1n << 52n) - 1n);
+  if (exp === 0 || exp === 0x7ff) return x.toFixed(d);
+  const m = frac | (1n << 52n);
+  const e = exp - 1075; // x = m * 2^e
+  if (e < 0 && -e < 120) {
+    const scale = 1n << BigInt(-e);
+    if ((m * 10n ** BigInt(d)) % scale === scale >> 1n) {
+      const down = (m * 10n ** BigInt(d)) / scale; // the even neighbour wins
+      const n = down % 2n === 0n ? down : down + 1n;
+      const s = n.toString().padStart(d + 1, "0");
+      const out = d ? s.slice(0, -d) + "." + s.slice(-d) : s;
+      return (x < 0 ? "-" : "") + out;
+    }
+  }
+  return x.toFixed(d);
+}
+
+function grouped(n: number): string {
+  // f"{n:,.0f}"
+  const [i] = pyFixed(n, 0).split(".");
+  const neg = i.startsWith("-");
+  const digits = neg ? i.slice(1) : i;
+  return (neg ? "-" : "") + digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function median(values: number[]): number {
+  const s = [...values].sort((a, b) => a - b);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+const WORD = /[\p{L}\p{N}\p{M}_]/u;
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // a "u" regex rejects needless escapes such as \-
+}
+
+const hitCache = new Map<string, RegExp | null>();
+
+/** re.search(r"\b" + re.escape(stem), text) with Python's Unicode word boundary. */
+function stemPattern(kw: string): RegExp | null {
+  let re = hitCache.get(kw);
+  if (re !== undefined) return re;
+  const k = kw.trim().toLowerCase();
+  if (!k) re = null;
+  else {
+    const stem = k.endsWith("s") && k.length > 4 ? k.slice(0, -1) : k;
+    // \b before the stem: a word start if the stem starts with a word character, else right after one.
+    const guard = WORD.test(stem[0]) ? "(?<![\\p{L}\\p{N}\\p{M}_])" : "(?<=[\\p{L}\\p{N}\\p{M}_])";
+    re = new RegExp(guard + escapeRe(stem), "u");
+  }
+  hitCache.set(kw, re);
+  return re;
+}
+
+export function keywordHits(keywords: string[], text: string): string[] {
+  const lower = text.toLowerCase();
+  const hits: string[] = [];
+  for (const kw of keywords) {
+    const re = stemPattern(kw);
+    if (re && re.test(lower)) hits.push(kw.trim());
+  }
+  return hits;
+}
+
+function missing(n: unknown): boolean {
+  return n === null || n === undefined || (typeof n === "number" && Number.isNaN(n));
+}
+
+export function money(n: number | null | undefined): string {
+  if (missing(n) || !n) return "not listed";
+  const v = n as number;
+  if (v >= 1_000_000) return `$${pyFixed(v / 1_000_000, 1)}M`.replace(".0M", "M");
+  if (v >= 1_000) return `$${pyFixed(v / 1_000, 0)}k`;
+  return `$${grouped(v)}`;
+}
+
+function awardRange(floor: number | null, ceiling: number | null): string {
+  const hasCeiling = !missing(ceiling) && (ceiling as number) > 0;
+  if (floor && hasCeiling && Math.abs(floor - (ceiling as number)) < 1) return money(ceiling);
+  if (floor && hasCeiling) return `${money(floor)} to ${money(ceiling)}`;
+  if (hasCeiling) return `up to ${money(ceiling)}`;
+  if (floor) return `from ${money(floor)}`;
+  return "amount not listed";
+}
+
+function keywordWeights(keywords: string[], texts: string[]): [Map<string, number>, number] {
+  const weights = new Map<string, number>();
+  for (const kw of keywords) {
+    const share = texts.length ? texts.filter((t) => keywordHits([kw], t).length > 0).length / texts.length : 0;
+    weights.set(kw, 1.0 - Math.min(0.85, share * 8)); // a word in 10%+ of records keeps only 15% weight
+  }
+  const best3 = [...weights.values()].sort((a, b) => b - a).slice(0, 3).reduce((a, b) => a + b, 0) || 1.0;
+  return [weights, best3];
+}
+
+function coverageOf(matched: string[], weights: Map<string, number>, best3: number): number {
+  return Math.min(1.0, matched.reduce((s, m) => s + (weights.get(m) ?? 0.15), 0) / best3);
+}
+
+function tierOf(shown: number): Tier {
+  return shown >= 60 ? "Strong" : shown >= 35 ? "Possible" : "Long shot";
+}
+
+const clip01 = (x: number) => Math.min(1, Math.max(0, x));
+
+/** Embedding similarity above the source's median, scaled to 0..1 (rank_more._scale). */
+function scaler(semantic: Map<string, number> | null): (id: string) => number {
+  if (!semantic || semantic.size === 0) return () => 0.5;
+  const base = median([...semantic.values()]);
+  return (id) => clip01(((semantic.get(id) ?? base) - base) / SEMANTIC_SPREAD);
+}
+
+// ---------- federal ----------
+
+export interface FederalRec {
+  id: string; number: string; title: string; agency_code: string; agency: string; status: string;
+  close_date: string | null; award_ceiling: number | null; award_floor: number | null;
+  cost_sharing: boolean; applicant_types: string[]; categories: string[]; category_labels: string[];
+  description: string; eligibility_text: string; url: string; _title?: string;
+}
+
+export interface FederalExtra {
+  close: Date | null; days_left: number | null; award_range: string; size_ref: number | null;
+}
+
+const DAY = 86_400_000;
+const utcDay = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+
+/** load_frame: close dates, with far-future placeholders ("2099-01-01") read as no date. */
+export function closeDate(raw: string | null, now: Date): Date | null {
+  if (!raw) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (!m) return null;
+  const d = new Date(+m[1], +m[2] - 1, +m[3]);
+  const limit = new Date(now.getFullYear() + 4, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes());
+  return d < limit ? d : null;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const fmtDate = (d: Date) => `${MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2, "0")}, ${d.getFullYear()}`;
+
+export function scoreFederal(records: FederalRec[], p: Profile, semantic: Map<string, number> | null,
+                             now: Date = new Date()): Scored<FederalRec & FederalExtra>[] {
+  const today = utcDay(p.today);
+  let work = records.map((r) => ({ ...r, close: closeDate(r.close_date, now) } as FederalRec & FederalExtra));
+  if (!p.includeForecasted) work = work.filter((r) => r.status === "posted");
+  if (p.categories.length) work = work.filter((r) => r.categories.some((c) => p.categories.includes(c)));
+  for (const r of work) r.days_left = r.close ? Math.round((utcDay(r.close) - today) / DAY) : null;
+  work = work.filter((r) => r.days_left === null || r.days_left >= p.minDaysLeft);
+  if (!work.length) return [];
+
+  let sims: number[];
+  if (semantic && semantic.size) {
+    const baseline = median([...semantic.values()]);
+    sims = work.map((r) => clip01(((semantic.get(r.id) ?? baseline) - baseline) / SEMANTIC_SPREAD));
+  } else {
+    sims = work.map(() => 0.5); // the model could not load: key words carry the ranking
+  }
+
+  const texts = work.map((r) => (r.title + " " + r.description).toLowerCase());
+  const [weights, best3] = keywordWeights(p.keywords, texts);
+  const budget = BUDGET_BANDS[p.budgetBand] ?? 250_000;
+  const allUndated = work.every((r) => r.days_left === null);
+  const out: Scored<FederalRec & FederalExtra>[] = [];
+
+  work.forEach((r, idx) => {
+    const matched = keywordHits(p.keywords, r.title + " " + r.description);
+    let points = 100 * (0.70 * sims[idx] + 0.30 * coverageOf(matched, weights, best3));
+    const reasons: string[] = [];
+    const cautions: string[] = [];
+    if (matched.length) reasons.push("Mentions " + matched.slice(0, 5).join(", "));
+    const cats = r.categories.map((c) => CATEGORY_NAMES[c] ?? c);
+    if (p.categories.length && r.categories.some((c) => p.categories.includes(c))) {
+      reasons.push("In your categories: " + cats.join(", "));
+    }
+
+    const types = new Set(r.applicant_types);
+    if (p.has501c3 === "Yes") {
+      if (types.has("12") || types.has("99")) reasons.push("Open to 501(c)(3) nonprofits");
+      else { points -= 5; cautions.push('Eligibility is "other"; read the eligibility notes'); }
+    } else if (types.has("13") || types.has("99")) {
+      reasons.push("Open to nonprofits without 501(c)(3) status");
+    } else if (types.has("12") && !["13", "25", "99"].some((t) => types.has(t))) {
+      points -= 40; cautions.push("Requires 501(c)(3) status");
+    } else {
+      points -= 5; cautions.push('Eligibility is "other"; read the eligibility notes');
+    }
+
+    if (r.cost_sharing && !p.canCostShare) {
+      points -= 20; cautions.push("Requires cost sharing or matching funds");
+    }
+
+    const floor = r.award_floor && r.award_floor > 1_000 ? r.award_floor : null;
+    const ceiling = missing(r.award_ceiling) ? null : r.award_ceiling;
+    const sizeRef = floor || ceiling;
+    if (floor && floor > 3 * budget) {
+      points -= 15;
+      cautions.push(`Smallest award (${money(floor)}) is large for your budget; funders usually want a track record at that size`);
+    } else if (ceiling && ceiling > 10 * budget && !floor) {
+      points -= 5;
+      cautions.push(`Awards go up to ${money(ceiling)}; ask for an amount that fits your budget`);
+    }
+
+    const nih = RESEARCH_NUMBER.test(r.number || "") && String(r.agency_code).startsWith("HHS-NIH");
+    if (nih || RESEARCH_TITLE.test(r.title) || String(r.agency_code) === "NSF") {
+      points -= 35; cautions.push("Research grant; usually needs a research team and institution");
+    } else if (r.categories.includes("ST") && r.categories.length === 1) {
+      points -= 8; cautions.push("Research and development funding");
+    }
+
+    for (const [pattern, note, penalty] of TARGETED) {
+      if (pattern.test(r.title)) { points -= penalty; cautions.push(note); break; }
+    }
+
+    if (r.status === "forecasted") {
+      const due = r.close ? `estimated due ${fmtDate(r.close)}` : "dates not set yet";
+      reasons.push(`Forecast, not open yet (${due}); time to prepare`);
+    } else if (r.days_left !== null && r.days_left < 30) {
+      cautions.push(`Closes in ${r.days_left} days`);
+    } else if (r.days_left === null && allUndated) {
+      // match.py checks `is None`, but pandas stores a missing day count as NaN once any grant has one,
+      // so this caution only appears when no grant in the list has a date. Kept as is to match the app.
+      cautions.push("No close date listed; check the notice");
+    }
+
+    const final = Math.max(0, Math.min(100, points));
+    const shown = pyRound(final);
+    out.push({
+      rec: { ...r, award_range: awardRange(floor, ceiling), size_ref: sizeRef ?? null },
+      score: shown, tier: tierOf(shown), reasons, cautions, matched,
+    });
+  });
+  // score high to low, then the soonest deadline; no deadline last
+  return out.sort((a, b) => b.score - a.score
+    || (a.rec.days_left ?? Infinity) - (b.rec.days_left ?? Infinity));
+}
+
+// ---------- foundations ----------
+
+export interface SampleGrant {
+  to: string; city: string; state: string; purpose: string; amount: number | null;
+  _to?: string; _city?: string; _city_title?: string; _purpose?: string;
+}
+
+export interface FoundationRec {
+  ein: string; name: string; city: string; state: string; tax_year: string; kind?: string;
+  website?: string | null; preselected_only: boolean; apply?: Record<string, string> | null;
+  grant_count: number | null; grant_median: number | null; grants_total: number | null;
+  recipient_states: Record<string, number>; top_purposes: string[]; top_recipients?: string[];
+  sample_grants: SampleGrant[]; url: string;
+  _name?: string; _city?: string; _city_title?: string; _mission?: string; _site?: string;
+  _apply?: Record<string, string>;
+}
+
+export type FoundationOut = FoundationRec & { in_state: number };
+
+const pyTitle = (s: string) => s.toLowerCase().replace(/(^|[^\p{L}])(\p{L})/gu, (_, a, b) => a + b.toUpperCase());
+
+export function scoreFoundations(records: FoundationRec[], p: Profile, state: string, cities: string[],
+                                 semantic: Map<string, number> | null, showPreselected = false): Scored<FoundationOut>[] {
+  if (!records.length) return [];
+  const recs = records.map((r) => ({
+    ...r, kind: r.kind || "Private foundation", top_recipients: Array.isArray(r.top_recipients) ? r.top_recipients : [],
+  }));
+  const purposeText = recs.map((r) => r.top_purposes.join(" ") + " " + r.sample_grants.map((g) => g.purpose).join(" ")
+    + " " + r.top_recipients.join(" "));
+  const [weights, best3] = keywordWeights(p.keywords, purposeText.map((t) => t.toLowerCase()));
+  const fit = scaler(semantic);
+  const budget = BUDGET_BANDS[p.budgetBand] ?? 250_000;
+  const citySet = new Set(cities.map((c) => c.trim().toLowerCase()).filter(Boolean));
+  const out: Scored<FoundationOut>[] = [];
+
+  recs.forEach((r, i) => {
+    const apply = r.apply && typeof r.apply === "object" ? r.apply : {};
+    const restrictions = apply.restrictions ?? "";
+    const reasons: string[] = [];
+    const cautions: string[] = [];
+    const matched = keywordHits(p.keywords, purposeText[i]);
+    let points = 60 * fit(r.ein) + 15 * coverageOf(matched, weights, best3);
+    if (matched.length) reasons.push("Past grants mention " + matched.slice(0, 5).join(", "));
+
+    const n = r.grant_count || 0;
+    const inState = r.recipient_states?.[state] ?? 0;
+    const share = n ? inState / n : 0;
+    const wentTo = n === 1 ? `Its only grant went to a ${state} organization` : `${inState} of its ${n} grants went to ${state} organizations`;
+    if (share >= 0.5) { points += 20; reasons.push(wentTo); }
+    else if (share >= 0.2) { points += 12; reasons.push(wentTo); }
+    else if (inState) {
+      points -= share < 0.1 && r.state !== state ? 15 : 5;
+      cautions.push(`Only ${inState} of its ${n} grants went to ${state}`);
+    } else if (r.state === state) points += 6;
+    else { points -= 20; cautions.push(`No grants to ${state} in its latest return`); }
+
+    const isPublic = r.kind !== "Private foundation";
+    if (r.kind === "Community foundation" && r.state !== state) {
+      points -= 25;
+      cautions.push(`Serves a community outside ${state}; its grants here are usually from donors' own funds`);
+    }
+    const cityLower = String(r.city).toLowerCase();
+    if (citySet.has(cityLower) && r.state === state) {
+      points += 5;
+      reasons.push(`Based in ${r._city_title ?? pyTitle(String(r.city))}, one of your cities`);
+    }
+    if (n < 3) {
+      points -= 20;
+      cautions.push(`Made only ${n} grant${n !== 1 ? "s" : ""} last year, so its interests are hard to read`);
+    }
+    const local = r.sample_grants.filter((g) => citySet.has(g.city.toLowerCase()) && g.state === state);
+    if (local.length) {
+      points += local.length >= 3 ? 10 : 5;
+      const names = [...new Set(local.map((g) => g._city_title ?? pyTitle(g.city)))].sort();
+      reasons.push(`Funded ${local.length} group${local.length > 1 ? "s" : ""} in ${names.join(", ")}`);
+    }
+    const servesYou = r.state === state && (citySet.has(cityLower) || local.length >= 3);
+    if (r.kind === "Community foundation" && servesYou) {
+      points += 15;
+      reasons.unshift("A community foundation serving your area; these often run grant cycles for local nonprofits");
+    }
+
+    const med = r.grant_median;
+    if (missing(med)) reasons.push(`Typical grant ${money(null)}`); // pandas reads a missing median as NaN, which is truthy
+    else if (med && med > budget) { points -= 10; cautions.push(`Typical grant (${money(med)}) is large next to your budget`); }
+    else if (med && med < 1000) cautions.push(`Mostly small gifts (typical ${money(med)})`);
+    else if (med) reasons.push(`Typical grant ${money(med)}`);
+
+    if (isPublic && typeof r.website === "string" && r.website) reasons.push("Check its website for open grant cycles");
+    if (r.preselected_only) {
+      if (!showPreselected) return;
+      points -= 25;
+      cautions.push("Says it only funds preselected organizations; an introduction letter may still be read");
+    }
+    if (NO_UNSOLICITED.test(restrictions)) {
+      points -= 30; cautions.push("Says it does not accept unsolicited requests");
+    }
+    if (Object.keys(apply).length && (apply.materials || apply.contact)) reasons.push("Publishes how to apply");
+    const purposes = r.top_purposes.slice(0, 10).join(" ");
+    if (SCHOLARSHIP.test(purposes) && (purposes.match(SCHOLARSHIP_G)?.length ?? 0) >= 3) {
+      points -= 15; cautions.push("Mostly scholarships for individuals");
+    }
+
+    if (n < 3) points = Math.min(points, 55); // too little history to call it a strong match
+    const shown = pyRound(Math.max(0, Math.min(100, points)));
+    out.push({ rec: { ...r, in_state: inState }, score: shown, tier: tierOf(shown), reasons, cautions, matched });
+  });
+  return out.sort((a, b) => b.score - a.score || (b.rec.grant_count ?? 0) - (a.rec.grant_count ?? 0));
+}
+
+// ---------- Florida programs ----------
+
+export interface FloridaRec {
+  id: string; csfa: string; title: string; agency: string; objectives: string; assistance: string;
+  applicant_types: string; nonprofit_eligible: boolean; earmark: boolean; restrictions: string;
+  application: string; award: string; deadlines: string; contact: string; web: string; subjects: string;
+  url: string; _title?: string; _assist?: string;
+}
+
+export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<string, number> | null,
+                             showEarmarks = false): Scored<FloridaRec>[] {
+  let recs = records.filter((r) => r.nonprofit_eligible);
+  if (!showEarmarks) recs = recs.filter((r) => !r.earmark);
+  if (!recs.length) return [];
+  const text = recs.map((r) => r.title + " " + r.objectives + " " + r.subjects);
+  const [weights, best3] = keywordWeights(p.keywords, text.map((t) => t.toLowerCase()));
+  const fit = scaler(semantic);
+  const out = recs.map((r, i): Scored<FloridaRec> => {
+    const matched = keywordHits(p.keywords, text[i]);
+    let points = 75 * fit(r.id) + 25 * coverageOf(matched, weights, best3);
+    const reasons = ["Open to nonprofits"];
+    const cautions: string[] = [];
+    if (matched.length) reasons.unshift("Mentions " + matched.slice(0, 5).join(", "));
+    if (COMPETITIVE.test(r.award + " " + r.application)) reasons.push("Awarded through a competitive application");
+    if (SCHOLARSHIP.test(r.title) || STUDENT_GRANT.test(r.title)) {
+      points -= 25; cautions.push("Student aid paid to individuals or schools, not to nonprofits");
+    }
+    if (r.earmark) { points -= 40; cautions.push("Set aside by the Legislature for a named organization"); }
+    const shown = pyRound(Math.max(0, Math.min(100, points)));
+    return { rec: r, score: shown, tier: tierOf(shown), reasons, cautions, matched };
+  });
+  return out.sort((a, b) => b.score - a.score);
+}

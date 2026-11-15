@@ -17,3 +17,18 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt pytest
       - run: python -m pytest -q
+      # The site scores in the browser with a TypeScript port of the Python scorer. Python writes its own
+      # scores for the example profiles; the web tests must match them.
+      - name: Score the examples in Python for the parity test
+        run: python -m grantmatch.export_web web/test-data --local --golden web/test-data/golden.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Web typecheck and tests
+        working-directory: web
+        run: |
+          npm ci
+          npm run typecheck
+          npm test

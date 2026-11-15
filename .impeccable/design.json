@@ -1,564 +1,734 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-14T17:48:33+00:00",
+  "generatedAt": "2026-11-15T01:14:02+00:00",
   "title": "Design System: Grant Matcher",
   "extensions": {
     "colorMeta": {
-      "evergreen": {
-        "role": "primary",
-        "displayName": "Evergreen",
-        "canonical": "#2f6f5e",
-        "tonalRamp": [
-          "#1c312b",
-          "#2e594d",
-          "#3e8371",
-          "#4bb095",
-          "#76bfac",
-          "#a1cfc3",
-          "#c9e1db",
-          "#eff5f4"
-        ]
-      },
-      "evergreen-night": {
-        "role": "primary",
-        "displayName": "Evergreen (dark mode)",
-        "canonical": "#6cc0a5",
-        "tonalRamp": [
-          "#1c312a",
-          "#2e594b",
-          "#3e836d",
-          "#4cb090",
-          "#77bfa8",
-          "#a1cfc0",
-          "#c9e1d9",
-          "#eff5f3"
-        ]
-      },
-      "on-evergreen-night": {
+      "ground": {
         "role": "neutral",
-        "displayName": "Text on evergreen (dark mode)",
-        "canonical": "#121715",
+        "displayName": "Plain ground",
+        "canonical": "#ffffff",
         "tonalRamp": [
-          "#232927",
-          "#3d4a45",
-          "#566b63",
-          "#6e8d81",
-          "#90a69d",
-          "#b1bfb9",
-          "#d2d9d6",
-          "#f1f3f2"
+          "#262626",
+          "#404040",
+          "#5c5c5c",
+          "#7a7a7a",
+          "#999999",
+          "#b8b8b8",
+          "#d6d6d6",
+          "#f2f2f2"
         ]
       },
       "paper": {
         "role": "neutral",
-        "displayName": "Paper",
+        "displayName": "Shelf paper",
+        "canonical": "#f3f6fa",
+        "tonalRamp": [
+          "#1d2530",
+          "#2d3d53",
+          "#3c577c",
+          "#4973ac",
+          "#7494be",
+          "#a1b4ce",
+          "#ccd5e1",
+          "#f0f2f5"
+        ]
+      },
+      "cloth": {
+        "role": "primary",
+        "displayName": "Binding navy",
+        "canonical": "#0f2747",
+        "tonalRamp": [
+          "#172436",
+          "#223b5e",
+          "#29558e",
+          "#2c6fc8",
+          "#5e91d4",
+          "#94b3db",
+          "#c6d4e7",
+          "#eef2f6"
+        ]
+      },
+      "on-cloth": {
+        "role": "neutral",
+        "displayName": "On cloth",
         "canonical": "#ffffff",
         "tonalRamp": [
           "#262626",
-          "#434343",
-          "#616161",
-          "#7e7e7e",
-          "#9b9b9b",
+          "#404040",
+          "#5c5c5c",
+          "#7a7a7a",
+          "#999999",
           "#b8b8b8",
-          "#d5d5d5",
+          "#d6d6d6",
           "#f2f2f2"
         ]
       },
-      "mist": {
+      "on-cloth-muted": {
         "role": "neutral",
-        "displayName": "Mist",
-        "canonical": "#f4f6f5",
+        "displayName": "On cloth, muted",
+        "canonical": "#c7d4e6",
         "tonalRamp": [
-          "#242926",
-          "#3e4943",
-          "#586961",
-          "#718a7e",
-          "#92a49b",
-          "#b2beb8",
-          "#d2d8d5",
-          "#f1f3f2"
+          "#1d252f",
+          "#2e3d51",
+          "#3e577a",
+          "#4d73a8",
+          "#7693bc",
+          "#a3b4cc",
+          "#ccd5e0",
+          "#f0f2f5"
         ]
       },
       "ink": {
         "role": "neutral",
         "displayName": "Ink",
-        "canonical": "#1c2421",
+        "canonical": "#0f1b2d",
         "tonalRamp": [
-          "#232a27",
-          "#3d4a45",
-          "#566b63",
-          "#6e8d82",
-          "#90a69e",
-          "#b1bfba",
-          "#d1d9d6",
-          "#f1f3f2"
+          "#1a2432",
+          "#293b57",
+          "#355483",
+          "#3f6eb6",
+          "#6c90c6",
+          "#9db2d3",
+          "#c9d4e3",
+          "#eff2f5"
         ]
       },
-      "slate": {
+      "muted": {
         "role": "neutral",
-        "displayName": "Slate",
-        "canonical": "#4b5753",
+        "displayName": "Muted ink",
+        "canonical": "#4a5568",
         "tonalRamp": [
-          "#242827",
-          "#3f4745",
-          "#5a6763",
-          "#748781",
-          "#94a29d",
-          "#b4bcb9",
-          "#d3d7d6",
-          "#f2f3f2"
+          "#22252a",
+          "#383e48",
+          "#4f5869",
+          "#66758f",
+          "#8a95a8",
+          "#aeb5c1",
+          "#d2d5db",
+          "#f1f2f3"
         ]
       },
       "rule": {
         "role": "neutral",
-        "displayName": "Rule",
-        "canonical": "#d5ddd9",
+        "displayName": "Hairline",
+        "canonical": "#dbe2ea",
         "tonalRamp": [
-          "#232926",
-          "#3e4943",
-          "#576a61",
-          "#718b7e",
-          "#91a49b",
-          "#b2beb8",
-          "#d2d8d5",
-          "#f1f3f2"
+          "#20262c",
+          "#343f4c",
+          "#475a70",
+          "#5b789a",
+          "#8197b1",
+          "#a9b7c6",
+          "#cfd6dd",
+          "#f1f2f4"
         ]
       },
-      "control-edge": {
+      "edge": {
         "role": "neutral",
         "displayName": "Control edge",
-        "canonical": "#7d8984",
+        "canonical": "#7a8699",
         "tonalRamp": [
-          "#252826",
-          "#414644",
-          "#5c6561",
-          "#78847f",
-          "#969f9c",
-          "#b5bbb8",
-          "#d4d7d5",
-          "#f2f3f2"
+          "#232629",
+          "#3a3e46",
+          "#525966",
+          "#6b778a",
+          "#8d96a5",
+          "#b0b6bf",
+          "#d3d5da",
+          "#f1f2f3"
         ]
       },
-      "caution-amber": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Civic blue",
+        "canonical": "#1d4ed8",
+        "tonalRamp": [
+          "#141e38",
+          "#1c2f63",
+          "#214097",
+          "#1f4fd6",
+          "#5478de",
+          "#8ea4e1",
+          "#c3cdea",
+          "#edf0f7"
+        ]
+      },
+      "on-accent": {
+        "role": "neutral",
+        "displayName": "On accent",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#404040",
+          "#5c5c5c",
+          "#7a7a7a",
+          "#999999",
+          "#b8b8b8",
+          "#d6d6d6",
+          "#f2f2f2"
+        ]
+      },
+      "strong-bg": {
+        "role": "neutral",
+        "displayName": "Strong tint",
+        "canonical": "#dbeafe",
+        "tonalRamp": [
+          "#10233d",
+          "#143a6b",
+          "#1251a5",
+          "#096aec",
+          "#438def",
+          "#84b0eb",
+          "#bed3ee",
+          "#ecf1f8"
+        ]
+      },
+      "strong-fg": {
+        "role": "neutral",
+        "displayName": "Strong tint text",
+        "canonical": "#1e3a8a",
+        "tonalRamp": [
+          "#171f35",
+          "#22315d",
+          "#2a448e",
+          "#2d55c7",
+          "#5f7dd3",
+          "#95a7da",
+          "#c6cee7",
+          "#eef0f6"
+        ]
+      },
+      "long-bg": {
+        "role": "neutral",
+        "displayName": "Long shot tint",
+        "canonical": "#eef1f5",
+        "tonalRamp": [
+          "#20252c",
+          "#343e4c",
+          "#485970",
+          "#5b7699",
+          "#8196b1",
+          "#aab6c6",
+          "#d0d5dd",
+          "#f1f2f4"
+        ]
+      },
+      "long-fg": {
+        "role": "neutral",
+        "displayName": "Long shot tint text",
+        "canonical": "#374151",
+        "tonalRamp": [
+          "#22252b",
+          "#373e49",
+          "#4d586b",
+          "#647591",
+          "#8895aa",
+          "#adb5c2",
+          "#d1d5db",
+          "#f1f2f3"
+        ]
+      },
+      "caution": {
         "role": "status",
         "displayName": "Caution amber",
         "canonical": "#8a5a00",
         "tonalRamp": [
-          "#402e0c",
-          "#78540e",
-          "#b77b0b",
-          "#fba401",
-          "#f5b640",
-          "#f1c97f",
-          "#f2deb8",
-          "#faf5eb"
+          "#3e2d0f",
+          "#6e4e12",
+          "#a9730e",
+          "#f29f03",
+          "#f4b53e",
+          "#eec881",
+          "#f0debd",
+          "#f9f4ec"
         ]
       },
-      "strong-tint": {
+      "error": {
         "role": "status",
-        "displayName": "Strong tint",
-        "canonical": "#e2f1e9",
+        "displayName": "Error red",
+        "canonical": "#b3261e",
         "tonalRamp": [
-          "#1d2f26",
-          "#315642",
-          "#437f5f",
-          "#52a97b",
-          "#7bba99",
-          "#a4ccb7",
-          "#cbdfd4",
-          "#f0f5f2"
+          "#371715",
+          "#61221f",
+          "#932a24",
+          "#d02e25",
+          "#da5f58",
+          "#de9591",
+          "#e8c6c4",
+          "#f7eeee"
         ]
       },
-      "strong-ink": {
-        "role": "status",
-        "displayName": "Strong ink",
-        "canonical": "#17543f",
-        "tonalRamp": [
-          "#17352b",
-          "#25624d",
-          "#309270",
-          "#36c594",
-          "#67ceab",
-          "#98d8c2",
-          "#c4e6da",
-          "#eef7f4"
-        ]
-      },
-      "long-tint": {
+      "ground-dark": {
         "role": "neutral",
-        "displayName": "Long tint",
-        "canonical": "#edf0ef",
+        "displayName": "Plain ground (dark mode)",
+        "canonical": "#0b1220",
         "tonalRamp": [
-          "#242927",
-          "#3f4845",
-          "#596863",
-          "#728981",
-          "#93a39e",
-          "#b3bdba",
-          "#d2d8d6",
-          "#f2f3f2"
+          "#1b2232",
+          "#293856",
+          "#364f82",
+          "#4067b5",
+          "#6d8ac5",
+          "#9dafd2",
+          "#cad2e3",
+          "#eff1f5"
         ]
       },
-      "long-ink": {
+      "paper-dark": {
         "role": "neutral",
-        "displayName": "Long ink",
-        "canonical": "#3b4744",
+        "displayName": "Shelf paper (dark mode)",
+        "canonical": "#111a2b",
         "tonalRamp": [
-          "#242927",
-          "#3e4846",
-          "#596865",
-          "#728983",
-          "#92a39f",
-          "#b3bdbb",
-          "#d2d8d6",
-          "#f2f3f3"
+          "#1c2330",
+          "#2c3a54",
+          "#3a517d",
+          "#476aae",
+          "#728dc0",
+          "#a0b0cf",
+          "#cbd3e1",
+          "#eff1f5"
         ]
       },
-      "night": {
+      "cloth-dark": {
+        "role": "primary",
+        "displayName": "Binding navy (dark mode)",
+        "canonical": "#132c50",
+        "tonalRamp": [
+          "#182435",
+          "#233b5c",
+          "#2c538c",
+          "#316dc4",
+          "#618fd1",
+          "#96b2d9",
+          "#c6d3e6",
+          "#eef2f6"
+        ]
+      },
+      "on-cloth-dark": {
         "role": "neutral",
-        "displayName": "Night",
-        "canonical": "#121715",
+        "displayName": "On cloth (dark mode)",
+        "canonical": "#f1f5fb",
         "tonalRamp": [
-          "#232927",
-          "#3d4a45",
-          "#566b63",
-          "#6e8d81",
-          "#90a69d",
-          "#b1bfb9",
-          "#d2d9d6",
-          "#f1f3f2"
+          "#192433",
+          "#263b59",
+          "#315387",
+          "#386dbd",
+          "#678fcb",
+          "#9ab2d6",
+          "#c8d3e4",
+          "#eff2f6"
         ]
       },
-      "night-surface": {
+      "on-cloth-muted-dark": {
         "role": "neutral",
-        "displayName": "Night surface",
-        "canonical": "#1b2220",
+        "displayName": "On cloth, muted (dark mode)",
+        "canonical": "#b9c7da",
         "tonalRamp": [
-          "#232928",
-          "#3d4946",
-          "#576a65",
-          "#6f8c84",
-          "#90a59f",
-          "#b1bebb",
-          "#d2d8d7",
-          "#f1f3f3"
+          "#1f252e",
+          "#313e4e",
+          "#445874",
+          "#55759f",
+          "#7d95b5",
+          "#a7b5c8",
+          "#ced5de",
+          "#f0f2f4"
         ]
       },
-      "night-ink": {
+      "ink-dark": {
         "role": "neutral",
-        "displayName": "Night ink",
-        "canonical": "#e6ebe9",
+        "displayName": "Ink (dark mode)",
+        "canonical": "#e6ebf2",
         "tonalRamp": [
-          "#232927",
-          "#3d4945",
-          "#576a62",
-          "#708c80",
-          "#91a59d",
-          "#b2beb9",
-          "#d2d8d6",
-          "#f1f3f2"
+          "#1f252e",
+          "#313d4e",
+          "#435874",
+          "#5574a0",
+          "#7c94b6",
+          "#a7b5c9",
+          "#ced5de",
+          "#f0f2f4"
         ]
       },
-      "night-slate": {
+      "muted-dark": {
         "role": "neutral",
-        "displayName": "Night slate",
-        "canonical": "#a7b2ae",
+        "displayName": "Muted ink (dark mode)",
+        "canonical": "#a3b0c2",
         "tonalRamp": [
-          "#252827",
-          "#404744",
-          "#5b6662",
-          "#758680",
-          "#95a19c",
-          "#b4bcb9",
-          "#d3d7d6",
-          "#f2f3f2"
+          "#21252b",
+          "#363e49",
+          "#4c596c",
+          "#627693",
+          "#8796ab",
+          "#adb6c3",
+          "#d1d5db",
+          "#f1f2f4"
         ]
       },
-      "night-rule": {
+      "rule-dark": {
         "role": "neutral",
-        "displayName": "Night rule",
-        "canonical": "#34403b",
+        "displayName": "Hairline (dark mode)",
+        "canonical": "#243049",
         "tonalRamp": [
-          "#242927",
-          "#3e4944",
-          "#586962",
-          "#718b80",
-          "#91a49c",
-          "#b2beb9",
-          "#d2d8d6",
-          "#f1f3f2"
+          "#1e232e",
+          "#303a4f",
+          "#415376",
+          "#526ca3",
+          "#7a8eb8",
+          "#a5b1ca",
+          "#ced3df",
+          "#f0f1f4"
         ]
       },
-      "control-edge-night": {
+      "edge-dark": {
         "role": "neutral",
         "displayName": "Control edge (dark mode)",
-        "canonical": "#6a7a75",
+        "canonical": "#6b7a92",
         "tonalRamp": [
-          "#242827",
-          "#404745",
-          "#5b6763",
-          "#758681",
-          "#94a19d",
-          "#b4bcb9",
-          "#d3d7d6",
-          "#f2f3f2"
+          "#23252a",
+          "#393e47",
+          "#505968",
+          "#68768d",
+          "#8b96a7",
+          "#afb6c0",
+          "#d2d5da",
+          "#f1f2f3"
         ]
       },
-      "caution-amber-night": {
+      "accent-dark": {
+        "role": "primary",
+        "displayName": "Civic blue (dark mode)",
+        "canonical": "#8ab4ff",
+        "tonalRamp": [
+          "#0f203e",
+          "#12336e",
+          "#0e46a9",
+          "#0359f2",
+          "#3e7ff4",
+          "#81a8ee",
+          "#bdcff0",
+          "#ecf0f9"
+        ]
+      },
+      "on-accent-dark": {
+        "role": "neutral",
+        "displayName": "On accent (dark mode)",
+        "canonical": "#0b1220",
+        "tonalRamp": [
+          "#1b2232",
+          "#293856",
+          "#364f82",
+          "#4067b5",
+          "#6d8ac5",
+          "#9dafd2",
+          "#cad2e3",
+          "#eff1f5"
+        ]
+      },
+      "strong-bg-dark": {
+        "role": "neutral",
+        "displayName": "Strong tint (dark mode)",
+        "canonical": "#1e3a8a",
+        "tonalRamp": [
+          "#171f35",
+          "#22315d",
+          "#2a448e",
+          "#2d55c7",
+          "#5f7dd3",
+          "#95a7da",
+          "#c6cee7",
+          "#eef0f6"
+        ]
+      },
+      "strong-fg-dark": {
+        "role": "neutral",
+        "displayName": "Strong tint text (dark mode)",
+        "canonical": "#dbeafe",
+        "tonalRamp": [
+          "#10233d",
+          "#143a6b",
+          "#1251a5",
+          "#096aec",
+          "#438def",
+          "#84b0eb",
+          "#bed3ee",
+          "#ecf1f8"
+        ]
+      },
+      "long-bg-dark": {
+        "role": "neutral",
+        "displayName": "Long shot tint (dark mode)",
+        "canonical": "#1c2537",
+        "tonalRamp": [
+          "#1f242e",
+          "#313b4f",
+          "#435375",
+          "#536da1",
+          "#7b8fb7",
+          "#a6b2c9",
+          "#ced3df",
+          "#f0f2f4"
+        ]
+      },
+      "long-fg-dark": {
+        "role": "neutral",
+        "displayName": "Long shot tint text (dark mode)",
+        "canonical": "#cbd5e1",
+        "tonalRamp": [
+          "#20262d",
+          "#333f4c",
+          "#475a71",
+          "#5a779b",
+          "#8197b1",
+          "#a9b6c6",
+          "#cfd6dd",
+          "#f1f2f4"
+        ]
+      },
+      "caution-dark": {
         "role": "status",
         "displayName": "Caution amber (dark mode)",
-        "canonical": "#e0b45a",
+        "canonical": "#e3b65c",
         "tonalRamp": [
-          "#382c14",
-          "#68501f",
-          "#9b7526",
-          "#d39b28",
-          "#d9b05d",
-          "#dfc591",
-          "#e9dcc1",
-          "#f7f4ed"
+          "#372c16",
+          "#604b1f",
+          "#936e25",
+          "#cf9726",
+          "#d9ae59",
+          "#dec491",
+          "#e8dcc4",
+          "#f7f4ee"
         ]
       },
-      "strong-tint-night": {
+      "error-dark": {
         "role": "status",
-        "displayName": "Strong tint (dark mode)",
-        "canonical": "#173a2d",
+        "displayName": "Error red (dark mode)",
+        "canonical": "#ff8f86",
         "tonalRamp": [
-          "#1b3229",
-          "#2c5a49",
-          "#3b866a",
-          "#48b48c",
-          "#74c2a5",
-          "#9fd1be",
-          "#c8e2d8",
-          "#eff6f3"
-        ]
-      },
-      "strong-ink-night": {
-        "role": "status",
-        "displayName": "Strong ink (dark mode)",
-        "canonical": "#a9e3c6",
-        "tonalRamp": [
-          "#193426",
-          "#285e43",
-          "#358c61",
-          "#3ebd7e",
-          "#6dc99b",
-          "#9bd5b8",
-          "#c6e4d5",
-          "#eef6f2"
-        ]
-      },
-      "long-tint-night": {
-        "role": "neutral",
-        "displayName": "Long tint (dark mode)",
-        "canonical": "#252d2a",
-        "tonalRamp": [
-          "#242927",
-          "#3e4945",
-          "#586963",
-          "#718a81",
-          "#92a49d",
-          "#b2beb9",
-          "#d2d8d6",
-          "#f2f3f2"
-        ]
-      },
-      "long-ink-night": {
-        "role": "neutral",
-        "displayName": "Long ink (dark mode)",
-        "canonical": "#c6cfcb",
-        "tonalRamp": [
-          "#242826",
-          "#3f4844",
-          "#596861",
-          "#73887f",
-          "#93a39c",
-          "#b3bdb9",
-          "#d3d8d5",
-          "#f2f3f2"
+          "#3e120f",
+          "#6e1812",
+          "#a91a0e",
+          "#f21503",
+          "#f44c3e",
+          "#ee8a81",
+          "#f0c0bd",
+          "#f9edec"
         ]
       }
     },
     "typographyMeta": {
-      "display": {
-        "displayName": "Display",
-        "purpose": "The page title only."
-      },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Tab tallies and section headings."
+        "purpose": "The one-line answer in the band; counts in 700."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Result card titles, which are also links."
+        "purpose": "Tally above each list and checklist headings; counts in 700."
       },
-      "lead": {
-        "displayName": "Lead",
-        "purpose": "The intro and the overview line."
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "Product name in the band."
+      },
+      "entry-name": {
+        "displayName": "Entry name",
+        "purpose": "Funder, program and grant names only. 1.125rem at 560px and below."
+      },
+      "group-title": {
+        "displayName": "Group title",
+        "purpose": "Form title and section summaries."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Reasons, details values and checklist text."
-      },
-      "detail": {
-        "displayName": "Detail",
-        "purpose": "Details lists, past grants and notes inside cards."
-      },
-      "meta": {
-        "displayName": "Meta",
-        "purpose": "Meta lines, notices, captions, the score and the edit guard."
+        "purpose": "Running text, held to 62 to 70ch."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Badges."
+        "purpose": "Field labels, buttons, tabs, deadlines."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Hints, run-in facts, form status."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Tier chips and tab counts."
       }
     },
-    "shadows": [],
-    "motion": [],
+    "shadows": [
+      {
+        "name": "inset-outline-accent",
+        "value": "inset 0 0 0 1px var(--accent)",
+        "purpose": "Border for the Possible tier chip; not elevation."
+      },
+      {
+        "name": "inset-outline-caution",
+        "value": "inset 0 0 0 1px var(--caution)",
+        "purpose": "Border for the warning note; not elevation."
+      }
+    ],
+    "focus": {
+      "value": "outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px",
+      "inBand": "outline-color: var(--on-cloth)",
+      "fields": "outline-offset: 0; border-color: var(--accent)"
+    },
+    "motion": [
+      {
+        "name": "control-state",
+        "value": ".12s ease-out",
+        "purpose": "Button background and border changes."
+      },
+      {
+        "name": "disclosure",
+        "value": "transform .15s ease-out",
+        "purpose": "Chevron rotation on details and the phone profile bar."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition-duration: 1ms",
+        "purpose": "Applied to everything under prefers-reduced-motion: reduce."
+      }
+    ],
     "breakpoints": [
       {
-        "name": "sm",
-        "value": "640px"
+        "name": "single-column",
+        "value": "860px",
+        "purpose": "One column; profile behind the Edit your organization bar; lede hidden."
       },
       {
-        "name": "md",
-        "value": "768px"
+        "name": "phone",
+        "value": "560px",
+        "purpose": "Tabs become a 2x2 grid with short labels; score rule 5.5rem; details rows stack."
       },
       {
-        "name": "container",
-        "value": "1080px"
+        "name": "minimum",
+        "value": "320px",
+        "purpose": "Smallest supported width, no horizontal scroll."
       }
-    ]
+    ],
+    "accessibility": {
+      "targetMin": "44px",
+      "contrastLowestLight": "6.7:1",
+      "contrastLowestDark": "7.27:1",
+      "colorScheme": "follows prefers-color-scheme"
+    }
   },
   "components": [
     {
-      "name": "Primary button",
+      "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The one primary action, Update matches: evergreen fill, paper text, full width in the form.",
+      "description": "Update matches: the one filled action, full width at the foot of the profile column.",
       "html": "<button class=\"ds-btn-primary\">Update matches</button>",
-      "css": ".ds-btn-primary { font: 400 1rem/1.5 'Source Sans', sans-serif; color: #ffffff; background: #2f6f5e; border: 1px solid #2f6f5e; border-radius: 8px; min-height: 44px; padding: 0 14px; width: 100%; cursor: pointer; } .ds-btn-primary:hover { background: #17543f; } .ds-btn-primary:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; }"
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:44px;padding:0 16px;font:600 1rem/1.2 var(--sans,'Public Sans',system-ui,sans-serif);background:var(--accent,#1d4ed8);color:var(--on-accent,#fff);border:1px solid var(--accent,#1d4ed8);border-radius:6px;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out}.ds-btn-primary:hover{filter:brightness(1.08)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:2px;}"
     },
     {
-      "name": "Button",
+      "name": "Secondary Button",
       "kind": "button",
-      "refersTo": "button",
-      "description": "Every action: plain, bordered, at least 44px tall, labelled with a verb.",
-      "html": "<button class=\"ds-btn\">Save to pipeline</button>",
-      "css": ".ds-btn { font: 400 1rem/1.5 'Source Sans', sans-serif; color: #1c2421; background: #ffffff; border: 1px solid #d5ddd9; border-radius: 8px; min-height: 44px; padding: 0 14px; cursor: pointer; transition: border-color .15s, color .15s; } .ds-btn:hover { border-color: #2f6f5e; color: #2f6f5e; } .ds-btn:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; } .ds-btn:active { background: #f4f6f5; }"
+      "refersTo": "button-secondary",
+      "description": "Every other action: show more, exports, guard choices.",
+      "html": "<button class=\"ds-btn\">Show 20 more</button>",
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;font:600 .9375rem/1.2 var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d);background:var(--ground,#fff);border:1px solid var(--edge,#7a8699);border-radius:6px;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out}.ds-btn:hover{background:var(--paper,#f3f6fa);border-color:var(--ink,#0f1b2d)}.ds-btn:active{transform:translateY(1px)}.ds-btn:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:2px;}"
     },
     {
-      "name": "Text input",
+      "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "Profile fields: paper, 1px control edge at 3:1, slate example placeholder, evergreen focus outline.",
-      "html": "<label class=\"ds-field\"><span>Cities or counties (optional)</span><input class=\"ds-input\" placeholder=\"For example: Tampa, Hillsborough\"></label>",
-      "css": ".ds-field { display: grid; gap: 6px; font: 400 .875rem/1.4 'Source Sans', sans-serif; color: #1c2421; } .ds-input { font: 400 1rem 'Source Sans', sans-serif; min-height: 44px; padding: 0 12px; border: 1px solid #7d8984; border-radius: 8px; background: #ffffff; color: #1c2421; } .ds-input::placeholder { color: #4b5753; opacity: 1; } .ds-input:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 1px; border-color: #2f6f5e; }"
+      "description": "Profile fields: edge border, accent border and flush ring on focus.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-label\">Key words</span><span class=\"ds-hint\">Separate with commas.</span><input class=\"ds-input\" type=\"text\" value=\"literacy, tutoring\"></label>",
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-field{display:grid;gap:6px;font-family:var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d)}.ds-label{font-size:.9375rem;font-weight:600}.ds-hint{font-size:.875rem;color:var(--muted,#4a5568)}.ds-input{width:100%;min-height:44px;padding:9px 12px;font:400 1rem/1.5 inherit;color:var(--ink,#0f1b2d);background:var(--ground,#fff);border:1px solid var(--edge,#7a8699);border-radius:6px}.ds-input:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:0;border-color:var(--accent,#1d4ed8)}"
     },
     {
-      "name": "Tabs",
+      "name": "Index Tabs",
       "kind": "nav",
-      "refersTo": "tab-selected",
-      "description": "Source tabs, ordered by strong matches; the selected one is evergreen with a 2px underline.",
-      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">Florida programs</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Foundations</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Federal grants</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Before you apply</button></div>",
-      "css": ".ds-tabs { display: flex; flex-wrap: wrap; gap: 0 24px; border-bottom: 1px solid #d5ddd9; } .ds-tab { font: 500 .875rem 'Source Sans', sans-serif; min-height: 44px; padding: 0 2px; border: 0; background: none; color: #1c2421; cursor: pointer; } .ds-tab[aria-selected=true] { color: #2f6f5e; box-shadow: inset 0 -2px 0 #2f6f5e; } .ds-tab:hover { color: #2f6f5e; } .ds-tab:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; }"
+      "refersTo": "index-tab-selected",
+      "description": "Source tabs on a 2px cloth rule, each with its count; selected tab is cloth.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">Florida programs <span class=\"ds-count\">48</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Foundations <span class=\"ds-count\">278</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Shortlist <span class=\"ds-count\">0</span></button></div>",
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:2px solid var(--cloth,#0f2747)}.ds-tab{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;margin-bottom:-2px;font:600 .9375rem/1.2 var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d);background:var(--paper,#f3f6fa);border:0;border-bottom:2px solid var(--cloth,#0f2747);border-radius:6px 6px 0 0;cursor:pointer}.ds-tab:hover{background:var(--strong-bg,#dbeafe)}.ds-tab[aria-selected=true]{background:var(--cloth,#0f2747);color:var(--on-cloth,#fff)}.ds-tab:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:2px;}.ds-count{font-size:.8125rem;font-weight:650;padding:1px 7px;border-radius:999px;background:var(--ground,#fff);color:var(--ink,#0f1b2d);font-variant-numeric:tabular-nums}.ds-tab[aria-selected=true] .ds-count{background:rgb(255 255 255 / .18);color:var(--on-cloth,#fff)}"
     },
     {
-      "name": "Tier badges",
+      "name": "Tier Chips",
       "kind": "chip",
-      "refersTo": "badge-strong",
-      "description": "Strong is filled, Possible is outlined in evergreen, Long shot is neutral. Never amber.",
-      "html": "<span class=\"ds-badge ds-strong\">Strong match</span> <span class=\"ds-badge ds-possible\">Possible match</span> <span class=\"ds-badge ds-long\">Long shot</span>",
-      "css": ".ds-badge { display: inline-block; font: 600 .8125rem/1.5 'Source Sans', sans-serif; padding: 2px 10px; border-radius: 999px; } .ds-strong { background: #e2f1e9; color: #17543f; } .ds-possible { color: #2f6f5e; box-shadow: inset 0 0 0 1px #2f6f5e; } .ds-long { background: #edf0ef; color: #3b4744; }"
+      "refersTo": "tier-strong",
+      "description": "Strong, possible and long shot labels that lead every score rule.",
+      "html": "<span class=\"ds-tier ds-strong\">Strong match</span> <span class=\"ds-tier ds-possible\">Possible match</span> <span class=\"ds-tier ds-long\">Long shot</span>",
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-tier{display:inline-block;font:700 .8125rem/1.3 var(--sans,'Public Sans',system-ui,sans-serif);padding:2px 9px;border-radius:999px;white-space:nowrap}.ds-strong{background:var(--strong-bg,#dbeafe);color:var(--strong-fg,#1e3a8a)}.ds-possible{color:var(--accent,#1d4ed8);box-shadow:inset 0 0 0 1px var(--accent,#1d4ed8)}.ds-long{background:var(--long-bg,#eef1f5);color:var(--long-fg,#374151)}"
     },
     {
-      "name": "Result card",
+      "name": "Score Rule",
+      "kind": "custom",
+      "refersTo": "score-rule",
+      "description": "The signature: one fixed 0 to 100 track with marks at 35 and 60, then the score in tabular figures.",
+      "html": "<span class=\"ds-score\"><span class=\"ds-tier ds-strong\">Strong match</span><span class=\"ds-rule\"><span class=\"ds-fill\" style=\"width:72%\"></span><span class=\"ds-mark\" style=\"left:35%\"></span><span class=\"ds-mark\" style=\"left:60%\"></span></span><span class=\"ds-num\">72</span></span>",
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-score{display:inline-flex;align-items:center;gap:10px;font-family:var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d)}.ds-tier{font-size:.8125rem;font-weight:700;padding:2px 9px;border-radius:999px}.ds-strong{background:var(--strong-bg,#dbeafe);color:var(--strong-fg,#1e3a8a)}.ds-rule{position:relative;width:7.5rem;height:6px;border-radius:999px;background:var(--rule,#dbe2ea)}.ds-fill{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:var(--accent,#1d4ed8)}.ds-mark{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--ink,#0f1b2d);opacity:.55}.ds-num{font-weight:700;font-size:.9375rem;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Directory Entry",
       "kind": "card",
-      "refersTo": "result-card",
-      "description": "The signature component: badge row, title link, dot-separated meta line, and fits, cautions and status with drawn icons.",
-      "html": "<article class=\"ds-card\"><p class=\"ds-head\"><span class=\"ds-badge ds-strong\">Strong match</span><span class=\"ds-score\">Score 87 of 100</span></p><h3 class=\"ds-title\"><a href=\"#\">White Family Foundation</a></h3><p class=\"ds-meta\">Private foundation<span aria-hidden=\"true\"> · </span>Tarpon Springs, FL<span aria-hidden=\"true\"> · </span>typical $10k</p><ul class=\"ds-why\"><li class=\"ds-fit\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>Past grants mention literacy, children</li><li class=\"ds-warn\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3.5 2.5 20h19z\"/><path d=\"M12 10v4.5M12 17.5v.01\"/></svg>Says it does not take unsolicited requests</li><li class=\"ds-status\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"8.5\"/><path d=\"M12 7.5V12l3 2\"/></svg>Forecast, not open yet</li></ul></article>",
-      "css": ".ds-card { font-family: 'Source Sans', sans-serif; color: #1c2421; background: #ffffff; border: 1px solid #d5ddd9; border-radius: 8px; padding: 18px 20px 14px; } .ds-head { display: flex; gap: 12px; align-items: center; margin: 0; } .ds-score { font-size: .875rem; color: #4b5753; } .ds-badge { font: 600 .8125rem/1.5 'Source Sans', sans-serif; padding: 2px 10px; border-radius: 999px; } .ds-strong { background: #e2f1e9; color: #17543f; } .ds-title { font-size: 1.25rem; font-weight: 600; line-height: 1.35; margin: 0; } .ds-title a { display: block; padding: 8px 0; color: inherit; text-underline-offset: 3px; } .ds-title a:hover { color: #2f6f5e; text-decoration-thickness: 2px; } .ds-title a:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; } .ds-meta { font-size: .875rem; color: #4b5753; margin: 0 0 8px; } .ds-why { list-style: none; padding: 0; margin: 0; } .ds-why li { display: flex; gap: 8px; line-height: 1.45; margin: 0 0 5px; } .ds-why svg { flex: none; width: 16px; height: 16px; margin-top: 3px; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; } .ds-fit svg { stroke: #2f6f5e; } .ds-warn svg { stroke: #8a5a00; } .ds-status { color: #4b5753; } .ds-status svg { stroke: #4b5753; }"
-    },
-    {
-      "name": "Details list",
-      "kind": "custom",
-      "refersTo": "result-card",
-      "description": "Application details as label and value pairs; empty values dropped; phones, emails and sites as links.",
-      "html": "<dl class=\"ds-details\"><dt>Contact</dt><dd>Amy Stanton</dd><dt>Phone</dt><dd><a href=\"tel:+17275550123\">727-555-0123</a></dd><dt>What to send</dt><dd>By letter describing the purpose and needs of the organization.</dd></dl>",
-      "css": ".ds-details { display: grid; grid-template-columns: minmax(7rem, max-content) 1fr; gap: 6px 16px; margin: 0; font: 400 .9375rem/1.5 'Source Sans', sans-serif; color: #1c2421; } .ds-details dt { color: #4b5753; font-weight: 500; } .ds-details dd { margin: 0; } .ds-details a { color: inherit; text-underline-offset: 3px; } .ds-details a:hover { color: #2f6f5e; } .ds-details a:focus-visible { outline: 2px solid #2f6f5e; outline-offset: 2px; }"
-    },
-    {
-      "name": "Note",
-      "kind": "custom",
-      "refersTo": "note",
-      "description": "Short notices on the mist surface: the example-profile note and the blank-start steps.",
-      "html": "<p class=\"ds-note\">Showing the example <i>Youth literacy and learning support</i>. Edit <b>Your organization</b> to see your own matches.</p>",
-      "css": ".ds-note { font: 400 .9375rem/1.5 'Source Sans', sans-serif; color: #1c2421; background: #f4f6f5; border-radius: 8px; padding: 10px 14px; max-width: 72ch; margin: 0; }"
+      "refersTo": "score-rule",
+      "description": "A ruled listing, not a card: score line with right-aligned deadline, serif name, catalog number and run-in facts, reasons.",
+      "html": "<article class=\"ds-entry\"><div class=\"ds-head\"><span class=\"ds-score\"><span class=\"ds-tier\">Strong match</span><span class=\"ds-rule\"><span class=\"ds-fill\" style=\"width:84%\"></span><span class=\"ds-mark\" style=\"left:35%\"></span><span class=\"ds-mark\" style=\"left:60%\"></span></span><b class=\"ds-num\">84</b></span><span class=\"ds-side\">Due Mar 3, 2027</span></div><h3 class=\"ds-name\"><a href=\"#\">Family Café</a></h3><p class=\"ds-facts\"><span class=\"ds-cat\">CSFA 48.149</span> · Department of Education · Paid as grants</p><ul class=\"ds-why\"><li><span class=\"ds-ok\">✓</span>Mentions children, students</li><li><span class=\"ds-warn\">!</span>Cost sharing required</li></ul></article>",
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-entry{display:grid;gap:8px;padding:20px 0 12px;border-top:1px solid var(--rule,#dbe2ea);border-bottom:1px solid var(--rule,#dbe2ea);font:400 1rem/1.5 var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d)}.ds-head{display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap}.ds-score{display:inline-flex;align-items:center;gap:10px}.ds-tier{font-size:.8125rem;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--strong-bg,#dbeafe);color:var(--strong-fg,#1e3a8a)}.ds-rule{position:relative;width:7.5rem;height:6px;border-radius:999px;background:var(--rule,#dbe2ea)}.ds-fill{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:var(--accent,#1d4ed8)}.ds-mark{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--ink,#0f1b2d);opacity:.55}.ds-num,.ds-side,.ds-cat{font-variant-numeric:tabular-nums}.ds-side{font-size:.9375rem;font-weight:600;white-space:nowrap}.ds-name{margin:0;font:600 1.25rem/1.3 var(--serif,'Source Serif 4',Georgia,serif)}.ds-name a{color:inherit;text-decoration:none}.ds-name a:hover{color:var(--accent,#1d4ed8);text-decoration:underline}.ds-name a:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:2px;}.ds-facts{margin:0;font-size:.875rem;color:var(--muted,#4a5568)}.ds-cat{color:var(--ink,#0f1b2d);font-weight:600}.ds-why{list-style:none;margin:0;padding:0;display:grid;gap:5px}.ds-why li{display:flex;gap:8px}.ds-ok{color:var(--accent,#1d4ed8)}.ds-warn{color:var(--caution,#8a5a00);font-weight:700}"
     }
   ],
   "narrative": {
-    "northStar": "The Honest Ledger",
-    "overview": "Grant Matcher shows its working. Every result carries its reasons and its cautions side by side, a plain score, and the source it came from, the way a careful bookkeeper writes notes next to each line. The visitor is a small-nonprofit staffer, often without grant-writing experience. They should finish a visit knowing which funders to approach first and why, without being sold anything.\n\nThe surface is a task tool, so the look is quiet and dense in information rather than in decoration. Flat paper and mist surfaces, thin rules, one evergreen accent, and the stock Source Sans face. Expression lives in precise details: the drawn check, caution and clock icons; the dot-separated meta line; the outlined \"Possible match\" badge; a focus ring that always shows. Light and dark follow the visitor's system setting and are tuned separately, never inverted.\n\nThe page leads with the answer. An overview line counts strong matches across all sources, tabs are ordered by where those matches are, and each tab opens with its own tally before any filters.",
+    "northStar": "The reference shelf directory",
+    "overview": "**Creative North Star: \"The reference shelf directory\"**\n\nGrant Matcher looks like the printed funding directory a librarian keeps behind the desk, rebuilt to read your mission back to you. A navy band holds the name, the one-line answer and the Grants.gov notice. Below it, results are dense listings set on hairline rules on plain ground, not floating cards: a ranked score on one fixed scale, the funder's name in a text serif, a catalog number in tabular figures, then run-in facts and the reasons that a grant fits or could sink you.\n\nThe system is calm, sturdy and plain. Type does the ranking quietly because a fixed visual scale carries the rank. There is one accent color, and status colors appear only when they mean something. It refuses the category default of a grey filter sidebar beside interchangeable soft cards, and it must never read as a slick startup: no gradients, no hype, no decoration for its own sake.\n\nThe public static site in `web/` is the source of this system. The Streamlit workspace (`app.py`) predates it and is not the reference for new public surfaces.",
     "keyCharacteristics": [
-      "Plain and sturdy: flat surfaces, 1px rules, 44px targets, nothing decorative.",
-      "One accent, used for action and fit; amber only for cautions.",
-      "Every claim on a card is a sentence a person can check.",
-      "The same order on every tab: tally, source, one expander for filters and scoring, then cards.",
-      "Raw source data is tidied for reading, never rewritten."
+      "Navy band and selected index tab; plain white ground in light, deep blue-black in dark, never cream.",
+      "Public Sans for every working word; Source Serif 4 for funder and entry names only.",
+      "Ruled directory listings, not cards.",
+      "One score rule, one fixed 0 to 100 scale, the same on every entry.",
+      "Light and dark follow the system setting; AA in both."
     ],
     "rules": [
       {
-        "name": "The Ten Possible Rule",
-        "body": "Possible matches (35 to 59) are a long tail. Show ten after the strong ones and let the visitor ask for more; never open with hundreds.",
+        "name": "The One Blue Voice Rule",
+        "body": "There is one accent. Navy is structure, civic blue is action and rank; no third hue joins them.",
         "section": "colors"
       },
       {
-        "name": "The One Voice Rule",
-        "body": "Evergreen is the only hue that signals fit or action. If a second colour starts carrying meaning, it is wrong.",
+        "name": "The Meaning-Only Status Rule",
+        "body": "Amber appears only for cautions and red only for errors. Never use either to decorate, highlight or brand.",
         "section": "colors"
       },
       {
-        "name": "The Amber Means Caution Rule",
-        "body": "Amber appears only next to a reason to hesitate. A badge, chip or button is never amber.",
+        "name": "The No Cream Rule",
+        "body": "Ground is plain white in light and deep blue-black in dark. Warm paper tints are not part of this world.",
         "section": "colors"
       },
       {
-        "name": "The Ink Link Rule",
-        "body": "Links are ink with an underline and turn evergreen on hover. A blue link is a bug.",
-        "section": "colors"
-      },
-      {
-        "name": "The Step Rule",
-        "body": "Adjacent heading roles differ by at least 1.25 in size: 16, 20, 25px. A 17px heading over 16px body is a missing step. Detail (15px) is a reading size inside cards, never a heading.",
+        "name": "The Names Only Serif Rule",
+        "body": "Source Serif 4 is for funder and entry names only. Headings, numbers, labels and buttons stay in Public Sans.",
         "section": "typography"
       },
       {
-        "name": "The No Shouting Rule",
-        "body": "All-caps text from tax returns is converted for display (title case for names, cities and addresses; sentence case for missions and instructions). The interface itself never uses all caps.",
+        "name": "The Column Figures Rule",
+        "body": "Every number that is scanned down a column (scores, catalog numbers, deadlines, counts) uses tabular figures; running text uses lining figures.",
         "section": "typography"
       },
       {
-        "name": "The Flat Ledger Rule",
-        "body": "If something needs to stand out, give it a rule, a tint or a heavier weight. Never a shadow.",
+        "name": "The Rules Not Cards Rule",
+        "body": "Entries sit on hairline rules on plain ground. They never get a card fill, a border box, or a shadow.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "Do lead every screen with the answer: the overview line, then the tally.",
-      "Do put reasons and cautions on the card itself, with drawn icons and screen-reader prefixes.",
-      "Do keep every target at least 44px, every focus ring visible (2px evergreen), and every text pair at AA in both themes.",
-      "Do escape every value that comes from an API or a tax return before it reaches HTML.",
-      "Do tidy raw data for display (casing, empty placeholders, links) without changing what it says.",
-      "Do write in sentence case, with buttons that start with a verb and no em dashes."
+      "Do keep every target at least 44px tall, including entry name links and summary rows.",
+      "Do show the 2px accent focus ring with a 2px offset on every focusable element (on-cloth inside the band).",
+      "Do hold AA contrast in light and dark; the built system measures its lowest text contrast at 6.7:1 in light and 7.27:1 in dark.",
+      "Do put the score rule on every entry, on the one fixed 0 to 100 scale with marks at 35 and 60, and print its key under each tally.",
+      "Do right-align deadlines in ink 600 tabular figures and keep award sizes muted.",
+      "Do set funder and entry names in Source Serif 4 and everything else in Public Sans.",
+      "Do keep the profile column sticky and self-scrolling with Update matches pinned at its foot.",
+      "Do switch the tabs to a 2x2 grid with short labels at 560px and below, and test every surface at 320px.",
+      "Do write in plain words and sentence case, with verb buttons and no em dashes."
     ],
     "donts": [
-      "Don't add a second accent colour or a blue link.",
-      "Don't use amber anywhere except cautions.",
-      "Don't use shadows, gradients or decorative imagery.",
-      "Don't nest a bordered box inside a card.",
-      "Don't change the wording or placement of the Grants.gov notice: \"This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.\"",
-      "Don't show more than 40 results at once without saying how many there are."
+      "Don't add a second accent hue, or use amber or red for anything but cautions and errors.",
+      "Don't put entries in cards, fills, borders or shadows; they live on rules.",
+      "Don't use the serif for headings, numbers, labels or buttons.",
+      "Don't rescale the score rule per list or drop the 35 and 60 marks.",
+      "Don't use cream or warm paper grounds, gradients, or decorative imagery.",
+      "Don't use navy as a button fill; it is the band and the selected tab only."
     ]
   }
 }
