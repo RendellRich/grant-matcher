@@ -22,6 +22,7 @@ import argparse
 import gzip
 import html
 import json
+import os
 import re
 import threading
 import time
@@ -336,6 +337,7 @@ def main() -> None:
     print("results:", counts)
     payload = {"checked_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "sites": results}
     text = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)  # a fresh runner has no build/ folder
     with open(args.out, "wb") as f:
         f.write(gzip.compress(text, compresslevel=9, mtime=0))
 
