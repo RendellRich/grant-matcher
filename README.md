@@ -39,7 +39,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Narrows the list** without changing any score: search words across every result and its details, award size, deadline and agency for federal grants, agency for Florida programs, and for foundations their typical grant, whether they publish how to apply, whether they refuse unsolicited requests, and whether they're based in or fund your cities.
 - **Marks what's new.** Grants, foundations and programs that weren't in the data at your last visit carry a New tag, and "Only new since your last visit" shows just those. The record of what you've seen stays in your browser.
 - **Flags eligibility while your 501(c)(3) is pending.** Foundations whose own filing asks for 501(c)(3) status or an IRS determination letter get a caution and a lower score, with a note about a fiscal sponsor, and one checkbox hides them. Federal grants that require 501(c)(3) status say the same.
-- **Keeps a shortlist** of the results you mark, saved in your browser on your device, with its own CSV.
+- **Keeps a shortlist** of the results you mark, saved in your browser on your device, with its own CSV. Each one has a stage: Saved, Applying or Submitted, with the date it moved. Submitted ones stop showing in the results and stay on the shortlist.
 - **Saves your profile** as a small JSON file you can load next time. Nothing is stored on a server, so the profile clears when you close the page.
 
 ## How it runs
