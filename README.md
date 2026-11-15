@@ -114,12 +114,12 @@ Florida's Department of Financial Services keeps the Catalog of State Financial 
 
 ## Data
 
-A GitHub Action runs every night and pulls every posted and forecasted opportunity open to nonprofits (eligibility codes 12, 13, 25 and 99) from the public [Grants.gov API](https://www.grants.gov/api/api-guide) using `search2` and `fetchOpportunity`. No API key is needed. The cleaned file and the opportunity embeddings are published as `data-latest` release assets, and the app reads them from there. A snapshot in `data/` is the fallback. If the embedding model cannot load, the app falls back to TF-IDF similarity.
+A GitHub Action runs twice a day and pulls every posted and forecasted opportunity open to nonprofits (eligibility codes 12, 13, 25 and 99) from the public [Grants.gov API](https://www.grants.gov/api/api-guide) using `search2` and `fetchOpportunity`. No API key is needed. The cleaned file and the opportunity embeddings are published as `data-latest` release assets, and the app reads them from there. A snapshot in `data/` is the fallback. If the embedding model cannot load, the app falls back to TF-IDF similarity.
 
 | Source | Refresh | Job |
 |---|---|---|
-| Grants.gov (`search2`, `fetchOpportunity`) | nightly | `refresh-data.yml` |
-| IRS Form 990-PF e-file XML ([Form 990 series downloads](https://www.irs.gov/charities-non-profits/form-990-series-downloads)), latest return per foundation, split by state | monthly | `refresh-foundations.yml` |
+| Grants.gov (`search2`, `fetchOpportunity`) | twice a day | `refresh-data.yml` |
+| IRS Form 990-PF e-file XML ([Form 990 series downloads](https://www.irs.gov/charities-non-profits/form-990-series-downloads)), latest return per foundation, split by state, every state | monthly | `refresh-foundations.yml` |
 | IRS Form 990 Schedule I for organizations the [Exempt Organizations Business Master File](https://www.irs.gov/charities-non-profits/exempt-organizations-business-master-file-extract-eo-bmf) codes T31 (community foundations), T30 (public foundations), and T70 (United Ways and federated funds) | monthly | `refresh-foundations.yml` |
 | Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
 
@@ -160,7 +160,8 @@ web/                    the public site: Preact app, TypeScript scoring, parity 
 grantmatch/export_web.py  data and embeddings for the site, and Python's scores for the parity test
 app.py                  Streamlit app (public search and the signed-in workspace)
 grantmatch/fetch.py     Grants.gov pull and cleanup
-grantmatch/embed.py     semantic embeddings (nightly for grants, on demand for a mission)
+grantmatch/embed.py     semantic embeddings (twice a day for grants, on demand for a mission)
+grantmatch/embed_states.py  foundation embeddings for every state: each foundation once, reused between runs
 grantmatch/match.py     federal scoring, reasons, calendar export
 grantmatch/foundations.py  IRS 990-PF parsing, split by state
 grantmatch/community.py IRS 990 Schedule I for community foundations and United Ways

@@ -33,9 +33,21 @@ async function json<T>(name: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
+/** Reads a gzipped JSON file. Unpacks it here unless the server already did (sent it with Content-Encoding). */
+async function gzJson<T>(name: string): Promise<T> {
+  const r = await fetch(BASE + name);
+  if (!r.ok) throw new Error(`${name}: ${r.status}`);
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return JSON.parse(await new Response(stream).text()) as T;
+  }
+  return JSON.parse(new TextDecoder().decode(bytes)) as T;
+}
+
 async function source<T>(name: string): Promise<Source<T>> {
   const [payload, buf] = await Promise.all([
-    json<{ records: T[]; vec_ids: string[]; dim: number; fetched_at?: string; fiscal_year?: string }>(`${name}.json`),
+    gzJson<{ records: T[]; vec_ids: string[]; dim: number; fetched_at?: string; fiscal_year?: string }>(`${name}.json.gz`),
     fetch(`${BASE}${name}.f16`).then((r) => {
       if (!r.ok) throw new Error(`${name}.f16: ${r.status}`);
       return r.arrayBuffer();

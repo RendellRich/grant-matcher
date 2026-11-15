@@ -1,6 +1,7 @@
 // The browser's scores must match Python's. `python -m grantmatch.export_web web/test-data --local
 // --golden web/test-data/golden.json` writes the data and Python's results; this runs the same profiles here.
 import { readFileSync, existsSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { scoreFederal, scoreFlorida, scoreFoundations, pyRound, money, keywordHits, type Profile } from "../src/score";
 import { decodeF16, similarities } from "../src/vectors";
@@ -9,7 +10,7 @@ const DIR = new URL("../test-data/", import.meta.url);
 const have = existsSync(new URL("golden.json", DIR));
 
 function load(name: string) {
-  const payload = JSON.parse(readFileSync(new URL(`${name}.json`, DIR), "utf8"));
+  const payload = JSON.parse(gunzipSync(readFileSync(new URL(`${name}.json.gz`, DIR))).toString("utf8"));
   const raw = readFileSync(new URL(`${name}.f16`, DIR));
   const buf = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
   return { records: payload.records, vecs: decodeF16(buf, payload.vec_ids, payload.dim) };
