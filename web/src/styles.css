@@ -214,6 +214,17 @@ input[type="range"] { width: 100%; max-width: 20rem; min-height: 44px; }
 .stage-row { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem 1rem; }
 .stage { display: flex; align-items: center; gap: .625rem; font-weight: 500; }
 .stage select { width: auto; min-width: 9rem; }
+.stage input[type="date"] { width: auto; min-width: 11rem; }
+.stage-box { display: grid; gap: .5rem; }
+.due { font-weight: 600; }
+.due.near { color: var(--caution); }
+.due-note { display: flex; gap: .5rem; line-height: 1.45; }
+.due-note .icon { margin-top: .125rem; color: var(--caution); flex: none; }
+.coming-up { display: grid; gap: .5rem; margin-top: 1rem; }
+.coming-up ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .375rem; }
+.coming-up li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; padding: .375rem 0; border-top: 1px solid var(--rule); }
+.coming-up .when { font-weight: 650; min-width: 8.5rem; }
+.coming-up .near .when, .coming-up .past .when { color: var(--caution); }
 .stage-group { display: grid; gap: .5rem; margin-top: 1.5rem; }
 .stage-group + .stage-group { padding-top: 1.5rem; border-top: 2px solid var(--rule); }
 
