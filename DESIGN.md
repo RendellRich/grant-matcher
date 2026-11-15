@@ -1,301 +1,325 @@
 ---
 name: Grant Matcher
-description: A calm, plain search tool that shows small nonprofits which grants fit and why.
+description: The funding directory on the reference shelf, ranked against your own mission.
 colors:
-  evergreen: "#2f6f5e"
-  evergreen-night: "#6cc0a5"
-  on-evergreen-night: "#121715"
-  paper: "#ffffff"
-  mist: "#f4f6f5"
-  ink: "#1c2421"
-  slate: "#4b5753"
-  rule: "#d5ddd9"
-  control-edge: "#7d8984"
-  caution-amber: "#8a5a00"
-  strong-tint: "#e2f1e9"
-  strong-ink: "#17543f"
-  long-tint: "#edf0ef"
-  long-ink: "#3b4744"
-  night: "#121715"
-  night-surface: "#1b2220"
-  night-ink: "#e6ebe9"
-  night-slate: "#a7b2ae"
-  night-rule: "#34403b"
-  control-edge-night: "#6a7a75"
-  caution-amber-night: "#e0b45a"
-  strong-tint-night: "#173a2d"
-  strong-ink-night: "#a9e3c6"
-  long-tint-night: "#252d2a"
-  long-ink-night: "#c6cfcb"
+  ground: "#ffffff"
+  paper: "#f2f5f3"
+  cloth: "#1d4a3d"
+  on-cloth: "#ffffff"
+  on-cloth-muted: "#cfe0d8"
+  ink: "#15201b"
+  muted: "#4a5751"
+  rule: "#d4dcd8"
+  edge: "#74827c"
+  accent: "#1f6a55"
+  on-accent: "#ffffff"
+  strong-bg: "#dcefe5"
+  strong-fg: "#164a3a"
+  long-bg: "#eceff0"
+  long-fg: "#3d4844"
+  caution: "#8a5a00"
+  error: "#b3261e"
+  ground-dark: "#0e1412"
+  paper-dark: "#141c19"
+  hover-dark: "#18221e"
+  cloth-dark: "#143a2f"
+  on-cloth-dark: "#f1f6f3"
+  on-cloth-muted-dark: "#b8cdc4"
+  ink-dark: "#e4ebe8"
+  muted-dark: "#a6b4ae"
+  rule-dark: "#2a3732"
+  edge-dark: "#6f8079"
+  accent-dark: "#7ccbb0"
+  on-accent-dark: "#0e1412"
+  strong-bg-dark: "#1b4034"
+  strong-fg-dark: "#b3ead0"
+  long-bg-dark: "#222b28"
+  long-fg-dark: "#c4cec9"
+  caution-dark: "#e3b65c"
+  error-dark: "#ff8f86"
 typography:
-  display:
-    fontFamily: "Source Sans, sans-serif"
-    fontSize: "clamp(1.75rem, 1.3rem + 1.6vw, 2.25rem)"
-    fontWeight: 650
-    lineHeight: 1.2
-    letterSpacing: "-0.01em"
   headline:
-    fontFamily: "Source Sans, sans-serif"
-    fontSize: "1.5625rem"
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "clamp(1.5rem, 1.1rem + 1.4vw, 2.125rem)"
+    fontWeight: 400
+    lineHeight: 1.2
+    letterSpacing: "-0.012em"
+  title:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
+    fontSize: "1.5rem"
     fontWeight: 400
     lineHeight: 1.25
-  title:
-    fontFamily: "Source Sans, sans-serif"
+    letterSpacing: "-0.01em"
+  wordmark:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
+    fontSize: "1.3125rem"
+    fontWeight: 700
+    lineHeight: 1.2
+    letterSpacing: "-0.01em"
+  entry-name:
+    fontFamily: "Source Serif 4 Variable, Source Serif 4, Georgia, serif"
     fontSize: "1.25rem"
     fontWeight: 600
-    lineHeight: 1.35
-  lead:
-    fontFamily: "Source Sans, sans-serif"
-    fontSize: "1.0625rem"
-    fontWeight: 400
-    lineHeight: 1.55
+    lineHeight: 1.3
+    letterSpacing: "-0.003em"
+  group-title:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 650
+    lineHeight: 1.3
   body:
-    fontFamily: "Source Sans, sans-serif"
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
-  detail:
-    fontFamily: "Source Sans, sans-serif"
+    fontFeature: "lnum"
+  label:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
     fontSize: "0.9375rem"
-    fontWeight: 400
-    lineHeight: 1.5
+    fontWeight: 600
+    lineHeight: 1.2
   meta:
-    fontFamily: "Source Sans, sans-serif"
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 400
     lineHeight: 1.5
-  label:
-    fontFamily: "Source Sans, sans-serif"
+  caption:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
     fontSize: "0.8125rem"
-    fontWeight: 600
-    lineHeight: 1.5
+    fontWeight: 700
+    lineHeight: 1.3
+    fontFeature: "tnum"
 rounded:
-  md: "8px"
+  focus: "2px"
+  md: "6px"
   pill: "999px"
 spacing:
-  xs: "4px"
+  2xs: "4px"
+  xs: "6px"
   sm: "8px"
   md: "12px"
-  lg: "20px"
-  section: "24px"
+  lg: "16px"
+  xl: "20px"
+  2xl: "24px"
+  3xl: "32px"
+  gutter: "48px"
 components:
-  button:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    height: "44px"
-  button-night:
-    backgroundColor: "{colors.night}"
-    textColor: "{colors.night-ink}"
-    rounded: "{rounded.md}"
-    height: "44px"
-  input:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    borderColor: "{colors.control-edge}"
-    rounded: "{rounded.md}"
-    height: "44px"
   button-primary:
-    backgroundColor: "{colors.evergreen}"
-    textColor: "{colors.paper}"
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.on-accent}"
+    typography: "{typography.label}"
     rounded: "{rounded.md}"
+    padding: "0 16px"
     height: "44px"
-  button-primary-night:
-    backgroundColor: "{colors.evergreen-night}"
-    textColor: "{colors.on-evergreen-night}"
+    width: "100%"
+  button-secondary:
+    backgroundColor: "{colors.ground}"
+    textColor: "{colors.ink}"
+    typography: "{typography.label}"
     rounded: "{rounded.md}"
+    padding: "0 16px"
     height: "44px"
-  result-card:
+  button-secondary-hover:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink}"
+  input:
+    backgroundColor: "{colors.ground}"
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    rounded: "{rounded.md}"
+    padding: "9px 12px"
+    height: "44px"
+  index-tab:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.md}"
+    padding: "0 14px"
+    height: "44px"
+  index-tab-hover:
+    backgroundColor: "{colors.strong-bg}"
+  index-tab-selected:
+    backgroundColor: "{colors.cloth}"
+    textColor: "{colors.on-cloth}"
+  tier-strong:
+    backgroundColor: "{colors.strong-bg}"
+    textColor: "{colors.strong-fg}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.pill}"
+    padding: "2px 9px"
+  tier-possible:
+    backgroundColor: "{colors.ground}"
+    textColor: "{colors.accent}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.pill}"
+    padding: "2px 9px"
+  tier-long:
+    backgroundColor: "{colors.long-bg}"
+    textColor: "{colors.long-fg}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.pill}"
+    padding: "2px 9px"
+  score-rule:
+    backgroundColor: "{colors.rule}"
+    rounded: "{rounded.pill}"
+    width: "120px"
+    height: "6px"
+  note:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
     rounded: "{rounded.md}"
-    padding: "18px 20px 8px"
-  badge-strong:
-    backgroundColor: "{colors.strong-tint}"
-    textColor: "{colors.strong-ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.pill}"
-    padding: "2px 10px"
-  badge-possible:
-    textColor: "{colors.evergreen}"
-    typography: "{typography.label}"
-    rounded: "{rounded.pill}"
-    padding: "2px 10px"
-  badge-long:
-    backgroundColor: "{colors.long-tint}"
-    textColor: "{colors.long-ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.pill}"
-    padding: "2px 10px"
-  note:
-    backgroundColor: "{colors.mist}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    padding: "10px 14px"
-  tab:
-    textColor: "{colors.ink}"
-    height: "44px"
-  tab-selected:
-    textColor: "{colors.evergreen}"
-    height: "44px"
+    padding: "12px 16px"
 ---
 
 # Design System: Grant Matcher
 
 ## Overview
 
-**Creative North Star: "The Honest Ledger"**
+**Creative North Star: "The reference shelf directory"**
 
-Grant Matcher shows its working. Every result carries its reasons and its cautions side by side, a plain score, and the source it came from, the way a careful bookkeeper writes notes next to each line. The visitor is a small-nonprofit staffer, often without grant-writing experience. They should finish a visit knowing which funders to approach first and why, without being sold anything.
+Grant Matcher looks like the printed funding directory a librarian keeps behind the desk, rebuilt to read your mission back to you. A band of book-cloth green holds the name, the one-line answer and the Grants.gov notice. Below it, results are dense listings set on hairline rules on plain ground, not floating cards: a ranked score on one fixed scale, the funder's name in a text serif, a catalog number in tabular figures, then run-in facts and the reasons that a grant fits or could sink you.
 
-The surface is a task tool, so the look is quiet and dense in information rather than in decoration. Flat paper and mist surfaces, thin rules, one evergreen accent, and the stock Source Sans face. Expression lives in precise details: the drawn check, caution and clock icons; the dot-separated meta line; the outlined "Possible match" badge; a focus ring that always shows. Light and dark follow the visitor's system setting and are tuned separately, never inverted.
+The system is calm, sturdy and plain. Type does the ranking quietly because a fixed visual scale carries the rank. There is one accent color, and status colors appear only when they mean something. It refuses the category default of a grey filter sidebar beside interchangeable soft cards, and it must never read as a slick startup: no gradients, no hype, no decoration for its own sake.
 
-The page leads with the answer. An overview line counts strong matches across all sources, tabs are ordered by where those matches are, and each tab opens with its own tally before any filters.
+The public static site in `web/` is the source of this system. The Streamlit workspace (`app.py`) predates it and is not the reference for new public surfaces.
 
 **Key Characteristics:**
-- Plain and sturdy: flat surfaces, 1px rules, 44px targets, nothing decorative.
-- One accent, used for action and fit; amber only for cautions.
-- Every claim on a card is a sentence a person can check.
-- The same order on every tab: tally, source, one expander for filters and scoring, then cards.
-- Raw source data is tidied for reading, never rewritten.
+- Book-cloth green band and selected index tab; plain white ground in light, deep green-black in dark, never cream.
+- Public Sans for every working word; Source Serif 4 for funder and entry names only.
+- Ruled directory listings, not cards.
+- One score rule, one fixed 0 to 100 scale, the same on every entry.
+- Light and dark follow the system setting; AA in both.
 
 ## Colors
 
-A cool, near-neutral paper palette with one evergreen accent and a single amber reserved for warnings.
+A narrow green world: one cloth green for the shell, one accent green for action and rank, cool green-grey neutrals, and two status colors held back for meaning.
 
 ### Primary
-- **Evergreen** (light `evergreen`, dark `evergreen-night`): the one accent. Selected tab underline, the check icon on reasons that fit, the "Possible match" badge outline, focus rings, link hover, radio and toggle fills. Never a large fill behind text.
+- **Book-cloth green** (cloth): the header band and the selected index tab, plus the 2px rule under the tab row and above "Getting ready to apply". It is the binding of the book, never a button fill.
+- **Reading-lamp green** (accent): the primary button, links, focus rings, the score rule fill, the selected segment, checkbox and range controls, fit icons and the "On shortlist" state. In dark mode it lifts to a pale mint (accent-dark) and its text partner turns dark (on-accent-dark).
 
 ### Neutral
-- **Paper** and **Night** (`paper`, `night`): page backgrounds.
-- **Mist** and **Night surface** (`mist`, `night-surface`): the sidebar, notes and info boxes. Tonal layering instead of shadow.
-- **Ink** and **Night ink** (`ink`, `night-ink`): body text, titles, and links (links are ink with an underline, not a second colour).
-- **Slate** and **Night slate** (`slate`, `night-slate`): meta lines, captions, notices, the score, details labels and placeholders. Passes AA on every surface it sits on.
-- **Rule** and **Night rule** (`rule`, `night-rule`): card borders, dividers between card body and expander, tab baseline, footer rule. Decorative only, so it may sit below 3:1.
-- **Control edge** (`control-edge`, `control-edge-night`): the edge of anything you type into or toggle: text fields, selects, the file drop zone, unchecked boxes and radios, the off track of a toggle. At least 3:1 against both paper and mist (WCAG 1.4.11).
+- **Plain ground** (ground): page background. White in light, deep green-black in dark.
+- **Shelf paper** (paper): quiet fills: unselected tabs, notes, button hover in light.
+- **Ink** (ink): body text, entry names, deadlines, catalog numbers.
+- **Muted ink** (muted): hints, run-in facts, award sizes, the printed key, the long shot rule fill.
+- **Hairline** (rule): entry rules, column divider, the empty track of the score rule.
+- **Control edge** (edge): borders on inputs, buttons, the segmented control, and the select chevron.
+- **Tier tints** (strong-bg / strong-fg, long-bg / long-fg): the Strong and Long shot chips. strong-bg also serves as the tab hover.
 
 ### Status
-- **Caution amber** (`caution-amber`, `caution-amber-night`): the caution icon on card reasons only. Not used for badges, buttons or decoration.
-- **Strong tint and ink** (`strong-tint`, `strong-ink` and night pair): the filled "Strong match" badge.
-- **Long tint and ink** (`long-tint`, `long-ink` and night pair): the "Long shot" badge and the neutral multiselect chips.
+- **Caution amber** (caution): caution icons, the confirm guard outline, the warning note outline. Nothing else.
+- **Error red** (error): error text. Nothing else.
 
 ### Named Rules
-**The Ten Possible Rule.** Possible matches (35 to 59) are a long tail. Show ten after the strong ones and let the visitor ask for more; never open with hundreds.
+**The One Green Voice Rule.** There is one accent. Cloth green is structure, accent green is action and rank; no third hue joins them.
 
-**The One Voice Rule.** Evergreen is the only hue that signals fit or action. If a second colour starts carrying meaning, it is wrong.
+**The Meaning-Only Status Rule.** Amber appears only for cautions and red only for errors. Never use either to decorate, highlight or brand.
 
-**The Amber Means Caution Rule.** Amber appears only next to a reason to hesitate. A badge, chip or button is never amber.
-
-**The Ink Link Rule.** Links are ink with an underline and turn evergreen on hover. A blue link is a bug.
+**The No Cream Rule.** Ground is plain white in light and deep green-black in dark. Warm paper tints are not part of this world.
 
 ## Typography
 
-**Display Font:** Source Sans (with sans-serif)
-**Body Font:** Source Sans (with sans-serif)
+**Body Font:** Public Sans Variable (with system-ui, Segoe UI, sans-serif)
+**Name Font:** Source Serif 4 Variable (with Georgia, serif)
 
-**Character:** One humanist sans at every level. Hierarchy comes from size and weight steps of about 1.25, not from a second face.
+**Character:** A sturdy civic sans does all the work; the text serif appears only where a directory would set a proper name, so funder names read like entries in a printed catalog.
 
 ### Hierarchy
-- **Display** (650, `clamp(1.75rem, 1.3rem + 1.6vw, 2.25rem)`, 1.2): the page title only.
-- **Headline** (400 with 650 numerals, 1.5625rem, 1.25): each tab's tally ("17 strong, 30 possible programs"; a zero is not bolded) and section headings such as "Long shots (160)".
-- **Title** (600, 1.25rem, 1.35): result card titles, which are also the card's link.
-- **Lead** (400, 1.0625rem, 1.55, max 65ch; 1rem under 640px): the intro and the overview line.
-- **Body** (400, 1rem, 1.5): reasons, details values, checklist text. Notes and captions cap at 72ch.
-- **Detail** (400, 0.9375rem, 1.5): dense reading inside a card or note: details lists, past grants, notes.
-- **Meta** (400, 0.875rem, 1.5): the dot-separated meta line, notices, captions, the score, the edit guard.
-- **Label** (600, 0.8125rem): badges.
+- **Headline** (400, clamp 1.5rem to 2.125rem, 1.2): the one-line answer in the band. The counts inside it are set in 700. Max 36ch.
+- **Title** (400, 1.5rem, 1.25): the tally above each list ("18 strong, 30 possible") with counts in 700; also checklist headings. Section heads like "Long shots" use 400 at 1.375rem.
+- **Wordmark** (700, 1.3125rem, 1.2): the product name in the band.
+- **Entry name** (Source Serif 4, 600, 1.25rem, 1.3; 1.125rem at 560px and below): funder, program and grant names only.
+- **Group title** (650, 1.125rem, 1.3): the form title and the "Getting ready to apply" summary (1.25rem there); fieldset legends at 1rem.
+- **Body** (400, 1rem, 1.5): running text; long text held to 62 to 70ch.
+- **Label** (600, 0.9375rem): field labels, buttons, tabs, deadlines.
+- **Meta** (400, 0.875rem): hints, run-in facts, form status.
+- **Caption** (700, 0.8125rem): tier chips and tab counts; the printed key uses 400 at the same size.
 
 ### Named Rules
-**The Step Rule.** Adjacent heading roles differ by at least 1.25 in size: 16, 20, 25px. A 17px heading over 16px body is a missing step. Detail (15px) is a reading size inside cards, never a heading.
+**The Names Only Serif Rule.** Source Serif 4 is for funder and entry names only. Headings, numbers, labels and buttons stay in Public Sans.
 
-**The No Shouting Rule.** All-caps text from tax returns is converted for display (title case for names, cities and addresses; sentence case for missions and instructions). The interface itself never uses all caps.
+**The Column Figures Rule.** Every number that is scanned down a column (scores, catalog numbers, deadlines, counts) uses tabular figures; running text uses lining figures.
 
 ## Layout
 
-A single reading column, at most 1080px wide, beside Streamlit's sidebar. The sidebar holds only the profile, grouped under small headings (About your work, Where you work, Eligibility, Keep this profile) separated by 1px rules. Federal funding areas sit under About your work, because they shape the profile, not one tab. The mission and key word boxes grow to fit their text.
+A two-column work area at desktop, max 77.5rem wide with 1.5rem side padding: the profile column (18rem to 21rem) on the left, then a 3rem gap and the results column (max 50rem). The profile column is separated by a single hairline, is sticky to the top, scrolls on its own inside the viewport, and keeps the Update matches button pinned at its foot on ground.
 
-The profile form exists twice: in the sidebar from 768px up, and as an "Edit your organization" expander above the results under 768px, where a sidebar would cover the results it changes. CSS shows one copy; both hold the same draft, so they never disagree. What the visitor types or picks is a draft until "Update matches" applies it; only picking an example or loading a saved profile applies at once. The last scored result is kept, so leaving a field or opening a tab reruns in about a second instead of scoring again.
+Inside the results column, the order is fixed: example or warning note, the index tab row with a count on each tab, the tally with its printed key, filters, then the ruled entries.
 
-The main column follows a fixed rhythm: title, lead, the Grants.gov notice, an optional note, the phone profile row (under 768px), the overview line, tabs, then per tab the tally, a source caption, one "Filters and how the score works" expander, and the cards. Cards stack with 12px between their parts. Every strong result (up to 40) shows, then the first 10 possible ones, then "Show 40 more". A "Sort by" select above the cards offers best fit plus one or two orders that matter for that source (closing soonest and largest award for federal; most grants in the state and largest typical grant for foundations). The tally counts strong and possible only; long shots are counted in their own section behind a toggle.
+Inside each entry the columns are fixed: the tier chip and score rule at left with the deadline right-aligned on the same line; the entry name; the catalog number and run-in facts; the reasons list; then the shortlist mark at the right and the details disclosure at the left.
 
-Under 768px the sidebar and its button are hidden, the profile moves into the main column, the lead drops its list of sources, the example note shortens to one line and the overview keeps only its count. Under 640px tabs wrap with tighter gaps, card padding tightens to 16px and details lists stack label over value. Nothing scrolls sideways at 320px.
+Spacing runs on a quarter-rem rhythm (4, 6, 8, 12, 16, 20, 24, 32, 48px). Entries are dense: 20px above, 12px below, 8px between parts.
+
+**Responsive behavior.**
+- At 860px and below the layout becomes one column with 1rem padding, the band lede hides, and the profile collapses behind a single full-width "Edit your organization" bar above the tabs.
+- At 560px and below the tabs become a 2x2 grid with short labels (Florida, Foundations, Federal, Shortlist), the score rule shortens to 5.5rem, details rows stack, and the shortlist mark moves below the details.
+- Every layout works at 320px wide with no horizontal scroll.
 
 ## Elevation & Depth
 
-Flat. No shadows anywhere. Depth comes from tonal layering (paper, then mist for the sidebar and notes) and from 1px rules. Streamlit's rerun fade is kept short by running "Show more" and the long-shot toggle as their own fragments.
+Flat. There are no drop shadows. Depth comes from tonal blocks (the cloth band, the paper fills) and from hairline rules. The only box-shadows are 1px inset outlines that act as borders: the Possible chip and the warning note.
 
 ### Named Rules
-**The Flat Ledger Rule.** If something needs to stand out, give it a rule, a tint or a heavier weight. Never a shadow.
+**The Rules Not Cards Rule.** Entries sit on hairline rules on plain ground. They never get a card fill, a border box, or a shadow.
 
 ## Shapes
 
-Gently rounded (8px) on cards, buttons, inputs, notes and info boxes. Badges are full pills. Inside a card, the Summary or Details expander loses its own border and radius and becomes a full-width row under a single top rule, so there is never a box inside a box.
+Gently squared corners (6px) on every control, note, tab top and the segmented control. Pills (999px) only for the tier chips, tab counts, the shortlist count and the score rule track. Focus outlines take a 2px corner. Disclosure chevrons are drawn from two 2px borders rotated, not glyphs.
 
 ## Components
 
 ### Buttons
-- **Character:** plain and sturdy.
-- **Shape:** gently rounded (8px), at least 44px tall.
-- **Default:** paper background, 1px rule border, ink text. Labels start with a verb ("Save to pipeline", "Download matches (CSV)", "Show 40 more", "Keep my text"). After the last batch, "Show more" becomes "Show the first 28 again" in the same place, so keyboard focus never falls back to the top of the page.
-- **Hover / Focus:** Streamlit's border shift on hover; a 2px evergreen outline with 2px offset on keyboard focus.
-- **Primary:** one only, "Update matches" at the end of the profile fields, pinned to the bottom of the form while it scrolls (mist band with a 1px rule above it) so it is in reach from every field: evergreen fill with paper text in light, evergreen-night fill with night text in dark (white on the light green fails AA). It applies the draft. While scoring, the spinner sits under it, not above the results. A bold line under it answers the press where it happened: "Updated: 31 strong matches." or "Your matches are already up to date."; before the press, a slate line says "You have changes. Press Update matches to see them."
-- **Safe first:** when a choice protects the visitor's work, the safe option comes first ("Keep my text" before "Replace my text" or "Clear my text").
+Plain and firm.
+- **Shape:** gently squared (6px), 44px minimum height, 16px side padding.
+- **Primary:** accent fill with on-accent text, full width of its column, 1rem label. Used for Update matches. Hover brightens slightly (brightness 1.08).
+- **Secondary:** ground fill, ink text, 1px control-edge border. Hover takes the paper fill and an ink border. Press nudges down 1px.
+- **Quiet:** the shortlist mark is a borderless muted text button with a bookmark icon; it turns accent when on.
 
 ### Chips
-- **Style:** the multiselect's selected values use the neutral long tint and long ink, never the accent.
-
-### Cards / Containers
-- **Corner Style:** 8px.
-- **Background:** paper (night in dark mode).
-- **Shadow Strategy:** none; see Elevation & Depth.
-- **Border:** 1px rule.
-- **Internal Padding:** 18px top, 20px sides (16px under 640px), 8px bottom where the expander row sits flush.
+- **Tier chips:** Strong is a strong-tint fill; Possible is an accent 1px inset outline on ground; Long shot is a grey tint. 0.8125rem, 700, pill.
+- **Tab count:** ground pill inside the tab; translucent white on the selected cloth tab.
 
 ### Inputs / Fields
-- **Style:** paper background, 1px control-edge border, 8px radius, at least 44px tall. Placeholders in slate, written as examples ("For example: dyslexia, tutoring, after school").
-- **Focus:** a 2px evergreen outline on the field wrapper.
-- **Help:** each "?" icon has a 44px hit area centred on it.
+- **Style:** ground fill, 1px control-edge border, 6px corners, 44px minimum height, 1rem text.
+- **Focus:** the border turns accent and the 2px accent ring sits flush (offset 0).
+- **Segmented control:** three equal cells in one 6px frame divided by edge lines; the checked cell fills accent.
+- **Checks:** native boxes tinted accent, each row 44px tall.
+- **Confirm guard:** a 1px caution outline box with two buttons, used before replacing typed text.
 
 ### Navigation
-- **Tabs:** sentence-case labels at 1rem and 500 weight, at least 44px tall, wrapping onto a second row instead of scrolling. The selected tab is evergreen with a 2px evergreen underline. Tabs are ordered by strong matches; "Before you apply" is always last.
+- **Index tabs:** paper tabs with 6px top corners sitting on a 2px cloth rule; hover takes the strong tint; selected fills cloth with on-cloth text. Arrow keys, Home and End move between them.
+- **Band:** cloth fill, wordmark left, shortlist count right, focus ring switches to on-cloth inside the band.
 
-### Result card (signature)
-Badge row (tier badge plus "Score N of 100" in slate; in the page it follows the title, so heading navigation lands on a title and hears its own score next, and CSS draws it above), the title link (title type, ink, underlined, at least 44px tall, announces that it opens a new tab; for a foundation it goes to the funder's own site when the return lists one, with the tax filing linked in the details), the meta line (meta type, slate, items separated by a dot that screen readers hear as a comma; short facts never break), then the reasons list, in this order:
-- **Fits** (what matches your work: your key words, your categories, your state or cities): drawn check in evergreen.
-- **Cautions:** drawn triangle in caution amber. When none of your key words appear in the grant's text, that is the first caution.
-- **Facts** (who can apply, typical grant size, how awards are made): drawn check in slate, slate text. True and useful, but not a reason it fits.
-- **Status** (timing facts such as forecasts): drawn clock in slate, slate text.
+### Score rule (signature)
+Every entry carries the same rule: a 7.5rem by 6px pill track on the hairline color, filled in accent to the score's percent (muted for long shots), with thin ink marks at 35 and 60 that stand slightly proud of the track. The score number follows in 700 tabular figures. The scale never rescales per list. Under each tally a printed key repeats the empty rule with its marks labelled 0, 35, 60 and 100 and the sentence "Strong is 60 or more out of 100; possible is 35 to 59."
 
-Each item carries hidden "Fits:", "Caution:", "Also:" or "Status:" text for screen readers. The Summary or Details row names its card for screen readers ("Details for Family Café"). Then "Save to pipeline" when signed in, and the Summary or Details row.
+### Entry facts
+The deadline sits right-aligned on the score line in ink, 600, tabular figures. Award sizes ("Typical $N") take the same place in muted 400. The catalog number leads the run-in facts in ink 600; the rest of the facts are muted, separated by a middle dot.
 
-### Details list
-Label and value pairs in a two-column definition list (slate labels, ink values), stacking under 640px. Empty values and return placeholders (NONE, N/A) are dropped. Phones become `tel:` links, emails `mailto:` links, websites lowercase links. Past grants are a short ruled list of up to eight: recipient in bold, then city, amount and purpose separated by dots.
+### Reasons list
+Each reason is one line with an 18px stroke icon: an accent check for fits, an amber triangle for cautions, a muted info or clock icon for other notes. Screen readers hear "Fits", "Caution", "Also" or "Status" before each.
 
 ### Notes
-Mist background, 8px radius, 72ch maximum, detail type. One sentence where possible. Used for the example-profile notice ("This is an example." first, so nobody mistakes a sample's matches for their own) and the blank-start steps.
-
-### Status and guard
-- **Overview line:** counts only. The strong-match threshold sits here once, so no tab has to be remembered.
-- **Spoken answers are alerts.** Streamlit redraws a paragraph whenever its text changes, and a redrawn `role="status"` region is only sometimes read out. So the line under "Update matches" and the count after "Show more" are `role="alert"` on the run that answers a press, and plain text otherwise.
-- **Edit guard:** switching examples over typed text asks first, as a caution-icon line with `role="alert"`, then "Keep my text" and "Replace my text".
-- **Show more:** the count under the list is read out after each press; after a batch loads, "Go to result N" moves keyboard focus to the first new card.
-- **Keeping the profile:** a caption under "Download this profile" says the profile clears on refresh. Nothing is stored in the address or the browser.
-- **Skip link:** each result list starts with a link that appears on focus and jumps past the list to its count.
+Paper fill, 6px corners, 12px by 16px padding, max 66ch. A warning note adds a 1px caution inset outline.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** lead every screen with the answer: the overview line, then the tally.
-- **Do** put reasons and cautions on the card itself, with drawn icons and screen-reader prefixes.
-- **Do** keep every target at least 44px, every focus ring visible (2px evergreen), and every text pair at AA in both themes.
-- **Do** escape every value that comes from an API or a tax return before it reaches HTML.
-- **Do** tidy raw data for display (casing, empty placeholders, links) without changing what it says.
-- **Do** write in sentence case, with buttons that start with a verb and no em dashes.
+- **Do** keep every target at least 44px tall, including entry name links and summary rows.
+- **Do** show the 2px accent focus ring with a 2px offset on every focusable element (on-cloth inside the band).
+- **Do** hold AA contrast in light and dark; the built system measures its lowest text contrast at 5.98:1 in light and 6.59:1 in dark.
+- **Do** put the score rule on every entry, on the one fixed 0 to 100 scale with marks at 35 and 60, and print its key under each tally.
+- **Do** right-align deadlines in ink 600 tabular figures and keep award sizes muted.
+- **Do** set funder and entry names in Source Serif 4 and everything else in Public Sans.
+- **Do** keep the profile column sticky and self-scrolling with Update matches pinned at its foot.
+- **Do** switch the tabs to a 2x2 grid with short labels at 560px and below, and test every surface at 320px.
+- **Do** write in plain words and sentence case, with verb buttons and no em dashes.
 
 ### Don't:
-- **Don't** add a second accent colour or a blue link.
-- **Don't** use amber anywhere except cautions.
-- **Don't** use shadows, gradients or decorative imagery.
-- **Don't** nest a bordered box inside a card.
-- **Don't** change the wording or placement of the Grants.gov notice: "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services."
-- **Don't** show more than 40 results at once without saying how many there are.
+- **Don't** add a second accent hue, or use amber or red for anything but cautions and errors.
+- **Don't** put entries in cards, fills, borders or shadows; they live on rules.
+- **Don't** use the serif for headings, numbers, labels or buttons.
+- **Don't** rescale the score rule per list or drop the 35 and 60 marks.
+- **Don't** use cream or warm paper grounds, gradients, or decorative imagery.
+- **Don't** use cloth green as a button fill; it is the band and the selected tab only.
