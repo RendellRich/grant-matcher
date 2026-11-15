@@ -14,6 +14,9 @@ import {
 } from "./score";
 import { EntryView, IconDownload, IconMark, ResultList } from "./ui";
 import { markNew, newSince, type Fresh } from "./seen";
+import {
+  dropSubmitted, parseShortlist, setStage, STAGE_LABEL, STAGES, submittedKeys, toggle as toggleItem, type Item, type Stage,
+} from "./shortlist";
 import { similarities } from "./vectors";
 
 const NOTICE = "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.";
@@ -31,17 +34,23 @@ const n = (count: number, one: string, many: string) => `${count.toLocaleString(
 const queryText = (f: ProfileForm) => f.mission + " " + f.keywords;
 
 function useShortlist() {
-  const [items, setItems] = useState<Entry[]>(() => {
-    try { return JSON.parse(localStorage.getItem("gm-shortlist") ?? "[]"); } catch { return []; }
+  const [items, setItems] = useState<Item[]>(() => {
+    try { return parseShortlist(localStorage.getItem("gm-shortlist")); } catch { return []; }
   });
   const keys = useMemo(() => new Set(items.map((e) => e.key)), [items]);
-  const toggle = (e: Entry) => {
-    const next = keys.has(e.key) ? items.filter((x) => x.key !== e.key) : [...items, e];
+  const done = useMemo(() => submittedKeys(items), [items]);
+  const save = (next: Item[]) => {
     setItems(next);
     try { localStorage.setItem("gm-shortlist", JSON.stringify(next)); } catch { /* private mode: keep it for this visit */ }
   };
-  return { items, keys, toggle, clear: () => { setItems([]); try { localStorage.removeItem("gm-shortlist"); } catch { /* */ } } };
+  return {
+    items, keys, done,
+    toggle: (e: Entry) => save(toggleItem(items, e)),
+    stage: (key: string, s: Stage) => save(setStage(items, key, s)),
+    clear: () => { setItems([]); try { localStorage.removeItem("gm-shortlist"); } catch { /* */ } },
+  };
 }
+type Shortlist = ReturnType<typeof useShortlist>;
 
 export function App() {
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -130,14 +139,20 @@ export function App() {
   const fdnFresh = useMemo(() => (fdnSrc?.state === "ready" ? newSince(`fdn-${st}`, fdnSrc.data.records.map((r) => r.ein)) : null), [fdnSrc]);
   const flFresh = useMemo(() => (fl.state === "ready" ? newSince("fl", fl.data.records.map((r) => r.id)) : null), [fl]);
   const fresh: Record<SourceKey, Fresh | null> = { fed: fedFresh, fdn: fdnFresh, fl: flFresh };
-  const fedEntries = useMemo(() => markNew(fedScored?.map((s) => federalEntry(s, hasKw)) ?? null, fedFresh), [fedScored, fedFresh]);
-  const fdnEntries = useMemo(() => markNew(fdnSrc?.state === "ready" && !blank
+  const fedAll = useMemo(() => markNew(fedScored?.map((s) => federalEntry(s, hasKw)) ?? null, fedFresh), [fedScored, fedFresh]);
+  const fdnAll = useMemo(() => markNew(fdnSrc?.state === "ready" && !blank
     ? scoreFoundations(fdnSrc.data.records.filter((r) => fdnKinds.includes(r.kind || "Private foundation")), profile, st,
       applied.cities.split(",").filter((c) => c.trim()), sim(fdnSrc.data.vecs), fdnPre).map((s) => foundationEntry(s, st, hasKw))
     : null, fdnFresh), [fdnSrc, profile, vector, fdnKinds, fdnPre, fdnFresh]);
-  const flEntries = useMemo(() => markNew(fl.state === "ready" && st === "FL" && !blank
+  const flAll = useMemo(() => markNew(fl.state === "ready" && st === "FL" && !blank
     ? scoreFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar).map((s) => floridaEntry(s, hasKw)) : null, flFresh),
   [fl, profile, vector, flEar, st, flFresh]);
+  // Anything marked submitted on the shortlist stops showing in the results and their counts.
+  const fedOut = useMemo(() => dropSubmitted(fedAll, shortlist.done), [fedAll, shortlist.done]);
+  const fdnOut = useMemo(() => dropSubmitted(fdnAll, shortlist.done), [fdnAll, shortlist.done]);
+  const flOut = useMemo(() => dropSubmitted(flAll, shortlist.done), [flAll, shortlist.done]);
+  const fedEntries = fedOut.entries, fdnEntries = fdnOut.entries, flEntries = flOut.entries;
+  const hiddenDone: Record<SourceKey, number> = { fed: fedOut.hidden, fdn: fdnOut.hidden, fl: flOut.hidden };
 
   const lists: Partial<Record<SourceKey, Entry[] | null>> = { fed: fedEntries, fdn: fdnEntries };
   if (st === "FL") lists.fl = flEntries;
@@ -313,7 +328,7 @@ export function App() {
   );
 
   function panel(k: string) {
-    if (k === "shortlist") return <ShortlistPanel items={shortlist.items} keys={shortlist.keys} toggle={shortlist.toggle} clear={shortlist.clear} />;
+    if (k === "shortlist") return <ShortlistPanel list={shortlist} />;
     if (k === "fed") return federalPanel();
     if (k === "fdn") return foundationPanel();
     return floridaPanel();
@@ -405,6 +420,10 @@ export function App() {
             <label class="check"><input type="checkbox" checked={n.fresh} onChange={(e) => setN(k, { fresh: (e.target as HTMLInputElement).checked })} />
               <span>Only new since your last visit on {fmtVisit(since)} ({newCount.toLocaleString("en-US")})</span></label>
           </div>
+        ) : null}
+        {hiddenDone[k] ? (
+          <p class="quiet">{hiddenDone[k] === 1 ? `1 ${NOUN[k][2]} you submitted is` : `${hiddenDone[k].toLocaleString("en-US")} ${NOUN[k][1]} you submitted are`} hidden here.{" "}
+            <button type="button" class="link-btn" onClick={() => setTab("shortlist")}>Open your shortlist</button></p>
         ) : null}
         <p class="narrowed" role="status">
           {on ? <>Showing {shown.length.toLocaleString("en-US")} of {all.length.toLocaleString("en-US")} {noun}.{" "}
@@ -574,11 +593,15 @@ function pickRest(f: ProfileForm): Partial<ProfileForm> {
     budget_band: f.budget_band, can_cost_share: f.can_cost_share };
 }
 
-function entriesCsv(items: Entry[]): string {
+function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
   const src = { fed: "Federal grant", fdn: "Foundation", fl: "Florida program" } as const;
-  return toCsv(["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"],
-    items.map((e) => [src[e.source], e.score, e.tier, e.title, e.catalog, e.facts.join("; "), e.side,
-      [...e.fits, ...e.also, ...e.status].join("; "), e.cautions.join("; "), e.url]));
+  const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
+  return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
+    items.map((e) => {
+      const row = [src[e.source], e.score, e.tier, e.title, e.catalog, e.facts.join("; "), e.side,
+        [...e.fits, ...e.also, ...e.status].join("; "), e.cautions.join("; "), e.url];
+      return withStage ? [e.stage ? STAGE_LABEL[e.stage] : "", e.stageAt ? e.stageAt.slice(0, 10) : "", ...row] : row;
+    }));
 }
 
 function fmtStamp(iso: string): string {
@@ -586,37 +609,68 @@ function fmtStamp(iso: string): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
-function ShortlistPanel(p: { items: Entry[]; keys: Set<string>; toggle: (e: Entry) => void; clear: () => void }) {
+function ShortlistPanel({ list }: { list: Shortlist }) {
   const [confirm, setConfirm] = useState(false);
-  if (!p.items.length) {
+  const [moved, setMoved] = useState<{ key: string; text: string } | null>(null);
+  // Changing a stage moves the entry to another group; keep focus on its stage control there.
+  useEffect(() => { if (moved) document.getElementById(`stage-${moved.key}`)?.focus(); }, [moved]);
+  if (!list.items.length) {
     return (
       <div class="tally">
         <h2>Your shortlist is empty</h2>
-        <p class="quiet">Press Add to shortlist on any result to keep it here. The shortlist stays in this browser on this device, and nothing is sent anywhere.</p>
+        <p class="quiet">Press Add to shortlist on any result to save it here. Move it to Applying when you start the application, and to Submitted once it is sent, so it stops showing in your results. The shortlist stays in this browser on this device, and nothing is sent anywhere.</p>
       </div>
     );
+  }
+  const groups = STAGES.map((s) => ({ ...s, items: list.items.filter((e) => e.stage === s.id) })).filter((g) => g.items.length);
+  function move(e: Item, s: Stage) {
+    list.stage(e.key, s);
+    setMoved({ key: e.key, text: s === "submitted" ? "Moved to Submitted. It no longer shows in your results." : `Moved to ${STAGE_LABEL[s]}.` });
   }
   return (
     <>
       <div class="tally">
-        <h2><strong>{p.items.length}</strong> on your shortlist</h2>
-        <p class="quiet">Kept in this browser on this device. Scores are from when you added each one.</p>
+        <h2><strong>{list.items.length}</strong> on your shortlist</h2>
+        <p class="quiet">{groups.map((g) => `${g.items.length} ${g.label.toLowerCase()}`).join(", ")}. Kept in this browser on this device. Scores are from when you added each one.</p>
+        <p class="sr-only" role="status">{moved?.text ?? ""}</p>
       </div>
-      <ol class="entries">
-        {p.items.map((e) => <li key={e.key}><EntryView e={e} marked={p.keys.has(e.key)} onMark={p.toggle} /></li>)}
-      </ol>
+      {groups.map((g) => (
+        <section class="stage-group" aria-labelledby={`stage-h-${g.id}`} key={g.id}>
+          <h3 id={`stage-h-${g.id}`} class="section-head">{g.label} <span class="quiet">({g.items.length})</span></h3>
+          {g.id === "submitted" ? <p class="quiet">These no longer show in your results. Set one back to Applying to see it there again.</p> : null}
+          <ol class="entries">
+            {g.items.map((e) => (
+              <li key={e.key}><EntryView e={e} marked onMark={list.toggle} stage={<StagePicker e={e} onChange={(s) => move(e, s)} />} /></li>
+            ))}
+          </ol>
+        </section>
+      ))}
       <div class="exports">
-        <button type="button" class="btn" onClick={() => download("shortlist.csv", entriesCsv(p.items), "text/csv")}>
+        <button type="button" class="btn" onClick={() => download("shortlist.csv", entriesCsv(list.items, true), "text/csv")}>
           <IconDownload />Download your shortlist (CSV)
         </button>
         {confirm ? (
-          <span class="confirm" role="alert">Remove all {p.items.length}?
-            <button type="button" class="btn" onClick={() => { p.clear(); setConfirm(false); }}>Clear the shortlist</button>
+          <span class="confirm" role="alert">Remove all {list.items.length}?
+            <button type="button" class="btn" onClick={() => { list.clear(); setConfirm(false); }}>Clear the shortlist</button>
             <button type="button" class="btn" onClick={() => setConfirm(false)}>Keep it</button>
           </span>
         ) : <button type="button" class="btn quiet-btn" onClick={() => setConfirm(true)}>Clear the shortlist</button>}
       </div>
     </>
+  );
+}
+
+function StagePicker({ e, onChange }: { e: Item; onChange: (s: Stage) => void }) {
+  const since = STAGES.find((s) => s.id === e.stage)?.since;
+  return (
+    <div class="stage-row">
+      <label class="stage">Stage<span class="sr-only"> for {e.title}</span>
+        <select id={`stage-${e.key}`} value={e.stage} onChange={(ev) => onChange((ev.target as HTMLSelectElement).value as Stage)}>
+          {STAGES.map((s) => <option value={s.id} key={s.id}>{s.label}</option>)}
+        </select>
+      </label>
+      {e.stageAt ? <span class="quiet">{since} {fmtStamp(e.stageAt)}</span> : null}
+    </div>
   );
 }
 

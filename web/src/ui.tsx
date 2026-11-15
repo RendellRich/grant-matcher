@@ -40,7 +40,7 @@ export function ScoreRule(p: { score: number; tier: Entry["tier"] }) {
   );
 }
 
-export function EntryView(p: { e: Entry; marked: boolean; onMark: (e: Entry) => void; id?: string }) {
+export function EntryView(p: { e: Entry; marked: boolean; onMark: (e: Entry) => void; id?: string; stage?: preact.ComponentChildren }) {
   const { e } = p;
   return (
     <article class="entry" aria-labelledby={`t-${e.key}`}>
@@ -69,6 +69,7 @@ export function EntryView(p: { e: Entry; marked: boolean; onMark: (e: Entry) => 
         {e.also.map((x) => <li class="also" key={x}><IconInfo /><span><span class="sr-only">Also: </span>{x}</span></li>)}
         {e.status.map((x) => <li class="also" key={x}><IconClock /><span><span class="sr-only">Status: </span>{x}</span></li>)}
       </ul>
+      {p.stage}
       <div class="entry-actions">
         <button type="button" class={`mark-btn${p.marked ? " on" : ""}`} aria-pressed={p.marked} onClick={() => p.onMark(e)}>
           <IconMark on={p.marked} />{p.marked ? "On shortlist" : "Add to shortlist"}

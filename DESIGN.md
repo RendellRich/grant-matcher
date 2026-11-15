@@ -246,7 +246,7 @@ A two-column work area at desktop, max 77.5rem wide with 1.5rem side padding: th
 
 Inside the results column, the order is fixed: example or warning note, the index tab row with a count on each tab, the tally with its printed key, filters, then the ruled entries.
 
-Inside each entry the columns are fixed: the tier chip and score rule at left with the deadline right-aligned on the same line; the entry name; the catalog number and run-in facts; the reasons list; then the shortlist mark at the right and the details disclosure at the left.
+Inside each entry the columns are fixed: the tier chip and score rule at left with the deadline right-aligned on the same line; the entry name; the catalog number and run-in facts; the reasons list; then the shortlist mark at the right and the details disclosure at the left. On the Shortlist tab, entries are grouped under Applying, Saved and Submitted headings, and each one has a Stage select with the date it moved, above the details row; changing it keeps focus on that select in its new group and announces the move.
 
 Spacing runs on a quarter-rem rhythm (4, 6, 8, 12, 16, 20, 24, 32, 48px). Entries are dense: 20px above, 12px below, 8px between parts.
 
