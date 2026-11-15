@@ -163,3 +163,25 @@ def test_tier_follows_the_shown_score():
     from grantmatch.rank_more import _tier
     # the card shows round(points); a 34.6 shows "Score 35", so it must be a possible match, not a long shot
     assert _tier(round(34.6)) == "Possible" and _tier(round(59.6)) == "Strong" and _tier(round(34.4)) == "Long shot"
+
+
+def _grants(*purposes):
+    return [{"to": f"Recipient {i}", "city": "TAMPA", "state": "FL", "purpose": p, "amount": 2000.0}
+            for i, p in enumerate(purposes)]
+
+
+def test_scholarship_fund_is_flagged_and_drops_below_strong():
+    # One purpose, every grant a scholarship to a student: the old three-purposes rule missed these.
+    fund = fdn(ein="2", name="Student Scholarship Trust", top_purposes=["college scholarship"],
+               sample_grants=_grants(*["college scholarship"] * 5))
+    out = score_foundations([fdn(), fund], PROFILE, "FL", []).set_index("ein")
+    assert "Mostly scholarships paid to students, not grants to organizations" in out.loc["2", "cautions"]
+    assert out.loc["2", "tier"] != "Strong"
+    assert not any("scholarships" in c for c in out.loc["1", "cautions"])
+
+
+def test_some_scholarships_among_organization_grants_are_not_flagged():
+    mixed = fdn(top_purposes=["scholarship", "organizational grants"],
+                sample_grants=_grants("organizational grants", "organizational grants", "scholarship", "general support"))
+    out = score_foundations([mixed], PROFILE, "FL", [])
+    assert not any("scholarships" in c for c in out.iloc[0]["cautions"])

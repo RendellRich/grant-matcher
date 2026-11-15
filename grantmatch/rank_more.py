@@ -12,6 +12,8 @@ NO_UNSOLICITED = re.compile(
     r"(no|not accept\w*|does not (accept|consider)|do not (accept|consider)) unsolicited|unsolicited (requests|applications|proposals) (are )?not"
     r"|by invitation only|invitation only|only to pre-?selected|preselected", re.I)
 SCHOLARSHIP = re.compile(r"\bscholarships?\b|\btuition\b|\bstudent aid\b", re.I)
+SCHOLARSHIP_SHARE = 0.6  # share of a foundation's listed grants that are scholarships before it counts as a scholarship fund
+SCHOLARSHIP_PENALTY = 40  # enough to take a scholarship fund out of the strong tier
 COMPETITIVE = re.compile(r"\b(competitive|request for (applications|proposals)|rfa|rfp|solicitation|notice of funding|scored|review panel)\b", re.I)
 
 
@@ -137,10 +139,14 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
             cautions.append("Says it does not accept unsolicited requests")
         if apply and (apply.get("materials") or apply.get("contact")):
             reasons.append("Publishes how to apply")
+        # Scholarship funds pay students (or a college on a student's behalf), so a nonprofit cannot apply.
+        # Judge by what its grants were for: most of the listed grants, or a purpose list made of scholarships.
+        samples = r["sample_grants"]
+        scholar = sum(1 for g in samples if SCHOLARSHIP.search(g["purpose"]))
         purposes = " ".join(r["top_purposes"][:10])
-        if SCHOLARSHIP.search(purposes) and len(SCHOLARSHIP.findall(purposes)) >= 3:
-            points -= 15
-            cautions.append("Mostly scholarships for individuals")
+        if (samples and scholar / len(samples) >= SCHOLARSHIP_SHARE) or len(SCHOLARSHIP.findall(purposes)) >= 3:
+            points -= SCHOLARSHIP_PENALTY
+            cautions.append("Mostly scholarships paid to students, not grants to organizations")
 
         if n < 3:
             points = min(points, 55)  # too little history to call it a strong match
