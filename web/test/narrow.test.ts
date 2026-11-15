@@ -44,3 +44,17 @@ describe("narrow", () => {
     expect(keys(narrow(list, { ...NO_NARROW, open: true }))).toEqual(["a", "b", "c", "d"]);
   });
 });
+
+describe("eligibility and new filters", () => {
+  const list = [
+    fdn("a", { asks501c3: true, isNew: true }),
+    fdn("b", { asks501c3: false }),
+    fed("c", { isNew: true }),
+  ];
+  it("hides foundations that ask for 501(c)(3) proof, and only foundations", () => {
+    expect(keys(narrow(list, { ...NO_NARROW, no501: true }))).toEqual(["b", "c"]);
+  });
+  it("keeps only entries new since the last visit", () => {
+    expect(keys(narrow(list, { ...NO_NARROW, fresh: true }))).toEqual(["a", "c"]);
+  });
+});

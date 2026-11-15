@@ -14,6 +14,13 @@ NO_UNSOLICITED = re.compile(
 SCHOLARSHIP = re.compile(r"\bscholarships?\b|\btuition\b|\bstudent aid\b", re.I)
 SCHOLARSHIP_SHARE = 0.6  # share of a foundation's listed grants that are scholarships before it counts as a scholarship fund
 SCHOLARSHIP_PENALTY = 40  # enough to take a scholarship fund out of the strong tier
+# A foundation's own words, in its how-to-apply section, asking for 501(c)(3) status or the IRS letter that proves it.
+ASKS_501C3 = re.compile(r"501\s*\(?\s*c\s*\)?\s*\(?\s*3|tax[- ]exempt|determination letter|public charit|509\s*\(?\s*a", re.I)
+ASKS_501C3_PENALTY = {"Pending": 10, "No": 20}
+ASKS_501C3_CAUTION = {
+    "Pending": "Asks for proof of 501(c)(3) status; apply once your IRS letter arrives, or through a fiscal sponsor",
+    "No": "Asks for proof of 501(c)(3) status; you would need a fiscal sponsor",
+}
 COMPETITIVE = re.compile(r"\b(competitive|request for (applications|proposals)|rfa|rfp|solicitation|notice of funding|scored|review panel)\b", re.I)
 
 
@@ -139,6 +146,10 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
             cautions.append("Says it does not accept unsolicited requests")
         if apply and (apply.get("materials") or apply.get("contact")):
             reasons.append("Publishes how to apply")
+        apply_text = " ".join(v for v in (apply or {}).values() if isinstance(v, str))
+        if p.has_501c3 in ASKS_501C3_PENALTY and ASKS_501C3.search(apply_text):
+            points -= ASKS_501C3_PENALTY[p.has_501c3]
+            cautions.append(ASKS_501C3_CAUTION[p.has_501c3])
         # Scholarship funds pay students (or a college on a student's behalf), so a nonprofit cannot apply.
         # Judge by what its grants were for: most of the listed grants, or a purpose list made of scholarships.
         samples = r["sample_grants"]

@@ -178,7 +178,8 @@ def score(df: pd.DataFrame, p: Profile, semantic: dict[str, float] | None = None
                 reasons.append("Open to nonprofits without 501(c)(3) status")
             elif "12" in types and not types & {"13", "25", "99"}:
                 points -= 40
-                cautions.append("Requires 501(c)(3) status")
+                cautions.append("Requires 501(c)(3) status; apply once your IRS letter arrives, or through a fiscal sponsor"
+                                if p.has_501c3 == "Pending" else "Requires 501(c)(3) status; you would need a fiscal sponsor")
             else:
                 points -= 5
                 cautions.append("Eligibility is \"other\"; read the eligibility notes")

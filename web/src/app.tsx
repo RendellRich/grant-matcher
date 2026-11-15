@@ -13,6 +13,7 @@ import {
   type FederalRec, type FloridaRec, type FoundationRec, type Profile,
 } from "./score";
 import { EntryView, IconDownload, IconMark, ResultList } from "./ui";
+import { markNew, newSince, type Fresh } from "./seen";
 import { similarities } from "./vectors";
 
 const NOTICE = "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.";
@@ -123,15 +124,20 @@ export function App() {
 
   const fedScored = useMemo(() => fed.state === "ready" && !blank
     ? scoreFederal(fed.data.records, profile, sim(fed.data.vecs)) : null, [fed, profile, vector]);
-  const fedEntries = useMemo(() => fedScored?.map((s) => federalEntry(s, hasKw)) ?? null, [fedScored]);
   const fdnSrc = fdn[st];
-  const fdnEntries = useMemo(() => fdnSrc?.state === "ready" && !blank
+  // What's new since the last visit is about the data, not the profile, so it is worked out once per source.
+  const fedFresh = useMemo(() => (fed.state === "ready" ? newSince("fed", fed.data.records.map((r) => r.id)) : null), [fed]);
+  const fdnFresh = useMemo(() => (fdnSrc?.state === "ready" ? newSince(`fdn-${st}`, fdnSrc.data.records.map((r) => r.ein)) : null), [fdnSrc]);
+  const flFresh = useMemo(() => (fl.state === "ready" ? newSince("fl", fl.data.records.map((r) => r.id)) : null), [fl]);
+  const fresh: Record<SourceKey, Fresh | null> = { fed: fedFresh, fdn: fdnFresh, fl: flFresh };
+  const fedEntries = useMemo(() => markNew(fedScored?.map((s) => federalEntry(s, hasKw)) ?? null, fedFresh), [fedScored, fedFresh]);
+  const fdnEntries = useMemo(() => markNew(fdnSrc?.state === "ready" && !blank
     ? scoreFoundations(fdnSrc.data.records.filter((r) => fdnKinds.includes(r.kind || "Private foundation")), profile, st,
       applied.cities.split(",").filter((c) => c.trim()), sim(fdnSrc.data.vecs), fdnPre).map((s) => foundationEntry(s, st, hasKw))
-    : null, [fdnSrc, profile, vector, fdnKinds, fdnPre]);
-  const flEntries = useMemo(() => fl.state === "ready" && st === "FL" && !blank
-    ? scoreFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar).map((s) => floridaEntry(s, hasKw)) : null,
-  [fl, profile, vector, flEar, st]);
+    : null, fdnFresh), [fdnSrc, profile, vector, fdnKinds, fdnPre, fdnFresh]);
+  const flEntries = useMemo(() => markNew(fl.state === "ready" && st === "FL" && !blank
+    ? scoreFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar).map((s) => floridaEntry(s, hasKw)) : null, flFresh),
+  [fl, profile, vector, flEar, st, flFresh]);
 
   const lists: Partial<Record<SourceKey, Entry[] | null>> = { fed: fedEntries, fdn: fdnEntries };
   if (st === "FL") lists.fl = flEntries;
@@ -151,7 +157,9 @@ export function App() {
   useEffect(() => { if (order.length && (!tab || (!order.includes(tab as SourceKey) && tab !== "shortlist"))) setTab(order[0]); }, [order]);
 
   const total = keys.reduce((s, k) => s + strong[k], 0);
-  const shownOrder = order.length ? order : keys;
+  // The saved order can still name a source the new state doesn't have (Florida programs after a switch to
+  // New York) until the effect above catches up, so keep only today's sources, in that order.
+  const shownOrder = [...order.filter((k) => keys.includes(k)), ...keys.filter((k) => !order.includes(k))];
   const parts = shownOrder.map((k) => strong[k] || !possible[k]
     ? n(strong[k], NOUN[k][2], NOUN[k][1])
     : `no strong ${NOUN[k][1]} (${possible[k].toLocaleString("en-US")} possible)`);
@@ -346,6 +354,8 @@ export function App() {
     const agencies = k === "fdn" ? [] : [...new Set(all.map((e) => e.agency).filter(Boolean) as string[])].sort();
     const on = isNarrowed(cur(k));
     const id = (s: string) => `${k}-${s}`;
+    const newCount = all.filter((e) => e.isNew).length;
+    const since = fresh[k]?.since;
     return (
       <div class="narrow">
         <div class="narrow-row">
@@ -385,7 +395,16 @@ export function App() {
             <label class="check"><input type="checkbox" checked={n.apply} onChange={(e) => setN(k, { apply: (e.target as HTMLInputElement).checked })} /><span>Publish how to apply</span></label>
             <label class="check"><input type="checkbox" checked={n.open} onChange={(e) => setN(k, { open: (e.target as HTMLInputElement).checked })} /><span>Don't refuse unsolicited requests</span></label>
             <label class="check"><input type="checkbox" checked={n.local} onChange={(e) => setN(k, { local: (e.target as HTMLInputElement).checked })} /><span>Based in or funding your cities</span></label>
+            {applied.has_501c3 !== "Yes" ? (
+              <label class="check"><input type="checkbox" checked={n.no501} onChange={(e) => setN(k, { no501: (e.target as HTMLInputElement).checked })} /><span>Don't ask for 501(c)(3) proof</span></label>
+            ) : null}
           </fieldset>
+        ) : null}
+        {newCount && since ? (
+          <div class="narrow-checks">
+            <label class="check"><input type="checkbox" checked={n.fresh} onChange={(e) => setN(k, { fresh: (e.target as HTMLInputElement).checked })} />
+              <span>Only new since your last visit on {fmtVisit(since)} ({newCount.toLocaleString("en-US")})</span></label>
+          </div>
         ) : null}
         <p class="narrowed" role="status">
           {on ? <>Showing {shown.length.toLocaleString("en-US")} of {all.length.toLocaleString("en-US")} {noun}.{" "}
@@ -393,6 +412,11 @@ export function App() {
         </p>
       </div>
     );
+  }
+
+  function fmtVisit(iso: string): string {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? "your last visit" : d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
   }
 
   function loading(what: string) {

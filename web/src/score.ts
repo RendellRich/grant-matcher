@@ -47,6 +47,20 @@ const NO_UNSOLICITED = new RegExp(
   + "|by invitation only|invitation only|only to pre-?selected|preselected", "i");
 const SCHOLARSHIP = /\bscholarships?\b|\btuition\b|\bstudent aid\b/i;
 const SCHOLARSHIP_G = /\bscholarships?\b|\btuition\b|\bstudent aid\b/gi;
+// A foundation's own words, in its how-to-apply section, asking for 501(c)(3) status or the IRS letter that proves it.
+const ASKS_501C3 = /501\s*\(?\s*c\s*\)?\s*\(?\s*3|tax[- ]exempt|determination letter|public charit|509\s*\(?\s*a/i;
+const ASKS_501C3_PENALTY = { Pending: 10, No: 20 } as const;
+const ASKS_501C3_CAUTION = {
+  Pending: "Asks for proof of 501(c)(3) status; apply once your IRS letter arrives, or through a fiscal sponsor",
+  No: "Asks for proof of 501(c)(3) status; you would need a fiscal sponsor",
+} as const;
+
+/** Whether a foundation's how-to-apply text asks for 501(c)(3) status. Also drives the filter. */
+export function asks501c3(r: { apply?: unknown }): boolean {
+  const apply = r.apply && typeof r.apply === "object" ? (r.apply as Record<string, unknown>) : {};
+  return ASKS_501C3.test(Object.values(apply).filter((v): v is string => typeof v === "string").join(" "));
+}
+
 const SCHOLARSHIP_SHARE = 0.6; // share of a foundation's listed grants that are scholarships before it counts as a scholarship fund
 const SCHOLARSHIP_PENALTY = 40; // enough to take a scholarship fund out of the strong tier
 const COMPETITIVE = /\b(competitive|request for (applications|proposals)|rfa|rfp|solicitation|notice of funding|scored|review panel)\b/i;
@@ -279,7 +293,10 @@ export function scoreFederal(records: FederalRec[], p: Profile, semantic: Map<st
     } else if (types.has("13") || types.has("99")) {
       reasons.push("Open to nonprofits without 501(c)(3) status");
     } else if (types.has("12") && !["13", "25", "99"].some((t) => types.has(t))) {
-      points -= 40; cautions.push("Requires 501(c)(3) status");
+      points -= 40;
+      cautions.push(p.has501c3 === "Pending"
+        ? "Requires 501(c)(3) status; apply once your IRS letter arrives, or through a fiscal sponsor"
+        : "Requires 501(c)(3) status; you would need a fiscal sponsor");
     } else {
       points -= 5; cautions.push('Eligibility is "other"; read the eligibility notes');
     }
@@ -431,6 +448,9 @@ export function scoreFoundations(records: FoundationRec[], p: Profile, state: st
       points -= 30; cautions.push("Says it does not accept unsolicited requests");
     }
     if (Object.keys(apply).length && (apply.materials || apply.contact)) reasons.push("Publishes how to apply");
+    if (p.has501c3 !== "Yes" && asks501c3(r)) {
+      points -= ASKS_501C3_PENALTY[p.has501c3]; cautions.push(ASKS_501C3_CAUTION[p.has501c3]);
+    }
     // Scholarship funds pay students (or a college on a student's behalf), so a nonprofit cannot apply.
     // Judge by what its grants were for: most of the listed grants, or a purpose list made of scholarships.
     const samples = r.sample_grants;
