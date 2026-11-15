@@ -36,6 +36,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Explains every score** with reasons and cautions, so the ranking is a starting point for your judgment, not a black box.
 - **Shows forecasts**, grants that are announced but not open yet, which give you the most time to prepare.
 - **Exports** your strong and possible matches to CSV and the deadlines to a calendar file (.ics).
+- **Narrows the list** without changing any score: search words across every result and its details, award size, deadline and agency for federal grants, agency for Florida programs, and for foundations their typical grant, whether they publish how to apply, whether they refuse unsolicited requests, and whether they're based in or fund your cities.
 - **Keeps a shortlist** of the results you mark, saved in your browser on your device, with its own CSV.
 - **Saves your profile** as a small JSON file you can load next time. Nothing is stored on a server, so the profile clears when you close the page.
 
