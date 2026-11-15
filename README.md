@@ -12,7 +12,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 
 > This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.
 
-![Grant Matcher on a desktop in light mode. A green band at the top gives the answer, 30 strong matches for this profile: 18 Florida programs, 12 foundations and no strong federal grants, above the Grants.gov notice. Below, the profile form sits in a column on the left with Update matches pinned at its foot, and on the right are index tabs with counts and the first ranked Florida program.](docs/images/desktop-light.png)
+![Grant Matcher on a desktop in light mode. A navy band at the top gives the answer, 30 strong matches for this profile: 18 Florida programs, 12 foundations and no strong federal grants, above the Grants.gov notice. Below, the profile form sits in a column on the left with Update matches pinned at its foot, and on the right are index tabs with counts and the first ranked Florida program.](docs/images/desktop-light.png)
 
 ![One federal grant entry in dark mode: a Possible match label, a score rule filled to 52 with marks at 35 and 60, the estimated due date set to the right, the program name, its opportunity number and agency, reasons it fits, and a Summary section to expand beside Add to shortlist.](docs/images/card-dark.png)
 
@@ -51,11 +51,11 @@ The public site is a static site in `web/` (Vite, TypeScript, Preact) on GitHub 
 
 The people using this are often one-person development teams at small nonprofits, working late, on a phone as often as a laptop, and some use a screen reader. The design follows from that.
 
-- **It reads like a funding directory.** The look is modelled on the printed grant catalogs nonprofits used to find at the library: a book-cloth green band, Public Sans (the typeface of U.S. government sites) for working text, a serif for funder names, and ruled entries that each lead with their catalog number, EIN or opportunity number.
+- **It reads like a funding directory.** The look is modelled on the printed grant catalogs nonprofits used to find at the library: a navy band, Public Sans (the typeface of U.S. government sites) for working text, a serif for funder names, and ruled entries that each lead with their catalog number, EIN or opportunity number.
 - **The answer comes first.** The first line on the page says how many strong matches there are and where. Each tab carries its count, and each entry leads with a Strong, Possible or Long shot label and its score on the same 0 to 100 scale, with the 35 and 60 marks drawn in, so entries compare at a glance. Deadlines sit right-aligned.
 - **Every entry explains itself** in the same order: what fits your work, then cautions, then plain facts such as typical grant size, in a quieter color. If none of your key words appear in a funder's past grants, that is the first caution.
 - **Nothing changes until you ask.** Edits to the profile stay a draft until you press Update matches. The button stays pinned at the bottom of the form, and a line under it confirms the update or says your changes are not applied yet.
-- **One accent color.** Green is the only accent. Amber marks cautions and red marks errors; neither is used for decoration. Light and dark follow the visitor's system setting, and text meets WCAG AA contrast in both.
+- **One accent color.** Blue is the only accent. Amber marks cautions and red marks errors; neither is used for decoration. Light and dark follow the visitor's system setting, and text meets WCAG AA contrast in both.
 - **Works by keyboard and on small screens.** Focus is always visible, controls have 44 pixel targets, each long list has a link to skip past it, and the layout works down to 320 pixels wide with no sideways scrolling.
 - **Tested with a screen reader.** I ran the main tasks with NVDA 2026.3 in Microsoft Edge and fixed what it found. Pressing Update matches is now announced. Show more keeps focus in place instead of sending NVDA back to the top. Each card's title is read before its score, and the button that opens a card's details names that card.
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-15T01:07:12+00:00",
+  "generatedAt": "2026-11-15T01:14:02+00:00",
   "title": "Design System: Grant Matcher",
   "extensions": {
     "colorMeta": {
@@ -22,31 +22,31 @@
       "paper": {
         "role": "neutral",
         "displayName": "Shelf paper",
-        "canonical": "#f2f5f3",
+        "canonical": "#f3f6fa",
         "tonalRamp": [
-          "#232925",
-          "#3a463e",
-          "#526658",
-          "#6b8a75",
-          "#8da595",
-          "#b1bfb5",
-          "#d3dad5",
-          "#f1f3f2"
+          "#1d2530",
+          "#2d3d53",
+          "#3c577c",
+          "#4973ac",
+          "#7494be",
+          "#a1b4ce",
+          "#ccd5e1",
+          "#f0f2f5"
         ]
       },
       "cloth": {
         "role": "primary",
-        "displayName": "Book-cloth green",
-        "canonical": "#1d4a3d",
+        "displayName": "Binding navy",
+        "canonical": "#0f2747",
         "tonalRamp": [
-          "#1c312b",
-          "#2c5448",
-          "#3a7e6a",
-          "#46af90",
-          "#71c1aa",
-          "#a0cfc2",
-          "#cbe1db",
-          "#eff5f3"
+          "#172436",
+          "#223b5e",
+          "#29558e",
+          "#2c6fc8",
+          "#5e91d4",
+          "#94b3db",
+          "#c6d4e7",
+          "#eef2f6"
         ]
       },
       "on-cloth": {
@@ -67,91 +67,91 @@
       "on-cloth-muted": {
         "role": "neutral",
         "displayName": "On cloth, muted",
-        "canonical": "#cfe0d8",
+        "canonical": "#c7d4e6",
         "tonalRamp": [
-          "#212b27",
-          "#364a40",
-          "#4b6d5d",
-          "#61947c",
-          "#85ad9a",
-          "#acc3b8",
-          "#d1dcd7",
-          "#f1f4f2"
+          "#1d252f",
+          "#2e3d51",
+          "#3e577a",
+          "#4d73a8",
+          "#7693bc",
+          "#a3b4cc",
+          "#ccd5e0",
+          "#f0f2f5"
         ]
       },
       "ink": {
         "role": "neutral",
         "displayName": "Ink",
-        "canonical": "#15201b",
+        "canonical": "#0f1b2d",
         "tonalRamp": [
-          "#212b27",
-          "#364941",
-          "#4c6c5d",
-          "#62937d",
-          "#86ac9b",
-          "#acc3b9",
-          "#d1dcd7",
-          "#f1f4f2"
+          "#1a2432",
+          "#293b57",
+          "#355483",
+          "#3f6eb6",
+          "#6c90c6",
+          "#9db2d3",
+          "#c9d4e3",
+          "#eff2f5"
         ]
       },
       "muted": {
         "role": "neutral",
         "displayName": "Muted ink",
-        "canonical": "#4a5751",
+        "canonical": "#4a5568",
         "tonalRamp": [
-          "#242826",
-          "#3c4340",
-          "#56625c",
-          "#71847b",
-          "#92a09a",
-          "#b3bcb8",
-          "#d4d8d6",
-          "#f2f3f2"
+          "#22252a",
+          "#383e48",
+          "#4f5869",
+          "#66758f",
+          "#8a95a8",
+          "#aeb5c1",
+          "#d2d5db",
+          "#f1f2f3"
         ]
       },
       "rule": {
         "role": "neutral",
         "displayName": "Hairline",
-        "canonical": "#d4dcd8",
+        "canonical": "#dbe2ea",
         "tonalRamp": [
-          "#242926",
-          "#3b4440",
-          "#54645c",
-          "#6e877a",
-          "#90a299",
-          "#b2bdb8",
-          "#d4d9d6",
-          "#f2f3f2"
+          "#20262c",
+          "#343f4c",
+          "#475a70",
+          "#5b789a",
+          "#8197b1",
+          "#a9b7c6",
+          "#cfd6dd",
+          "#f1f2f4"
         ]
       },
       "edge": {
         "role": "neutral",
         "displayName": "Control edge",
-        "canonical": "#74827c",
+        "canonical": "#7a8699",
         "tonalRamp": [
-          "#252826",
-          "#3d4240",
-          "#57605c",
-          "#74817b",
-          "#949e9a",
-          "#b5bbb8",
-          "#d5d8d6",
-          "#f2f3f2"
+          "#232629",
+          "#3a3e46",
+          "#525966",
+          "#6b778a",
+          "#8d96a5",
+          "#b0b6bf",
+          "#d3d5da",
+          "#f1f2f3"
         ]
       },
       "accent": {
         "role": "primary",
-        "displayName": "Reading-lamp green",
-        "canonical": "#1f6a55",
+        "displayName": "Civic blue",
+        "canonical": "#1d4ed8",
         "tonalRamp": [
-          "#19332c",
-          "#26594b",
-          "#31866f",
-          "#39bc97",
-          "#67cbaf",
-          "#9ad5c5",
-          "#c8e4dc",
-          "#eff6f4"
+          "#141e38",
+          "#1c2f63",
+          "#214097",
+          "#1f4fd6",
+          "#5478de",
+          "#8ea4e1",
+          "#c3cdea",
+          "#edf0f7"
         ]
       },
       "on-accent": {
@@ -172,61 +172,61 @@
       "strong-bg": {
         "role": "neutral",
         "displayName": "Strong tint",
-        "canonical": "#dcefe5",
+        "canonical": "#dbeafe",
         "tonalRamp": [
-          "#1d2f26",
-          "#2f513f",
-          "#3f795a",
-          "#4ea778",
-          "#77bb97",
-          "#a3ccb7",
-          "#cde0d6",
-          "#f0f5f2"
+          "#10233d",
+          "#143a6b",
+          "#1251a5",
+          "#096aec",
+          "#438def",
+          "#84b0eb",
+          "#bed3ee",
+          "#ecf1f8"
         ]
       },
       "strong-fg": {
         "role": "neutral",
         "displayName": "Strong tint text",
-        "canonical": "#164a3a",
+        "canonical": "#1e3a8a",
         "tonalRamp": [
-          "#1a332b",
-          "#275949",
-          "#32866c",
-          "#3abb93",
-          "#68caac",
-          "#9ad5c3",
-          "#c8e4dc",
-          "#eff6f4"
+          "#171f35",
+          "#22315d",
+          "#2a448e",
+          "#2d55c7",
+          "#5f7dd3",
+          "#95a7da",
+          "#c6cee7",
+          "#eef0f6"
         ]
       },
       "long-bg": {
         "role": "neutral",
         "displayName": "Long shot tint",
-        "canonical": "#eceff0",
+        "canonical": "#eef1f5",
         "tonalRamp": [
-          "#232829",
-          "#3a4245",
-          "#536065",
-          "#6c8188",
-          "#8e9ea4",
-          "#b1bbbe",
-          "#d3d8d9",
-          "#f1f3f3"
+          "#20252c",
+          "#343e4c",
+          "#485970",
+          "#5b7699",
+          "#8196b1",
+          "#aab6c6",
+          "#d0d5dd",
+          "#f1f2f4"
         ]
       },
       "long-fg": {
         "role": "neutral",
         "displayName": "Long shot tint text",
-        "canonical": "#3d4844",
+        "canonical": "#374151",
         "tonalRamp": [
-          "#242827",
-          "#3c4441",
-          "#55625e",
-          "#70847d",
-          "#91a19b",
-          "#b3bcb9",
-          "#d4d8d7",
-          "#f2f3f2"
+          "#22252b",
+          "#373e49",
+          "#4d586b",
+          "#647591",
+          "#8895aa",
+          "#adb5c2",
+          "#d1d5db",
+          "#f1f2f3"
         ]
       },
       "caution": {
@@ -262,241 +262,226 @@
       "ground-dark": {
         "role": "neutral",
         "displayName": "Plain ground (dark mode)",
-        "canonical": "#0e1412",
+        "canonical": "#0b1220",
         "tonalRamp": [
-          "#222a28",
-          "#384842",
-          "#4e6a60",
-          "#659081",
-          "#89a99e",
-          "#aec1bb",
-          "#d2dbd8",
-          "#f1f3f3"
+          "#1b2232",
+          "#293856",
+          "#364f82",
+          "#4067b5",
+          "#6d8ac5",
+          "#9dafd2",
+          "#cad2e3",
+          "#eff1f5"
         ]
       },
       "paper-dark": {
         "role": "neutral",
         "displayName": "Shelf paper (dark mode)",
-        "canonical": "#141c19",
+        "canonical": "#111a2b",
         "tonalRamp": [
-          "#222a27",
-          "#384742",
-          "#4f695f",
-          "#668e7f",
-          "#8aa89d",
-          "#afc1ba",
-          "#d2dad7",
-          "#f1f3f3"
-        ]
-      },
-      "hover-dark": {
-        "role": "neutral",
-        "displayName": "Hover (dark mode)",
-        "canonical": "#18221e",
-        "tonalRamp": [
-          "#222a27",
-          "#384841",
-          "#4e695e",
-          "#668f7f",
-          "#89a99c",
-          "#aec1b9",
-          "#d2dbd7",
-          "#f1f3f2"
+          "#1c2330",
+          "#2c3a54",
+          "#3a517d",
+          "#476aae",
+          "#728dc0",
+          "#a0b0cf",
+          "#cbd3e1",
+          "#eff1f5"
         ]
       },
       "cloth-dark": {
         "role": "primary",
-        "displayName": "Book-cloth green (dark mode)",
-        "canonical": "#143a2f",
+        "displayName": "Binding navy (dark mode)",
+        "canonical": "#132c50",
         "tonalRamp": [
-          "#1b322b",
-          "#295649",
-          "#36826c",
-          "#40b593",
-          "#6dc5ac",
-          "#9dd2c3",
-          "#cae3db",
-          "#eff5f4"
+          "#182435",
+          "#233b5c",
+          "#2c538c",
+          "#316dc4",
+          "#618fd1",
+          "#96b2d9",
+          "#c6d3e6",
+          "#eef2f6"
         ]
       },
       "on-cloth-dark": {
         "role": "neutral",
         "displayName": "On cloth (dark mode)",
-        "canonical": "#f1f6f3",
+        "canonical": "#f1f5fb",
         "tonalRamp": [
-          "#212b25",
-          "#364a3e",
-          "#4b6d58",
-          "#609475",
-          "#85ad95",
-          "#acc3b5",
-          "#d1dcd5",
-          "#f1f4f2"
+          "#192433",
+          "#263b59",
+          "#315387",
+          "#386dbd",
+          "#678fcb",
+          "#9ab2d6",
+          "#c8d3e4",
+          "#eff2f6"
         ]
       },
       "on-cloth-muted-dark": {
         "role": "neutral",
         "displayName": "On cloth, muted (dark mode)",
-        "canonical": "#b8cdc4",
+        "canonical": "#b9c7da",
         "tonalRamp": [
-          "#222a27",
-          "#384841",
-          "#4e695e",
-          "#668f7d",
-          "#89a99b",
-          "#aec1b9",
-          "#d2dbd7",
-          "#f1f3f2"
+          "#1f252e",
+          "#313e4e",
+          "#445874",
+          "#55759f",
+          "#7d95b5",
+          "#a7b5c8",
+          "#ced5de",
+          "#f0f2f4"
         ]
       },
       "ink-dark": {
         "role": "neutral",
         "displayName": "Ink (dark mode)",
-        "canonical": "#e4ebe8",
+        "canonical": "#e6ebf2",
         "tonalRamp": [
-          "#232a27",
-          "#394741",
-          "#50675d",
-          "#698c7d",
-          "#8ba79b",
-          "#b0c0b9",
-          "#d2dad7",
-          "#f1f3f2"
+          "#1f252e",
+          "#313d4e",
+          "#435874",
+          "#5574a0",
+          "#7c94b6",
+          "#a7b5c9",
+          "#ced5de",
+          "#f0f2f4"
         ]
       },
       "muted-dark": {
         "role": "neutral",
         "displayName": "Muted ink (dark mode)",
-        "canonical": "#a6b4ae",
+        "canonical": "#a3b0c2",
         "tonalRamp": [
-          "#242827",
-          "#3c4440",
-          "#55625d",
-          "#70857c",
-          "#91a19a",
-          "#b3bcb8",
-          "#d4d8d7",
-          "#f2f3f2"
+          "#21252b",
+          "#363e49",
+          "#4c596c",
+          "#627693",
+          "#8796ab",
+          "#adb6c3",
+          "#d1d5db",
+          "#f1f2f4"
         ]
       },
       "rule-dark": {
         "role": "neutral",
         "displayName": "Hairline (dark mode)",
-        "canonical": "#2a3732",
+        "canonical": "#243049",
         "tonalRamp": [
-          "#232927",
-          "#3a4641",
-          "#51665e",
-          "#6a8a7e",
-          "#8da59c",
-          "#b0bfb9",
-          "#d3dad7",
-          "#f1f3f2"
+          "#1e232e",
+          "#303a4f",
+          "#415376",
+          "#526ca3",
+          "#7a8eb8",
+          "#a5b1ca",
+          "#ced3df",
+          "#f0f1f4"
         ]
       },
       "edge-dark": {
         "role": "neutral",
         "displayName": "Control edge (dark mode)",
-        "canonical": "#6f8079",
+        "canonical": "#6b7a92",
         "tonalRamp": [
-          "#252827",
-          "#3c4340",
-          "#56615d",
-          "#72837c",
-          "#939f9a",
-          "#b4bbb8",
-          "#d4d8d7",
-          "#f2f3f2"
+          "#23252a",
+          "#393e47",
+          "#505968",
+          "#68768d",
+          "#8b96a7",
+          "#afb6c0",
+          "#d2d5da",
+          "#f1f2f3"
         ]
       },
       "accent-dark": {
         "role": "primary",
-        "displayName": "Reading-lamp green (dark mode)",
-        "canonical": "#7ccbb0",
+        "displayName": "Civic blue (dark mode)",
+        "canonical": "#8ab4ff",
         "tonalRamp": [
-          "#1c3029",
-          "#2c5446",
-          "#3a7d66",
-          "#47ae8b",
-          "#72c0a5",
-          "#a0cfbf",
-          "#cbe1da",
-          "#eff5f3"
+          "#0f203e",
+          "#12336e",
+          "#0e46a9",
+          "#0359f2",
+          "#3e7ff4",
+          "#81a8ee",
+          "#bdcff0",
+          "#ecf0f9"
         ]
       },
       "on-accent-dark": {
         "role": "neutral",
         "displayName": "On accent (dark mode)",
-        "canonical": "#0e1412",
+        "canonical": "#0b1220",
         "tonalRamp": [
-          "#222a28",
-          "#384842",
-          "#4e6a60",
-          "#659081",
-          "#89a99e",
-          "#aec1bb",
-          "#d2dbd8",
-          "#f1f3f3"
+          "#1b2232",
+          "#293856",
+          "#364f82",
+          "#4067b5",
+          "#6d8ac5",
+          "#9dafd2",
+          "#cad2e3",
+          "#eff1f5"
         ]
       },
       "strong-bg-dark": {
         "role": "neutral",
         "displayName": "Strong tint (dark mode)",
-        "canonical": "#1b4034",
+        "canonical": "#1e3a8a",
         "tonalRamp": [
-          "#1d302a",
-          "#2d5346",
-          "#3c7b67",
-          "#4aab8c",
-          "#74bea6",
-          "#a2cebf",
-          "#cce1da",
-          "#f0f5f3"
+          "#171f35",
+          "#22315d",
+          "#2a448e",
+          "#2d55c7",
+          "#5f7dd3",
+          "#95a7da",
+          "#c6cee7",
+          "#eef0f6"
         ]
       },
       "strong-fg-dark": {
         "role": "neutral",
         "displayName": "Strong tint text (dark mode)",
-        "canonical": "#b3ead0",
+        "canonical": "#dbeafe",
         "tonalRamp": [
-          "#193427",
-          "#265a41",
-          "#30885e",
-          "#37be7e",
-          "#66cc9c",
-          "#99d6b9",
-          "#c8e5d7",
-          "#eff6f2"
+          "#10233d",
+          "#143a6b",
+          "#1251a5",
+          "#096aec",
+          "#438def",
+          "#84b0eb",
+          "#bed3ee",
+          "#ecf1f8"
         ]
       },
       "long-bg-dark": {
         "role": "neutral",
         "displayName": "Long shot tint (dark mode)",
-        "canonical": "#222b28",
+        "canonical": "#1c2537",
         "tonalRamp": [
-          "#242927",
-          "#3a4542",
-          "#53655f",
-          "#6c887f",
-          "#8ea49d",
-          "#b1beba",
-          "#d3d9d7",
-          "#f1f3f3"
+          "#1f242e",
+          "#313b4f",
+          "#435375",
+          "#536da1",
+          "#7b8fb7",
+          "#a6b2c9",
+          "#ced3df",
+          "#f0f2f4"
         ]
       },
       "long-fg-dark": {
         "role": "neutral",
         "displayName": "Long shot tint text (dark mode)",
-        "canonical": "#c4cec9",
+        "canonical": "#cbd5e1",
         "tonalRamp": [
-          "#242826",
-          "#3b4440",
-          "#55635c",
-          "#6f857a",
-          "#91a199",
-          "#b3bdb8",
-          "#d4d9d6",
-          "#f2f3f2"
+          "#20262d",
+          "#333f4c",
+          "#475a71",
+          "#5a779b",
+          "#8197b1",
+          "#a9b6c6",
+          "#cfd6dd",
+          "#f1f2f4"
         ]
       },
       "caution-dark": {
@@ -621,8 +606,8 @@
     ],
     "accessibility": {
       "targetMin": "44px",
-      "contrastLowestLight": "5.98:1",
-      "contrastLowestDark": "6.59:1",
+      "contrastLowestLight": "6.7:1",
+      "contrastLowestDark": "7.27:1",
       "colorScheme": "follows prefers-color-scheme"
     }
   },
@@ -633,7 +618,7 @@
       "refersTo": "button-primary",
       "description": "Update matches: the one filled action, full width at the foot of the profile column.",
       "html": "<button class=\"ds-btn-primary\">Update matches</button>",
-      "css": ":host{--ground:#ffffff;--paper:#f2f5f3;--cloth:#1d4a3d;--on-cloth:#ffffff;--ink:#15201b;--muted:#4a5751;--rule:#d4dcd8;--edge:#74827c;--accent:#1f6a55;--on-accent:#ffffff;--strong-bg:#dcefe5;--strong-fg:#164a3a;--long-bg:#eceff0;--long-fg:#3d4844;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:44px;padding:0 16px;font:600 1rem/1.2 var(--sans,'Public Sans',system-ui,sans-serif);background:var(--accent,#1f6a55);color:var(--on-accent,#fff);border:1px solid var(--accent,#1f6a55);border-radius:6px;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out}.ds-btn-primary:hover{filter:brightness(1.08)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--accent,#1f6a55);outline-offset:2px;}"
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:44px;padding:0 16px;font:600 1rem/1.2 var(--sans,'Public Sans',system-ui,sans-serif);background:var(--accent,#1d4ed8);color:var(--on-accent,#fff);border:1px solid var(--accent,#1d4ed8);border-radius:6px;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out}.ds-btn-primary:hover{filter:brightness(1.08)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:2px;}"
     },
     {
       "name": "Secondary Button",
@@ -641,7 +626,7 @@
       "refersTo": "button-secondary",
       "description": "Every other action: show more, exports, guard choices.",
       "html": "<button class=\"ds-btn\">Show 20 more</button>",
-      "css": ":host{--ground:#ffffff;--paper:#f2f5f3;--cloth:#1d4a3d;--on-cloth:#ffffff;--ink:#15201b;--muted:#4a5751;--rule:#d4dcd8;--edge:#74827c;--accent:#1f6a55;--on-accent:#ffffff;--strong-bg:#dcefe5;--strong-fg:#164a3a;--long-bg:#eceff0;--long-fg:#3d4844;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;font:600 .9375rem/1.2 var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#15201b);background:var(--ground,#fff);border:1px solid var(--edge,#74827c);border-radius:6px;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out}.ds-btn:hover{background:var(--paper,#f2f5f3);border-color:var(--ink,#15201b)}.ds-btn:active{transform:translateY(1px)}.ds-btn:focus-visible{outline:2px solid var(--accent,#1f6a55);outline-offset:2px;}"
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;font:600 .9375rem/1.2 var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d);background:var(--ground,#fff);border:1px solid var(--edge,#7a8699);border-radius:6px;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out}.ds-btn:hover{background:var(--paper,#f3f6fa);border-color:var(--ink,#0f1b2d)}.ds-btn:active{transform:translateY(1px)}.ds-btn:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:2px;}"
     },
     {
       "name": "Text Field",
@@ -649,7 +634,7 @@
       "refersTo": "input",
       "description": "Profile fields: edge border, accent border and flush ring on focus.",
       "html": "<label class=\"ds-field\"><span class=\"ds-label\">Key words</span><span class=\"ds-hint\">Separate with commas.</span><input class=\"ds-input\" type=\"text\" value=\"literacy, tutoring\"></label>",
-      "css": ":host{--ground:#ffffff;--paper:#f2f5f3;--cloth:#1d4a3d;--on-cloth:#ffffff;--ink:#15201b;--muted:#4a5751;--rule:#d4dcd8;--edge:#74827c;--accent:#1f6a55;--on-accent:#ffffff;--strong-bg:#dcefe5;--strong-fg:#164a3a;--long-bg:#eceff0;--long-fg:#3d4844;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-field{display:grid;gap:6px;font-family:var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#15201b)}.ds-label{font-size:.9375rem;font-weight:600}.ds-hint{font-size:.875rem;color:var(--muted,#4a5751)}.ds-input{width:100%;min-height:44px;padding:9px 12px;font:400 1rem/1.5 inherit;color:var(--ink,#15201b);background:var(--ground,#fff);border:1px solid var(--edge,#74827c);border-radius:6px}.ds-input:focus-visible{outline:2px solid var(--accent,#1f6a55);outline-offset:0;border-color:var(--accent,#1f6a55)}"
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-field{display:grid;gap:6px;font-family:var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d)}.ds-label{font-size:.9375rem;font-weight:600}.ds-hint{font-size:.875rem;color:var(--muted,#4a5568)}.ds-input{width:100%;min-height:44px;padding:9px 12px;font:400 1rem/1.5 inherit;color:var(--ink,#0f1b2d);background:var(--ground,#fff);border:1px solid var(--edge,#7a8699);border-radius:6px}.ds-input:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:0;border-color:var(--accent,#1d4ed8)}"
     },
     {
       "name": "Index Tabs",
@@ -657,7 +642,7 @@
       "refersTo": "index-tab-selected",
       "description": "Source tabs on a 2px cloth rule, each with its count; selected tab is cloth.",
       "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">Florida programs <span class=\"ds-count\">48</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Foundations <span class=\"ds-count\">278</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Shortlist <span class=\"ds-count\">0</span></button></div>",
-      "css": ":host{--ground:#ffffff;--paper:#f2f5f3;--cloth:#1d4a3d;--on-cloth:#ffffff;--ink:#15201b;--muted:#4a5751;--rule:#d4dcd8;--edge:#74827c;--accent:#1f6a55;--on-accent:#ffffff;--strong-bg:#dcefe5;--strong-fg:#164a3a;--long-bg:#eceff0;--long-fg:#3d4844;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:2px solid var(--cloth,#1d4a3d)}.ds-tab{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;margin-bottom:-2px;font:600 .9375rem/1.2 var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#15201b);background:var(--paper,#f2f5f3);border:0;border-bottom:2px solid var(--cloth,#1d4a3d);border-radius:6px 6px 0 0;cursor:pointer}.ds-tab:hover{background:var(--strong-bg,#dcefe5)}.ds-tab[aria-selected=true]{background:var(--cloth,#1d4a3d);color:var(--on-cloth,#fff)}.ds-tab:focus-visible{outline:2px solid var(--accent,#1f6a55);outline-offset:2px;}.ds-count{font-size:.8125rem;font-weight:650;padding:1px 7px;border-radius:999px;background:var(--ground,#fff);color:var(--ink,#15201b);font-variant-numeric:tabular-nums}.ds-tab[aria-selected=true] .ds-count{background:rgb(255 255 255 / .18);color:var(--on-cloth,#fff)}"
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:2px solid var(--cloth,#0f2747)}.ds-tab{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;margin-bottom:-2px;font:600 .9375rem/1.2 var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d);background:var(--paper,#f3f6fa);border:0;border-bottom:2px solid var(--cloth,#0f2747);border-radius:6px 6px 0 0;cursor:pointer}.ds-tab:hover{background:var(--strong-bg,#dbeafe)}.ds-tab[aria-selected=true]{background:var(--cloth,#0f2747);color:var(--on-cloth,#fff)}.ds-tab:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:2px;}.ds-count{font-size:.8125rem;font-weight:650;padding:1px 7px;border-radius:999px;background:var(--ground,#fff);color:var(--ink,#0f1b2d);font-variant-numeric:tabular-nums}.ds-tab[aria-selected=true] .ds-count{background:rgb(255 255 255 / .18);color:var(--on-cloth,#fff)}"
     },
     {
       "name": "Tier Chips",
@@ -665,7 +650,7 @@
       "refersTo": "tier-strong",
       "description": "Strong, possible and long shot labels that lead every score rule.",
       "html": "<span class=\"ds-tier ds-strong\">Strong match</span> <span class=\"ds-tier ds-possible\">Possible match</span> <span class=\"ds-tier ds-long\">Long shot</span>",
-      "css": ":host{--ground:#ffffff;--paper:#f2f5f3;--cloth:#1d4a3d;--on-cloth:#ffffff;--ink:#15201b;--muted:#4a5751;--rule:#d4dcd8;--edge:#74827c;--accent:#1f6a55;--on-accent:#ffffff;--strong-bg:#dcefe5;--strong-fg:#164a3a;--long-bg:#eceff0;--long-fg:#3d4844;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-tier{display:inline-block;font:700 .8125rem/1.3 var(--sans,'Public Sans',system-ui,sans-serif);padding:2px 9px;border-radius:999px;white-space:nowrap}.ds-strong{background:var(--strong-bg,#dcefe5);color:var(--strong-fg,#164a3a)}.ds-possible{color:var(--accent,#1f6a55);box-shadow:inset 0 0 0 1px var(--accent,#1f6a55)}.ds-long{background:var(--long-bg,#eceff0);color:var(--long-fg,#3d4844)}"
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-tier{display:inline-block;font:700 .8125rem/1.3 var(--sans,'Public Sans',system-ui,sans-serif);padding:2px 9px;border-radius:999px;white-space:nowrap}.ds-strong{background:var(--strong-bg,#dbeafe);color:var(--strong-fg,#1e3a8a)}.ds-possible{color:var(--accent,#1d4ed8);box-shadow:inset 0 0 0 1px var(--accent,#1d4ed8)}.ds-long{background:var(--long-bg,#eef1f5);color:var(--long-fg,#374151)}"
     },
     {
       "name": "Score Rule",
@@ -673,7 +658,7 @@
       "refersTo": "score-rule",
       "description": "The signature: one fixed 0 to 100 track with marks at 35 and 60, then the score in tabular figures.",
       "html": "<span class=\"ds-score\"><span class=\"ds-tier ds-strong\">Strong match</span><span class=\"ds-rule\"><span class=\"ds-fill\" style=\"width:72%\"></span><span class=\"ds-mark\" style=\"left:35%\"></span><span class=\"ds-mark\" style=\"left:60%\"></span></span><span class=\"ds-num\">72</span></span>",
-      "css": ":host{--ground:#ffffff;--paper:#f2f5f3;--cloth:#1d4a3d;--on-cloth:#ffffff;--ink:#15201b;--muted:#4a5751;--rule:#d4dcd8;--edge:#74827c;--accent:#1f6a55;--on-accent:#ffffff;--strong-bg:#dcefe5;--strong-fg:#164a3a;--long-bg:#eceff0;--long-fg:#3d4844;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-score{display:inline-flex;align-items:center;gap:10px;font-family:var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#15201b)}.ds-tier{font-size:.8125rem;font-weight:700;padding:2px 9px;border-radius:999px}.ds-strong{background:var(--strong-bg,#dcefe5);color:var(--strong-fg,#164a3a)}.ds-rule{position:relative;width:7.5rem;height:6px;border-radius:999px;background:var(--rule,#d4dcd8)}.ds-fill{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:var(--accent,#1f6a55)}.ds-mark{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--ink,#15201b);opacity:.55}.ds-num{font-weight:700;font-size:.9375rem;font-variant-numeric:tabular-nums}"
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-score{display:inline-flex;align-items:center;gap:10px;font-family:var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d)}.ds-tier{font-size:.8125rem;font-weight:700;padding:2px 9px;border-radius:999px}.ds-strong{background:var(--strong-bg,#dbeafe);color:var(--strong-fg,#1e3a8a)}.ds-rule{position:relative;width:7.5rem;height:6px;border-radius:999px;background:var(--rule,#dbe2ea)}.ds-fill{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:var(--accent,#1d4ed8)}.ds-mark{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--ink,#0f1b2d);opacity:.55}.ds-num{font-weight:700;font-size:.9375rem;font-variant-numeric:tabular-nums}"
     },
     {
       "name": "Directory Entry",
@@ -681,14 +666,14 @@
       "refersTo": "score-rule",
       "description": "A ruled listing, not a card: score line with right-aligned deadline, serif name, catalog number and run-in facts, reasons.",
       "html": "<article class=\"ds-entry\"><div class=\"ds-head\"><span class=\"ds-score\"><span class=\"ds-tier\">Strong match</span><span class=\"ds-rule\"><span class=\"ds-fill\" style=\"width:84%\"></span><span class=\"ds-mark\" style=\"left:35%\"></span><span class=\"ds-mark\" style=\"left:60%\"></span></span><b class=\"ds-num\">84</b></span><span class=\"ds-side\">Due Mar 3, 2027</span></div><h3 class=\"ds-name\"><a href=\"#\">Family Café</a></h3><p class=\"ds-facts\"><span class=\"ds-cat\">CSFA 48.149</span> · Department of Education · Paid as grants</p><ul class=\"ds-why\"><li><span class=\"ds-ok\">✓</span>Mentions children, students</li><li><span class=\"ds-warn\">!</span>Cost sharing required</li></ul></article>",
-      "css": ":host{--ground:#ffffff;--paper:#f2f5f3;--cloth:#1d4a3d;--on-cloth:#ffffff;--ink:#15201b;--muted:#4a5751;--rule:#d4dcd8;--edge:#74827c;--accent:#1f6a55;--on-accent:#ffffff;--strong-bg:#dcefe5;--strong-fg:#164a3a;--long-bg:#eceff0;--long-fg:#3d4844;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-entry{display:grid;gap:8px;padding:20px 0 12px;border-top:1px solid var(--rule,#d4dcd8);border-bottom:1px solid var(--rule,#d4dcd8);font:400 1rem/1.5 var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#15201b)}.ds-head{display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap}.ds-score{display:inline-flex;align-items:center;gap:10px}.ds-tier{font-size:.8125rem;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--strong-bg,#dcefe5);color:var(--strong-fg,#164a3a)}.ds-rule{position:relative;width:7.5rem;height:6px;border-radius:999px;background:var(--rule,#d4dcd8)}.ds-fill{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:var(--accent,#1f6a55)}.ds-mark{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--ink,#15201b);opacity:.55}.ds-num,.ds-side,.ds-cat{font-variant-numeric:tabular-nums}.ds-side{font-size:.9375rem;font-weight:600;white-space:nowrap}.ds-name{margin:0;font:600 1.25rem/1.3 var(--serif,'Source Serif 4',Georgia,serif)}.ds-name a{color:inherit;text-decoration:none}.ds-name a:hover{color:var(--accent,#1f6a55);text-decoration:underline}.ds-name a:focus-visible{outline:2px solid var(--accent,#1f6a55);outline-offset:2px;}.ds-facts{margin:0;font-size:.875rem;color:var(--muted,#4a5751)}.ds-cat{color:var(--ink,#15201b);font-weight:600}.ds-why{list-style:none;margin:0;padding:0;display:grid;gap:5px}.ds-why li{display:flex;gap:8px}.ds-ok{color:var(--accent,#1f6a55)}.ds-warn{color:var(--caution,#8a5a00);font-weight:700}"
+      "css": ":host{--ground:#ffffff;--paper:#f3f6fa;--cloth:#0f2747;--on-cloth:#ffffff;--ink:#0f1b2d;--muted:#4a5568;--rule:#dbe2ea;--edge:#7a8699;--accent:#1d4ed8;--on-accent:#ffffff;--strong-bg:#dbeafe;--strong-fg:#1e3a8a;--long-bg:#eef1f5;--long-fg:#374151;--caution:#8a5a00;--sans:\"Public Sans Variable\",\"Public Sans\",system-ui,sans-serif;--serif:\"Source Serif 4 Variable\",\"Source Serif 4\",Georgia,serif;--r:6px}.ds-entry{display:grid;gap:8px;padding:20px 0 12px;border-top:1px solid var(--rule,#dbe2ea);border-bottom:1px solid var(--rule,#dbe2ea);font:400 1rem/1.5 var(--sans,'Public Sans',system-ui,sans-serif);color:var(--ink,#0f1b2d)}.ds-head{display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap}.ds-score{display:inline-flex;align-items:center;gap:10px}.ds-tier{font-size:.8125rem;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--strong-bg,#dbeafe);color:var(--strong-fg,#1e3a8a)}.ds-rule{position:relative;width:7.5rem;height:6px;border-radius:999px;background:var(--rule,#dbe2ea)}.ds-fill{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:var(--accent,#1d4ed8)}.ds-mark{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--ink,#0f1b2d);opacity:.55}.ds-num,.ds-side,.ds-cat{font-variant-numeric:tabular-nums}.ds-side{font-size:.9375rem;font-weight:600;white-space:nowrap}.ds-name{margin:0;font:600 1.25rem/1.3 var(--serif,'Source Serif 4',Georgia,serif)}.ds-name a{color:inherit;text-decoration:none}.ds-name a:hover{color:var(--accent,#1d4ed8);text-decoration:underline}.ds-name a:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:2px;}.ds-facts{margin:0;font-size:.875rem;color:var(--muted,#4a5568)}.ds-cat{color:var(--ink,#0f1b2d);font-weight:600}.ds-why{list-style:none;margin:0;padding:0;display:grid;gap:5px}.ds-why li{display:flex;gap:8px}.ds-ok{color:var(--accent,#1d4ed8)}.ds-warn{color:var(--caution,#8a5a00);font-weight:700}"
     }
   ],
   "narrative": {
     "northStar": "The reference shelf directory",
-    "overview": "**Creative North Star: \"The reference shelf directory\"**\n\nGrant Matcher looks like the printed funding directory a librarian keeps behind the desk, rebuilt to read your mission back to you. A band of book-cloth green holds the name, the one-line answer and the Grants.gov notice. Below it, results are dense listings set on hairline rules on plain ground, not floating cards: a ranked score on one fixed scale, the funder's name in a text serif, a catalog number in tabular figures, then run-in facts and the reasons that a grant fits or could sink you.\n\nThe system is calm, sturdy and plain. Type does the ranking quietly because a fixed visual scale carries the rank. There is one accent color, and status colors appear only when they mean something. It refuses the category default of a grey filter sidebar beside interchangeable soft cards, and it must never read as a slick startup: no gradients, no hype, no decoration for its own sake.\n\nThe public static site in `web/` is the source of this system. The Streamlit workspace (`app.py`) predates it and is not the reference for new public surfaces.",
+    "overview": "**Creative North Star: \"The reference shelf directory\"**\n\nGrant Matcher looks like the printed funding directory a librarian keeps behind the desk, rebuilt to read your mission back to you. A navy band holds the name, the one-line answer and the Grants.gov notice. Below it, results are dense listings set on hairline rules on plain ground, not floating cards: a ranked score on one fixed scale, the funder's name in a text serif, a catalog number in tabular figures, then run-in facts and the reasons that a grant fits or could sink you.\n\nThe system is calm, sturdy and plain. Type does the ranking quietly because a fixed visual scale carries the rank. There is one accent color, and status colors appear only when they mean something. It refuses the category default of a grey filter sidebar beside interchangeable soft cards, and it must never read as a slick startup: no gradients, no hype, no decoration for its own sake.\n\nThe public static site in `web/` is the source of this system. The Streamlit workspace (`app.py`) predates it and is not the reference for new public surfaces.",
     "keyCharacteristics": [
-      "Book-cloth green band and selected index tab; plain white ground in light, deep green-black in dark, never cream.",
+      "Navy band and selected index tab; plain white ground in light, deep blue-black in dark, never cream.",
       "Public Sans for every working word; Source Serif 4 for funder and entry names only.",
       "Ruled directory listings, not cards.",
       "One score rule, one fixed 0 to 100 scale, the same on every entry.",
@@ -696,8 +681,8 @@
     ],
     "rules": [
       {
-        "name": "The One Green Voice Rule",
-        "body": "There is one accent. Cloth green is structure, accent green is action and rank; no third hue joins them.",
+        "name": "The One Blue Voice Rule",
+        "body": "There is one accent. Navy is structure, civic blue is action and rank; no third hue joins them.",
         "section": "colors"
       },
       {
@@ -707,7 +692,7 @@
       },
       {
         "name": "The No Cream Rule",
-        "body": "Ground is plain white in light and deep green-black in dark. Warm paper tints are not part of this world.",
+        "body": "Ground is plain white in light and deep blue-black in dark. Warm paper tints are not part of this world.",
         "section": "colors"
       },
       {
@@ -729,7 +714,7 @@
     "dos": [
       "Do keep every target at least 44px tall, including entry name links and summary rows.",
       "Do show the 2px accent focus ring with a 2px offset on every focusable element (on-cloth inside the band).",
-      "Do hold AA contrast in light and dark; the built system measures its lowest text contrast at 5.98:1 in light and 6.59:1 in dark.",
+      "Do hold AA contrast in light and dark; the built system measures its lowest text contrast at 6.7:1 in light and 7.27:1 in dark.",
       "Do put the score rule on every entry, on the one fixed 0 to 100 scale with marks at 35 and 60, and print its key under each tally.",
       "Do right-align deadlines in ink 600 tabular figures and keep award sizes muted.",
       "Do set funder and entry names in Source Serif 4 and everything else in Public Sans.",
@@ -743,7 +728,7 @@
       "Don't use the serif for headings, numbers, labels or buttons.",
       "Don't rescale the score rule per list or drop the 35 and 60 marks.",
       "Don't use cream or warm paper grounds, gradients, or decorative imagery.",
-      "Don't use cloth green as a button fill; it is the band and the selected tab only."
+      "Don't use navy as a button fill; it is the band and the selected tab only."
     ]
   }
 }

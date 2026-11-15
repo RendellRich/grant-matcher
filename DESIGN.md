@@ -3,38 +3,37 @@ name: Grant Matcher
 description: The funding directory on the reference shelf, ranked against your own mission.
 colors:
   ground: "#ffffff"
-  paper: "#f2f5f3"
-  cloth: "#1d4a3d"
+  paper: "#f3f6fa"
+  cloth: "#0f2747"
   on-cloth: "#ffffff"
-  on-cloth-muted: "#cfe0d8"
-  ink: "#15201b"
-  muted: "#4a5751"
-  rule: "#d4dcd8"
-  edge: "#74827c"
-  accent: "#1f6a55"
+  on-cloth-muted: "#c7d4e6"
+  ink: "#0f1b2d"
+  muted: "#4a5568"
+  rule: "#dbe2ea"
+  edge: "#7a8699"
+  accent: "#1d4ed8"
   on-accent: "#ffffff"
-  strong-bg: "#dcefe5"
-  strong-fg: "#164a3a"
-  long-bg: "#eceff0"
-  long-fg: "#3d4844"
+  strong-bg: "#dbeafe"
+  strong-fg: "#1e3a8a"
+  long-bg: "#eef1f5"
+  long-fg: "#374151"
   caution: "#8a5a00"
   error: "#b3261e"
-  ground-dark: "#0e1412"
-  paper-dark: "#141c19"
-  hover-dark: "#18221e"
-  cloth-dark: "#143a2f"
-  on-cloth-dark: "#f1f6f3"
-  on-cloth-muted-dark: "#b8cdc4"
-  ink-dark: "#e4ebe8"
-  muted-dark: "#a6b4ae"
-  rule-dark: "#2a3732"
-  edge-dark: "#6f8079"
-  accent-dark: "#7ccbb0"
-  on-accent-dark: "#0e1412"
-  strong-bg-dark: "#1b4034"
-  strong-fg-dark: "#b3ead0"
-  long-bg-dark: "#222b28"
-  long-fg-dark: "#c4cec9"
+  ground-dark: "#0b1220"
+  paper-dark: "#111a2b"
+  cloth-dark: "#132c50"
+  on-cloth-dark: "#f1f5fb"
+  on-cloth-muted-dark: "#b9c7da"
+  ink-dark: "#e6ebf2"
+  muted-dark: "#a3b0c2"
+  rule-dark: "#243049"
+  edge-dark: "#6b7a92"
+  accent-dark: "#8ab4ff"
+  on-accent-dark: "#0b1220"
+  strong-bg-dark: "#1e3a8a"
+  strong-fg-dark: "#dbeafe"
+  long-bg-dark: "#1c2537"
+  long-fg-dark: "#cbd5e1"
   caution-dark: "#e3b65c"
   error-dark: "#ff8f86"
 typography:
@@ -177,14 +176,14 @@ components:
 
 **Creative North Star: "The reference shelf directory"**
 
-Grant Matcher looks like the printed funding directory a librarian keeps behind the desk, rebuilt to read your mission back to you. A band of book-cloth green holds the name, the one-line answer and the Grants.gov notice. Below it, results are dense listings set on hairline rules on plain ground, not floating cards: a ranked score on one fixed scale, the funder's name in a text serif, a catalog number in tabular figures, then run-in facts and the reasons that a grant fits or could sink you.
+Grant Matcher looks like the printed funding directory a librarian keeps behind the desk, rebuilt to read your mission back to you. A navy band holds the name, the one-line answer and the Grants.gov notice. Below it, results are dense listings set on hairline rules on plain ground, not floating cards: a ranked score on one fixed scale, the funder's name in a text serif, a catalog number in tabular figures, then run-in facts and the reasons that a grant fits or could sink you.
 
 The system is calm, sturdy and plain. Type does the ranking quietly because a fixed visual scale carries the rank. There is one accent color, and status colors appear only when they mean something. It refuses the category default of a grey filter sidebar beside interchangeable soft cards, and it must never read as a slick startup: no gradients, no hype, no decoration for its own sake.
 
 The public static site in `web/` is the source of this system. The Streamlit workspace (`app.py`) predates it and is not the reference for new public surfaces.
 
 **Key Characteristics:**
-- Book-cloth green band and selected index tab; plain white ground in light, deep green-black in dark, never cream.
+- Navy band and selected index tab; plain white ground in light, deep blue-black in dark, never cream.
 - Public Sans for every working word; Source Serif 4 for funder and entry names only.
 - Ruled directory listings, not cards.
 - One score rule, one fixed 0 to 100 scale, the same on every entry.
@@ -192,14 +191,14 @@ The public static site in `web/` is the source of this system. The Streamlit wor
 
 ## Colors
 
-A narrow green world: one cloth green for the shell, one accent green for action and rank, cool green-grey neutrals, and two status colors held back for meaning.
+A narrow blue world: one navy for the shell, one civic blue accent for action and rank, cool blue-grey neutrals, and two status colors held back for meaning.
 
 ### Primary
-- **Book-cloth green** (cloth): the header band and the selected index tab, plus the 2px rule under the tab row and above "Getting ready to apply". It is the binding of the book, never a button fill.
-- **Reading-lamp green** (accent): the primary button, links, focus rings, the score rule fill, the selected segment, checkbox and range controls, fit icons and the "On shortlist" state. In dark mode it lifts to a pale mint (accent-dark) and its text partner turns dark (on-accent-dark).
+- **Binding navy** (cloth): the header band and the selected index tab, plus the 2px rule under the tab row and above "Getting ready to apply". It is the binding of the book, never a button fill.
+- **Civic blue** (accent): the primary button, links, focus rings, the score rule fill, the selected segment, checkbox and range controls, fit icons and the "On shortlist" state. In dark mode it lifts to a pale sky blue (accent-dark) and its text partner turns dark (on-accent-dark).
 
 ### Neutral
-- **Plain ground** (ground): page background. White in light, deep green-black in dark.
+- **Plain ground** (ground): page background. White in light, deep blue-black in dark.
 - **Shelf paper** (paper): quiet fills: unselected tabs, notes, button hover in light.
 - **Ink** (ink): body text, entry names, deadlines, catalog numbers.
 - **Muted ink** (muted): hints, run-in facts, award sizes, the printed key, the long shot rule fill.
@@ -212,11 +211,11 @@ A narrow green world: one cloth green for the shell, one accent green for action
 - **Error red** (error): error text. Nothing else.
 
 ### Named Rules
-**The One Green Voice Rule.** There is one accent. Cloth green is structure, accent green is action and rank; no third hue joins them.
+**The One Blue Voice Rule.** There is one accent. Navy is structure, civic blue is action and rank; no third hue joins them.
 
 **The Meaning-Only Status Rule.** Amber appears only for cautions and red only for errors. Never use either to decorate, highlight or brand.
 
-**The No Cream Rule.** Ground is plain white in light and deep green-black in dark. Warm paper tints are not part of this world.
+**The No Cream Rule.** Ground is plain white in light and deep blue-black in dark. Warm paper tints are not part of this world.
 
 ## Typography
 
@@ -308,7 +307,7 @@ Paper fill, 6px corners, 12px by 16px padding, max 66ch. A warning note adds a 1
 ### Do:
 - **Do** keep every target at least 44px tall, including entry name links and summary rows.
 - **Do** show the 2px accent focus ring with a 2px offset on every focusable element (on-cloth inside the band).
-- **Do** hold AA contrast in light and dark; the built system measures its lowest text contrast at 5.98:1 in light and 6.59:1 in dark.
+- **Do** hold AA contrast in light and dark; the built system measures its lowest text contrast at 6.7:1 in light and 7.27:1 in dark.
 - **Do** put the score rule on every entry, on the one fixed 0 to 100 scale with marks at 35 and 60, and print its key under each tally.
 - **Do** right-align deadlines in ink 600 tabular figures and keep award sizes muted.
 - **Do** set funder and entry names in Source Serif 4 and everything else in Public Sans.
@@ -322,4 +321,4 @@ Paper fill, 6px corners, 12px by 16px padding, max 66ch. A warning note adds a 1
 - **Don't** use the serif for headings, numbers, labels or buttons.
 - **Don't** rescale the score rule per list or drop the 35 and 60 marks.
 - **Don't** use cream or warm paper grounds, gradients, or decorative imagery.
-- **Don't** use cloth green as a button fill; it is the band and the selected tab only.
+- **Don't** use navy as a button fill; it is the band and the selected tab only.

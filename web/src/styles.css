@@ -1,26 +1,26 @@
-/* Grant Matcher: the funding directory on the reference shelf. Book-cloth green owns the band and the
-   selected index tab; entries are ruled listings on plain ground. One accent (green); amber only for
+/* Grant Matcher: the funding directory on the reference shelf. Navy owns the band and the selected
+   index tab; entries are ruled listings on plain ground. One accent (civic blue); amber only for
    cautions, red only for errors. Light and dark follow the system setting. */
 
 :root {
   --ground: #ffffff;
-  --paper: #f2f5f3;
-  --cloth: #1d4a3d;
+  --paper: #f3f6fa;
+  --cloth: #0f2747;
   --on-cloth: #ffffff;
-  --on-cloth-muted: #cfe0d8;
-  --ink: #15201b;
-  --muted: #4a5751;
-  --rule: #d4dcd8;
-  --edge: #74827c;
-  --accent: #1f6a55;
+  --on-cloth-muted: #c7d4e6;
+  --ink: #0f1b2d;
+  --muted: #4a5568;
+  --rule: #dbe2ea;
+  --edge: #7a8699;
+  --accent: #1d4ed8;
   --on-accent: #ffffff;
-  --strong-bg: #dcefe5;
-  --strong-fg: #164a3a;
-  --long-bg: #eceff0;
-  --long-fg: #3d4844;
+  --strong-bg: #dbeafe;
+  --strong-fg: #1e3a8a;
+  --long-bg: #eef1f5;
+  --long-fg: #374151;
   --caution: #8a5a00;
   --error: #b3261e;
-  --hover: #f2f5f3;
+  --hover: #f3f6fa;
 
   --sans: "Public Sans Variable", "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --serif: "Source Serif 4 Variable", "Source Serif 4", Georgia, serif;
@@ -30,24 +30,24 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ground: #0e1412;
-    --paper: #141c19;
-    --cloth: #143a2f;
-    --on-cloth: #f1f6f3;
-    --on-cloth-muted: #b8cdc4;
-    --ink: #e4ebe8;
-    --muted: #a6b4ae;
-    --rule: #2a3732;
-    --edge: #6f8079;
-    --accent: #7ccbb0;
-    --on-accent: #0e1412;
-    --strong-bg: #1b4034;
-    --strong-fg: #b3ead0;
-    --long-bg: #222b28;
-    --long-fg: #c4cec9;
+    --ground: #0b1220;
+    --paper: #111a2b;
+    --cloth: #132c50;
+    --on-cloth: #f1f5fb;
+    --on-cloth-muted: #b9c7da;
+    --ink: #e6ebf2;
+    --muted: #a3b0c2;
+    --rule: #243049;
+    --edge: #6b7a92;
+    --accent: #8ab4ff;
+    --on-accent: #0b1220;
+    --strong-bg: #1e3a8a;
+    --strong-fg: #dbeafe;
+    --long-bg: #1c2537;
+    --long-fg: #cbd5e1;
     --caution: #e3b65c;
     --error: #ff8f86;
-    --hover: #18221e;
+    --hover: #111a2b;
     color-scheme: dark;
   }
 }
@@ -120,7 +120,7 @@ input[type="text"], textarea, select {
 }
 textarea { resize: vertical; line-height: 1.45; }
 select { appearance: none; padding-right: 2.25rem; cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2374827c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237a8699' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right .625rem center; background-size: 1.125rem; }
 input[type="text"]:focus-visible, textarea:focus-visible, select:focus-visible { outline-offset: 0; border-color: var(--accent); }
 ::placeholder { color: var(--muted); opacity: 1; }
