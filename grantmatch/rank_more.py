@@ -6,7 +6,7 @@ from statistics import median
 
 import pandas as pd
 
-from .match import BUDGET_BANDS, SEMANTIC_SPREAD, Profile, _keyword_hits, _money
+from .match import BUDGET_BANDS, SEMANTIC_SPREAD, current_band, Profile, _keyword_hits, _money
 
 NO_UNSOLICITED = re.compile(
     r"(no|not accept\w*|does not (accept|consider)|do not (accept|consider)) unsolicited|unsolicited (requests|applications|proposals) (are )?not"
@@ -65,7 +65,7 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
         + " " + " ".join(r["top_recipients"]), axis=1)
     weights, best3 = _keyword_weights(p.keywords, df["purpose_text"])
     fit = _scale(semantic, df["ein"])
-    budget = BUDGET_BANDS.get(p.budget_band, 250_000)
+    budget = BUDGET_BANDS.get(current_band(p.budget_band), 250_000)
     city_set = {c.strip().lower() for c in cities if c.strip()}
 
     rows = []

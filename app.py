@@ -19,7 +19,7 @@ from grantmatch.display import (STATE_NAMES, STATES, assistance_label, bracket_c
 from grantmatch import ui_workspace as uiw
 from grantmatch import workspace as wsp
 from grantmatch.store import GitHubStore, LocalStore, StoreError
-from grantmatch.match import BUDGET_BANDS, CATEGORY_NAMES, Profile, _money, load_frame, score, to_ics
+from grantmatch.match import BUDGET_BANDS, CATEGORY_NAMES, Profile, current_band, _money, load_frame, score, to_ics
 from grantmatch.rank_more import score_florida, score_foundations
 
 RELEASE = "https://github.com/RendellRich/grant-matcher/releases/download/data-latest/"
@@ -652,8 +652,8 @@ def _load_profile(data: dict) -> None:
         ss["state"] = data["state"]
     if data.get("has_501c3") in ("Yes", "Pending", "No"):
         ss["has_501c3"] = data["has_501c3"]
-    if data.get("budget_band") in BUDGET_BANDS:
-        ss["budget_band"] = data["budget_band"]
+    if current_band(data.get("budget_band")) in BUDGET_BANDS:
+        ss["budget_band"] = current_band(data["budget_band"])
     ss["can_cost_share"] = bool(data.get("can_cost_share", False))
     ss["fed_categories"] = [c for c in data.get("categories", []) if c in CATEGORY_NAMES]
     ss["fed_forecast"] = bool(data.get("include_forecasted", True))

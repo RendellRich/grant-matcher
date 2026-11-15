@@ -3,11 +3,20 @@
 // Python rounds halves to even and formats with its own rules, so those are copied too.
 
 export const BUDGET_BANDS: Record<string, number> = {
-  "Under $50k": 50_000,
+  "Under $10k": 10_000,
+  "$10k to $50k": 50_000,
   "$50k to $250k": 250_000,
   "$250k to $1M": 1_000_000,
   "Over $1M": 5_000_000,
 };
+
+/** Band names saved in profiles before the small bands were split, mapped to the band that took their place. */
+const OLD_BUDGET_BANDS: Record<string, string> = { "Under $50k": "$10k to $50k" };
+
+/** The band a saved name means today, so profiles saved before a rename still load. */
+export function currentBand(name: string): string {
+  return OLD_BUDGET_BANDS[name] ?? name;
+}
 
 export const CATEGORY_NAMES: Record<string, string> = {
   AG: "Agriculture", AR: "Arts", BC: "Business and commerce", CD: "Community development",
@@ -246,7 +255,7 @@ export function scoreFederal(records: FederalRec[], p: Profile, semantic: Map<st
 
   const texts = work.map((r) => (r.title + " " + r.description).toLowerCase());
   const [weights, best3] = keywordWeights(p.keywords, texts);
-  const budget = BUDGET_BANDS[p.budgetBand] ?? 250_000;
+  const budget = BUDGET_BANDS[currentBand(p.budgetBand)] ?? 250_000;
   const allUndated = work.every((r) => r.days_left === null);
   const out: Scored<FederalRec & FederalExtra>[] = [];
 
@@ -353,7 +362,7 @@ export function scoreFoundations(records: FoundationRec[], p: Profile, state: st
     + " " + r.top_recipients.join(" "));
   const [weights, best3] = keywordWeights(p.keywords, purposeText.map((t) => t.toLowerCase()));
   const fit = scaler(semantic);
-  const budget = BUDGET_BANDS[p.budgetBand] ?? 250_000;
+  const budget = BUDGET_BANDS[currentBand(p.budgetBand)] ?? 250_000;
   const citySet = new Set(cities.map((c) => c.trim().toLowerCase()).filter(Boolean));
   const out: Scored<FoundationOut>[] = [];
 

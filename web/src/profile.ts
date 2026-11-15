@@ -1,4 +1,4 @@
-import { BUDGET_BANDS, CATEGORY_NAMES } from "./score";
+import { BUDGET_BANDS, CATEGORY_NAMES, currentBand } from "./score";
 
 export const STATE_NAMES: Record<string, string> = {
   AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California", CO: "Colorado", CT: "Connecticut",
@@ -47,7 +47,7 @@ export function parseProfile(text: string): ProfileForm {
     cities: String(d.cities ?? ""),
     state: d.state in STATE_NAMES ? d.state : "FL",
     has_501c3: ["Yes", "Pending", "No"].includes(d.has_501c3) ? d.has_501c3 : "Yes",
-    budget_band: d.budget_band in BUDGET_BANDS ? d.budget_band : "$50k to $250k",
+    budget_band: currentBand(d.budget_band) in BUDGET_BANDS ? currentBand(d.budget_band) : "$50k to $250k",
     can_cost_share: Boolean(d.can_cost_share),
     categories: Array.isArray(d.categories) ? d.categories.filter((c: string) => c in CATEGORY_NAMES) : [],
     include_forecasted: d.include_forecasted === undefined ? true : Boolean(d.include_forecasted),

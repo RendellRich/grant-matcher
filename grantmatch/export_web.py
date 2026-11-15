@@ -189,9 +189,10 @@ def main() -> None:
 # with the other eligibility answers and filters, so every branch of the rules is reached.
 VARIANTS = [
     {},
-    {"has_501c3": "No", "budget_band": "Under $50k"},
+    {"has_501c3": "No", "budget_band": "Under $10k"},
     {"has_501c3": "Pending", "can_cost_share": True, "budget_band": "Over $1M", "include_forecasted": False,
      "min_days_left": 30, "show_preselected": True, "show_earmarks": True, "categories": []},
+    {"budget_band": "Under $50k"},  # a band name from before the split, read as $10k to $50k
 ]
 GOLDEN_DAY = date(2026, 11, 14)
 
