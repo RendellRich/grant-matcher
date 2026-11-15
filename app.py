@@ -24,6 +24,7 @@ from grantmatch.rank_more import score_florida, score_foundations
 
 RELEASE = "https://github.com/RendellRich/grant-matcher/releases/download/data-latest/"
 LOCAL_DIR = Path(__file__).parent / "data"
+SITE_URL = "https://rendellrich.github.io/grant-matcher/"
 NOTICE = "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services."
 
 PRESETS = {
@@ -534,6 +535,8 @@ st.markdown(
     "<p class='gm-lead'>Grants a small nonprofit can realistically go after,<span class='gm-wide'> from federal "
     "programs, private and community foundations, and Florida state programs,</span> ranked against your mission "
     "with the reasons spelled out.</p>"
+    f"<p class='gm-note'>There's a faster version of this search at <a href='{SITE_URL}'>rendellrich.github.io/grant-matcher</a>. "
+    "It runs in your browser, so your mission never leaves your device. Sign in here if you use a saved workspace.</p>"
     f"<p class='gm-notice'>{NOTICE}</p>",
     unsafe_allow_html=True,
 )
