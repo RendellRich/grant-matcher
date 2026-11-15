@@ -47,6 +47,8 @@ const NO_UNSOLICITED = new RegExp(
   + "|by invitation only|invitation only|only to pre-?selected|preselected", "i");
 const SCHOLARSHIP = /\bscholarships?\b|\btuition\b|\bstudent aid\b/i;
 const SCHOLARSHIP_G = /\bscholarships?\b|\btuition\b|\bstudent aid\b/gi;
+const SCHOLARSHIP_SHARE = 0.6; // share of a foundation's listed grants that are scholarships before it counts as a scholarship fund
+const SCHOLARSHIP_PENALTY = 40; // enough to take a scholarship fund out of the strong tier
 const COMPETITIVE = /\b(competitive|request for (applications|proposals)|rfa|rfp|solicitation|notice of funding|scored|review panel)\b/i;
 const STUDENT_GRANT = /\bstudent (assistance|aid) grant|tuition/i;
 
@@ -429,9 +431,13 @@ export function scoreFoundations(records: FoundationRec[], p: Profile, state: st
       points -= 30; cautions.push("Says it does not accept unsolicited requests");
     }
     if (Object.keys(apply).length && (apply.materials || apply.contact)) reasons.push("Publishes how to apply");
+    // Scholarship funds pay students (or a college on a student's behalf), so a nonprofit cannot apply.
+    // Judge by what its grants were for: most of the listed grants, or a purpose list made of scholarships.
+    const samples = r.sample_grants;
+    const scholar = samples.filter((g) => SCHOLARSHIP.test(g.purpose)).length;
     const purposes = r.top_purposes.slice(0, 10).join(" ");
-    if (SCHOLARSHIP.test(purposes) && (purposes.match(SCHOLARSHIP_G)?.length ?? 0) >= 3) {
-      points -= 15; cautions.push("Mostly scholarships for individuals");
+    if ((samples.length && scholar / samples.length >= SCHOLARSHIP_SHARE) || (purposes.match(SCHOLARSHIP_G)?.length ?? 0) >= 3) {
+      points -= SCHOLARSHIP_PENALTY; cautions.push("Mostly scholarships paid to students, not grants to organizations");
     }
 
     if (n < 3) points = Math.min(points, 55); // too little history to call it a strong match
