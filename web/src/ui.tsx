@@ -52,7 +52,10 @@ export function EntryView(p: { e: Entry; marked: boolean; onMark: (e: Entry) => 
           ) : <span id={p.id} tabIndex={-1}>{e.title}</span>}
         </h3>
         <div class="entry-head">
-          <ScoreRule score={e.score} tier={e.tier} />
+          <span class="head-score">
+            <ScoreRule score={e.score} tier={e.tier} />
+            {e.isNew ? <span class="tag-new">New<span class="sr-only"> since your last visit</span></span> : null}
+          </span>
           {e.side ? <span class={`side${e.sideQuiet ? " quiet" : ""}`}>{e.side}</span> : null}
         </div>
       </div>

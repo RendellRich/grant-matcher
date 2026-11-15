@@ -303,7 +303,10 @@ Each reason is one line with an 18px stroke icon: an accent check for fits, an a
 Paper fill, 6px corners, 12px by 16px padding, max 66ch. A warning note adds a 1px caution inset outline.
 
 ### Filter bar
-Sits under each tally, above "More filters and how the score works", on a top rule. One row of standard 44px fields that wraps: "Search these results" (grows; its words carry across tabs and must all appear somewhere in an entry, details included), then the source's own choices (award size, closes by and agency for federal grants; typical grant and three checkboxes for foundations; agency for Florida programs). Filters narrow what is shown and never change a score. When any is on, a muted status line reads "Showing N of M" with an accent "Clear filters" text button.
+Sits under each tally, above "More filters and how the score works", on a top rule. One row of standard 44px fields that wraps: "Search these results" (grows; its words carry across tabs and must all appear somewhere in an entry, details included), then the source's own choices (award size, closes by and agency for federal grants; typical grant and three checkboxes for foundations; agency for Florida programs). Filters narrow what is shown and never change a score. When any is on, a muted status line reads "Showing N of M" with an accent "Clear filters" text button. When the profile's 501(c)(3) status isn't Yes, foundations get a fourth checkbox, "Don't ask for 501(c)(3) proof". After a return visit with new records, every source gets "Only new since your last visit on {date} (N)".
+
+### New tag
+A small word, "New", in the accent with a 1px accent border and the standard radius, beside the score rule. Screen readers hear "New since your last visit". Never colour alone.
 
 ## Do's and Don'ts
 

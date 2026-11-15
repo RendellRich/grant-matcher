@@ -1,5 +1,5 @@
 // Turns scored records from each source into one shape the result list draws.
-import { fmtDate, money, type FederalExtra, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier } from "./score";
+import { asks501c3, fmtDate, money, type FederalExtra, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier } from "./score";
 
 export type SourceKey = "fl" | "fdn" | "fed";
 
@@ -39,6 +39,8 @@ export interface Entry {
   publishesApply?: boolean;
   closedToUnsolicited?: boolean;
   local?: boolean; // based in, or has funded groups in, one of the person's cities
+  asks501c3?: boolean; // a foundation whose how-to-apply text asks for 501(c)(3) status
+  isNew?: boolean; // in the data now but not at the person's last visit (set by the app, not the scorer)
 }
 
 const STATUS = ["Forecast, not open yet"];
@@ -142,6 +144,7 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
     publishesApply: s.reasons.includes("Publishes how to apply"),
     closedToUnsolicited: s.cautions.includes("Says it does not accept unsolicited requests"),
     local: s.reasons.some((x) => x.startsWith("Funded ") || x.startsWith("Based in ")),
+    asks501c3: asks501c3(s.rec),
   };
 }
 
@@ -177,9 +180,11 @@ export interface Narrow {
   apply: boolean; // foundations that publish how to apply
   open: boolean; // foundations that don't say no to unsolicited requests
   local: boolean; // foundations based in or funding groups in the person's cities
+  no501: boolean; // hide foundations that ask for 501(c)(3) status
+  fresh: boolean; // only entries that are new since the last visit
 }
 
-export const NO_NARROW: Narrow = { q: "", size: "", before: "", agency: "", apply: false, open: false, local: false };
+export const NO_NARROW: Narrow = { q: "", size: "", before: "", agency: "", apply: false, open: false, local: false, no501: false, fresh: false };
 
 export const SIZE_BANDS: Record<string, [string, number, number]> = {
   s: ["Up to $50k", 0, 50_000],
@@ -202,7 +207,7 @@ function haystack(e: Entry): string {
 }
 
 export function isNarrowed(n: Narrow): boolean {
-  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local);
+  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local || n.no501 || n.fresh);
 }
 
 /** Entries that pass every filter that applies to their source. Every word typed must appear. */
@@ -212,6 +217,7 @@ export function narrow(entries: Entry[], n: Narrow): Entry[] {
   const band = SIZE_BANDS[n.size];
   const before = n.before ? new Date(`${n.before}T23:59:59`).getTime() : null;
   return entries.filter((e) => {
+    if (n.fresh && !e.isNew) return false;
     if (words.length && !words.every((w) => haystack(e).includes(w))) return false;
     if (n.agency && e.agency !== n.agency) return false;
     if (band) {
@@ -231,6 +237,7 @@ export function narrow(entries: Entry[], n: Narrow): Entry[] {
       if (n.apply && !e.publishesApply) return false;
       if (n.open && e.closedToUnsolicited) return false;
       if (n.local && !e.local) return false;
+      if (n.no501 && e.asks501c3) return false;
     }
     return true;
   });

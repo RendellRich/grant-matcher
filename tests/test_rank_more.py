@@ -185,3 +185,13 @@ def test_some_scholarships_among_organization_grants_are_not_flagged():
                 sample_grants=_grants("organizational grants", "organizational grants", "scholarship", "general support"))
     out = score_foundations([mixed], PROFILE, "FL", [])
     assert not any("scholarships" in c for c in out.iloc[0]["cautions"])
+
+
+def test_asks_for_501c3_proof_is_flagged_unless_the_group_has_it():
+    asks = fdn(apply={"contact": "Jane Doe", "materials": "Copy of IRS determination letter", "restrictions": "", "deadlines": ""})
+    for status, flagged in (("Yes", False), ("Pending", True), ("No", True)):
+        p = Profile(**{**PROFILE.__dict__, "has_501c3": status})
+        plain = score_foundations([fdn()], p, "FL", []).iloc[0]
+        out = score_foundations([asks], p, "FL", []).iloc[0]
+        assert any("Asks for proof of 501(c)(3)" in c for c in out["cautions"]) == flagged
+        assert plain["score"] - out["score"] == {"Yes": 0, "Pending": 10, "No": 20}[status]
