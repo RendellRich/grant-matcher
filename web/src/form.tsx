@@ -1,13 +1,16 @@
 import { useRef, useState } from "preact/hooks";
 import type { Example } from "./data";
 import { download } from "./exports";
-import { BLANK, parseProfile, STATE_NAMES, STATES, type ProfileForm, type Status501 } from "./profile";
+import {
+  AGES, BLANK, DELIVERY, FOCUS_AREAS, FUNDER_TYPES, HIDE, parseProfile, POPULATIONS, REGISTRATIONS, STATE_NAMES, STATES, SUPPORT_TYPES, TIMING,
+  type ProfileForm, type Status501, type Timing,
+} from "./profile";
 import { BUDGET_BANDS, CATEGORY_NAMES } from "./score";
 
 export interface FormProps {
   idp: string; // "side" or "phone"; keeps ids unique if both copies exist
   draft: ProfileForm;
-  setDraft: (f: ProfileForm) => void;
+  setDraft: (f: ProfileForm | ((current: ProfileForm) => ProfileForm)) => void;
   examples: Record<string, Example>;
   exampleKey: string; // the example the profile started from, or "" once a file was loaded
   onExample: (key: string) => void;
@@ -23,12 +26,38 @@ export function exampleForm(ex: Example): ProfileForm {
   return { ...BLANK, mission: ex.mission, keywords: ex.keywords, categories: [...ex.categories], state: ex.state, cities: ex.cities };
 }
 
+const count = (n: number) => (n ? `${n} chosen` : "none chosen");
+
+/** A group of checkboxes with a visible legend; `items` are [value, label]. */
+function CheckGroup(p: { legend: string; hint?: string; idp: string; items: [string, string][]; chosen: string[]; onToggle: (v: string, on: boolean) => void }) {
+  return (
+    <fieldset class="field check-group" aria-describedby={p.hint ? `${p.idp}-hint` : undefined}>
+      <legend class="label">{p.legend}</legend>
+      {p.hint ? <p class="hint" id={`${p.idp}-hint`}>{p.hint}</p> : null}
+      <div class="checks">
+        {p.items.map(([v, label]) => (
+          <label class="check" key={v}>
+            <input type="checkbox" checked={p.chosen.includes(v)}
+                   onChange={(e) => p.onToggle(v, (e.target as HTMLInputElement).checked)} />
+            <span>{label}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 export function ProfileFormView(p: FormProps) {
   const { draft, setDraft, idp } = p;
   const [guard, setGuard] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const set = <K extends keyof ProfileForm>(k: K, v: ProfileForm[K]) => setDraft({ ...draft, [k]: v });
+  // Every change builds on the latest form, so quick changes in a row (or a profile filled in by ETO) never undo each other.
+  const set = <K extends keyof ProfileForm>(k: K, v: ProfileForm[K]) => setDraft((d) => ({ ...d, [k]: v }));
+  type ListKey = { [K in keyof ProfileForm]: ProfileForm[K] extends string[] ? K : never }[keyof ProfileForm];
+  const toggle = (k: ListKey) => (v: string, on: boolean) => setDraft((d) => ({
+    ...d, [k]: on ? (d[k].includes(v) ? d[k] : [...d[k], v]) : d[k].filter((x) => x !== v),
+  }));
   const id = (s: string) => `${idp}-${s}`;
   const ex = p.examples[p.exampleKey];
   const edited = () => {
@@ -90,11 +119,13 @@ export function ProfileFormView(p: FormProps) {
           <textarea id={id("mission")} rows={6} aria-describedby={id("mission-hint")} value={draft.mission}
                     onInput={(e) => set("mission", (e.target as HTMLTextAreaElement).value)} />
         </div>
+        <CheckGroup legend="Focus areas" hint="Each one adds its own key words, so you don't have to type them." idp={id("focus")}
+                    items={FOCUS_AREAS.map((t) => [t.id, t.label])} chosen={draft.focus_areas} onToggle={toggle("focus_areas")} />
         <div class="field">
-          <label for={id("kw")}>Key words</label>
+          <label for={id("kw")}>More key words <span class="quiet">(optional)</span></label>
           <p class="hint" id={id("kw-hint")}>Separate with commas. Rare, specific words count more than common ones.</p>
           <textarea id={id("kw")} rows={3} aria-describedby={id("kw-hint")} value={draft.keywords}
-                    placeholder="For example: dyslexia, tutoring, after school"
+                    placeholder="For example: Orton-Gillingham, sliding scale"
                     onInput={(e) => set("keywords", (e.target as HTMLTextAreaElement).value)} />
         </div>
         <details class="cats">
@@ -104,14 +135,23 @@ export function ProfileFormView(p: FormProps) {
             {Object.entries(CATEGORY_NAMES).filter(([c]) => c !== "O").map(([c, name]) => (
               <label class="check" key={c}>
                 <input type="checkbox" checked={draft.categories.includes(c)}
-                       onChange={(e) => set("categories", (e.target as HTMLInputElement).checked
-                         ? [...draft.categories, c] : draft.categories.filter((x) => x !== c))} />
+                       onChange={(e) => toggle("categories")(c, (e.target as HTMLInputElement).checked)} />
                 <span>{name}</span>
               </label>
             ))}
           </div>
         </details>
       </fieldset>
+
+      <details class="group-more">
+        <summary>Who you serve <span class="quiet">({count(draft.ages.length + draft.populations.length)})</span></summary>
+        <div class="group-body">
+          <CheckGroup legend="Ages and grades" idp={id("ages")} items={AGES.map((t) => [t.id, t.label])}
+                      chosen={draft.ages} onToggle={toggle("ages")} />
+          <CheckGroup legend="Populations" hint="Funders word these many ways, so they raise a match and never rule one out." idp={id("pops")}
+                      items={POPULATIONS.map((t) => [t.id, t.label])} chosen={draft.populations} onToggle={toggle("populations")} />
+        </div>
+      </details>
 
       <fieldset class="group">
         <legend>Where you work</legend>
@@ -123,14 +163,24 @@ export function ProfileFormView(p: FormProps) {
         </div>
         <div class="field">
           <label for={id("cities")}>Cities or counties <span class="quiet">(optional)</span></label>
-          <p class="hint" id={id("cities-hint")}>Separate with commas. Finds foundations that already fund groups near you.</p>
-          <input id={id("cities")} type="text" aria-describedby={id("cities-hint")} value={draft.cities} placeholder="For example: Tampa, Hillsborough"
+          <p class="hint" id={id("cities-hint")}>Separate with commas. A county includes its cities and towns. Finds foundations that already fund groups near you.</p>
+          <input id={id("cities")} type="text" aria-describedby={id("cities-hint")} value={draft.cities} placeholder="For example: Manatee, Sarasota"
                  onInput={(e) => set("cities", (e.target as HTMLInputElement).value)} />
         </div>
+        <fieldset class="field radios">
+          <legend class="label">How you deliver services</legend>
+          <p class="hint">Online nationwide also counts funders that give in many states.</p>
+          <div class="stack">
+            {DELIVERY.map(([v, label]) => (
+              <label class="check" key={v}><input type="radio" name={id("delivery")} value={v} checked={draft.delivery === v}
+                                                  onChange={() => set("delivery", v)} /><span>{label}</span></label>
+            ))}
+          </div>
+        </fieldset>
       </fieldset>
 
       <fieldset class="group">
-        <legend>Eligibility</legend>
+        <legend>Your organization</legend>
         <fieldset class="field radios">
           <legend class="label">501(c)(3) status</legend>
           <div class="seg">
@@ -140,17 +190,76 @@ export function ProfileFormView(p: FormProps) {
             ))}
           </div>
         </fieldset>
+        {draft.has_501c3 !== "Yes" ? (
+          <label class="check">
+            <input type="checkbox" checked={draft.fiscal_sponsor} onChange={(e) => set("fiscal_sponsor", (e.target as HTMLInputElement).checked)} />
+            <span>We can apply through a fiscal sponsor</span>
+          </label>
+        ) : null}
         <div class="field">
           <label for={id("budget")}>Annual budget</label>
           <select id={id("budget")} value={draft.budget_band} onChange={(e) => set("budget_band", (e.target as HTMLSelectElement).value)}>
             {Object.keys(BUDGET_BANDS).map((b) => <option value={b} key={b}>{b}</option>)}
           </select>
         </div>
+        <div class="field">
+          <label for={id("founded")}>Year founded <span class="quiet">(optional)</span></label>
+          <input id={id("founded")} type="text" inputMode="numeric" maxLength={4} pattern="[0-9]{4}" value={draft.year_founded} placeholder="For example: 2026"
+                 onInput={(e) => set("year_founded", (e.target as HTMLInputElement).value.replace(/\D/g, "").slice(0, 4))} />
+        </div>
         <label class="check">
           <input type="checkbox" checked={draft.can_cost_share} onChange={(e) => set("can_cost_share", (e.target as HTMLInputElement).checked)} />
           <span>We can provide matching funds</span>
         </label>
+        <CheckGroup legend="We already have" idp={id("reg")} items={REGISTRATIONS} chosen={draft.registrations}
+                    onToggle={toggle("registrations")} />
       </fieldset>
+
+      <details class="group-more">
+        <summary>What you're asking for <span class="quiet">({count(draft.support_types.length + (draft.ask_min || draft.ask_max ? 1 : 0))})</span></summary>
+        <div class="group-body">
+          <CheckGroup legend="Type of support" hint="Keeps results whose words describe one of these. Results that don't say stay in." idp={id("support")}
+                      items={SUPPORT_TYPES.map((t) => [t.id, t.label])} chosen={draft.support_types} onToggle={toggle("support_types")} />
+          <fieldset class="field">
+            <legend class="label">Amount you want to ask for</legend>
+            <p class="hint">Keeps federal awards whose range overlaps it and foundations whose typical grant falls in it.</p>
+            <div class="range-pair">
+              <label for={id("ask-min")}>From</label>
+              <input id={id("ask-min")} type="text" inputMode="numeric" value={draft.ask_min} placeholder="$1,000"
+                     onInput={(e) => set("ask_min", (e.target as HTMLInputElement).value.replace(/\D/g, ""))} />
+              <label for={id("ask-max")}>to</label>
+              <input id={id("ask-max")} type="text" inputMode="numeric" value={draft.ask_max} placeholder="$25,000"
+                     onInput={(e) => set("ask_max", (e.target as HTMLInputElement).value.replace(/\D/g, ""))} />
+            </div>
+          </fieldset>
+        </div>
+      </details>
+
+      <details class="group-more">
+        <summary>Funders and timing <span class="quiet">({count(draft.hide.length + (draft.timing ? 1 : 0) + (draft.funder_types.length < FUNDER_TYPES.length ? 1 : 0) + (draft.exclude_words.trim() ? 1 : 0))})</span></summary>
+        <div class="group-body">
+          <CheckGroup legend="Funder types" idp={id("ftypes")} items={FUNDER_TYPES} chosen={draft.funder_types}
+                      onToggle={toggle("funder_types")} />
+          <div class="field">
+            <label for={id("timing")}>When</label>
+            <select id={id("timing")} value={draft.timing} onChange={(e) => set("timing", (e.target as HTMLSelectElement).value as Timing)}>
+              {TIMING.map(([v, label]) => <option value={v} key={v}>{label}</option>)}
+            </select>
+          </div>
+          {draft.timing ? (
+            <label class="check">
+              <input type="checkbox" checked={draft.include_rolling} onChange={(e) => set("include_rolling", (e.target as HTMLInputElement).checked)} />
+              <span>Also show funders with no deadline listed</span>
+            </label>
+          ) : null}
+          <CheckGroup legend="Hide" idp={id("hide")} items={HIDE} chosen={draft.hide} onToggle={toggle("hide")} />
+          <div class="field">
+            <label for={id("exclude")}>Hide results that mention <span class="quiet">(optional)</span></label>
+            <input id={id("exclude")} type="text" value={draft.exclude_words} placeholder="For example: capital campaign, religious instruction"
+                   onInput={(e) => set("exclude_words", (e.target as HTMLInputElement).value)} />
+          </div>
+        </div>
+      </details>
 
       <div class="apply">
         <button type="submit" class="btn primary" aria-describedby={id("status")}>Update matches</button>

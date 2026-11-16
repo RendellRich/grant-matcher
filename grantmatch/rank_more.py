@@ -6,7 +6,7 @@ from statistics import median
 
 import pandas as pd
 
-from .match import BUDGET_BANDS, SEMANTIC_SPREAD, current_band, Profile, _keyword_hits, _money
+from .match import BUDGET_BANDS, MINOR_WEIGHT, SEMANTIC_SPREAD, current_band, Profile, _keyword_hits, _money
 
 NO_UNSOLICITED = re.compile(
     r"(no|not accept\w*|does not (accept|consider)|do not (accept|consider)) unsolicited|unsolicited (requests|applications|proposals) (are )?not"
@@ -21,6 +21,8 @@ ASKS_501C3_CAUTION = {
     "Pending": "Asks for proof of 501(c)(3) status; apply once your IRS letter arrives, or through a fiscal sponsor",
     "No": "Asks for proof of 501(c)(3) status; you would need a fiscal sponsor",
 }
+ASKS_501C3_SPONSOR = "Asks for proof of 501(c)(3) status; apply through your fiscal sponsor"
+NATIONAL_STATES = 5  # a funder whose latest grants reached this many states gives nationally
 COMPETITIVE = re.compile(r"\b(competitive|request for (applications|proposals)|rfa|rfp|solicitation|notice of funding|scored|review panel)\b", re.I)
 
 
@@ -33,12 +35,14 @@ def _scale(semantic: dict[str, float] | None, ids: pd.Series) -> pd.Series:
     return ((vals.fillna(base) - base) / SEMANTIC_SPREAD).clip(0, 1)
 
 
-def _keyword_weights(keywords: list[str], texts: pd.Series) -> tuple[dict[str, float], float]:
+def _keyword_weights(keywords: list[str], texts: pd.Series, minor=()) -> tuple[dict[str, float], float]:
     lower = texts.str.lower()
     weights = {}
     for kw in keywords:
         share = lower.apply(lambda t, k=kw: bool(_keyword_hits([k], t))).mean() if len(lower) else 0
         weights[kw] = 1.0 - min(0.85, share * 8)
+        if kw in minor:
+            weights[kw] *= MINOR_WEIGHT
     best3 = sum(sorted(weights.values(), reverse=True)[:3]) or 1.0
     return weights, best3
 
@@ -72,7 +76,7 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
     df["purpose_text"] = df.apply(
         lambda r: " ".join(r["top_purposes"]) + " " + " ".join(g["purpose"] for g in r["sample_grants"])
         + " " + " ".join(r["top_recipients"]), axis=1)
-    weights, best3 = _keyword_weights(p.keywords, df["purpose_text"])
+    weights, best3 = _keyword_weights(p.keywords, df["purpose_text"], p.minor_keywords)
     fit = _scale(semantic, df["ein"])
     budget = BUDGET_BANDS.get(current_band(p.budget_band), 250_000)
     city_set = {c.strip().lower() for c in cities if c.strip()}
@@ -91,6 +95,9 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
         n = r["grant_count"] or 0
         in_state = r["recipient_states"].get(state, 0)
         share = in_state / n if n else 0
+        # A group serving people online across the country can reach a funder that gives in many states.
+        reach = sum(1 for v in r["recipient_states"].values() if v)
+        national = p.delivery == "online_national" and reach >= NATIONAL_STATES
         if share >= 0.5:
             points += 20
             reasons.append(f"Its only grant went to a {state} organization" if n == 1 else f"{in_state} of its {n} grants went to {state} organizations")
@@ -98,10 +105,13 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
             points += 12
             reasons.append(f"Its only grant went to a {state} organization" if n == 1 else f"{in_state} of its {n} grants went to {state} organizations")
         elif in_state:
-            points -= 15 if share < 0.1 and r["state"] != state else 5
+            points -= 0 if national else 15 if share < 0.1 and r["state"] != state else 5
             cautions.append(f"Only {in_state} of its {n} grants went to {state}")
         elif r["state"] == state:
             points += 6
+        elif national:
+            points -= 5
+            cautions.append(f"No grants to {state} in its latest return, but it gives in {reach} states")
         else:
             points -= 20
             cautions.append(f"No grants to {state} in its latest return")
@@ -148,8 +158,11 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
             reasons.append("Publishes how to apply")
         apply_text = " ".join(v for v in (apply or {}).values() if isinstance(v, str))
         if p.has_501c3 in ASKS_501C3_PENALTY and ASKS_501C3.search(apply_text):
-            points -= ASKS_501C3_PENALTY[p.has_501c3]
-            cautions.append(ASKS_501C3_CAUTION[p.has_501c3])
+            if p.fiscal_sponsor:
+                cautions.append(ASKS_501C3_SPONSOR)
+            else:
+                points -= ASKS_501C3_PENALTY[p.has_501c3]
+                cautions.append(ASKS_501C3_CAUTION[p.has_501c3])
         # Scholarship funds pay students (or a college on a student's behalf), so a nonprofit cannot apply.
         # Judge by what its grants were for: most of the listed grants, or a purpose list made of scholarships.
         samples = r["sample_grants"]
@@ -188,7 +201,7 @@ def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | 
         return df
     df = df.reset_index(drop=True)
     text = df["title"] + " " + df["objectives"] + " " + df["subjects"]
-    weights, best3 = _keyword_weights(p.keywords, text)
+    weights, best3 = _keyword_weights(p.keywords, text, p.minor_keywords)
     fit = _scale(semantic, df["id"])
     rows = []
     for i, r in df.iterrows():

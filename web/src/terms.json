@@ -1,0 +1,52 @@
+{
+  "_about": "Checkbox choices on the profile and the words each one adds to the key word match. Read by the browser (profile.ts) and by Python (grantmatch/terms.py) so both scorers see the same key words. Words match at the start of a word, so 'tutor' also finds 'tutoring'.",
+  "focus_areas": [
+    {"id": "literacy", "label": "Literacy and reading", "words": ["literacy", "reading", "phonics", "phonemic", "early readers", "reading intervention", "structured literacy"]},
+    {"id": "dyslexia", "label": "Dyslexia and learning differences", "words": ["dyslexia", "dyslexic", "learning disabilities", "learning differences", "Orton-Gillingham", "multisensory"]},
+    {"id": "speech", "label": "Speech and language", "words": ["speech", "speech-language", "language therapy", "communication disorders", "stuttering", "apraxia"]},
+    {"id": "tutoring", "label": "Tutoring and academic support", "words": ["tutoring", "tutors", "academic support", "homework help", "academic achievement", "academic success"]},
+    {"id": "adhd_autism", "label": "ADHD and autism", "words": ["ADHD", "attention deficit", "autism", "autistic", "neurodivergent", "developmental disabilities"]},
+    {"id": "social_emotional", "label": "Social, emotional and mental health", "words": ["social-emotional", "social emotional", "coping skills", "mental health", "emotional regulation", "behavioral health", "resilience"]},
+    {"id": "special_ed", "label": "Special education and disabilities", "words": ["special education", "special needs", "exceptional student", "disabilities", "inclusion"]},
+    {"id": "early_childhood", "label": "Early childhood", "words": ["early childhood", "preschool", "pre-k", "early learning", "kindergarten readiness", "school readiness"]},
+    {"id": "after_school", "label": "After school and summer", "words": ["after school", "afterschool", "out-of-school time", "summer learning", "summer camp", "enrichment"]},
+    {"id": "family", "label": "Family support", "words": ["family support", "parenting", "parent education", "family engagement", "caregivers"]},
+    {"id": "stem", "label": "STEM", "words": ["STEM", "science education", "math", "coding", "robotics", "engineering"]},
+    {"id": "arts", "label": "Arts", "words": ["arts", "music", "theater", "theatre", "visual art", "dance"]},
+    {"id": "health", "label": "Health", "words": ["health care", "healthcare", "wellness", "medical", "dental", "clinic"]},
+    {"id": "food", "label": "Food and hunger", "words": ["food insecurity", "hunger", "food bank", "food pantry", "meals", "nutrition"]},
+    {"id": "housing", "label": "Housing and homelessness", "words": ["housing", "homeless", "shelter", "affordable housing"]},
+    {"id": "workforce", "label": "Jobs and workforce", "words": ["workforce", "job training", "employment", "career readiness", "vocational"]}
+  ],
+  "ages": [
+    {"id": "prek", "label": "Pre-K", "words": ["preschool", "pre-k", "early childhood"]},
+    {"id": "k5", "label": "K to 5", "words": ["elementary", "kindergarten", "primary school"]},
+    {"id": "g6_8", "label": "6 to 8", "words": ["middle school", "middle grades"]},
+    {"id": "g9_12", "label": "9 to 12", "words": ["high school", "teens", "adolescents"]},
+    {"id": "young_adults", "label": "Ages 18 to 24", "words": ["young adults", "college students", "transition-age youth"]},
+    {"id": "adults", "label": "Adults", "words": ["adult education", "adult literacy", "adult learners"]},
+    {"id": "families", "label": "Families", "words": ["family engagement", "parent engagement", "families with children", "parents and children"]}
+  ],
+  "populations": [
+    {"id": "low_income", "label": "Low-income families", "words": ["low-income", "underserved", "poverty", "economically disadvantaged", "under-resourced"]},
+    {"id": "disabilities", "label": "Children with disabilities", "words": ["children with disabilities", "students with disabilities", "special needs"]},
+    {"id": "english_learners", "label": "English learners", "words": ["English language learners", "English learners", "ESOL", "bilingual"]},
+    {"id": "foster", "label": "Foster youth", "words": ["foster care", "foster youth", "child welfare"]},
+    {"id": "military", "label": "Military families", "words": ["military families", "veterans", "military-connected"]},
+    {"id": "rural", "label": "Rural communities", "words": ["rural"]},
+    {"id": "color", "label": "Communities of color", "words": ["communities of color", "African American", "Black youth", "Hispanic", "Latino", "Latinx"]},
+    {"id": "girls", "label": "Girls", "words": ["girls", "young women"]},
+    {"id": "boys", "label": "Boys and young men", "words": ["boys", "young men"]}
+  ],
+  "support_types": [
+    {"id": "general", "label": "General operating", "pattern": "general (operating|support|purposes?|charitable)|operating support|unrestricted"},
+    {"id": "program", "label": "Program", "pattern": "\\bprograms?\\b|\\bprojects?\\b"},
+    {"id": "startup", "label": "Start-up", "pattern": "start-?up|seed (grant|funding|money)|new (nonprofits?|organizations?)|emerging (nonprofits?|organizations?)"},
+    {"id": "capacity", "label": "Capacity building", "pattern": "capacity[- ]building|organizational (development|capacity)|technical assistance"},
+    {"id": "equipment", "label": "Equipment and technology", "pattern": "\\bequipment\\b|\\btechnology\\b|\\bcomputers?\\b|\\bsupplies\\b"},
+    {"id": "fee_help", "label": "Fee assistance for families", "pattern": "tuition assistance|fee assistance|financial assistance|sliding[- ]scale|free services"},
+    {"id": "training", "label": "Training for staff", "pattern": "professional development|teacher training|staff training|workforce training"},
+    {"id": "capital", "label": "Capital and buildings", "pattern": "\\bcapital\\b|\\bconstruction\\b|\\brenovation\\b|\\bfacilit(y|ies)\\b"},
+    {"id": "research", "label": "Research", "pattern": "\\bresearch\\b"}
+  ]
+}

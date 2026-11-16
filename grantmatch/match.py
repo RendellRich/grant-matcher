@@ -51,6 +51,14 @@ RESEARCH_TITLE = re.compile(r"\b(research|investigators?|scientists?|fellowships
 # Embedding similarity is judged against the mission's own baseline (its median over all grants):
 # a grant this far above the median earns full mission points.
 SEMANTIC_SPREAD = 0.14
+# A word from the ages or populations choices counts this much of a typed word or a focus area word.
+MINOR_WEIGHT = 0.5
+# With a fiscal sponsor, a 501(c)(3) requirement is a step to arrange, not a wall.
+SPONSOR_PENALTY = 10
+# Organizations this young rarely win large federal awards, which ask for past performance.
+YOUNG_YEARS = 3
+YOUNG_AWARD = 100_000
+YOUNG_CAUTION = "A large federal award for a new organization; most go to groups with a few years of results"
 
 
 @dataclass
@@ -64,6 +72,11 @@ class Profile:
     include_forecasted: bool = True
     min_days_left: int = 14
     today: date | None = None
+    fiscal_sponsor: bool = False  # can apply through a fiscal sponsor while 501(c)(3) status is pending or absent
+    delivery: str = "in_person"  # "in_person", "online_state", "online_national"
+    year_founded: int | None = None
+    # Words from the ages and populations choices: they describe who is served, not the work, so they count half.
+    minor_keywords: list[str] = field(default_factory=list)
 
 
 def load_frame(records: list[dict]) -> pd.DataFrame:
@@ -150,6 +163,8 @@ def score(df: pd.DataFrame, p: Profile, semantic: dict[str, float] | None = None
     for kw in p.keywords:
         share = texts.apply(lambda t, k=kw: bool(_keyword_hits([k], t))).mean()
         weights[kw] = 1.0 - min(0.85, share * 8)  # a word in 10%+ of grants keeps only 15% weight
+        if kw in p.minor_keywords:
+            weights[kw] *= MINOR_WEIGHT
     best3 = sum(sorted(weights.values(), reverse=True)[:3]) or 1.0
 
     budget = BUDGET_BANDS.get(current_band(p.budget_band), 250_000)
@@ -177,9 +192,13 @@ def score(df: pd.DataFrame, p: Profile, semantic: dict[str, float] | None = None
             if "13" in types or "99" in types:
                 reasons.append("Open to nonprofits without 501(c)(3) status")
             elif "12" in types and not types & {"13", "25", "99"}:
-                points -= 40
-                cautions.append("Requires 501(c)(3) status; apply once your IRS letter arrives, or through a fiscal sponsor"
-                                if p.has_501c3 == "Pending" else "Requires 501(c)(3) status; you would need a fiscal sponsor")
+                if p.fiscal_sponsor:
+                    points -= SPONSOR_PENALTY
+                    cautions.append("Requires 501(c)(3) status; apply through your fiscal sponsor")
+                else:
+                    points -= 40
+                    cautions.append("Requires 501(c)(3) status; apply once your IRS letter arrives, or through a fiscal sponsor"
+                                    if p.has_501c3 == "Pending" else "Requires 501(c)(3) status; you would need a fiscal sponsor")
             else:
                 points -= 5
                 cautions.append("Eligibility is \"other\"; read the eligibility notes")
@@ -196,6 +215,12 @@ def score(df: pd.DataFrame, p: Profile, semantic: dict[str, float] | None = None
         elif r["award_ceiling"] and r["award_ceiling"] > 10 * budget and not floor:
             points -= 5
             cautions.append(f"Awards go up to {_money(r['award_ceiling'])}; ask for an amount that fits your budget")
+
+        ceiling = r["award_ceiling"] if r["award_ceiling"] and not pd.isna(r["award_ceiling"]) else 0
+        biggest = max(floor or 0, ceiling)
+        if p.year_founded and today.year - p.year_founded < YOUNG_YEARS and biggest >= YOUNG_AWARD:
+            points -= 5
+            cautions.append(YOUNG_CAUTION)
 
         nih = RESEARCH_NUMBER.match(r["number"] or "") and str(r["agency_code"]).startswith("HHS-NIH")
         if nih or RESEARCH_TITLE.search(r["title"]) or str(r["agency_code"]) == "NSF":
