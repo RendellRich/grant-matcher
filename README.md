@@ -69,6 +69,29 @@ The people using this are often one-person development teams at small nonprofits
 
 The colors, type, components and rules are written down in [DESIGN.md](DESIGN.md).
 
+## Inside Exceed the Odds' admin page
+
+With `?embed=eto`, and only when framed by an allowed site (`ALLOWED_PARENTS` in `web/src/parent.ts`), the matcher runs inside ETO's admin page:
+
+- ETO sends its saved profile, and the matcher applies it. "Keep this profile" becomes "Save profile to ETO".
+- "Add to shortlist" becomes "Send to funding pipeline". ETO adds the funder and the opportunity at Prospect and answers; the card then reads "In pipeline: Prospect". If ETO doesn't answer within 15 seconds, the page says so.
+- The browser shortlist is off, and the hide list gains "Already in our pipeline" and "Declined or closed before", from what ETO reports.
+- Opened any other way, `?embed=eto` changes nothing.
+
+The two pages talk with `postMessage`. The matcher listens only to its parent window at an allowed origin, posts only to that origin, cleans every incoming message, and sends back only the profile and public facts about a grant. The messages:
+
+| Message | From | Carries |
+|---|---|---|
+| `gm:ready` | Matcher | `protocol` version |
+| `eto:profile` | ETO | the saved profile |
+| `eto:in-pipeline` | ETO | `items`: match `key`, `stage`, `closed` |
+| `gm:send` | Matcher | `item`: key, source, title, funder, EIN, website, link, deadline, amounts, catalog number, summary, reasons, cautions, website quote, score, tier |
+| `eto:sent` | ETO | `key`, `ok`, `status` (saved, exists, error), `stage`, `message` |
+| `gm:save-profile` | Matcher | the profile |
+| `eto:profile-saved` | ETO | `ok`, `message` |
+
+[`docs/embed-harness.html`](docs/embed-harness.html) stands in for ETO to try it by hand; the steps are at the top of the file.
+
 ## Private workspace (optional)
 
 The Streamlit app (`app.py`, at [grant-matcher.streamlit.app](https://grant-matcher.streamlit.app)) still runs and has a signed-in workspace for an organization's own team. It is off unless the deployment has the secrets in `.streamlit/secrets.toml.example`. With them, people on the allowed list can sign in with Google and get:

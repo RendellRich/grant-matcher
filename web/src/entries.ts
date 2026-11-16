@@ -317,8 +317,11 @@ export interface ProfileNarrowed { entries: Entry[] | null; hidden: number }
 /** The filters saved with the profile (what you ask for, which funders, timing, words to avoid, the hide list).
  *  They apply on every tab and never change a score. Results with no information on a choice stay in,
  *  except for timing, where "Rolling or no deadline" decides. */
-export function profileNarrow(entries: Entry[] | null, f: ProfileForm, today: Date = new Date()): ProfileNarrowed {
+export function profileNarrow(entries: Entry[] | null, f: ProfileForm, today: Date = new Date(),
+                              pipeline: Map<string, { closed: boolean }> = new Map()): ProfileNarrowed {
   if (!entries) return { entries, hidden: 0 };
+  const inPipeline = f.hide.includes("inpipeline");
+  const declined = f.hide.includes("declined");
   const avoid = splitList(f.exclude_words).map((w) => w.toLowerCase());
   const lo = f.ask_min ? +f.ask_min : null;
   const hi = f.ask_max ? +f.ask_max : null;
@@ -342,6 +345,8 @@ export function profileNarrow(entries: Entry[] | null, f: ProfileForm, today: Da
       else if (e.sortClose - t0 > days * 86_400_000) return false;
     }
     if (hides.some((h) => h(e))) return false;
+    const p = pipeline.get(e.key);
+    if (p && ((inPipeline && !p.closed) || (declined && p.closed))) return false;
     return true;
   });
   return { entries: kept, hidden: entries.length - kept.length };

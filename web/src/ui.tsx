@@ -40,7 +40,15 @@ export function ScoreRule(p: { score: number; tier: Entry["tier"] }) {
   );
 }
 
-export function EntryView(p: { e: Entry; marked: boolean; onMark: (e: Entry) => void; id?: string; stage?: preact.ComponentChildren }) {
+/** How the mark button reads when it does something other than the shortlist (in ETO: send to the pipeline). */
+export interface MarkAction {
+  label: (e: Entry, marked: boolean) => string;
+  busy?: Set<string>; // keys waiting for an answer
+}
+
+export function EntryView(p: {
+  e: Entry; marked: boolean; onMark: (e: Entry) => void; id?: string; stage?: preact.ComponentChildren; action?: MarkAction;
+}) {
   const { e } = p;
   return (
     <article class="entry" aria-labelledby={`t-${e.key}`}>
@@ -71,10 +79,19 @@ export function EntryView(p: { e: Entry; marked: boolean; onMark: (e: Entry) => 
       </ul>
       {p.stage}
       <div class="entry-actions">
-        <button type="button" class={`mark-btn${p.marked ? " on" : ""}`} aria-pressed={p.marked} onClick={() => p.onMark(e)}>
-          <IconMark on={p.marked} />{p.marked ? "On shortlist" : "Add to shortlist"}
-          <span class="sr-only">: {e.title}</span>
-        </button>
+        {p.action ? (
+          // Sending can't be undone from here, so this is a plain button that stops once the grant is in the pipeline.
+          <button type="button" class={`mark-btn${p.marked ? " on" : ""}`} disabled={p.marked || p.action.busy?.has(e.key)}
+                  onClick={() => p.onMark(e)}>
+            <IconMark on={p.marked} />{p.action.busy?.has(e.key) ? "Sending" : p.action.label(e, p.marked)}
+            <span class="sr-only">: {e.title}</span>
+          </button>
+        ) : (
+          <button type="button" class={`mark-btn${p.marked ? " on" : ""}`} aria-pressed={p.marked} onClick={() => p.onMark(e)}>
+            <IconMark on={p.marked} />{p.marked ? "On shortlist" : "Add to shortlist"}
+            <span class="sr-only">: {e.title}</span>
+          </button>
+        )}
         <Details e={e} />
       </div>
     </article>
@@ -127,7 +144,7 @@ const FIRST_POSSIBLE = 10;
 
 /** Strong matches (up to 40) and the first 10 possible ones, then 40 more at a time; long shots behind a switch. */
 export function ResultList(p: {
-  name: string; noun: string; entries: Entry[]; marked: Set<string>; onMark: (e: Entry) => void;
+  name: string; noun: string; entries: Entry[]; marked: Set<string>; onMark: (e: Entry) => void; action?: MarkAction;
   sorts?: [string, ((a: Entry, b: Entry) => number) | null][]; exports?: preact.ComponentChildren; narrowed?: boolean;
 }) {
   const [sortIdx, setSortIdx] = useState(0);
@@ -172,7 +189,7 @@ export function ResultList(p: {
           </div>
           <ol class="entries">
             {good.slice(0, n).map((e, i) => (
-              <li key={e.key}><EntryView e={e} marked={p.marked.has(e.key)} onMark={p.onMark} id={`${p.name}-r${i + 1}`} /></li>
+              <li key={e.key}><EntryView e={e} marked={p.marked.has(e.key)} onMark={p.onMark} action={p.action} id={`${p.name}-r${i + 1}`} /></li>
             ))}
           </ol>
           <div class="list-end">
@@ -203,7 +220,7 @@ export function ResultList(p: {
           </button>
           {showLongs ? (
             <ol class="entries">
-              {longs.map((e) => <li key={e.key}><EntryView e={e} marked={p.marked.has(e.key)} onMark={p.onMark} /></li>)}
+              {longs.map((e) => <li key={e.key}><EntryView e={e} marked={p.marked.has(e.key)} onMark={p.onMark} action={p.action} /></li>)}
             </ol>
           ) : null}
         </section>

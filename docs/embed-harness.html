@@ -1,0 +1,92 @@
+<!doctype html>
+<!--
+  A stand-in for ETO's admin page, to try the Grant Matcher's embed mode by hand.
+
+  1. Build and serve the site:    cd web && npm run build && npx vite preview --port 4317
+  2. Serve this folder on an allowed parent origin:
+                                  python -m http.server 5173 --bind 127.0.0.1 --directory docs
+  3. Open http://127.0.0.1:5173/embed-harness.html
+
+  It sends a sample profile, lists every message, and answers "Send to funding pipeline" the way ETO will:
+  saved at Prospect, already there, an error, or no answer at all. Nothing here talks to ETO or Supabase.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embed harness</title>
+<style>
+  :root { color-scheme: light dark; font: 15px/1.5 system-ui, sans-serif; }
+  body { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) 22rem; height: 100vh; }
+  iframe { width: 100%; height: 100%; border: 0; border-right: 1px solid #8884; }
+  aside { display: grid; grid-template-rows: auto auto 1fr; gap: .75rem; padding: 1rem; overflow: hidden; }
+  aside h1 { font-size: 1rem; margin: 0; }
+  .controls { display: grid; gap: .5rem; }
+  button, select { min-height: 36px; font: inherit; }
+  ol { margin: 0; padding-left: 1.25rem; overflow: auto; font: 12px/1.4 ui-monospace, monospace; }
+  li { margin-bottom: .5rem; word-break: break-word; }
+  .in { color: #2f7d4f; } .out { color: #1f5f8b; }
+</style>
+</head>
+<body>
+<iframe id="gm" title="Grant Matcher"></iframe>
+<aside>
+  <h1>Pretend ETO</h1>
+  <div class="controls">
+    <label>Answer sends with
+      <select id="answer">
+        <option value="saved">Saved at Prospect</option>
+        <option value="exists">Already in the pipeline</option>
+        <option value="error">An error</option>
+        <option value="silent">No answer</option>
+      </select>
+    </label>
+    <button type="button" id="profile">Send the ETO profile</button>
+    <button type="button" id="pipeline">Report two grants already in the pipeline</button>
+  </div>
+  <ol id="log" aria-live="polite"></ol>
+</aside>
+<script>
+  const MATCHER = new URLSearchParams(location.search).get("matcher") || "http://localhost:4317/grant-matcher/?embed=eto";
+  const ORIGIN = new URL(MATCHER).origin;
+  const frame = document.getElementById("gm");
+  frame.src = MATCHER;
+  const log = (dir, data) => {
+    const li = document.createElement("li");
+    li.className = dir;
+    li.textContent = (dir === "in" ? "from matcher: " : "to matcher: ") + JSON.stringify(data);
+    document.getElementById("log").prepend(li);
+  };
+  const send = (data) => { log("out", data); frame.contentWindow.postMessage(data, ORIGIN); };
+
+  // ETO's launch preset, as the plan describes it.
+  const PROFILE = {
+    mission: "We provide free and sliding-scale structured literacy instruction for children with dyslexia, speech and language support, academic tutoring, and coping-skills coaching for children with ADHD and autism, so that cost is never a barrier for families.",
+    keywords: "Orton-Gillingham, sliding scale", state: "FL", cities: "Manatee, Sarasota, Hillsborough, Pinellas",
+    focus_areas: ["literacy", "dyslexia", "speech", "tutoring", "adhd_autism", "social_emotional", "special_ed"],
+    ages: ["k5", "g6_8", "g9_12", "families"], populations: ["low_income", "disabilities"],
+    delivery: "online_state", has_501c3: "Pending", budget_band: "Under $10k", year_founded: "2026",
+    ask_min: "1000", ask_max: "25000", hide: ["scholarship", "invitation", "unsolicited", "research", "costshare", "inpipeline"],
+    categories: ["ED", "HL", "ISS"],
+  };
+
+  window.addEventListener("message", (ev) => {
+    if (ev.origin !== ORIGIN || ev.source !== frame.contentWindow) return;
+    log("in", ev.data);
+    const d = ev.data || {};
+    if (d.type === "gm:ready") send({ type: "eto:profile", profile: PROFILE });
+    if (d.type === "gm:save-profile") setTimeout(() => send({ type: "eto:profile-saved", ok: true }), 300);
+    if (d.type === "gm:send") {
+      const mode = document.getElementById("answer").value;
+      if (mode === "silent") return;
+      setTimeout(() => send(mode === "error"
+        ? { type: "eto:sent", key: d.item.key, ok: false, status: "error", message: "Funding couldn't be saved: you need the Admin role." }
+        : { type: "eto:sent", key: d.item.key, ok: true, status: mode, stage: "Prospect" }), 400);
+    }
+  });
+  document.getElementById("profile").onclick = () => send({ type: "eto:profile", profile: PROFILE });
+  document.getElementById("pipeline").onclick = () => send({ type: "eto:in-pipeline", items: [
+    { key: "fdn:591234567", stage: "Researching" }, { key: "fed:355824", stage: "Declined/Closed", closed: true }] });
+</script>
+</body>
+</html>

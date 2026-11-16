@@ -197,6 +197,17 @@ details[open] > summary::before { transform: rotate(45deg); }
 /* ---------- notes and index tabs ---------- */
 .note { padding: .75rem 1rem; border-radius: var(--r); background: var(--paper); max-width: 66ch; margin-bottom: 1.25rem; }
 .warn-note { box-shadow: inset 0 0 0 1px var(--caution); }
+/* Inside ETO: the answer to "Send to funding pipeline", pinned where it is seen wherever the button was. */
+.toast-wrap { display: contents; }
+.toast {
+  position: fixed; z-index: 5; bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  left: max(1rem, env(safe-area-inset-left, 0px)); right: max(1rem, env(safe-area-inset-right, 0px));
+  max-width: 34rem; margin: 0 auto; padding: .75rem 1rem; border-radius: var(--r);
+  background: var(--ink); color: var(--ground); font-weight: 600; box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+}
+.toast.warn { background: var(--ground); color: var(--ink); box-shadow: inset 0 0 0 2px var(--caution), 0 6px 24px rgba(0, 0, 0, .25); }
+.mark-btn:disabled { cursor: default; }
+.mark-btn.on:disabled { color: var(--accent); }
 .note.blank { display: grid; gap: .625rem; }
 .note.blank ol { margin: 0; padding-left: 1.25rem; }
 
