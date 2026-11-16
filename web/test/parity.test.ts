@@ -5,6 +5,7 @@ import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { scoreFederal, scoreFlorida, scoreFoundations, pyRound, money, keywordHits, type Profile } from "../src/score";
 import { decodeF16, similarities } from "../src/vectors";
+import { expandKeywords, minorKeywords } from "../src/profile";
 
 const DIR = new URL("../test-data/", import.meta.url);
 const have = existsSync(new URL("golden.json", DIR));
@@ -43,10 +44,18 @@ describe.skipIf(!have)("parity with Python scoring", () => {
   for (const c of golden.cases) {
     it(c.name, () => {
       const s = c.spec;
+      const typed = s.keywords.split(",").map((k: string) => k.trim()).filter(Boolean);
+      const groups = [s.focus_areas ?? [], s.ages ?? [], s.populations ?? []] as const;
+      const keywords = expandKeywords(typed, ...groups);
+      const minor = minorKeywords(typed, ...groups);
+      if (s.expanded_keywords) expect(keywords, "checkbox groups turn into the same key words").toEqual(s.expanded_keywords);
+      if (s.minor_keywords) expect(minor, "the same words count at half weight").toEqual(s.minor_keywords);
       const p: Profile = {
-        mission: s.mission, keywords: s.keywords.split(",").map((k: string) => k.trim()).filter(Boolean),
+        mission: s.mission, keywords,
         has501c3: s.has_501c3, budgetBand: s.budget_band, canCostShare: s.can_cost_share, categories: s.categories,
         includeForecasted: s.include_forecasted, minDaysLeft: s.min_days_left, today: new Date(y, m - 1, d),
+        fiscalSponsor: s.fiscal_sponsor ?? false, delivery: s.delivery ?? "in_person", yearFounded: s.year_founded ?? null,
+        minorKeywords: minor,
       };
       const q = examples[c.example].vector;
       const cities = s.cities.split(",").filter((x: string) => x.trim());

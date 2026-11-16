@@ -213,6 +213,11 @@ def main() -> None:
         vec = embed.embed_query(ex["mission"] + " " + ex["keywords"])
         examples[key] = {**ex, "vector": [round(float(x), 6) for x in vec]}
     (out / "examples.json").write_text(json.dumps(examples, separators=(",", ":")), encoding="utf-8")
+    # Each state's counties and their places, so "Manatee" also finds Bradenton (grantmatch/counties.py).
+    counties_file = LOCAL / "counties.json.gz"
+    if counties_file.exists():
+        for state, counties in json.loads(gzip.decompress(counties_file.read_bytes())).items():
+            (out / f"counties-{state}.json").write_text(json.dumps(counties, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     (out / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
     total = sum(p.stat().st_size for p in out.iterdir() if p.is_file())
     print(f"data folder: {total / 1e6:.0f} MB")
@@ -229,6 +234,11 @@ VARIANTS = [
     {"has_501c3": "Pending", "can_cost_share": True, "budget_band": "Over $1M", "include_forecasted": False,
      "min_days_left": 30, "show_preselected": True, "show_earmarks": True, "categories": []},
     {"budget_band": "Under $50k"},  # a band name from before the split, read as $10k to $50k
+    # The expanded profile: checkbox groups turned into key words, a fiscal sponsor, online nationwide, a new group.
+    {"has_501c3": "Pending", "fiscal_sponsor": True, "delivery": "online_national", "year_founded": 2026,
+     "budget_band": "Under $10k", "focus_areas": ["literacy", "dyslexia", "speech", "tutoring", "adhd_autism", "social_emotional", "special_ed"],
+     "ages": ["k5", "g6_8", "g9_12", "families"], "populations": ["low_income", "disabilities"]},
+    {"has_501c3": "No", "fiscal_sponsor": True, "delivery": "online_state", "year_founded": 2024, "categories": []},
 ]
 GOLDEN_DAY = date(2026, 11, 14)
 
@@ -238,6 +248,7 @@ def golden(out: Path, examples: dict, path: Path) -> None:
 
     from .match import Profile, load_frame, score
     from .rank_more import score_florida, score_foundations
+    from .terms import expand_keywords, minor_keywords
 
     def load(name):
         payload = json.loads(gzip.decompress((out / f"{name}.json.gz").read_bytes()))
@@ -264,11 +275,16 @@ def golden(out: Path, examples: dict, path: Path) -> None:
             spec = {"has_501c3": "Yes", "budget_band": "$50k to $250k", "can_cost_share": False,
                     "include_forecasted": True, "min_days_left": 14, "show_preselected": False, "show_earmarks": False,
                     "categories": ex["categories"], "keywords": ex["keywords"], "mission": ex["mission"],
-                    "cities": ex["cities"], "state": ex["state"], **v}
-            p = Profile(mission=spec["mission"], keywords=[k.strip() for k in spec["keywords"].split(",") if k.strip()],
+                    "cities": ex["cities"], "state": ex["state"], "fiscal_sponsor": False, "delivery": "in_person",
+                    "year_founded": None, "focus_areas": [], "ages": [], "populations": [], **v}
+            typed = [k.strip() for k in spec["keywords"].split(",") if k.strip()]
+            spec["expanded_keywords"] = expand_keywords(typed, spec["focus_areas"], spec["ages"], spec["populations"])
+            spec["minor_keywords"] = minor_keywords(typed, spec["focus_areas"], spec["ages"], spec["populations"])
+            p = Profile(mission=spec["mission"], keywords=spec["expanded_keywords"],
                         has_501c3=spec["has_501c3"], budget_band=spec["budget_band"], can_cost_share=spec["can_cost_share"],
                         categories=spec["categories"], include_forecasted=spec["include_forecasted"],
-                        min_days_left=spec["min_days_left"], today=GOLDEN_DAY)
+                        min_days_left=spec["min_days_left"], today=GOLDEN_DAY, fiscal_sponsor=spec["fiscal_sponsor"],
+                        delivery=spec["delivery"], year_founded=spec["year_founded"], minor_keywords=spec["minor_keywords"])
             cities = [c for c in spec["cities"].split(",") if c.strip()]
             cases.append({
                 "name": f"{key}-{n}", "example": key, "spec": spec,

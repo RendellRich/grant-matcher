@@ -35,6 +35,10 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
   - deadlines too close to meet
 - **Explains every score** with reasons and cautions, so the ranking is a starting point for your judgment, not a black box.
 - **Shows forecasts**, grants that are announced but not open yet, which give you the most time to prepare.
+- **Builds the search from checkboxes.** Pick focus areas (literacy, dyslexia, speech, tutoring and 12 more), ages and grades, and populations, and each adds a tested list of words to the match, so you don't have to guess key words. Words from ages and populations count half, so they lift a good match without making a weak one strong. The lists live in `web/src/terms.json`, read by both scorers.
+- **Understands counties.** Type "Manatee" and grants to Bradenton, Palmetto, Ellenton and the county's other places count as local, from the Census Bureau's 2020 places-by-county file (`grantmatch/counties.py`).
+- **Knows your situation:** a fiscal sponsor softens 501(c)(3) requirements, serving people online nationwide counts funders that give in five or more states, and a young organization gets a caution on large federal awards.
+- **Saves your filters with your profile:** type of support (general operating, start-up, capacity building and more), the amount you want to ask for, funder types, timing (open now, or due within 30, 60 or 90 days), words to avoid, and a hide list (scholarship funds, invitation only, no unsolicited requests, research grants, matching funds required). They never change a score, and each tab says how many they hide.
 - **Exports** your strong and possible matches to CSV and the deadlines to a calendar file (.ics).
 - **Narrows the list** without changing any score: search words across every result and its details, award size, deadline and agency for federal grants, agency for Florida programs, and for foundations their typical grant, whether they publish how to apply, whether they refuse unsolicited requests, and whether they're based in or fund your cities.
 - **Marks what's new.** Grants, foundations and programs that weren't in the data at your last visit carry a New tag, and "Only new since your last visit" shows just those. The record of what you've seen stays in your browser.
@@ -48,7 +52,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 The public site is a static site in `web/` (Vite, TypeScript, Preact) on GitHub Pages, with no server of its own.
 
 - **Matching happens in the browser.** The first time you search with your own mission, the page downloads the same embedding model the data pipeline uses (BAAI/bge-small-en-v1.5, about 67 MB, once) and runs it on your device with [transformers.js](https://github.com/huggingface/transformers.js). Your mission, key words and profile never leave the page. The three examples are scored without the download.
-- **The scoring is the Python scoring, ported.** `web/src/score.ts` is a line-by-line TypeScript port of `grantmatch/match.py` and `grantmatch/rank_more.py`. A parity test scores nine example profiles in both and requires the same results, reasons and cautions.
+- **The scoring is the Python scoring, ported.** `web/src/score.ts` is a line-by-line TypeScript port of `grantmatch/match.py` and `grantmatch/rank_more.py`. A parity test scores 18 example profiles in both, including the checkbox groups, fiscal sponsor, online nationwide and young organization cases, and requires the same results, reasons and cautions.
 - **The data is published with the site.** After each refresh, `grantmatch/export_web.py` writes the records and their embeddings (as float16) for the browser, and the deploy workflow rebuilds the site.
 
 ## Design and accessibility

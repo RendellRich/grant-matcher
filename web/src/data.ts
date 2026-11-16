@@ -66,3 +66,5 @@ export const loadExamples = () => json<Record<string, Example>>("examples.json")
 export const loadFederal = () => source<FederalRec>("federal");
 export const loadFlorida = () => source<FloridaRec>("florida");
 export const loadFoundations = (state: string) => source<FoundationRec>(`foundations-${state}`);
+/** A state's counties and the cities, towns and Census places in each (grantmatch/counties.py). */
+export const loadCounties = (state: string) => json<Record<string, string[]>>(`counties-${state}.json`);

@@ -2,6 +2,7 @@
 import {
   asks501c3, fmtDate, money, type FederalExtra, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier, type WebsiteCycle,
 } from "./score";
+import { SUPPORT_TYPES, splitList, type ProfileForm } from "./profile";
 
 export type SourceKey = "fl" | "fdn" | "fed";
 
@@ -44,6 +45,16 @@ export interface Entry {
   asks501c3?: boolean; // a foundation whose how-to-apply text asks for 501(c)(3) status
   isNew?: boolean; // in the data now but not at the person's last visit (set by the app, not the scorer)
   cycle?: WebsiteCycle["s"]; // what a foundation's website said at the last weekly check
+  support?: string[]; // kinds of support its text describes (general operating, program...), from terms.json
+  kind?: string; // a foundation's kind: private, community, public, United Way
+  reach?: "national" | "state" | ""; // a foundation that gives in 5 or more states, or mostly in the person's state
+  forecast?: boolean; // a federal forecast, not open yet
+}
+
+const SUPPORT = SUPPORT_TYPES.map((t) => [t.id, new RegExp(t.pattern, "i")] as const);
+/** The kinds of support a grant's or funder's own words describe. */
+export function supportIn(text: string): string[] {
+  return SUPPORT.filter(([, re]) => re.test(text)).map(([id]) => id);
 }
 
 const STATUS = ["Forecast, not open yet"];
@@ -106,6 +117,8 @@ export function federalEntry(s: Scored<FederalRec & FederalExtra>, hasKw: boolea
     agency: r.agency,
     amountLow: (r.award_floor && r.award_floor > 0 ? r.award_floor : null) ?? (r.award_ceiling || null),
     amountHigh: (r.award_ceiling && r.award_ceiling > 0 ? r.award_ceiling : null) ?? (r.award_floor || null),
+    support: supportIn(`${r.title} ${desc}`),
+    forecast: r.status === "forecasted",
   };
 }
 
@@ -174,6 +187,10 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
     sortInState: r.in_state, sortMedian: r.grant_median ?? null,
     sortClose: web.due, // a deadline from its website, which the shortlist counts down to
     cycle: web.line || web.caution ? r._cycle!.s : undefined,
+    support: supportIn([...r.top_purposes, ...(r.sample_grants || []).map((g) => g?.purpose ?? ""), r._mission ?? ""].join(" ")),
+    kind: r.kind ?? "Private foundation",
+    reach: Object.values(r.recipient_states ?? {}).filter(Boolean).length >= 5 ? "national"
+      : (r.grant_count ? r.in_state / r.grant_count >= 0.5 : false) ? "state" : "",
     publishesApply: s.reasons.includes("Publishes how to apply"),
     closedToUnsolicited: s.cautions.includes("Says it does not accept unsolicited requests"),
     local: s.reasons.some((x) => x.startsWith("Funded ") || x.startsWith("Based in ")),
@@ -200,6 +217,7 @@ export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean): Entry {
     facts: [r.agency, r._assist || ""].filter(Boolean),
     side: "", agency: r.agency,
     score: s.score, tier: s.tier, ...why, rows,
+    support: supportIn(`${r.title} ${r.objectives}`),
   };
 }
 
@@ -216,10 +234,11 @@ export interface Narrow {
   no501: boolean; // hide foundations that ask for 501(c)(3) status
   fresh: boolean; // only entries that are new since the last visit
   cycle: boolean; // foundations whose website says applications are open or gives a deadline ahead
+  reach: "" | "state" | "national"; // foundations by where they give
 }
 
 export const NO_NARROW: Narrow = {
-  q: "", size: "", before: "", agency: "", apply: false, open: false, local: false, no501: false, fresh: false, cycle: false,
+  q: "", size: "", before: "", agency: "", apply: false, open: false, local: false, no501: false, fresh: false, cycle: false, reach: "",
 };
 
 export const SIZE_BANDS: Record<string, [string, number, number]> = {
@@ -243,7 +262,7 @@ function haystack(e: Entry): string {
 }
 
 export function isNarrowed(n: Narrow): boolean {
-  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local || n.no501 || n.fresh || n.cycle);
+  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local || n.no501 || n.fresh || n.cycle || n.reach);
 }
 
 /** Entries that pass every filter that applies to their source. Every word typed must appear. */
@@ -275,7 +294,55 @@ export function narrow(entries: Entry[], n: Narrow): Entry[] {
       if (n.local && !e.local) return false;
       if (n.no501 && e.asks501c3) return false;
       if (n.cycle && e.cycle !== "open" && e.cycle !== "deadline") return false;
+      if (n.reach && e.reach !== n.reach) return false;
     }
     return true;
   });
+}
+
+// ---------------- the profile's own filters ----------------
+
+const HIDE_TEST: Record<string, (e: Entry) => boolean> = {
+  scholarship: (e) => e.cautions.some((c) => c.startsWith("Mostly scholarships") || c.startsWith("Student aid paid")),
+  invitation: (e) => e.cautions.some((c) => c.startsWith("Says it only funds preselected") || c.startsWith("Its website says it isn't taking")),
+  unsolicited: (e) => e.cautions.includes("Says it does not accept unsolicited requests"),
+  asks501: (e) => Boolean(e.asks501c3),
+  research: (e) => e.cautions.some((c) => c.startsWith("Research")),
+  costshare: (e) => e.cautions.includes("Requires cost sharing or matching funds"),
+};
+
+/** How many of each source the profile's filters take out, and why, so the page can say so. */
+export interface ProfileNarrowed { entries: Entry[] | null; hidden: number }
+
+/** The filters saved with the profile (what you ask for, which funders, timing, words to avoid, the hide list).
+ *  They apply on every tab and never change a score. Results with no information on a choice stay in,
+ *  except for timing, where "Rolling or no deadline" decides. */
+export function profileNarrow(entries: Entry[] | null, f: ProfileForm, today: Date = new Date()): ProfileNarrowed {
+  if (!entries) return { entries, hidden: 0 };
+  const avoid = splitList(f.exclude_words).map((w) => w.toLowerCase());
+  const lo = f.ask_min ? +f.ask_min : null;
+  const hi = f.ask_max ? +f.ask_max : null;
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const days = f.timing && f.timing !== "open" ? +f.timing : null;
+  const hides = f.hide.map((h) => HIDE_TEST[h]).filter(Boolean);
+  const kept = entries.filter((e) => {
+    if (avoid.length && avoid.some((w) => haystack(e).includes(w))) return false;
+    if (f.support_types.length && e.support?.length && !e.support.some((s) => f.support_types.includes(s))) return false;
+    if (lo !== null || hi !== null) {
+      const a = e.source === "fed" ? e.amountLow : e.source === "fdn" ? e.sortMedian : null;
+      const b = e.source === "fed" ? e.amountHigh : a;
+      if (a != null && b != null && ((hi !== null && Math.min(a, b) > hi) || (lo !== null && Math.max(a, b) < lo))) return false;
+    }
+    if (e.source === "fdn" && e.kind && !f.funder_types.includes(e.kind)) return false;
+    if (f.timing === "open") {
+      const open = e.source === "fed" ? !e.forecast : e.cycle === "open" || e.cycle === "deadline";
+      if (!open && !(f.include_rolling && e.sortClose == null && e.source !== "fed")) return false;
+    } else if (days !== null) {
+      if (e.sortClose == null) { if (!f.include_rolling) return false; }
+      else if (e.sortClose - t0 > days * 86_400_000) return false;
+    }
+    if (hides.some((h) => h(e))) return false;
+    return true;
+  });
+  return { entries: kept, hidden: entries.length - kept.length };
 }

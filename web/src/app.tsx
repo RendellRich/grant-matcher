@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
-  loadExamples, loadFederal, loadFlorida, loadFoundations, loadMeta,
+  loadCounties, loadExamples, loadFederal, loadFlorida, loadFoundations, loadMeta,
   type Example, type Meta, type Source,
 } from "./data";
 import { embedMission } from "./embed";
-import { federalEntry, floridaEntry, foundationEntry, isNarrowed, narrow, NO_NARROW, SIZE_BANDS, type Entry, type Narrow, type SourceKey } from "./entries";
+import {
+  federalEntry, floridaEntry, foundationEntry, isNarrowed, narrow, NO_NARROW, profileNarrow, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
+} from "./entries";
 import { download, toCsv, toIcs } from "./exports";
 import { exampleForm, ProfileFormView } from "./form";
-import { BLANK, sameForm, splitList, STATE_NAMES, type ProfileForm } from "./profile";
+import { BLANK, expandCities, profileKeywords, profileMinorKeywords, sameForm, STATE_NAMES, type ProfileForm } from "./profile";
 import {
   closeDate, fmtDate, scoreFederal, scoreFlorida, scoreFoundations,
   type FederalRec, type FloridaRec, type FoundationRec, type Profile,
@@ -119,18 +121,28 @@ export function App() {
       .catch(() => setFdn((m) => ({ ...m, [st]: { state: "error" } })));
   }, [meta, st]);
 
+  const [counties, setCounties] = useState<Record<string, Record<string, string[]> | null>>({});
+  useEffect(() => {
+    if (st in counties) return;
+    setCounties((m) => ({ ...m, [st]: null }));
+    loadCounties(st).then((c) => setCounties((m) => ({ ...m, [st]: c }))).catch(() => undefined);
+  }, [st]);
+  const cityList = useMemo(() => expandCities(applied.cities, counties[st] ?? null), [applied.cities, counties, st]);
+
   // ---------- scoring ----------
   const profile: Profile = useMemo(() => {
     const now = new Date();
     return {
-      mission: applied.mission, keywords: splitList(applied.keywords), has501c3: applied.has_501c3,
+      mission: applied.mission, keywords: profileKeywords(applied), has501c3: applied.has_501c3,
       budgetBand: applied.budget_band, canCostShare: applied.can_cost_share, categories: applied.categories,
       includeForecasted: applied.include_forecasted, minDaysLeft: applied.min_days_left,
       today: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+      fiscalSponsor: applied.fiscal_sponsor, delivery: applied.delivery, minorKeywords: profileMinorKeywords(applied),
+      yearFounded: applied.year_founded ? +applied.year_founded : null,
     };
   }, [applied]);
   const hasKw = profile.keywords.length > 0;
-  const blank = !applied.mission.trim() && !applied.keywords.trim();
+  const blank = !applied.mission.trim() && !applied.keywords.trim() && !applied.focus_areas.length;
   const sim = (vecs: Source<unknown>["vecs"]) => (vector && !blank ? similarities(vecs, vector) : null);
 
   const fedScored = useMemo(() => fed.state === "ready" && !blank
@@ -144,8 +156,8 @@ export function App() {
   const fedAll = useMemo(() => markNew(fedScored?.map((s) => federalEntry(s, hasKw)) ?? null, fedFresh), [fedScored, fedFresh]);
   const fdnAll = useMemo(() => markNew(fdnSrc?.state === "ready" && !blank
     ? scoreFoundations(fdnSrc.data.records.filter((r) => fdnKinds.includes(r.kind || "Private foundation")), profile, st,
-      applied.cities.split(",").filter((c) => c.trim()), sim(fdnSrc.data.vecs), fdnPre).map((s) => foundationEntry(s, st, hasKw))
-    : null, fdnFresh), [fdnSrc, profile, vector, fdnKinds, fdnPre, fdnFresh]);
+      cityList, sim(fdnSrc.data.vecs), fdnPre).map((s) => foundationEntry(s, st, hasKw))
+    : null, fdnFresh), [fdnSrc, profile, vector, fdnKinds, fdnPre, fdnFresh, cityList]);
   const flAll = useMemo(() => markNew(fl.state === "ready" && st === "FL" && !blank
     ? scoreFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar).map((s) => floridaEntry(s, hasKw)) : null, flFresh),
   [fl, profile, vector, flEar, st, flFresh]);
@@ -153,7 +165,12 @@ export function App() {
   const fedOut = useMemo(() => dropSubmitted(fedAll, shortlist.done), [fedAll, shortlist.done]);
   const fdnOut = useMemo(() => dropSubmitted(fdnAll, shortlist.done), [fdnAll, shortlist.done]);
   const flOut = useMemo(() => dropSubmitted(flAll, shortlist.done), [flAll, shortlist.done]);
-  const fedEntries = fedOut.entries, fdnEntries = fdnOut.entries, flEntries = flOut.entries;
+  // The profile's filters (what you ask for, which funders, timing, the hide list) apply on every tab.
+  const fedP = useMemo(() => profileNarrow(fedOut.entries, applied), [fedOut, applied]);
+  const fdnP = useMemo(() => profileNarrow(fdnOut.entries, applied), [fdnOut, applied]);
+  const flP = useMemo(() => profileNarrow(flOut.entries, applied), [flOut, applied]);
+  const fedEntries = fedP.entries, fdnEntries = fdnP.entries, flEntries = flP.entries;
+  const hiddenByProfile: Record<SourceKey, number> = { fed: fedP.hidden, fdn: fdnP.hidden, fl: flP.hidden };
   const hiddenDone: Record<SourceKey, number> = { fed: fedOut.hidden, fdn: fdnOut.hidden, fl: flOut.hidden };
   // Today's Grants.gov dates for shortlisted federal grants, so a moved or withdrawn deadline shows.
   const listed = useMemo(() => listedNow(shortlist.items, fed.state === "ready"
@@ -161,8 +178,10 @@ export function App() {
   [shortlist.items, fed, profile.today]);
   const dueSoon = useMemo(() => comingUp(shortlist.items, listed, new Date(), 7), [shortlist.items, listed]);
 
-  const lists: Partial<Record<SourceKey, Entry[] | null>> = { fed: fedEntries, fdn: fdnEntries };
-  if (st === "FL") lists.fl = flEntries;
+  const lists: Partial<Record<SourceKey, Entry[] | null>> = {};
+  if (applied.funder_types.includes("federal")) lists.fed = fedEntries;
+  if (applied.funder_types.some((t) => !["federal", "florida"].includes(t))) lists.fdn = fdnEntries;
+  if (st === "FL" && applied.funder_types.includes("florida")) lists.fl = flEntries;
   const keys = Object.keys(lists) as SourceKey[];
   const count = (k: SourceKey, tier: string) => (lists[k] ?? []).filter((e) => e.tier === tier).length;
   const strong = Object.fromEntries(keys.map((k) => [k, count(k, "Strong")])) as Record<SourceKey, number>;
@@ -408,6 +427,16 @@ export function App() {
               <input id={id("before")} type="date" value={n.before} onInput={(e) => setN(k, { before: (e.target as HTMLInputElement).value })} />
             </div>
           ) : null}
+          {k === "fdn" ? (
+            <div class="field">
+              <label for={id("reach")}>Where it gives</label>
+              <select id={id("reach")} value={n.reach} onChange={(e) => setN(k, { reach: (e.target as HTMLSelectElement).value as Narrow["reach"] })}>
+                <option value="">Anywhere</option>
+                <option value="state">Mostly in {STATE_NAMES[st] ?? st}</option>
+                <option value="national">Nationally (5 or more states)</option>
+              </select>
+            </div>
+          ) : null}
           {agencies.length > 1 ? (
             <div class="field">
               <label for={id("agency")}>Agency</label>
@@ -438,6 +467,10 @@ export function App() {
             <label class="check"><input type="checkbox" checked={n.fresh} onChange={(e) => setN(k, { fresh: (e.target as HTMLInputElement).checked })} />
               <span>Only new since your last visit on {fmtVisit(since)} ({newCount.toLocaleString("en-US")})</span></label>
           </div>
+        ) : null}
+        {hiddenByProfile[k] ? (
+          <p class="quiet">Your profile's filters hide {hiddenByProfile[k].toLocaleString("en-US")} {hiddenByProfile[k] === 1 ? NOUN[k][2] : NOUN[k][1]}.
+            Change them under Your organization.</p>
         ) : null}
         {hiddenDone[k] ? (
           <p class="quiet">{hiddenDone[k] === 1 ? `1 ${NOUN[k][2]} you submitted is` : `${hiddenDone[k].toLocaleString("en-US")} ${NOUN[k][1]} you submitted are`} hidden here.{" "}
@@ -471,6 +504,9 @@ export function App() {
       <>
         {tally("fed", `${fed.data.records.length.toLocaleString("en-US")} open and forecasted federal opportunities that list nonprofits as eligible${updated ? `, updated ${updated}` : ""}.`
           + (strong.fed ? "" : " No strong federal matches is common for small direct-service groups: much federal money for local programs passes through state agencies first."))}
+        {!applied.registrations.includes("sam") ? (
+          <p class="note">Federal applications need a free SAM.gov registration and a Unique Entity ID first, and approval can take several weeks. Start at <a href="https://sam.gov" target="_blank" rel="noopener">sam.gov<span class="sr-only"> (opens in a new tab)</span></a>.</p>
+        ) : null}
         {narrowBar("fed", fedEntries, shown, "grants")}
         <details class="filters">
           <summary>More filters and how the score works</summary>

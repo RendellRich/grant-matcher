@@ -78,7 +78,21 @@ export interface Profile {
   includeForecasted: boolean;
   minDaysLeft: number;
   today: Date; // a local calendar date; only the year, month and day are used
+  fiscalSponsor?: boolean; // can apply through a fiscal sponsor while 501(c)(3) status is pending or absent
+  delivery?: "in_person" | "online_state" | "online_national";
+  yearFounded?: number | null;
+  minorKeywords?: string[]; // words from the ages and populations choices, counted at half weight
 }
+
+const MINOR_WEIGHT = 0.5;
+
+// match.py and rank_more.py: the fiscal sponsor, young organization and national giver rules.
+const SPONSOR_PENALTY = 10;
+const YOUNG_YEARS = 3;
+const YOUNG_AWARD = 100_000;
+const YOUNG_CAUTION = "A large federal award for a new organization; most go to groups with a few years of results";
+const ASKS_501C3_SPONSOR = "Asks for proof of 501(c)(3) status; apply through your fiscal sponsor";
+const NATIONAL_STATES = 5;
 
 export interface Scored<T> {
   rec: T;
@@ -195,11 +209,12 @@ function awardRange(floor: number | null, ceiling: number | null): string {
   return "amount not listed";
 }
 
-function keywordWeights(keywords: string[], texts: string[]): [Map<string, number>, number] {
+function keywordWeights(keywords: string[], texts: string[], minor: string[] = []): [Map<string, number>, number] {
   const weights = new Map<string, number>();
   for (const kw of keywords) {
     const share = texts.length ? texts.filter((t) => keywordHits([kw], t).length > 0).length / texts.length : 0;
-    weights.set(kw, 1.0 - Math.min(0.85, share * 8)); // a word in 10%+ of records keeps only 15% weight
+    const w = 1.0 - Math.min(0.85, share * 8); // a word in 10%+ of records keeps only 15% weight
+    weights.set(kw, minor.includes(kw) ? w * MINOR_WEIGHT : w);
   }
   const best3 = [...weights.values()].sort((a, b) => b - a).slice(0, 3).reduce((a, b) => a + b, 0) || 1.0;
   return [weights, best3];
@@ -270,7 +285,7 @@ export function scoreFederal(records: FederalRec[], p: Profile, semantic: Map<st
   }
 
   const texts = work.map((r) => (r.title + " " + r.description).toLowerCase());
-  const [weights, best3] = keywordWeights(p.keywords, texts);
+  const [weights, best3] = keywordWeights(p.keywords, texts, p.minorKeywords);
   const budget = BUDGET_BANDS[currentBand(p.budgetBand)] ?? 250_000;
   const allUndated = work.every((r) => r.days_left === null);
   const out: Scored<FederalRec & FederalExtra>[] = [];
@@ -293,10 +308,15 @@ export function scoreFederal(records: FederalRec[], p: Profile, semantic: Map<st
     } else if (types.has("13") || types.has("99")) {
       reasons.push("Open to nonprofits without 501(c)(3) status");
     } else if (types.has("12") && !["13", "25", "99"].some((t) => types.has(t))) {
-      points -= 40;
-      cautions.push(p.has501c3 === "Pending"
-        ? "Requires 501(c)(3) status; apply once your IRS letter arrives, or through a fiscal sponsor"
-        : "Requires 501(c)(3) status; you would need a fiscal sponsor");
+      if (p.fiscalSponsor) {
+        points -= SPONSOR_PENALTY;
+        cautions.push("Requires 501(c)(3) status; apply through your fiscal sponsor");
+      } else {
+        points -= 40;
+        cautions.push(p.has501c3 === "Pending"
+          ? "Requires 501(c)(3) status; apply once your IRS letter arrives, or through a fiscal sponsor"
+          : "Requires 501(c)(3) status; you would need a fiscal sponsor");
+      }
     } else {
       points -= 5; cautions.push('Eligibility is "other"; read the eligibility notes');
     }
@@ -314,6 +334,11 @@ export function scoreFederal(records: FederalRec[], p: Profile, semantic: Map<st
     } else if (ceiling && ceiling > 10 * budget && !floor) {
       points -= 5;
       cautions.push(`Awards go up to ${money(ceiling)}; ask for an amount that fits your budget`);
+    }
+
+    const biggest = Math.max(floor ?? 0, ceiling && ceiling > 0 ? ceiling : 0);
+    if (p.yearFounded && p.today.getFullYear() - p.yearFounded < YOUNG_YEARS && biggest >= YOUNG_AWARD) {
+      points -= 5; cautions.push(YOUNG_CAUTION);
     }
 
     const nih = RESEARCH_NUMBER.test(r.number || "") && String(r.agency_code).startsWith("HHS-NIH");
@@ -389,7 +414,7 @@ export function scoreFoundations(records: FoundationRec[], p: Profile, state: st
   }));
   const purposeText = recs.map((r) => r.top_purposes.join(" ") + " " + r.sample_grants.map((g) => g.purpose).join(" ")
     + " " + r.top_recipients.join(" "));
-  const [weights, best3] = keywordWeights(p.keywords, purposeText.map((t) => t.toLowerCase()));
+  const [weights, best3] = keywordWeights(p.keywords, purposeText.map((t) => t.toLowerCase()), p.minorKeywords);
   const fit = scaler(semantic);
   const budget = BUDGET_BANDS[currentBand(p.budgetBand)] ?? 250_000;
   const citySet = new Set(cities.map((c) => c.trim().toLowerCase()).filter(Boolean));
@@ -407,13 +432,17 @@ export function scoreFoundations(records: FoundationRec[], p: Profile, state: st
     const n = r.grant_count || 0;
     const inState = r.recipient_states?.[state] ?? 0;
     const share = n ? inState / n : 0;
+    // A group serving people online across the country can reach a funder that gives in many states.
+    const reach = Object.values(r.recipient_states ?? {}).filter(Boolean).length;
+    const national = p.delivery === "online_national" && reach >= NATIONAL_STATES;
     const wentTo = n === 1 ? `Its only grant went to a ${state} organization` : `${inState} of its ${n} grants went to ${state} organizations`;
     if (share >= 0.5) { points += 20; reasons.push(wentTo); }
     else if (share >= 0.2) { points += 12; reasons.push(wentTo); }
     else if (inState) {
-      points -= share < 0.1 && r.state !== state ? 15 : 5;
+      points -= national ? 0 : share < 0.1 && r.state !== state ? 15 : 5;
       cautions.push(`Only ${inState} of its ${n} grants went to ${state}`);
     } else if (r.state === state) points += 6;
+    else if (national) { points -= 5; cautions.push(`No grants to ${state} in its latest return, but it gives in ${reach} states`); }
     else { points -= 20; cautions.push(`No grants to ${state} in its latest return`); }
 
     const isPublic = r.kind !== "Private foundation";
@@ -459,7 +488,8 @@ export function scoreFoundations(records: FoundationRec[], p: Profile, state: st
     }
     if (Object.keys(apply).length && (apply.materials || apply.contact)) reasons.push("Publishes how to apply");
     if (p.has501c3 !== "Yes" && asks501c3(r)) {
-      points -= ASKS_501C3_PENALTY[p.has501c3]; cautions.push(ASKS_501C3_CAUTION[p.has501c3]);
+      if (p.fiscalSponsor) cautions.push(ASKS_501C3_SPONSOR);
+      else { points -= ASKS_501C3_PENALTY[p.has501c3]; cautions.push(ASKS_501C3_CAUTION[p.has501c3]); }
     }
     // Scholarship funds pay students (or a college on a student's behalf), so a nonprofit cannot apply.
     // Judge by what its grants were for: most of the listed grants, or a purpose list made of scholarships.
@@ -492,7 +522,7 @@ export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<st
   if (!showEarmarks) recs = recs.filter((r) => !r.earmark);
   if (!recs.length) return [];
   const text = recs.map((r) => r.title + " " + r.objectives + " " + r.subjects);
-  const [weights, best3] = keywordWeights(p.keywords, text.map((t) => t.toLowerCase()));
+  const [weights, best3] = keywordWeights(p.keywords, text.map((t) => t.toLowerCase()), p.minorKeywords);
   const fit = scaler(semantic);
   const out = recs.map((r, i): Scored<FloridaRec> => {
     const matched = keywordHits(p.keywords, text[i]);
