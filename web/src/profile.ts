@@ -40,6 +40,8 @@ export const HIDE: [string, string][] = [
   ["scholarship", "Scholarship funds"], ["invitation", "Invitation only or preselected groups"], ["unsolicited", "Doesn't take unsolicited requests"],
   ["asks501", "Asks for 501(c)(3) proof"], ["research", "Research grants"], ["costshare", "Requires matching funds"],
 ];
+/** Offered only inside ETO's admin page, where the funding pipeline says what was already sent. */
+export const HIDE_PIPELINE: [string, string][] = [["inpipeline", "Already in our pipeline"], ["declined", "Declined or closed before"]];
 
 /** What the person entered. Matches the JSON the Streamlit app saves, so old profile files still load:
  *  every field added later has a default. */
@@ -152,7 +154,7 @@ export function parseProfile(text: string): ProfileForm {
     funder_types: Array.isArray(d.funder_types) ? ids(d.funder_types, FUNDER_TYPES.map(([v]) => v)) : BLANK.funder_types,
     timing: TIMING.some(([v]) => v === d.timing) ? d.timing : "",
     include_rolling: d.include_rolling === undefined ? true : Boolean(d.include_rolling),
-    hide: ids(d.hide, HIDE.map(([v]) => v)),
+    hide: ids(d.hide, [...HIDE, ...HIDE_PIPELINE].map(([v]) => v)),
   };
 }
 

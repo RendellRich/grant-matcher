@@ -2,7 +2,7 @@ import { useRef, useState } from "preact/hooks";
 import type { Example } from "./data";
 import { download } from "./exports";
 import {
-  AGES, BLANK, DELIVERY, FOCUS_AREAS, FUNDER_TYPES, HIDE, parseProfile, POPULATIONS, REGISTRATIONS, STATE_NAMES, STATES, SUPPORT_TYPES, TIMING,
+  AGES, BLANK, DELIVERY, FOCUS_AREAS, FUNDER_TYPES, HIDE, HIDE_PIPELINE, parseProfile, POPULATIONS, REGISTRATIONS, STATE_NAMES, STATES, SUPPORT_TYPES, TIMING,
   type ProfileForm, type Status501, type Timing,
 } from "./profile";
 import { BUDGET_BANDS, CATEGORY_NAMES } from "./score";
@@ -20,6 +20,8 @@ export interface FormProps {
   busy: string; // progress text while updating
   status: string; // "Updated: 30 strong matches." etc.
   applied: ProfileForm;
+  /** Inside ETO's admin page: the profile is kept by ETO instead of in a downloaded file. */
+  parent?: { onSave: () => void; saving: boolean; result: { ok: boolean; text: string } | null };
 }
 
 export function exampleForm(ex: Example): ProfileForm {
@@ -252,7 +254,7 @@ export function ProfileFormView(p: FormProps) {
               <span>Also show funders with no deadline listed</span>
             </label>
           ) : null}
-          <CheckGroup legend="Hide" idp={id("hide")} items={HIDE} chosen={draft.hide} onToggle={toggle("hide")} />
+          <CheckGroup legend="Hide" idp={id("hide")} items={p.parent ? [...HIDE_PIPELINE, ...HIDE] : HIDE} chosen={draft.hide} onToggle={toggle("hide")} />
           <div class="field">
             <label for={id("exclude")}>Hide results that mention <span class="quiet">(optional)</span></label>
             <input id={id("exclude")} type="text" value={draft.exclude_words} placeholder="For example: capital campaign, religious instruction"
@@ -268,7 +270,20 @@ export function ProfileFormView(p: FormProps) {
         </p>
       </div>
 
-      <fieldset class="group keep">
+      {p.parent ? (
+        <fieldset class="group keep">
+          <legend>Keep this profile</legend>
+          <p class="hint">Saves the profile above to Exceed the Odds, so it loads here next time for every admin.</p>
+          <div class="keep-actions">
+            <button type="button" class="btn" disabled={p.parent.saving} onClick={p.parent.onSave}>
+              {p.parent.saving ? "Saving" : "Save profile to ETO"}
+            </button>
+          </div>
+          {p.parent.result ? (
+            <p class={p.parent.result.ok ? "form-status" : "error"} role={p.parent.result.ok ? "status" : "alert"}>{p.parent.result.text}</p>
+          ) : null}
+        </fieldset>
+      ) : <fieldset class="group keep">
         <legend>Keep this profile</legend>
         <p class="hint">Nothing is saved on a server. Download your profile, then load it here next time.</p>
         <div class="keep-actions">
@@ -279,7 +294,7 @@ export function ProfileFormView(p: FormProps) {
           <input ref={fileRef} type="file" accept=".json,application/json" class="sr-only" tabIndex={-1} aria-hidden="true" aria-label="Saved profile file" onChange={loadFile} />
         </div>
         {fileError ? <p class="error" role="alert">{fileError}</p> : null}
-      </fieldset>
+      </fieldset>}
     </form>
   );
 }

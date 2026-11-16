@@ -14,7 +14,8 @@ import {
   closeDate, fmtDate, scoreFederal, scoreFlorida, scoreFoundations,
   type FederalRec, type FloridaRec, type FoundationRec, type Profile,
 } from "./score";
-import { EntryView, IconAlert, IconDownload, IconMark, ResultList } from "./ui";
+import { EntryView, IconAlert, IconDownload, IconMark, ResultList, type MarkAction } from "./ui";
+import { embedParent, listen, payloadFor, post, PROTOCOL, type Incoming, type PipelineItem } from "./parent";
 import { markNew, newSince, type Fresh } from "./seen";
 import {
   byDeadline, comingUp, deadline, dropSubmitted, dueText, daysUntil, listedNow, parseShortlist, setDue, setStage, shortlistIcs,
@@ -35,6 +36,9 @@ type Loaded<T> = { state: "loading" } | { state: "ready"; data: T } | { state: "
 
 const n = (count: number, one: string, many: string) => `${count.toLocaleString("en-US")} ${count === 1 ? one : many}`;
 const queryText = (f: ProfileForm) => f.mission + " " + f.keywords;
+
+const NO_KEYS = new Set<string>();
+const ANSWER_WAIT = 15_000; // how long to wait for ETO before saying it didn't answer
 
 function useShortlist() {
   const [items, setItems] = useState<Item[]>(() => {
@@ -57,6 +61,24 @@ function useShortlist() {
 type Shortlist = ReturnType<typeof useShortlist>;
 
 export function App() {
+  // Inside ETO's admin page (?embed=eto, framed by an allowed site), ETO keeps the profile and the pipeline,
+  // and "Send to funding pipeline" takes the place of the shortlist.
+  const parentOrigin = useMemo(() => embedParent(window.location, document.referrer, window.parent !== window), []);
+  const embedded = parentOrigin !== null;
+  const [pipeline, setPipeline] = useState<Map<string, PipelineItem>>(new Map());
+  const [sending, setSending] = useState<Set<string>>(new Set());
+  const sendingRef = useRef(sending);
+  sendingRef.current = sending;
+  const [sentNote, setSentNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(saving);
+  savingRef.current = saving;
+  const [saveResult, setSaveResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const sentTitles = useRef(new Map<string, string>());
+  const fromParent = useRef(false); // set once ETO has sent its profile
+  const [sentNow, setSentNow] = useState<Set<string>>(new Set()); // sent during this visit: stay in view, marked
+  // "Already in our pipeline" hides what ETO reported, not what was just sent, so a sent grant doesn't vanish.
+  const pipelineToHide = useMemo(() => new Map([...pipeline].filter(([k]) => !sentNow.has(k))), [pipeline, sentNow]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [examples, setExamples] = useState<Record<string, Example> | null>(null);
   const [fed, setFed] = useState<Loaded<Source<FederalRec>>>({ state: "loading" });
@@ -104,6 +126,7 @@ export function App() {
     loadMeta().then(setMeta).catch(() => setMeta({ states: [] }));
     loadExamples().then((ex) => {
       setExamples(ex);
+      if (fromParent.current) return; // ETO's own profile arrived first; the example must not replace it
       const first = ex.literacy ?? Object.values(ex)[0];
       const f = exampleForm(first);
       setDraft(f); setApplied(f); setVector(first.vector);
@@ -162,13 +185,14 @@ export function App() {
     ? scoreFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar).map((s) => floridaEntry(s, hasKw)) : null, flFresh),
   [fl, profile, vector, flEar, st, flFresh]);
   // Anything marked submitted on the shortlist stops showing in the results and their counts.
-  const fedOut = useMemo(() => dropSubmitted(fedAll, shortlist.done), [fedAll, shortlist.done]);
-  const fdnOut = useMemo(() => dropSubmitted(fdnAll, shortlist.done), [fdnAll, shortlist.done]);
-  const flOut = useMemo(() => dropSubmitted(flAll, shortlist.done), [flAll, shortlist.done]);
+  const done = embedded ? NO_KEYS : shortlist.done;
+  const fedOut = useMemo(() => dropSubmitted(fedAll, done), [fedAll, done]);
+  const fdnOut = useMemo(() => dropSubmitted(fdnAll, done), [fdnAll, done]);
+  const flOut = useMemo(() => dropSubmitted(flAll, done), [flAll, done]);
   // The profile's filters (what you ask for, which funders, timing, the hide list) apply on every tab.
-  const fedP = useMemo(() => profileNarrow(fedOut.entries, applied), [fedOut, applied]);
-  const fdnP = useMemo(() => profileNarrow(fdnOut.entries, applied), [fdnOut, applied]);
-  const flP = useMemo(() => profileNarrow(flOut.entries, applied), [flOut, applied]);
+  const fedP = useMemo(() => profileNarrow(fedOut.entries, applied, undefined, pipelineToHide), [fedOut, applied, pipelineToHide]);
+  const fdnP = useMemo(() => profileNarrow(fdnOut.entries, applied, undefined, pipelineToHide), [fdnOut, applied, pipelineToHide]);
+  const flP = useMemo(() => profileNarrow(flOut.entries, applied, undefined, pipelineToHide), [flOut, applied, pipelineToHide]);
   const fedEntries = fedP.entries, fdnEntries = fdnP.entries, flEntries = flP.entries;
   const hiddenByProfile: Record<SourceKey, number> = { fed: fedP.hidden, fdn: fdnP.hidden, fl: flP.hidden };
   const hiddenDone: Record<SourceKey, number> = { fed: fedOut.hidden, fdn: fdnOut.hidden, fl: flOut.hidden };
@@ -209,17 +233,17 @@ export function App() {
   // ---------- profile actions ----------
   const pending = !sameForm(draft, applied);
 
-  async function update() {
-    if (!pending) { setStatus("Your matches are already up to date."); return; }
-    const textChanged = queryText(draft) !== queryText(applied);
+  async function update(f: ProfileForm = draft, force = false) {
+    if (!force && sameForm(f, applied)) { setStatus("Your matches are already up to date."); return; }
+    const textChanged = queryText(f) !== queryText(applied);
     let v = vector;
-    if (textChanged && (draft.mission.trim() || draft.keywords.trim())) {
-      const ex = Object.values(examples ?? {}).find((e) => e.mission === draft.mission && e.keywords === draft.keywords);
+    if (textChanged && (f.mission.trim() || f.keywords.trim())) {
+      const ex = Object.values(examples ?? {}).find((e) => e.mission === f.mission && e.keywords === f.keywords);
       if (ex) v = ex.vector;
       else {
         setBusy("Reading your mission");
         try {
-          v = await embedMission(queryText(draft), ({ loaded, total }) => {
+          v = await embedMission(queryText(f), ({ loaded, total }) => {
             if (total) setBusy(`Downloading the matching model, ${Math.round(loaded / 1e6)} of ${Math.round(total / 1e6)} MB. This happens once.`);
           });
           setModelFailed(false);
@@ -231,9 +255,76 @@ export function App() {
     }
     setBusy("");
     setVector(v);
-    setApplied(draft);
+    setApplied(f);
     setStatus("updated");
   }
+
+  // ---------- inside ETO ----------
+  const onParent = useRef<(m: Incoming) => void>(() => undefined);
+  onParent.current = (m) => {
+    if (m.type === "eto:profile") {
+      fromParent.current = true;
+      setExampleKey("");
+      setDraft(m.profile);
+      void update(m.profile, true);
+    } else if (m.type === "eto:in-pipeline") {
+      setPipeline(new Map(m.items.map((i) => [i.key, i])));
+    } else if (m.type === "eto:sent") {
+      setSending((s) => { const next = new Set(s); next.delete(m.key); return next; });
+      const title = sentTitles.current.get(m.key) ?? "This grant";
+      const at = m.stage ? ` at ${m.stage}` : "";
+      if (m.ok) {
+        setSentNow((s) => new Set(s).add(m.key));
+        setPipeline((p) => new Map(p).set(m.key, { key: m.key, stage: m.stage || "Prospect", closed: false }));
+        setSentNote({ ok: true, text: m.status === "exists" ? `${title} is already in the funding pipeline${at}.` : `Sent ${title} to the funding pipeline${at}.` });
+      } else {
+        setSentNote({ ok: false, text: m.message || `${title} wasn't saved. Try again, or add it in Funding.` });
+      }
+    } else if (m.type === "eto:profile-saved") {
+      setSaving(false);
+      setSaveResult(m.ok ? { ok: true, text: "Saved to ETO." } : { ok: false, text: m.message || "The profile wasn't saved. Try again." });
+    }
+  };
+  useEffect(() => {
+    if (!parentOrigin) return;
+    const stop = listen(parentOrigin, (m) => onParent.current(m));
+    post(parentOrigin, { type: "gm:ready", protocol: PROTOCOL });
+    return stop;
+  }, [parentOrigin]);
+
+  function sendToPipeline(e: Entry) {
+    if (!parentOrigin || pipeline.has(e.key) || sending.has(e.key)) return;
+    sentTitles.current.set(e.key, e.title);
+    setSending((s) => new Set(s).add(e.key));
+    setSentNote(null);
+    post(parentOrigin, { type: "gm:send", item: payloadFor(e) });
+    window.setTimeout(() => {
+      if (!sendingRef.current.has(e.key)) return;
+      setSending((s) => { const next = new Set(s); next.delete(e.key); return next; });
+      setSentNote({ ok: false, text: `ETO didn't answer, so ${e.title} may not have been saved. Check Funding before sending it again.` });
+    }, ANSWER_WAIT);
+  }
+
+  function saveToParent() {
+    if (!parentOrigin) return;
+    setSaving(true);
+    setSaveResult(null);
+    post(parentOrigin, { type: "gm:save-profile", profile: draft });
+    window.setTimeout(() => {
+      if (!savingRef.current) return;
+      setSaving(false);
+      setSaveResult({ ok: false, text: "ETO didn't answer, so the profile may not have been saved. Try again." });
+    }, ANSWER_WAIT);
+  }
+
+  const pipelineKeys = useMemo(() => new Set(pipeline.keys()), [pipeline]);
+  const markAction: MarkAction = {
+    label: (e, on) => (on ? `In pipeline: ${pipeline.get(e.key)?.stage || "Prospect"}` : "Send to funding pipeline"),
+    busy: sending,
+  };
+  const markProps = embedded
+    ? { marked: pipelineKeys, onMark: sendToPipeline, action: markAction }
+    : { marked: shortlist.keys, onMark: shortlist.toggle };
 
   // The answer to pressing the button, said where it was pressed, once the new scores exist.
   const statusText = status === "updated" ? `Updated: ${n(total, "strong match", "strong matches")}.` : status;
@@ -262,12 +353,13 @@ export function App() {
   const formProps = {
     draft, setDraft, examples: examples ?? {}, exampleKey, onExample: chooseExample, onLoad: loadProfile, onUpdate: update,
     pending, busy, status: statusText, applied,
+    parent: embedded ? { onSave: saveToParent, saving, result: saveResult } : undefined,
   };
 
   // ---------- render ----------
   const tabs: [string, string, number | null][] = [
     ...shownOrder.map((k): [string, string, number | null] => [k, NOUN[k][0], lists[k] ? strong[k] + possible[k] : null]),
-    ["shortlist", "Shortlist", shortlist.items.length],
+    ...(embedded ? [] : [["shortlist", "Shortlist", shortlist.items.length] as [string, string, number | null]]),
   ];
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   function onTabKey(ev: KeyboardEvent, i: number) {
@@ -286,9 +378,11 @@ export function App() {
         <div class="band-inner">
           <div class="masthead">
             <p class="name">Grant Matcher</p>
-            <a class="short-count" href="#results" onClick={() => setTab("shortlist")}>
-              <IconMark on={shortlist.items.length > 0} />Shortlist <span class="num">{shortlist.items.length}</span>
-            </a>
+            {embedded ? null : (
+              <a class="short-count" href="#results" onClick={() => setTab("shortlist")}>
+                <IconMark on={shortlist.items.length > 0} />Shortlist <span class="num">{shortlist.items.length}</span>
+              </a>
+            )}
           </div>
           <h1 class="answer" aria-live="polite">
             {blank ? "Describe your work to see which grants fit."
@@ -315,7 +409,13 @@ export function App() {
         </aside>
 
         <main id="results" tabIndex={-1} class="main">
-          {dueSoon.length && tab !== "shortlist" ? (
+          {embedded ? (
+            <div class="toast-wrap" role="status">
+              {sentNote?.ok ? <p class="toast">{sentNote.text}</p> : null}
+            </div>
+          ) : null}
+          {embedded && sentNote && !sentNote.ok ? <p class="toast warn" role="alert">{sentNote.text}</p> : null}
+          {!embedded && dueSoon.length && tab !== "shortlist" ? (
             <p class="note due-soon">
               <strong>{dueSoon.length === 1 ? "1 grant on your shortlist is" : `${dueSoon.length} grants on your shortlist are`} due within a week</strong>
               {dueSoon[0].days < 0 ? ", and one is past due" : ""}.{" "}
@@ -529,7 +629,7 @@ export function App() {
             </ul>
           </div>
         </details>
-        <ResultList name="fed" noun="grants" entries={shown} narrowed={isNarrowed(cur("fed"))} marked={shortlist.keys} onMark={shortlist.toggle}
+        <ResultList name="fed" noun="grants" entries={shown} narrowed={isNarrowed(cur("fed"))} {...markProps}
           sorts={[["Best fit", null],
             ["Closing soonest", (a, b) => (a.sortClose ?? Infinity) - (b.sortClose ?? Infinity)],
             ["Largest award", (a, b) => (b.sortAward ?? -Infinity) - (a.sortAward ?? -Infinity)]]}
@@ -587,7 +687,7 @@ export function App() {
             </ul>
           </div>
         </details>
-        <ResultList name="fdn" noun="foundations" entries={shown} narrowed={isNarrowed(cur("fdn"))} marked={shortlist.keys} onMark={shortlist.toggle}
+        <ResultList name="fdn" noun="foundations" entries={shown} narrowed={isNarrowed(cur("fdn"))} {...markProps}
           sorts={[["Best fit", null],
             [`Most grants in ${st}`, (a, b) => (b.sortInState ?? 0) - (a.sortInState ?? 0)],
             ["Largest typical grant", (a, b) => (b.sortMedian ?? -Infinity) - (a.sortMedian ?? -Infinity)]]}
@@ -628,7 +728,7 @@ export function App() {
             </ul>
           </div>
         </details>
-        <ResultList name="fl" noun="programs" entries={shown} narrowed={isNarrowed(cur("fl"))} marked={shortlist.keys} onMark={shortlist.toggle}
+        <ResultList name="fl" noun="programs" entries={shown} narrowed={isNarrowed(cur("fl"))} {...markProps}
           exports={picks.length ? (
             <div class="exports">
               <button type="button" class="btn" onClick={() => download("florida-matches.csv", entriesCsv(picks), "text/csv")}>
