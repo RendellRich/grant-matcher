@@ -134,3 +134,9 @@ export function listen(origin: string, onMessage: (m: Incoming) => void): () => 
 export function post(origin: string, m: Outgoing): void {
   window.parent.postMessage(m, origin);
 }
+
+/** Where a loaded profile came from, for the example menu's extra option. */
+export type LoadedFrom = "file" | "eto";
+export function loadedLabel(from: LoadedFrom): string {
+  return from === "eto" ? "ETO's saved profile" : "Loaded from a file";
+}
