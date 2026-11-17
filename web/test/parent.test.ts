@@ -77,3 +77,13 @@ describe("loadedLabel", () => {
     expect(loadedLabel("file")).toBe("Loaded from a file");
   });
 });
+
+describe("eto:seen", () => {
+  it("keeps only well-formed keys and a real date", () => {
+    expect(readMessage({ type: "eto:seen", keys: ["fed:1", "fdn:020794045", "bad key", 7, "x:1"], since: "2026-11-17T10:00:00Z" }))
+      .toEqual({ type: "eto:seen", keys: ["fed:1", "fdn:020794045"], since: "2026-11-17T10:00:00Z" });
+    expect(readMessage({ type: "eto:seen", keys: "fed:1", since: "soon" })).toEqual({ type: "eto:seen", keys: [], since: null });
+    expect(readMessage({ type: "eto:seen", keys: Array.from({ length: 6000 }, (_, i) => `fed:${i}`) })).toMatchObject({ since: null });
+    expect((readMessage({ type: "eto:seen", keys: Array.from({ length: 6000 }, (_, i) => `fed:${i}`) }) as { keys: string[] }).keys).toHaveLength(5000);
+  });
+});
