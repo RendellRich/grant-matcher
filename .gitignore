@@ -13,3 +13,6 @@ data/community/*
 
 # Local output from the data scripts
 build/
+
+# Background scoring build (web/scripts/score-eto.ts)
+web/.score-eto/
