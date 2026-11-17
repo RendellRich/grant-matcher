@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { profileNarrow, type Entry } from "../src/entries";
-import { embedParent, isAllowedParent, payloadFor, readMessage } from "../src/parent";
+import { embedParent, isAllowedParent, loadedLabel, payloadFor, readMessage } from "../src/parent";
 import { BLANK } from "../src/profile";
 
 const loc = (search: string, ancestors: string[] = []) => ({ search, ancestorOrigins: ancestors });
@@ -68,5 +68,12 @@ describe("what is sent to the pipeline", () => {
     expect(keys([])).toEqual(["a", "b", "c"]);
     expect(keys(["inpipeline"])).toEqual(["b", "c"]);
     expect(keys(["declined"])).toEqual(["a", "c"]);
+  });
+});
+
+describe("loadedLabel", () => {
+  it("names ETO's saved profile inside ETO, and a file otherwise", () => {
+    expect(loadedLabel("eto")).toBe("ETO's saved profile");
+    expect(loadedLabel("file")).toBe("Loaded from a file");
   });
 });

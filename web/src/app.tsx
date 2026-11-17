@@ -15,7 +15,7 @@ import {
   type FederalRec, type FloridaRec, type FoundationRec, type Profile,
 } from "./score";
 import { EntryView, IconAlert, IconDownload, IconMark, ResultList, type MarkAction } from "./ui";
-import { embedParent, listen, payloadFor, post, PROTOCOL, type Incoming, type PipelineItem } from "./parent";
+import { embedParent, listen, loadedLabel, payloadFor, post, PROTOCOL, type Incoming, type LoadedFrom, type PipelineItem } from "./parent";
 import { markNew, newSince, type Fresh } from "./seen";
 import {
   byDeadline, comingUp, deadline, dropSubmitted, dueText, daysUntil, listedNow, parseShortlist, setDue, setStage, shortlistIcs,
@@ -86,6 +86,7 @@ export function App() {
   const [fdn, setFdn] = useState<Record<string, Loaded<Source<FoundationRec>>>>({});
 
   const [exampleKey, setExampleKey] = useState("literacy");
+  const [loadedFrom, setLoadedFrom] = useState<LoadedFrom>("file");
   const [draft, setDraft] = useState<ProfileForm>(BLANK);
   const [applied, setApplied] = useState<ProfileForm>(BLANK);
   const [vector, setVector] = useState<number[] | null>(null);
@@ -264,6 +265,7 @@ export function App() {
   onParent.current = (m) => {
     if (m.type === "eto:profile") {
       fromParent.current = true;
+      setLoadedFrom("eto");
       setExampleKey("");
       setDraft(m.profile);
       void update(m.profile, true);
@@ -342,6 +344,7 @@ export function App() {
   }
 
   function loadProfile(f: ProfileForm) {
+    setLoadedFrom("file");
     setExampleKey("");
     setDraft(f);
     setStatus("Loaded your profile. Press Update matches to see your matches.");
@@ -351,7 +354,7 @@ export function App() {
     && sameForm({ ...applied }, { ...exampleForm(examples[exampleKey]), ...pickRest(applied) });
 
   const formProps = {
-    draft, setDraft, examples: examples ?? {}, exampleKey, onExample: chooseExample, onLoad: loadProfile, onUpdate: update,
+    draft, setDraft, examples: examples ?? {}, exampleKey, loadedLabel: loadedLabel(loadedFrom), onExample: chooseExample, onLoad: loadProfile, onUpdate: update,
     pending, busy, status: statusText, applied,
     parent: embedded ? { onSave: saveToParent, saving, result: saveResult } : undefined,
   };

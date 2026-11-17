@@ -12,7 +12,8 @@ export interface FormProps {
   draft: ProfileForm;
   setDraft: (f: ProfileForm | ((current: ProfileForm) => ProfileForm)) => void;
   examples: Record<string, Example>;
-  exampleKey: string; // the example the profile started from, or "" once a file was loaded
+  exampleKey: string; // the example the profile started from, or "" once a profile was loaded
+  loadedLabel: string; // the menu's option for a loaded profile: from a file, or ETO's saved one
   onExample: (key: string) => void;
   onLoad: (f: ProfileForm) => void;
   onUpdate: () => void;
@@ -96,7 +97,7 @@ export function ProfileFormView(p: FormProps) {
         <select id={id("ex")} value={p.exampleKey} onChange={(e) => pickExample((e.target as HTMLSelectElement).value)}>
           {Object.entries(p.examples).map(([k, v]) => <option value={k} key={k}>{v.label}</option>)}
           <option value="blank">Start blank</option>
-          {p.exampleKey === "" ? <option value="">Loaded from a file</option> : null}
+          {p.exampleKey === "" ? <option value="">{p.loadedLabel}</option> : null}
         </select>
         <p class="hint" id={id("ex-hint")}>Pick the one closest to your work and edit it, or start blank.</p>
       </div>
