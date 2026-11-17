@@ -16,7 +16,7 @@ import {
 } from "./score";
 import { EntryView, IconAlert, IconDownload, IconMark, ResultList, type MarkAction } from "./ui";
 import { embedParent, listen, loadedLabel, payloadFor, post, PROTOCOL, type Incoming, type LoadedFrom, type PipelineItem } from "./parent";
-import { markNew, newSince, type Fresh } from "./seen";
+import { markNew, markOrgNew, newSince, strongKeys, type Fresh, type OrgSeen } from "./seen";
 import {
   byDeadline, comingUp, deadline, dropSubmitted, dueText, daysUntil, listedNow, parseShortlist, setDue, setStage, shortlistIcs,
   STAGE_LABEL, STAGES, submittedKeys, toggle as toggleItem, type Item, type Listed, type Stage,
@@ -76,6 +76,10 @@ export function App() {
   const [saveResult, setSaveResult] = useState<{ ok: boolean; text: string } | null>(null);
   const sentTitles = useRef(new Map<string, string>());
   const fromParent = useRef(false); // set once ETO has sent its profile
+  const etoProfile = useRef<ProfileForm | null>(null); // the profile ETO saved, to count matches for it only
+  const [etoSeen, setEtoSeen] = useState<OrgSeen | null>(null); // ETO's shared New marks, when ETO sends them
+  const countedRef = useRef(""); // the last strong keys sent to ETO, so each set is sent once
+  const savedDraft = useRef<ProfileForm | null>(null); // the profile last sent to ETO to save
   const [sentNow, setSentNow] = useState<Set<string>>(new Set()); // sent during this visit: stay in view, marked
   // "Already in our pipeline" hides what ETO reported, not what was just sent, so a sent grant doesn't vanish.
   const pipelineToHide = useMemo(() => new Map([...pipeline].filter(([k]) => !sentNow.has(k))), [pipeline, sentNow]);
@@ -177,14 +181,16 @@ export function App() {
   const fdnFresh = useMemo(() => (fdnSrc?.state === "ready" ? newSince(`fdn-${st}`, fdnSrc.data.records.map((r) => r.ein)) : null), [fdnSrc]);
   const flFresh = useMemo(() => (fl.state === "ready" ? newSince("fl", fl.data.records.map((r) => r.id)) : null), [fl]);
   const fresh: Record<SourceKey, Fresh | null> = { fed: fedFresh, fdn: fdnFresh, fl: flFresh };
-  const fedAll = useMemo(() => markNew(fedScored?.map((s) => federalEntry(s, hasKw)) ?? null, fedFresh), [fedScored, fedFresh]);
-  const fdnAll = useMemo(() => markNew(fdnSrc?.state === "ready" && !blank
+  // Inside ETO, New means a strong match ETO hasn't seen, shared by everyone who signs in; elsewhere it is this browser's.
+  const mark = <T extends Entry>(list: T[] | null, f: Fresh | null) => (etoSeen ? markOrgNew(list, etoSeen) : markNew(list, f));
+  const fedAll = useMemo(() => mark(fedScored?.map((s) => federalEntry(s, hasKw)) ?? null, fedFresh), [fedScored, fedFresh, etoSeen]);
+  const fdnAll = useMemo(() => mark(fdnSrc?.state === "ready" && !blank
     ? scoreFoundations(fdnSrc.data.records.filter((r) => fdnKinds.includes(r.kind || "Private foundation")), profile, st,
       cityList, sim(fdnSrc.data.vecs), fdnPre).map((s) => foundationEntry(s, st, hasKw))
-    : null, fdnFresh), [fdnSrc, profile, vector, fdnKinds, fdnPre, fdnFresh, cityList]);
-  const flAll = useMemo(() => markNew(fl.state === "ready" && st === "FL" && !blank
+    : null, fdnFresh), [fdnSrc, profile, vector, fdnKinds, fdnPre, fdnFresh, cityList, etoSeen]);
+  const flAll = useMemo(() => mark(fl.state === "ready" && st === "FL" && !blank
     ? scoreFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar).map((s) => floridaEntry(s, hasKw)) : null, flFresh),
-  [fl, profile, vector, flEar, st, flFresh]);
+  [fl, profile, vector, flEar, st, flFresh, etoSeen]);
   // Anything marked submitted on the shortlist stops showing in the results and their counts.
   const done = embedded ? NO_KEYS : shortlist.done;
   const fedOut = useMemo(() => dropSubmitted(fedAll, done), [fedAll, done]);
@@ -265,6 +271,7 @@ export function App() {
   onParent.current = (m) => {
     if (m.type === "eto:profile") {
       fromParent.current = true;
+      etoProfile.current = m.profile;
       setLoadedFrom("eto");
       setExampleKey("");
       setDraft(m.profile);
@@ -282,8 +289,11 @@ export function App() {
       } else {
         setSentNote({ ok: false, text: m.message || `${title} wasn't saved. Try again, or add it in Funding.` });
       }
+    } else if (m.type === "eto:seen") {
+      setEtoSeen({ keys: new Set(m.keys), since: m.since });
     } else if (m.type === "eto:profile-saved") {
       setSaving(false);
+      if (m.ok && savedDraft.current) etoProfile.current = savedDraft.current;
       setSaveResult(m.ok ? { ok: true, text: "Saved to ETO." } : { ok: false, text: m.message || "The profile wasn't saved. Try again." });
     }
   };
@@ -311,6 +321,7 @@ export function App() {
     if (!parentOrigin) return;
     setSaving(true);
     setSaveResult(null);
+    savedDraft.current = draft;
     post(parentOrigin, { type: "gm:save-profile", profile: draft });
     window.setTimeout(() => {
       if (!savingRef.current) return;
@@ -331,6 +342,17 @@ export function App() {
   // The answer to pressing the button, said where it was pressed, once the new scores exist.
   const statusText = status === "updated" ? `Updated: ${n(total, "strong match", "strong matches")}.` : status;
   useEffect(() => { if (status === "updated" && ready) setStatus(statusText); }, [ready, status]);
+  // Inside ETO: once the matches for ETO's own saved profile are ready, tell ETO which are strong. ETO counts the
+  // new ones for its sidebar and remembers them as seen. Matches for an unsaved edit are never sent.
+  useEffect(() => {
+    if (!parentOrigin || !etoSeen || !ready || busy || modelFailed || !vector) return;
+    if (!etoProfile.current || !sameForm(applied, etoProfile.current)) return;
+    const keys = strongKeys([fedAll, fdnAll, flAll]);
+    const sig = `${st}|${keys.join(",")}`;
+    if (sig === countedRef.current) return;
+    countedRef.current = sig;
+    post(parentOrigin, { type: "gm:matches", keys, counted_at: new Date().toISOString() });
+  }, [parentOrigin, etoSeen, ready, busy, modelFailed, vector, applied, fedAll, fdnAll, flAll, st]);
 
   function chooseExample(key: string) {
     const ex = examples?.[key];
@@ -506,7 +528,7 @@ export function App() {
     const on = isNarrowed(cur(k));
     const id = (s: string) => `${k}-${s}`;
     const newCount = all.filter((e) => e.isNew).length;
-    const since = fresh[k]?.since;
+    const since = etoSeen ? etoSeen.since : fresh[k]?.since;
     return (
       <div class="narrow">
         <div class="narrow-row">
@@ -568,7 +590,7 @@ export function App() {
         {newCount && since ? (
           <div class="narrow-checks">
             <label class="check"><input type="checkbox" checked={n.fresh} onChange={(e) => setN(k, { fresh: (e.target as HTMLInputElement).checked })} />
-              <span>Only new since your last visit on {fmtVisit(since)} ({newCount.toLocaleString("en-US")})</span></label>
+              <span>Only new since {etoSeen ? "ETO last looked" : "your last visit"} on {fmtVisit(since)} ({newCount.toLocaleString("en-US")})</span></label>
           </div>
         ) : null}
         {hiddenByProfile[k] ? (

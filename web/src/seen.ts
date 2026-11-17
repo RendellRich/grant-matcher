@@ -57,3 +57,24 @@ export function markNew<T extends { key: string; isNew?: boolean }>(entries: T[]
   if (!entries || !fresh || !fresh.ids.size) return entries;
   return entries.map((e) => (fresh.ids.has(e.key.slice(e.key.indexOf(":") + 1)) ? { ...e, isNew: true } : e));
 }
+
+/** Inside ETO: the strong matches ETO's organization has already seen, kept by ETO for everyone who signs in.
+ *  `since` is when they were last counted; null before the first count, when nothing is marked. */
+export interface OrgSeen { keys: Set<string>; since: string | null }
+
+/** Copies of the entries with isNew set on strong matches ETO hasn't seen yet. Used instead of markNew inside
+ *  ETO, so Owners and Admins see the same marks on any device. */
+export function markOrgNew<T extends { key: string; tier: string; isNew?: boolean }>(entries: T[] | null, seen: OrgSeen): T[] | null {
+  if (!entries) return entries;
+  return entries.map((e) => {
+    const isNew = seen.since !== null && e.tier === "Strong" && !seen.keys.has(e.key);
+    return e.isNew === isNew ? e : { ...e, isNew };
+  });
+}
+
+/** The strong matches across the given lists, for ETO's count. Each key once, at most `max`. */
+export function strongKeys(lists: ({ key: string; tier: string }[] | null)[], max = 2000): string[] {
+  const keys = new Set<string>();
+  for (const list of lists) for (const e of list ?? []) if (e.tier === "Strong") keys.add(e.key);
+  return [...keys].sort().slice(0, max);
+}

@@ -70,11 +70,21 @@
     categories: ["ED", "HL", "ISS"],
   };
 
+  // ETO keeps the strong matches it has seen for the whole organization; the stand-in keeps them in this browser.
+  const readSeen = () => { try { const v = JSON.parse(localStorage.getItem("harness-seen") || "null"); if (v && Array.isArray(v.keys)) return v; } catch {} return { keys: [], since: null }; };
+
   window.addEventListener("message", (ev) => {
     if (ev.origin !== ORIGIN || ev.source !== frame.contentWindow) return;
     log("in", ev.data);
     const d = ev.data || {};
-    if (d.type === "gm:ready") send({ type: "eto:profile", profile: PROFILE });
+    if (d.type === "gm:ready") { send({ type: "eto:profile", profile: PROFILE }); send({ type: "eto:seen", ...readSeen() }); }
+    if (d.type === "gm:matches") {
+      // As ETO does: count the strong matches not seen before, then remember them all as seen (for the next load).
+      const seen = readSeen();
+      const fresh = seen.since ? d.keys.filter((k) => !seen.keys.includes(k)).length : 0;
+      log("note", { new_strong_matches: fresh, of: d.keys.length });
+      try { localStorage.setItem("harness-seen", JSON.stringify({ keys: [...new Set([...seen.keys, ...d.keys])], since: d.counted_at })); } catch {}
+    }
     if (d.type === "gm:save-profile") setTimeout(() => send({ type: "eto:profile-saved", ok: true }), 300);
     if (d.type === "gm:send") {
       const mode = document.getElementById("answer").value;

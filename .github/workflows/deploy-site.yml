@@ -11,6 +11,7 @@ on:
       - "grantmatch/export_web.py"
       - "grantmatch/display.py"
       - "grantmatch/embed.py"
+      - "grantmatch/changes.py"
       - ".github/workflows/deploy-site.yml"
   workflow_run:
     workflows: ["Refresh grant data", "Refresh Florida programs", "Refresh foundations", "Refresh funder websites"]
@@ -39,6 +40,9 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Export the latest data for the browser
         run: python -m grantmatch.export_web web/public/data
+      - name: Note deadline and status changes since the last build
+        # Public data only. ETO's CRM reads data/changes.json to flag grants it is pursuing (Phase 3).
+        run: python -m grantmatch.changes web/public/data --previous https://rendellrich.github.io/grant-matcher/data/changes.json
       - uses: actions/setup-node@v4
         with:
           node-version: "22"

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { markNew, newSince } from "../src/seen";
+import { markNew, markOrgNew, newSince, strongKeys } from "../src/seen";
 
 class Mem {
   data = new Map<string, string>();
@@ -38,5 +38,19 @@ describe("markNew", () => {
     const list: { key: string; isNew?: boolean }[] = [{ key: "fdn:1" }, { key: "fdn:2" }];
     const out = markNew(list, { ids: new Set(["2"]), since: "x" })!;
     expect(out.map((e) => Boolean(e.isNew))).toEqual([false, true]);
+  });
+});
+
+describe("ETO's shared New marks", () => {
+  const list: { key: string; tier: string; isNew?: boolean }[] = [{ key: "fed:1", tier: "Strong" }, { key: "fed:2", tier: "Strong" }, { key: "fdn:3", tier: "Possible" }, { key: "fed:1", tier: "Strong" }];
+  it("marks strong matches ETO hasn't seen, and nothing before ETO's first count", () => {
+    const marked = markOrgNew(list, { keys: new Set(["fed:1"]), since: "2026-11-17T10:00:00Z" })!;
+    expect(marked.map((e) => !!e.isNew)).toEqual([false, true, false, false]);
+    expect(markOrgNew(list, { keys: new Set(), since: null })!.some((e) => e.isNew)).toBe(false);
+    expect(markOrgNew(null, { keys: new Set(), since: null })).toBeNull();
+  });
+  it("lists each strong key once, sorted and capped", () => {
+    expect(strongKeys([list, null, [{ key: "fl:9", tier: "Strong" }]])).toEqual(["fed:1", "fed:2", "fl:9"]);
+    expect(strongKeys([list], 1)).toEqual(["fed:1"]);
   });
 });

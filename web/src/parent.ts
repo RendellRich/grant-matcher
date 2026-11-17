@@ -86,7 +86,11 @@ export type Incoming =
   | { type: "eto:profile"; profile: ProfileForm }
   | { type: "eto:in-pipeline"; items: PipelineItem[] }
   | { type: "eto:sent"; key: string; ok: boolean; status: "saved" | "exists" | "error"; stage: string; message: string }
-  | { type: "eto:profile-saved"; ok: boolean; message: string };
+  | { type: "eto:profile-saved"; ok: boolean; message: string }
+  | { type: "eto:seen"; keys: string[]; since: string | null };
+
+/** A match key as ETO stores it: "fed:355824", "fdn:591234567", "fl:10.123". */
+export const MATCH_KEY = /^(fed|fdn|fl):[A-Za-z0-9._-]{1,60}$/;
 
 const str = (v: unknown, max = 300) => (typeof v === "string" ? v.slice(0, max) : "");
 
@@ -110,6 +114,11 @@ export function readMessage(data: unknown): Incoming | null {
     }
     case "eto:profile-saved":
       return { type: "eto:profile-saved", ok: d.ok === true, message: str(d.message) };
+    case "eto:seen": {
+      const keys = Array.isArray(d.keys) ? d.keys.filter((k): k is string => typeof k === "string" && MATCH_KEY.test(k)).slice(0, 5000) : [];
+      const since = typeof d.since === "string" && !Number.isNaN(Date.parse(d.since)) ? d.since.slice(0, 40) : null;
+      return { type: "eto:seen", keys, since };
+    }
     default:
       return null;
   }
@@ -118,7 +127,9 @@ export function readMessage(data: unknown): Incoming | null {
 export type Outgoing =
   | { type: "gm:ready"; protocol: number }
   | { type: "gm:send"; item: SendPayload }
-  | { type: "gm:save-profile"; profile: ProfileForm };
+  | { type: "gm:save-profile"; profile: ProfileForm }
+  /** The strong matches for ETO's saved profile, so ETO can count the new ones and remember them as seen. */
+  | { type: "gm:matches"; keys: string[]; counted_at: string };
 
 /** Listens to the parent window at `origin` only. Returns a function that stops listening. */
 export function listen(origin: string, onMessage: (m: Incoming) => void): () => void {
