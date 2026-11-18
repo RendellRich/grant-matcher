@@ -27,6 +27,8 @@ from xml.etree import ElementTree as ET
 
 import requests
 
+from .history import History, default_years
+
 try:  # some IRS batches use Deflate64, which the standard zipfile cannot read
     import zipfile_deflate64  # noqa: F401  (patches zipfile on import)
 except ImportError:
@@ -165,7 +167,7 @@ def batch_ids(year: int) -> dict[str, set[str]]:
     return batches
 
 
-def process_batch(year: int, batch: str, ids: set[str], tmp: Path) -> list[dict]:
+def process_batch(year: int, batch: str, ids: set[str], tmp: Path, hist: History | None = None) -> list[dict]:
     path = tmp / f"{batch}.zip"
     with session.get(XML_ROOT.format(year=year) + f"{batch}.zip", stream=True, timeout=600) as r:
         r.raise_for_status()
@@ -183,6 +185,8 @@ def process_batch(year: int, batch: str, ids: set[str], tmp: Path) -> list[dict]
                     rec = parse_return(z.read(name))
                 except ET.ParseError:
                     continue
+                if rec and hist is not None:
+                    hist.add(rec["ein"], rec["tax_year"], rec["grants"])  # every year's giving, kept or not
                 if rec and _keep(rec):
                     out.append(summarize(rec))
     finally:
@@ -194,7 +198,8 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
     tmp = out_dir / "_tmp"
     tmp.mkdir(parents=True, exist_ok=True)
     latest: dict[str, dict] = {}
-    failed: list[str] = []
+    hist = History()
+    failed: list[tuple[int, str]] = []
     for year in years:
         try:
             batches = batch_ids(year)
@@ -206,9 +211,9 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
                 continue
             t0 = time.time()
             try:
-                recs = process_batch(year, batch, ids, tmp)
+                recs = process_batch(year, batch, ids, tmp, hist)
             except Exception as exc:
-                failed.append(batch)
+                failed.append((year, batch))
                 print(f"{batch}: FAILED {exc}", file=sys.stderr, flush=True)
                 continue
             for rec in recs:  # keep the most recent return per foundation
@@ -217,7 +222,9 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
                     latest[rec["ein"]] = rec
             print(f"{batch}: {len(ids)} returns, kept {len(recs)} ({time.time() - t0:.0f}s); total {len(latest)}", flush=True)
     tmp.rmdir()
-    if len(failed) > 1 or not latest:
+    # A failed batch from an older year only thins the history; the two newest years carry the current data.
+    recent = [f for f in failed if f[0] >= max(years) - 1]
+    if len(recent) > 1 or len(failed) > 5 or not latest:
         raise RuntimeError(f"Batches failed: {failed}; keeping the previous data files")
 
     by_state: dict[str, list[dict]] = defaultdict(list)
@@ -225,18 +232,20 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
         states = {rec["state"]} | set(rec["recipient_states"])
         for st in states:
             if re.fullmatch(r"[A-Z]{2}", st or ""):
-                by_state[st].append(rec)
+                by_state[st].append(hist.for_state(rec, st))
     stamp = datetime.now(timezone.utc).isoformat(timespec="minutes")
     for st, recs in by_state.items():
         payload = {"fetched_at": stamp, "state": st, "years": years, "count": len(recs), "foundations": recs}
         with gzip.open(out_dir / f"{st}.json.gz", "wt", encoding="utf-8") as fh:
             json.dump(payload, fh, separators=(",", ":"))
-    print(f"wrote {len(latest)} foundations into {len(by_state)} state files in {out_dir}")
+    steady = sum(1 for rec in latest.values() if (hist.summary(rec["ein"], rec["tax_year"]) or {}).get("steady"))
+    print(f"wrote {len(latest)} foundations into {len(by_state)} state files in {out_dir}; {steady} gave every year")
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--years", default=str(datetime.now().year - 1), help="comma separated filing years")
+    ap.add_argument("--years", default=",".join(map(str, default_years(datetime.now().year))),
+                    help="comma separated IRS filing years (default: enough for five tax years of history)")
     ap.add_argument("--out", default="data/foundations", type=Path)
     ap.add_argument("--batches", default="", help="only these batch ids (for testing)")
     args = ap.parse_args()

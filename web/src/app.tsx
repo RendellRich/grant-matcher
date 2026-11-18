@@ -566,6 +566,18 @@ export function App() {
             <label class="check"><input type="checkbox" checked={n.apply} onChange={(e) => setN(k, { apply: (e.target as HTMLInputElement).checked })} /><span>Publish how to apply</span></label>
             <label class="check"><input type="checkbox" checked={n.open} onChange={(e) => setN(k, { open: (e.target as HTMLInputElement).checked })} /><span>Don't refuse unsolicited requests</span></label>
             <label class="check"><input type="checkbox" checked={n.local} onChange={(e) => setN(k, { local: (e.target as HTMLInputElement).checked })} /><span>Based in or funding your cities</span></label>
+            {all.some((e) => e.steady) ? (
+              <label class="check"><input type="checkbox" checked={Boolean(n.steady)} onChange={(e) => setN(k, { steady: (e.target as HTMLInputElement).checked })} />
+                <span>Gave every year for four years ({all.filter((e) => e.steady).length.toLocaleString("en-US")})</span></label>
+            ) : null}
+            {all.some((e) => e.firstTime) ? (
+              <label class="check"><input type="checkbox" checked={Boolean(n.firstTime)} onChange={(e) => setN(k, { firstTime: (e.target as HTMLInputElement).checked })} />
+                <span>Often fund groups new to them ({all.filter((e) => e.firstTime).length.toLocaleString("en-US")})</span></label>
+            ) : null}
+            {all.some((e) => e.newHere) ? (
+              <label class="check"><input type="checkbox" checked={Boolean(n.newHere)} onChange={(e) => setN(k, { newHere: (e.target as HTMLInputElement).checked })} />
+                <span>Started giving in your cities in their latest year ({all.filter((e) => e.newHere).length.toLocaleString("en-US")})</span></label>
+            ) : null}
             {all.some((e) => e.corp) ? (
               <label class="check"><input type="checkbox" checked={Boolean(n.corp)} onChange={(e) => setN(k, { corp: (e.target as HTMLInputElement).checked })} />
                 <span>Company foundations ({all.filter((e) => e.corp).length.toLocaleString("en-US")})</span></label>

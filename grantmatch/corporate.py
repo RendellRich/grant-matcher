@@ -88,7 +88,10 @@ def add_national(state: str, records: list[dict], ids: list[str], vecs: list, ex
     for ein, (rec, vec) in extra.items():
         if ein in have or not serves(entries[ein], state):
             continue
-        records.append(dict(rec))
+        copy = dict(rec)
+        if isinstance(copy.get("hist"), dict):  # its places are for its home state, not this one
+            copy["hist"] = {k: v for k, v in copy["hist"].items() if k != "pl"}
+        records.append(copy)
         ids.append(ein)
         vecs.append(vec.reshape(1, -1))
         added += 1

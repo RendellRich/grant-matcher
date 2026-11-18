@@ -25,6 +25,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from .foundations import XML_ROOT, _find, _local, _num, _text, session
+from .history import History, default_years
 
 try:
     import zipfile_deflate64  # noqa: F401
@@ -112,6 +113,7 @@ def build(years: list[int], out_dir: Path) -> None:
     tmp = out_dir / "_tmp"
     tmp.mkdir(parents=True, exist_ok=True)
     latest: dict[str, dict] = {}
+    hist = History()
     for year in years:
         r = session.get(XML_ROOT.format(year=year) + f"index_{year}.csv", timeout=300)
         if r.status_code != 200:
@@ -140,6 +142,7 @@ def build(years: list[int], out_dir: Path) -> None:
                             continue
                         if not rec or not rec["grants"] or rec["ein"] not in orgs:
                             continue
+                        hist.add(rec["ein"], rec["tax_year"], rec["grants"])
                         rec = summarize(rec, orgs[rec["ein"]]["kind"])
                         prev = latest.get(rec["ein"])
                         if prev is None or rec["tax_year"] >= prev["tax_year"]:
@@ -158,7 +161,7 @@ def build(years: list[int], out_dir: Path) -> None:
     for rec in latest.values():
         for st in {rec["state"]} | set(rec["recipient_states"]):
             if re.fullmatch(r"[A-Z]{2}", st or ""):
-                by_state[st].append(rec)
+                by_state[st].append(hist.for_state(rec, st))
     stamp = datetime.now(timezone.utc).isoformat(timespec="minutes")
     for st, recs in by_state.items():
         payload = {"fetched_at": stamp, "state": st, "years": years, "count": len(recs), "foundations": recs}
@@ -170,7 +173,7 @@ def build(years: list[int], out_dir: Path) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--years", default=f"{datetime.now().year - 1},{datetime.now().year}")
+    ap.add_argument("--years", default=",".join(map(str, default_years(datetime.now().year))))
     ap.add_argument("--out", default="data/community", type=Path)
     args = ap.parse_args()
     build([int(y) for y in args.years.split(",")], args.out)
