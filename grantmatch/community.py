@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-from .foundations import XML_ROOT, _find, _local, _num, _text, session
+from .foundations import XML_ROOT, _find, _local, _num, _text, session, year_batches
 from .history import History, default_years
 
 try:
@@ -115,14 +115,14 @@ def build(years: list[int], out_dir: Path) -> None:
     latest: dict[str, dict] = {}
     hist = History()
     for year in years:
-        r = session.get(XML_ROOT.format(year=year) + f"index_{year}.csv", timeout=300)
-        if r.status_code != 200:
+        try:
+            batches = year_batches(year, lambda row: row["RETURN_TYPE"] == "990" and row["EIN"] in orgs)
+        except Exception as exc:
+            print(f"{year}: FAILED {exc}", file=sys.stderr, flush=True)
+            continue
+        if batches is None:
             print(f"{year}: no index yet; skipping", flush=True)
             continue
-        batches: dict[str, set[str]] = defaultdict(set)
-        for row in csv.DictReader(io.StringIO(r.content.decode("latin-1"))):
-            if row["RETURN_TYPE"] == "990" and row["EIN"] in orgs and row.get("XML_BATCH_ID"):
-                batches[row["XML_BATCH_ID"]].add(row["OBJECT_ID"])
         for batch, ids in sorted(batches.items()):
             t0, kept = time.time(), 0
             path = tmp / f"{batch}.zip"
@@ -152,7 +152,7 @@ def build(years: list[int], out_dir: Path) -> None:
                 print(f"{batch}: FAILED {exc}", file=sys.stderr, flush=True)
             finally:
                 path.unlink(missing_ok=True)
-            print(f"{batch}: {len(ids)} returns, kept {kept} ({time.time() - t0:.0f}s); total {len(latest)}", flush=True)
+            print(f"{batch}: kept {kept} ({time.time() - t0:.0f}s); total {len(latest)}", flush=True)
     tmp.rmdir()
     if not latest:
         raise RuntimeError("No returns parsed; keeping the previous data files")

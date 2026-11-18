@@ -157,14 +157,51 @@ def _keep(rec: dict) -> bool:
     return True
 
 
-def batch_ids(year: int) -> dict[str, set[str]]:
+ZIP_LETTERS = "ABCDEFGH"  # a month's returns come in up to a few zips: 11A, 11B, ...
+
+
+def zip_name(batch: str) -> str:
+    """The zip for an index batch id. A few 2024 ids end in a lowercase letter (04a); the files never do."""
+    return batch.upper()
+
+
+def find_zips(year: int) -> list[str]:
+    """A year's batch zips, as the IRS server has them."""
+    found = []
+    for month in range(1, 13):
+        for letter in ZIP_LETTERS:
+            name = f"{year}_TEOS_XML_{month:02d}{letter}"
+            r = session.head(XML_ROOT.format(year=year) + f"{name}.zip", allow_redirects=False, timeout=60)
+            if r.status_code != 200:  # a missing file redirects to the IRS 404 page
+                break
+            found.append(name)
+    return found
+
+
+def year_batches(year: int, wanted) -> dict[str, set[str]] | None:
+    """The returns to read from one filing year, as {zip name: object ids}; wanted(row) picks index rows.
+    None when the year has no index yet.
+
+    The index can't be trusted to say which zip holds a return: indexes before 2024 have no batch column,
+    and later ones file a month's second zip (05B) under the first (05A). So every zip of the year is read,
+    keeping any return the index lists for the year."""
     r = session.get(XML_ROOT.format(year=year) + f"index_{year}.csv", timeout=300)
-    r.raise_for_status()
-    batches: dict[str, set[str]] = defaultdict(set)
-    for row in csv.DictReader(io.StringIO(r.content.decode("latin-1"))):
-        if row["RETURN_TYPE"] == "990PF" and row.get("XML_BATCH_ID"):
-            batches[row["XML_BATCH_ID"]].add(row["OBJECT_ID"])
-    return batches
+    if r.status_code != 200:
+        return None
+    reader = csv.DictReader(io.StringIO(r.content.decode("latin-1")))
+    rows = [row for row in reader if wanted(row)]
+    if not rows:
+        return {}
+    named = {zip_name(row["XML_BATCH_ID"]) for row in rows if row.get("XML_BATCH_ID")}
+    zips = sorted(set(find_zips(year)) | named)
+    if not zips:
+        raise RuntimeError(f"{year}: the index lists {len(rows)} returns but no batch zips were found")
+    ids = {row["OBJECT_ID"] for row in rows}
+    return {z: ids for z in zips}
+
+
+def batch_ids(year: int) -> dict[str, set[str]] | None:
+    return year_batches(year, lambda row: row["RETURN_TYPE"] == "990PF")
 
 
 def process_batch(year: int, batch: str, ids: set[str], tmp: Path, hist: History | None = None) -> list[dict]:
@@ -203,8 +240,12 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
     for year in years:
         try:
             batches = batch_ids(year)
-        except requests.HTTPError as exc:
-            print(f"{year}: no index yet ({exc}); skipping", flush=True)
+        except Exception as exc:  # an index we can't read, or an old year whose zips can't be found
+            failed.append((year, "index"))
+            print(f"{year}: FAILED {exc}", file=sys.stderr, flush=True)
+            continue
+        if batches is None:
+            print(f"{year}: no index yet; skipping", flush=True)
             continue
         for batch, ids in sorted(batches.items()):
             if only_batches and batch not in only_batches:
@@ -220,7 +261,7 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
                 prev = latest.get(rec["ein"])
                 if prev is None or rec["tax_year"] >= prev["tax_year"]:
                     latest[rec["ein"]] = rec
-            print(f"{batch}: {len(ids)} returns, kept {len(recs)} ({time.time() - t0:.0f}s); total {len(latest)}", flush=True)
+            print(f"{batch}: kept {len(recs)} ({time.time() - t0:.0f}s); total {len(latest)}", flush=True)
     tmp.rmdir()
     # A failed batch from an older year only thins the history; the two newest years carry the current data.
     recent = [f for f in failed if f[0] >= max(years) - 1]
