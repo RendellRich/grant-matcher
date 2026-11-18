@@ -437,7 +437,7 @@ export function App() {
             </p>
           ) : null}
           {isExample ? (
-            <p class="note"><strong>This is an example.</strong> These matches are for a sample organization,{" "}
+            <p class="note"><strong>Example results</strong> for a sample organization,{" "}
               <i>{examples![exampleKey].label}</i>. Describe your own work under Your organization to see yours.</p>
           ) : null}
           {modelFailed ? (
