@@ -394,7 +394,9 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
   .entry-title a { padding: .6875rem 0; margin: -.6875rem 0; }
   .rule { width: 5.5rem; }
   /* On a phone the search stays in view and the other filters wait behind one button, so results come sooner. */
-  .narrow-toggle { display: inline-flex; flex: 1 1 100%; justify-content: center; }
+  .narrow-toggle { display: inline-flex; flex: 0 0 auto; justify-content: center; }
+  .narrow-row .field.grow { flex: 1 1 8rem; min-width: 8rem; }  /* the search box and the Filters button share a row */
+  .tally .key { display: none; }  /* the same rule is under "how the score works"; each entry still shows its own scale */
   .narrow:not(.open) .narrow-row .field:not(.grow), .narrow:not(.open) .narrow-groups, .narrow:not(.open) .narrow-checks { display: none; }
   .rows { grid-template-columns: 1fr; gap: 0; }
   .rows dd { margin-bottom: .5rem; }
