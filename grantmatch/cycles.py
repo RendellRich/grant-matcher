@@ -33,6 +33,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 
+from . import local
 from .display import present
 from .export_web import fetch, foundation_states
 
@@ -326,6 +327,7 @@ def main() -> None:
     args = ap.parse_args()
     states = args.states.split(",") if args.states else foundation_states()
     sites = targets(states)
+    sites.update(local.site_targets())  # county and city programs (data/local-FL.json), keyed local-<slug>
     if args.limit:
         sites = dict(list(sites.items())[:args.limit])
     print(f"{len(sites)} foundations with a website in {len(states)} states", flush=True)

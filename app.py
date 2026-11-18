@@ -882,7 +882,8 @@ else:
                                       ss.get("fdn_pre", False))
         fl_res = None
         if programs:
-            fl_res = score_florida(programs, profile, similarity(query_text, fl_vecs), ss.get("fl_ear", False))
+            fl_res = score_florida(programs, profile, similarity(query_text, fl_vecs), ss.get("fl_ear", False),
+                                   city_list)
     ss["_scored"] = (memo_key, (results, f_res, fl_res))
 
 

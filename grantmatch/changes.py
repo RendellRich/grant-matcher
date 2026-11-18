@@ -12,7 +12,8 @@ time, and writes a new one:
    "events": [{"k": "fed:355824", "kind": "moved", "from": "2027-02-15", "to": "2027-03-01", "at": "2026-11-17"}]}
 
 Events kept for 60 days: moved, set and cleared (a deadline), posted (a federal forecast now takes
-applications), closed and reopened (a funder's website), gone (a federal notice left Grants.gov).
+applications), closed and reopened (a funder's or county program's website), gone (a federal notice left
+Grants.gov). County and city programs ("fl:local-...") carry the closing date entered by hand.
 A record that drops out of the data for a day and comes back makes no event.
 
 Run after export_web:
@@ -63,7 +64,19 @@ def current(out: Path) -> dict[str, dict | None]:
                 c = r.get("_cycle")
                 if isinstance(c, dict) and c.get("s") in WEBSITE and r.get("ein"):
                     fdn[f"fdn:{r['ein']}"] = {"d": day(c.get("d")), "s": c["s"]}
-    return {"fed": fed, "fdn": fdn}
+    # County and city programs (grantmatch/local.py): the window's closing date entered by hand, else what
+    # their page said at the weekly check. State programs have no dates, so they are left out.
+    fl_file = out / "florida.json.gz"
+    fl = None
+    if fl_file.exists():
+        fl = {}
+        for r in read_gz(fl_file).get("records", []):
+            if not str(r.get("id", "")).startswith("local-"):
+                continue
+            c = r.get("_cycle") if isinstance(r.get("_cycle"), dict) else {}
+            s = c.get("s") if c.get("s") in WEBSITE else ""
+            fl[f"fl:{r['id']}"] = {"d": day(r.get("closes")) or day(c.get("d")), "s": s}
+    return {"fed": fed, "fdn": fdn, "fl": fl}
 
 
 def events_for(key: str, before: dict, now: dict, today: str) -> list[dict]:
@@ -78,7 +91,7 @@ def events_for(key: str, before: dict, now: dict, today: str) -> list[dict]:
     sa, sb = before.get("s"), now.get("s")
     if key.startswith("fed:") and sa == "forecasted" and sb == "posted":
         out.append({"k": key, "kind": "posted", "from": sa, "to": sb, "at": today})
-    if key.startswith("fdn:"):
+    if key.startswith(("fdn:", "fl:")):
         if sb == "closed" and sa in ("open", "deadline"):
             out.append({"k": key, "kind": "closed", "from": sa, "to": sb, "at": today})
         elif sa == "closed" and sb in ("open", "deadline"):
@@ -115,7 +128,7 @@ def update(previous: dict | None, now: dict[str, dict | None], today: date) -> d
             days = (today - date.fromisoformat(missing)).days
             if prefix == "fed" and days >= GONE_DAYS:
                 events.append({"k": key, "kind": "gone", "from": prev.get("d"), "to": None, "at": t})
-            elif prefix == "fdn" and days > FORGET_DAYS:
+            elif prefix in ("fdn", "fl") and days > FORGET_DAYS:
                 pass
             else:
                 records[key] = {**{k: v for k, v in prev.items() if k != "m"}, "m": missing}

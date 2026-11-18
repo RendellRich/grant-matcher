@@ -177,8 +177,8 @@ export function App() {
     ? rankFoundations(fdnSrc.data.records, profile, st, cityList, sim(fdnSrc.data.vecs), fdnKinds, fdnPre)
     : null, fdnFresh), [fdnSrc, profile, vector, fdnKinds, fdnPre, fdnFresh, cityList, etoSeen]);
   const flAll = useMemo(() => mark(fl.state === "ready" && st === "FL" && !blank
-    ? rankFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar) : null, flFresh),
-  [fl, profile, vector, flEar, st, flFresh, etoSeen]);
+    ? rankFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar, cityList) : null, flFresh),
+  [fl, profile, vector, flEar, st, flFresh, cityList, etoSeen]);
   // Anything marked submitted on the shortlist stops showing in the results and their counts.
   const done = embedded ? NO_KEYS : shortlist.done;
   const fedOut = useMemo(() => dropSubmitted(fedAll, done), [fedAll, done]);
@@ -403,7 +403,7 @@ export function App() {
               : total ? <><strong>{n(total, "strong match", "strong matches")}</strong> for this profile: {listing}.</>
               : <><strong>No strong matches yet.</strong> {shownOrder.map((k) => n(possible[k], `possible ${NOUN[k][2]}`, `possible ${NOUN[k][1]}`)).join(", ")}. More specific key words usually help.</>}
           </h1>
-          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state programs" : ""}, ranked against your mission with the reasons spelled out.</p>
+          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : ""}, ranked against your mission with the reasons spelled out.</p>
           <p class="notice">{NOTICE}</p>
         </div>
       </header>
@@ -719,12 +719,14 @@ export function App() {
     if (fl.state === "error") return <p class="error">Florida program data could not be loaded right now. Try again in a few minutes.</p>;
     if (!flEntries || fl.state !== "ready") return loading("Florida programs");
     const all = fl.data.records;
-    const open = all.filter((r) => r.nonprofit_eligible && !r.earmark).length;
+    const stateAll = all.filter((r) => !r.level);
+    const open = stateAll.filter((r) => r.nonprofit_eligible && !r.earmark).length;
+    const county = all.length - stateAll.length;
     const shown = narrowed("fl", flEntries);
     const picks = shown.filter((e) => e.tier !== "Long shot");
     return (
       <>
-        {tally("fl", `${open.toLocaleString("en-US")} of ${all.length.toLocaleString("en-US")} Florida programs (fiscal year ${fl.data.fiscalYear}) are open to nonprofits. These are programs, not open calls: check each agency's site for the next window.`)}
+        {tally("fl", `${open.toLocaleString("en-US")} of ${stateAll.length.toLocaleString("en-US")} Florida state programs (fiscal year ${fl.data.fiscalYear}) are open to nonprofits${county ? `, plus ${county} county program${county === 1 ? "" : "s"} with their own windows` : ""}. State programs are not open calls: check each agency's site for the next window.`)}
         {narrowBar("fl", flEntries, shown, "programs")}
         <details class="filters">
           <summary>More filters and how the score works</summary>
@@ -737,6 +739,7 @@ export function App() {
               <li>Up to 75 points for how closely the program's objectives match your mission</li>
               <li>Up to 25 points for your key words in its title and objectives, with rare words worth more</li>
               <li>Points off for student aid paid to individuals or schools, and for programs the Legislature set aside for a named organization</li>
+              <li>County programs lose points when your cities are outside the county they serve, or when they require 501(c)(3) status you don't have yet</li>
               <li>Strong is 60 and up, possible is 35 to 59</li>
             </ul>
           </div>
@@ -934,6 +937,7 @@ function Checklist() {
       <ul>
         <li>The state pays grants and contracts to registered vendors. Register at <a href="https://www.myfloridamarketplace.com" target="_blank" rel="noopener">MyFloridaMarketPlace</a> and keep a Florida Substitute W-9 on file with the Department of Financial Services.</li>
         <li>Each agency posts its own application windows. Use the agency link on each program to find the next one.</li>
+        <li>County programs are entered by hand from each county's own page, with the date they were checked. Confirm the dates and rules there before you apply.</li>
       </ul>
     </div>
   );
@@ -943,7 +947,7 @@ function Footer() {
   return (
     <footer class="footer">
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed nightly. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance.</p>
+      <p>Federal data from the Grants.gov API, refreshed nightly. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page.</p>
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Matching runs in your browser; your mission and profile are never sent to a server.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>

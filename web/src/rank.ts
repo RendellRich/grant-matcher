@@ -41,8 +41,8 @@ export const rankFoundations = (records: FoundationRec[], p: Profile, state: str
   scoreFoundations(records.filter((r) => kinds.includes(r.kind || "Private foundation")), p, state, cities, sim, preselected)
     .map((s) => foundationEntry(s, state, p.keywords.length > 0));
 
-export const rankFlorida = (records: FloridaRec[], p: Profile, sim: Sim, earmarks = false): Entry[] =>
-  scoreFlorida(records, p, sim, earmarks).map((s) => floridaEntry(s, p.keywords.length > 0));
+export const rankFlorida = (records: FloridaRec[], p: Profile, sim: Sim, earmarks = false, cities: string[] = []): Entry[] =>
+  scoreFlorida(records, p, sim, earmarks, cities).map((s) => floridaEntry(s, p.keywords.length > 0));
 
 interface Loaded<T> { records: T[]; vecs: VectorSet }
 export interface RankSources {
@@ -60,7 +60,7 @@ export function rankAll(f: ProfileForm, src: RankSources, vector: number[] | nul
   return {
     fed: src.fed ? rankFederal(src.fed.records, p, simFor(src.fed.vecs, vector)) : null,
     fdn: src.fdn ? rankFoundations(src.fdn.records, p, f.state, cities, simFor(src.fdn.vecs, vector)) : null,
-    fl: src.fl && f.state === "FL" ? rankFlorida(src.fl.records, p, simFor(src.fl.vecs, vector)) : null,
+    fl: src.fl && f.state === "FL" ? rankFlorida(src.fl.records, p, simFor(src.fl.vecs, vector), false, cities) : null,
   };
 }
 

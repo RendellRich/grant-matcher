@@ -63,7 +63,7 @@ describe.skipIf(!have)("parity with Python scoring", () => {
         federal: scoreFederal(fed!.records, p, similarities(fed!.vecs, q)).map((r) => ({ id: r.rec.id, ...pick(r) })),
         foundations: scoreFoundations(fdn!.records, p, "FL", cities, similarities(fdn!.vecs, q), s.show_preselected)
           .map((r) => ({ id: r.rec.ein, ...pick(r) })),
-        florida: scoreFlorida(fl!.records, p, similarities(fl!.vecs, q), s.show_earmarks).map((r) => ({ id: r.rec.id, ...pick(r) })),
+        florida: scoreFlorida(fl!.records, p, similarities(fl!.vecs, q), s.show_earmarks, cities).map((r) => ({ id: r.rec.id, ...pick(r) })),
       };
       for (const src of ["federal", "foundations", "florida"] as const) {
         const want = byId(c[src]);

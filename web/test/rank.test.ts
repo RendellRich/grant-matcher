@@ -67,7 +67,7 @@ describe.skipIf(!have)("on the test data", () => {
     expect(got.fed).toEqual(scoreFederal(fed!.records, p, similarities(fed!.vecs, ex!.vector)).map((s) => federalEntry(s, hasKw)));
     expect(got.fdn).toEqual(scoreFoundations(fdn!.records.filter((r: { kind?: string }) => KINDS.includes(r.kind || "Private foundation")), p, "FL",
       expandCities("Tampa", counties), similarities(fdn!.vecs, ex!.vector), false).map((s) => foundationEntry(s, "FL", hasKw)));
-    expect(got.fl).toEqual(scoreFlorida(fl!.records, p, similarities(fl!.vecs, ex!.vector), false).map((s) => floridaEntry(s, hasKw)));
+    expect(got.fl).toEqual(scoreFlorida(fl!.records, p, similarities(fl!.vecs, ex!.vector), false, expandCities("Tampa", counties)).map((s) => floridaEntry(s, hasKw)));
   });
 
   it("leaves Florida programs out for another state", () => {

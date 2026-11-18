@@ -20,6 +20,7 @@ import numpy as np
 import requests
 
 from . import embed
+from . import local as local_programs
 from .display import assistance_label, bracket_caps, format_address, present, shouting, tidy_name, tidy_text
 
 RELEASE = "https://github.com/RendellRich/grant-matcher/releases/download/data-latest/"
@@ -174,8 +175,21 @@ def main() -> None:
     if raw:
         payload = json.loads(gzip.decompress(raw))
         ids, vecs = vectors(fetch("florida.npz"))
+        records = [tidy_program(r) for r in payload["programs"]]
+        # County and city programs entered by hand (grantmatch/local.py) join the state's, embedded here.
+        extra = local_programs.load(fiscal_year=payload.get("fiscal_year", ""))
+        if extra:
+            from .rank_more import florida_doc
+            sites = website_cycles()
+            for r in extra:
+                tidy_program(r)
+                if sites.get(r["id"]):
+                    r["_cycle"] = sites[r["id"]]
+            records += extra
+            ids = ids + [r["id"] for r in extra]
+            vecs = np.concatenate([vecs, embed.embed_texts([florida_doc(r) for r in extra]).astype(np.float16)])
         write(out, "florida", {"fetched_at": payload.get("fetched_at", ""), "fiscal_year": payload.get("fiscal_year", ""),
-                               "records": [tidy_program(r) for r in payload["programs"]]}, ids, vecs)
+                               "records": records}, ids, vecs)
         meta["florida"] = payload.get("fiscal_year", "")
 
     # Foundations: private (990-PF) and community/public (Schedule I), one file per state.
@@ -291,7 +305,7 @@ def golden(out: Path, examples: dict, path: Path) -> None:
                 "federal": rows(score(frame, p, semantic=sims(fed_ids, fed_v, q)), "id"),
                 "foundations": rows(score_foundations(fdn, p, "FL", cities, sims(fdn_ids, fdn_v, q),
                                                       spec["show_preselected"]), "ein"),
-                "florida": rows(score_florida(fl, p, sims(fl_ids, fl_v, q), spec["show_earmarks"]), "id"),
+                "florida": rows(score_florida(fl, p, sims(fl_ids, fl_v, q), spec["show_earmarks"], cities), "id"),
             })
     path.write_text(json.dumps({"today": GOLDEN_DAY.isoformat(), "cases": cases}), encoding="utf-8")
     print(f"golden: {len(cases)} cases to {path}")
