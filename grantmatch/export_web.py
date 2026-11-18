@@ -20,6 +20,7 @@ import numpy as np
 import requests
 
 from . import embed
+from . import corporate
 from . import local as local_programs
 from .display import assistance_label, bracket_caps, format_address, present, shouting, tidy_name, tidy_text
 
@@ -95,6 +96,34 @@ def website_cycles() -> dict[str, dict]:
     at = str(payload.get("checked_at", ""))[:10]
     return {ein: {**r, "at": at} for ein, r in (payload.get("sites") or {}).items()
             if isinstance(r, dict) and r.get("s") in ("open", "deadline", "closed", "apply")}
+
+
+def national_programs(corp: dict[str, dict], cycles: dict[str, dict]) -> dict[str, tuple[dict, np.ndarray]]:
+    """The record and vector of each company foundation with a national program (grantmatch/corporate.py),
+    read from its home state's files, so it can be shown in every state the program serves."""
+    out: dict[str, tuple[dict, np.ndarray]] = {}
+    for home in sorted({e["home"] for e in corp.values() if e.get("serves")}):
+        for prefix in ("foundations", "community"):
+            raw = fetch(f"{prefix}-{home}.json.gz", f"{prefix}/{home}.json.gz")
+            if not raw:
+                continue
+            wanted = {ein for ein, e in corp.items() if e.get("serves") and e["home"] == home}
+            found = [r for r in json.loads(gzip.decompress(raw))["foundations"] if str(r.get("ein")) in wanted]
+            if not found:
+                continue
+            ids, vecs = vectors(fetch(f"{prefix}-{home}.npz", f"{prefix}/{home}.npz"))
+            row = {e: i for i, e in enumerate(ids)}
+            for rec in found:
+                ein = str(rec["ein"])
+                if ein not in row:
+                    continue
+                rec.setdefault("kind", "Private foundation" if prefix == "foundations" else rec.get("kind"))
+                tidy_foundation(rec)
+                if cycles.get(ein):
+                    rec["_cycle"] = cycles[ein]
+                rec["_corp"] = corporate.overlay(corp[ein])
+                out[ein] = (rec, vecs[row[ein]])
+    return out
 
 
 def vectors(raw: bytes | None) -> tuple[list[str], np.ndarray]:
@@ -195,6 +224,8 @@ def main() -> None:
     # Foundations: private (990-PF) and community/public (Schedule I), one file per state.
     states = foundation_states()
     cycles = website_cycles()
+    corp = corporate.load()
+    extra = national_programs(corp, cycles)
     for state in states:
         records, all_ids, all_vecs, stamp = [], [], [], ""
         for prefix in ("foundations", "community"):
@@ -208,11 +239,15 @@ def main() -> None:
                 found = cycles.get(str(rec.get("ein")))
                 if found:
                     rec["_cycle"] = found
+                if str(rec.get("ein")) in corp:
+                    rec["_corp"] = corporate.overlay(corp[str(rec.get("ein"))])
             records += payload["foundations"]
             stamp = stamp or payload.get("fetched_at", "")
             ids, vecs = vectors(fetch(f"{prefix}-{state}.npz", f"{prefix}/{state}.npz"))
             all_ids += ids
             all_vecs.append(vecs)
+        if records and extra:
+            corporate.add_national(state, records, all_ids, all_vecs, extra, corp)
         if records:
             # Later files win for a repeated EIN, as dict.update does in the Streamlit app.
             index = {e: i for i, e in enumerate(all_ids)}

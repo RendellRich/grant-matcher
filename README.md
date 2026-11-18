@@ -160,6 +160,12 @@ No public catalog lists county and city grants, so they are kept by hand in `dat
 
 To add or change one, edit the file from the official page, update `checked`, and run `python -m grantmatch.local` to check it.
 
+## Company foundations
+
+The IRS data can't tell a company's foundation from a family's. `data/corporate.json` names company foundations by EIN, the company behind each, and, where the company's own giving page says so, the local program a small nonprofit can apply to: who can apply, the amount, when and how. `grantmatch/corporate.py` checks the file, and the foundation cards show the company and its program, with a filter for company foundations. None of this changes a score.
+
+A national program run through local stores, such as Walmart's Spark Good grants, is listed in every state it serves, even when the foundation's IRS return names other states among the top 12 it gave to. Without that, the Walmart Foundation was missing from Florida's list.
+
 ## Data
 
 A GitHub Action runs twice a day and pulls every posted and forecasted opportunity open to nonprofits (eligibility codes 12, 13, 25 and 99) from the public [Grants.gov API](https://www.grants.gov/api/api-guide) using `search2` and `fetchOpportunity`. No API key is needed. The cleaned file and the opportunity embeddings are published as `data-latest` release assets, and the app reads them from there. A snapshot in `data/` is the fallback. If the embedding model cannot load, the app falls back to TF-IDF similarity.
@@ -218,6 +224,7 @@ grantmatch/foundations.py  IRS 990-PF parsing, split by state
 grantmatch/community.py IRS 990 Schedule I for community foundations and United Ways
 grantmatch/florida.py   Florida Catalog of State Financial Assistance
 grantmatch/local.py     county and city programs entered by hand (data/local-FL.json)
+grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
 grantmatch/rank_more.py foundation and Florida scoring
 grantmatch/store.py     private workspace storage (GitHub repo or local folder)
 grantmatch/workspace.py pipeline, organization facts, answer library, documents

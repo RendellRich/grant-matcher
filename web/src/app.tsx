@@ -566,6 +566,10 @@ export function App() {
             <label class="check"><input type="checkbox" checked={n.apply} onChange={(e) => setN(k, { apply: (e.target as HTMLInputElement).checked })} /><span>Publish how to apply</span></label>
             <label class="check"><input type="checkbox" checked={n.open} onChange={(e) => setN(k, { open: (e.target as HTMLInputElement).checked })} /><span>Don't refuse unsolicited requests</span></label>
             <label class="check"><input type="checkbox" checked={n.local} onChange={(e) => setN(k, { local: (e.target as HTMLInputElement).checked })} /><span>Based in or funding your cities</span></label>
+            {all.some((e) => e.corp) ? (
+              <label class="check"><input type="checkbox" checked={Boolean(n.corp)} onChange={(e) => setN(k, { corp: (e.target as HTMLInputElement).checked })} />
+                <span>Company foundations ({all.filter((e) => e.corp).length.toLocaleString("en-US")})</span></label>
+            ) : null}
             {all.some((e) => e.cycle === "open" || e.cycle === "deadline") ? (
               <label class="check"><input type="checkbox" checked={n.cycle} onChange={(e) => setN(k, { cycle: (e.target as HTMLInputElement).checked })} />
                 <span>Say on their website that applications are open or a deadline is ahead ({all.filter((e) => e.cycle === "open" || e.cycle === "deadline").length.toLocaleString("en-US")})</span></label>
