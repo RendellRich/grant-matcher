@@ -50,6 +50,11 @@ export function EntryView(p: {
   e: Entry; marked: boolean; onMark: (e: Entry) => void; id?: string; stage?: preact.ComponentChildren; action?: MarkAction;
 }) {
   const { e } = p;
+  // Fits and cautions always show. The other lines fill up to MAX_WHY rows, dated and history lines first; the rest wait in the details.
+  const room = Math.max(0, MAX_WHY - e.fits.length - e.cautions.length);
+  const status = e.status.slice(0, room);
+  const also = e.also.slice(0, room - status.length);
+  const rest = [...e.also.slice(also.length), ...e.status.slice(status.length)];
   return (
     <article class="entry" aria-labelledby={`t-${e.key}`}>
       <div class="entry-top">
@@ -74,8 +79,8 @@ export function EntryView(p: {
       <ul class="why">
         {e.fits.map((x) => <li class="good" key={x}><IconCheck /><span><span class="sr-only">Fits: </span>{x}</span></li>)}
         {e.cautions.map((x) => <li class="warn" key={x}><IconAlert /><span><span class="sr-only">Caution: </span>{x}</span></li>)}
-        {e.also.map((x) => <li class="also" key={x}><IconInfo /><span><span class="sr-only">Also: </span>{x}</span></li>)}
-        {e.status.map((x) => <li class="also" key={x}><IconClock /><span><span class="sr-only">Status: </span>{x}</span></li>)}
+        {also.map((x) => <li class="also" key={x}><IconInfo /><span><span class="sr-only">Also: </span>{x}</span></li>)}
+        {status.map((x) => <li class="also" key={x}><IconClock /><span><span class="sr-only">Status: </span>{x}</span></li>)}
       </ul>
       {p.stage}
       <div class="entry-actions">
@@ -92,18 +97,25 @@ export function EntryView(p: {
             <span class="sr-only">: {e.title}</span>
           </button>
         )}
-        <Details e={e} />
+        <Details e={e} rest={rest} />
       </div>
     </article>
   );
 }
 
-function Details({ e }: { e: Entry }) {
+const MAX_WHY = 6;
+
+function Details({ e, rest }: { e: Entry; rest: string[] }) {
   const label = e.source === "fdn" ? "How to apply and past grants" : e.source === "fed" ? "Summary" : "Details";
   return (
     <details class="more">
       <summary>{label}<span class="sr-only"> for {e.title}</span></summary>
       <div class="more-body">
+        {rest.length ? (
+          <ul class="why">
+            {rest.map((x) => <li class="also" key={x}><IconInfo /><span><span class="sr-only">Also: </span>{x}</span></li>)}
+          </ul>
+        ) : null}
         {e.summary ? <p class="summary">{e.summary}</p> : null}
         {e.eligibility ? <p class="summary"><strong>Eligibility notes:</strong> {e.eligibility}</p> : null}
         {e.noApplyInfo ? <p class="quiet">No application details listed on the return.</p> : null}
@@ -173,7 +185,7 @@ export function ResultList(p: {
     <div class="results">
       {good.length === 0 ? (
         <p class="empty">{p.narrowed
-          ? `No strong or possible ${p.noun} match these filters. Clear a filter to see more.`
+          ? `No strong or possible ${p.noun} match your search and filters. Clear filters to see more.`
           : `No strong or possible ${p.noun} for this profile yet. Try more specific key words, or look through the long shots below.`}</p>
       ) : (
         <>

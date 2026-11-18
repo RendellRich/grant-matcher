@@ -7,13 +7,14 @@ const h = { y: [2021, 2022, 2023, 2024], n: [12, 15, 14, 18], steady: true, new:
 describe("giving history", () => {
   it("says it gives every year, funds groups new to it, and lists grants by year", () => {
     const got = historyFacts(h, ["Tampa"]);
-    expect(got.lines).toEqual(["Gave every year from 2021 to 2024", "39% of its 2024 grantees were new to it"]);
-    expect(got.row).toEqual({ label: "Grants by year", text: "2021: 12 · 2022: 15 · 2023: 14 · 2024: 18" });
+    expect(got.lines).toEqual(["Gave every year from 2021 to 2024; 39% of its 2024 grantees were new to it"]);
+    expect(got.row).toEqual({ label: "Grants by year", text: "2021: 12 · 2022: 15 · 2023: 14 · 2024: 18" });
     expect([got.steady, got.firstTime, got.newHere]).toEqual([true, true, false]);
   });
 
   it("notices when its first grants to one of your places came in its latest year", () => {
-    expect(historyFacts(h, ["Manatee", "Palmetto"]).lines.at(-1)).toBe("Its first grants to Palmetto came in 2024");
+    expect(historyFacts(h, ["Manatee", "Palmetto"]).lines).toEqual(["Gave every year from 2021 to 2024; 39% of its 2024 grantees were new to it; its first grants to Palmetto came in 2024"]);
+    expect(historyFacts({ ...h, steady: false, new: 0.1 }, ["Palmetto"]).lines).toEqual(["Its first grants to Palmetto came in 2024"]);
     expect(historyFacts(h, ["Bradenton", "Palmetto"]).newHere).toBe(false); // it funded Bradenton back in 2021
     expect(historyFacts({ ...h, y: [2023, 2024], n: [1, 2] }, ["Palmetto"]).newHere).toBe(false); // too little history
   });
