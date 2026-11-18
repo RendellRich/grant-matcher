@@ -392,6 +392,13 @@ export interface FoundationRec {
   _apply?: Record<string, string>;
   /** What its website said at the last weekly check (grantmatch.cycles); display only, never scored. */
   _cycle?: WebsiteCycle;
+  /** A company foundation and its local program (grantmatch/corporate.py); display only, never scored. */
+  _corp?: CompanyGiving;
+}
+
+export interface CompanyGiving {
+  company: string;
+  program?: { name: string; who: string; amount: string; when: string; how: string; focus?: string; url: string; checked: string };
 }
 
 export interface WebsiteCycle {

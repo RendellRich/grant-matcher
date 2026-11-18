@@ -1,6 +1,6 @@
 // Turns scored records from each source into one shape the result list draws.
 import {
-  asks501c3, fmtDate, money, type FederalExtra, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier, type WebsiteCycle,
+  asks501c3, fmtDate, money, type CompanyGiving, type FederalExtra, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier, type WebsiteCycle,
 } from "./score";
 import { SUPPORT_TYPES, splitList, type ProfileForm } from "./profile";
 
@@ -47,6 +47,7 @@ export interface Entry {
   cycle?: WebsiteCycle["s"]; // what a foundation's website said at the last weekly check
   support?: string[]; // kinds of support its text describes (general operating, program...), from terms.json
   kind?: string; // a foundation's kind: private, community, public, United Way
+  corp?: string; // the company behind a company foundation (data/corporate.json)
   reach?: "national" | "state" | ""; // a foundation that gives in 5 or more states, or mostly in the person's state
   forecast?: boolean; // a federal forecast, not open yet
 }
@@ -145,16 +146,38 @@ export function websiteFindings(c: WebsiteCycle | undefined, today: Date = new D
   return { ...out, caution: `Its website says it isn't taking new requests now${checked}` };
 }
 
+/** A company foundation's program, as detail rows and a short amount for the right-hand column. */
+export function companyRows(c: CompanyGiving | undefined): { rows: DetailRow[]; side?: string; line?: string } {
+  const p = c?.program;
+  if (!c || !p) return { rows: [] };
+  const rows: DetailRow[] = [{ label: "Company program", text: p.name }];
+  const add = (label: string, text?: string) => { if (text) rows.push({ label, text }); };
+  add("Who can apply", p.who);
+  add("Amount", p.amount);
+  add("When to apply", p.when);
+  add("How to apply", p.how);
+  add("Focus", p.focus);
+  const href = safeUrl(p.url);
+  if (href) rows.push({ label: "Program page", href, linkText: href.split("://")[1].replace(/\/$/, "").slice(0, 70) });
+  if (/^\d{4}-\d{2}-\d{2}$/.test(p.checked)) {
+    rows.push({ label: "Source", text: `Entered by hand from ${c.company}'s giving page, checked ${fmtDate(ymdDate(p.checked))}` });
+  }
+  const range = /^\$[\d,]+ to \$[\d,]+$/.test(p.amount) ? p.amount : "";
+  return { rows, side: range ? `Grants ${range}` : undefined, line: `Runs ${p.name}${range ? `, ${range}` : ""}` };
+}
+
 export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: boolean): Entry {
   const r = s.rec;
+  const company = companyRows(r._corp);
   const a = r._apply ?? {};
   const why = sortReasons(s.reasons, s.cautions, "its past grants", hasKw);
   const web = websiteFindings(r._cycle);
   if (web.line || web.caution) why.also = why.also.filter((x) => x !== "Check its website for open grant cycles"); // already checked
   if (web.line) why.status.unshift(web.line);
+  if (company.line) why.status.unshift(company.line);
   if (web.caution) why.cautions.push(web.caution);
   const site = siteHref(r._site ?? "");
-  const rows: DetailRow[] = [];
+  const rows: DetailRow[] = [...company.rows];
   const add = (label: string, text?: string) => { if (text) rows.push({ label, text }); };
   add("Mission", r._mission);
   add("Contact", a.contact);
@@ -174,9 +197,9 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
   return {
     key: `fdn:${r.ein}`, source: "fdn", title: r._name || r.name, url: site || safeUrl(r.url),
     catalog: `EIN ${r.ein.length === 9 ? r.ein.slice(0, 2) + "-" + r.ein.slice(2) : r.ein}`,
-    facts: [r.kind ?? "Private foundation", `${r._city || r.city}, ${r.state}`,
+    facts: [r._corp ? `Company foundation (${r._corp.company})` : r.kind ?? "Private foundation", `${r._city || r.city}, ${r.state}`,
       `${plural(r.grant_count ?? 0, "grant")}, ${money(r.grants_total)} total`, `tax year ${r.tax_year}`],
-    side: `Typical ${money(r.grant_median)}`, sideQuiet: true,
+    side: company.side ?? `Typical ${money(r.grant_median)}`, sideQuiet: true,
     score: s.score, tier: s.tier, ...why, rows,
     noApplyInfo: !(a.contact || a.materials || a.deadlines),
     grants: grants.map((g) => ({
@@ -189,6 +212,7 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
     cycle: web.line || web.caution ? r._cycle!.s : undefined,
     support: supportIn([...r.top_purposes, ...(r.sample_grants || []).map((g) => g?.purpose ?? ""), r._mission ?? ""].join(" ")),
     kind: r.kind ?? "Private foundation",
+    corp: r._corp?.company,
     reach: Object.values(r.recipient_states ?? {}).filter(Boolean).length >= 5 ? "national"
       : (r.grant_count ? r.in_state / r.grant_count >= 0.5 : false) ? "state" : "",
     publishesApply: s.reasons.includes("Publishes how to apply"),
@@ -260,6 +284,7 @@ export interface Narrow {
   fresh: boolean; // only entries that are new since the last visit
   cycle: boolean; // foundations whose website says applications are open or gives a deadline ahead
   reach: "" | "state" | "national"; // foundations by where they give
+  corp?: boolean; // only company foundations (data/corporate.json)
 }
 
 export const NO_NARROW: Narrow = {
@@ -287,7 +312,7 @@ function haystack(e: Entry): string {
 }
 
 export function isNarrowed(n: Narrow): boolean {
-  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local || n.no501 || n.fresh || n.cycle || n.reach);
+  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local || n.no501 || n.fresh || n.cycle || n.reach || n.corp);
 }
 
 /** Entries that pass every filter that applies to their source. Every word typed must appear. */
@@ -320,6 +345,7 @@ export function narrow(entries: Entry[], n: Narrow): Entry[] {
       if (n.no501 && e.asks501c3) return false;
       if (n.cycle && e.cycle !== "open" && e.cycle !== "deadline") return false;
       if (n.reach && e.reach !== n.reach) return false;
+      if (n.corp && !e.corp) return false;
     }
     return true;
   });

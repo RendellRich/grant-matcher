@@ -1,0 +1,77 @@
+{
+  "about": "Company foundations, entered by hand. Each entry names a foundation by EIN (it must be in the IRS data), the company behind it, and, where the company's own giving page says so, the program a small nonprofit can apply to. serves lists the states a national program is open in (\"*\" for every state), so the foundation is shown there even when its IRS return lists other states. grantmatch/corporate.py checks this file. Change an entry only from the official page, and update its checked date.",
+  "foundations": [
+    {
+      "ein": "205639919",
+      "company": "Walmart",
+      "home": "AR",
+      "serves": "*",
+      "program": {
+        "name": "Spark Good local grants",
+        "who": "501(c)(3) public charities, government entities, schools and faith-based groups with community-benefit projects, serving the same area as the Walmart store, Sam's Club or distribution center they ask. Needs a Spark Good account on Walmart.com, verified by Deed. 501(c)(4), (c)(6) and (c)(19) groups can't apply.",
+        "amount": "$250 to $5,000",
+        "when": "Three cycles a year: February 1 to April 15, May 1 to July 15, and August 1 to December 31 (one line on the page says November 30; confirm there). One grant per store or club per year.",
+        "how": "Apply through your Spark Good account at walmart.com/nonprofits, choosing the nearby store, club or distribution center.",
+        "focus": "Local needs, such as hunger relief, economic opportunity, sustainability, disaster response and community connection",
+        "url": "https://walmart.org/how-we-give/program-guidelines/spark-good-local-grants-guidelines",
+        "checked": "2026-11-18"
+      }
+    },
+    {
+      "ein": "596194119",
+      "company": "Publix",
+      "home": "FL",
+      "serves": ["FL", "GA", "AL", "NC", "SC", "TN", "VA", "KY"],
+      "program": {
+        "name": "Publix Super Markets Charities requests",
+        "who": "Nonprofits that operate or serve clients in Florida, Georgia, Alabama, North Carolina, South Carolina, Tennessee, Virginia or Kentucky. A staff or board member registers the organization.",
+        "amount": "Not stated",
+        "when": "Hunger relief requests March 1 to April 30 (decisions in September); housing and shelter requests July 1 to August 31 (decisions at year end); other requests any time.",
+        "how": "Register once, and update yearly, on the Publix Charitable Donations site (charitabledonations.publix.com).",
+        "focus": "Youth, education, hunger, homelessness and stronger communities",
+        "url": "https://www.publixcharities.org/request-support/",
+        "checked": "2026-11-18"
+      }
+    },
+    {
+      "ein": "237336418",
+      "company": "Truist",
+      "home": "FL",
+      "serves": null,
+      "program": {
+        "name": "Truist Foundation grants",
+        "who": "501(c)(3) public charities in the United States, or applicants through a fiscal sponsor. Not for annual, scholarship or general operating requests. Three years between grants.",
+        "amount": "At least $15,000 for local and regional grants",
+        "when": "Deadlines March 31, July 31 and November 30 each year, with decisions about four months later.",
+        "how": "Online portal from the foundation's grant application page, after an eligibility quiz.",
+        "focus": "Career pathways for adults into middle-skill jobs, and support for small businesses",
+        "url": "https://www.truistfoundation.org/grant-application",
+        "checked": "2026-11-18"
+      }
+    },
+    {
+      "ein": "141864317",
+      "company": "TD Bank",
+      "home": "ME",
+      "serves": null,
+      "program": {
+        "name": "TD Charitable Foundation regional grants",
+        "who": "Nonprofits in TD Bank's communities; Florida has its own giving contact. The eligibility rules are in the regional grants FAQ.",
+        "amount": "Not stated",
+        "when": "2027 deadlines: March 12, May 14 and July 30, with decisions about two months later.",
+        "how": "Online application through CyberGrants, from TD's funding opportunities page.",
+        "focus": "Quality of life in TD's communities, including affordable housing and nonprofit capacity building",
+        "url": "https://www.td.com/us/en/about-us/communities/ready-commitment/funding-opportunities",
+        "checked": "2026-11-18"
+      }
+    },
+    {"ein": "581586283", "company": "Duke Energy", "home": "NC", "serves": null},
+    {"ein": "650031452", "company": "NextEra Energy and FPL", "home": "FL", "serves": null},
+    {"ein": "882162851", "company": "Jabil", "home": "FL", "serves": null},
+    {"ein": "270304734", "company": "Mosaic", "home": "FL", "serves": null},
+    {"ein": "431353948", "company": "AT&T", "home": "TX", "serves": null},
+    {"ein": "366116535", "company": "Allstate", "home": "IL", "serves": null},
+    {"ein": "416017088", "company": "Target", "home": "MN", "serves": null},
+    {"ein": "200721133", "company": "Bank of America", "home": "NC", "serves": null}
+  ]
+}
