@@ -2,7 +2,8 @@ name: Refresh foundations
 
 # Private foundations (990-PF) and community foundations, public foundations and United Ways (990
 # Schedule I) for every state, from the IRS e-file batches. Three jobs:
-#   parse:   read the IRS batches into one file per state (about 10 minutes)
+#   parse:   read six filing years of IRS batches into one file per state, with each foundation's giving
+#            over the years (grantmatch/history.py); about 10 minutes for two years, so roughly 35 for six
 #   embed:   build search vectors in parallel shards, only for foundations whose text changed since
 #            the last run (the cache comes from the release), so a monthly run is short
 #   publish: put the vectors into one file per state and upload everything to the data-latest release
@@ -13,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       years:
-        description: "IRS filing years, comma separated (blank = last year and this year)"
+        description: "IRS filing years, comma separated (blank = the last five years and this year, for five years of history)"
         required: false
 
 permissions:
@@ -36,7 +37,7 @@ jobs:
       - name: Parse 990-PF and 990 Schedule I returns from IRS e-file batches
         run: |
           YEARS="${{ github.event.inputs.years }}"
-          if [ -z "$YEARS" ]; then YEARS="$(( $(date +%Y) - 1 )),$(date +%Y)"; fi
+          if [ -z "$YEARS" ]; then Y=$(date +%Y); YEARS="$((Y-5)),$((Y-4)),$((Y-3)),$((Y-2)),$((Y-1)),$Y"; fi
           python -m grantmatch.foundations --years "$YEARS" --out build/foundations
           python -m grantmatch.community --years "$YEARS" --out build/community
       - uses: actions/upload-artifact@v4

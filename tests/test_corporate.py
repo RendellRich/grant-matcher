@@ -49,3 +49,11 @@ def test_overlay_keeps_the_company_and_its_program():
     assert corporate.overlay({"company": "Sample", "serves": None}) == {"company": "Sample"}
     got = corporate.overlay({"company": "Sample", "program": {"name": "Grants", "focus": ""}})
     assert got == {"company": "Sample", "program": {"name": "Grants"}}
+
+
+def test_a_national_copy_drops_its_home_states_places():
+    entries = {"111111111": {"ein": "111111111", "company": "Sample", "home": "AR", "serves": "*"}}
+    rec = {"ein": "111111111", "hist": {"y": [2023, 2024], "n": [1, 2], "pl": {"bentonville": 2023}}}
+    records, ids, vecs = [], [], []
+    corporate.add_national("FL", records, ids, vecs, {"111111111": (rec, np.ones(4, dtype=np.float16))}, entries)
+    assert records[0]["hist"] == {"y": [2023, 2024], "n": [1, 2]} and "pl" in rec["hist"]

@@ -166,6 +166,10 @@ The IRS data can't tell a company's foundation from a family's. `data/corporate.
 
 A national program run through local stores, such as Walmart's Spark Good grants, is listed in every state it serves, even when the foundation's IRS return names other states among the top 12 it gave to. Without that, the Walmart Foundation was missing from Florida's list.
 
+## Giving over several years
+
+The foundation refresh reads six IRS filing years, enough for five tax years per foundation, and `grantmatch/history.py` keeps a short summary of each foundation's giving across them: grants per year, whether it gave in each of the last four years, the share of its latest year's grantees it hadn't funded before (grantee names are matched loosely, so "Reading Club, Inc." and "The Reading Club" are the same), and, for each state's file, the cities there it has funded with the first year it did. The foundation cards show "Gave every year from 2021 to 2024", "39% of its 2024 grantees were new to it" and "Its first grants to Palmetto came in 2024", a grants-by-year row, and a filter for each. None of this changes a score.
+
 ## Data
 
 A GitHub Action runs twice a day and pulls every posted and forecasted opportunity open to nonprofits (eligibility codes 12, 13, 25 and 99) from the public [Grants.gov API](https://www.grants.gov/api/api-guide) using `search2` and `fetchOpportunity`. No API key is needed. The cleaned file and the opportunity embeddings are published as `data-latest` release assets, and the app reads them from there. A snapshot in `data/` is the fallback. If the embedding model cannot load, the app falls back to TF-IDF similarity.
@@ -225,6 +229,7 @@ grantmatch/community.py IRS 990 Schedule I for community foundations and United 
 grantmatch/florida.py   Florida Catalog of State Financial Assistance
 grantmatch/local.py     county and city programs entered by hand (data/local-FL.json)
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
+grantmatch/history.py   each foundation's giving across five tax years
 grantmatch/rank_more.py foundation and Florida scoring
 grantmatch/store.py     private workspace storage (GitHub repo or local folder)
 grantmatch/workspace.py pipeline, organization facts, answer library, documents

@@ -394,6 +394,16 @@ export interface FoundationRec {
   _cycle?: WebsiteCycle;
   /** A company foundation and its local program (grantmatch/corporate.py); display only, never scored. */
   _corp?: CompanyGiving;
+  /** Its giving over several years (grantmatch/history.py); display only, never scored. */
+  hist?: GivingHistory;
+}
+
+export interface GivingHistory {
+  y: number[]; // tax years with grants, oldest first
+  n: number[]; // grants in each of those years
+  steady?: boolean; // grants in each of the last four years
+  new?: number | null; // share of the latest year's grantees it hadn't funded before
+  pl?: Record<string, number>; // places in this state (lowercase), with the first year it funded there
 }
 
 export interface CompanyGiving {

@@ -1,6 +1,6 @@
 // Turns scored records from each source into one shape the result list draws.
 import {
-  asks501c3, fmtDate, money, type CompanyGiving, type FederalExtra, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier, type WebsiteCycle,
+  asks501c3, fmtDate, money, type CompanyGiving, type FederalExtra, type GivingHistory, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier, type WebsiteCycle,
 } from "./score";
 import { SUPPORT_TYPES, splitList, type ProfileForm } from "./profile";
 
@@ -48,6 +48,9 @@ export interface Entry {
   support?: string[]; // kinds of support its text describes (general operating, program...), from terms.json
   kind?: string; // a foundation's kind: private, community, public, United Way
   corp?: string; // the company behind a company foundation (data/corporate.json)
+  steady?: boolean; // gave in each of the last four years
+  firstTime?: boolean; // at least a third of its latest year's grantees were new to it
+  newHere?: boolean; // its first grants to one of the person's places came in its latest year
   reach?: "national" | "state" | ""; // a foundation that gives in 5 or more states, or mostly in the person's state
   forecast?: boolean; // a federal forecast, not open yet
 }
@@ -146,6 +149,36 @@ export function websiteFindings(c: WebsiteCycle | undefined, today: Date = new D
   return { ...out, caution: `Its website says it isn't taking new requests now${checked}` };
 }
 
+/** What several years of returns say about a foundation, for the person's places (expanded cities). */
+export function historyFacts(h: GivingHistory | undefined, cities: string[] = []): {
+  lines: string[]; row?: DetailRow; steady: boolean; firstTime: boolean; newHere: boolean;
+} {
+  const none = { lines: [], steady: false, firstTime: false, newHere: false };
+  if (!h || !Array.isArray(h.y) || !h.y.length) return none;
+  const latest = h.y[h.y.length - 1];
+  const lines: string[] = [];
+  const steady = h.steady === true;
+  if (steady) lines.push(`Gave every year from ${latest - 3} to ${latest}`);
+  const firstTime = typeof h.new === "number" && h.new >= 1 / 3;
+  if (firstTime) lines.push(`${Math.round(h.new! * 100)}% of its ${latest} grantees were new to it`);
+  let newHere = false;
+  const pl = h.pl ?? {};
+  const earlier = h.y.filter((y) => y < latest).length;
+  const mine = cities.filter((c) => pl[c.trim().toLowerCase()] !== undefined);
+  if (mine.length && earlier >= 2) {
+    const first = Math.min(...mine.map((c) => pl[c.trim().toLowerCase()]));
+    if (first === latest) {
+      newHere = true;
+      const named = mine.filter((c) => pl[c.trim().toLowerCase()] === latest).slice(0, 3).join(", ");
+      lines.push(`Its first grants to ${named} came in ${latest}`);
+    }
+  }
+  const row = h.y.length > 1
+    ? { label: "Grants by year", text: h.y.map((y, i) => `${y}: ${(h.n[i] ?? 0).toLocaleString("en-US")}`).join(" · ") }
+    : undefined;
+  return { lines, row, steady, firstTime, newHere };
+}
+
 /** A company foundation's program, as detail rows and a short amount for the right-hand column. */
 export function companyRows(c: CompanyGiving | undefined): { rows: DetailRow[]; side?: string; line?: string } {
   const p = c?.program;
@@ -166,15 +199,17 @@ export function companyRows(c: CompanyGiving | undefined): { rows: DetailRow[]; 
   return { rows, side: range ? `Grants ${range}` : undefined, line: `Runs ${p.name}${range ? `, ${range}` : ""}` };
 }
 
-export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: boolean): Entry {
+export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: boolean, cities: string[] = []): Entry {
   const r = s.rec;
   const company = companyRows(r._corp);
+  const past = historyFacts(r.hist, cities);
   const a = r._apply ?? {};
   const why = sortReasons(s.reasons, s.cautions, "its past grants", hasKw);
   const web = websiteFindings(r._cycle);
   if (web.line || web.caution) why.also = why.also.filter((x) => x !== "Check its website for open grant cycles"); // already checked
   if (web.line) why.status.unshift(web.line);
   if (company.line) why.status.unshift(company.line);
+  why.status.push(...past.lines);
   if (web.caution) why.cautions.push(web.caution);
   const site = siteHref(r._site ?? "");
   const rows: DetailRow[] = [...company.rows];
@@ -191,6 +226,7 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
   add("Restrictions", a.restrictions);
   if (site) rows.push({ label: "Website", href: site, linkText: site.split("://")[1].replace(/\/$/, "").toLowerCase() });
   rows.push(...web.rows);
+  if (past.row) rows.push(past.row);
   if (safeUrl(r.url)) rows.push({ label: "Tax filings", href: r.url, linkText: "ProPublica Nonprofit Explorer" });
   const grants = (r.sample_grants || []).filter((g) => g && typeof g === "object").slice(0, 8);
   const local = grants.filter((g) => g.state === state).length;
@@ -213,6 +249,7 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
     support: supportIn([...r.top_purposes, ...(r.sample_grants || []).map((g) => g?.purpose ?? ""), r._mission ?? ""].join(" ")),
     kind: r.kind ?? "Private foundation",
     corp: r._corp?.company,
+    steady: past.steady, firstTime: past.firstTime, newHere: past.newHere,
     reach: Object.values(r.recipient_states ?? {}).filter(Boolean).length >= 5 ? "national"
       : (r.grant_count ? r.in_state / r.grant_count >= 0.5 : false) ? "state" : "",
     publishesApply: s.reasons.includes("Publishes how to apply"),
@@ -285,6 +322,9 @@ export interface Narrow {
   cycle: boolean; // foundations whose website says applications are open or gives a deadline ahead
   reach: "" | "state" | "national"; // foundations by where they give
   corp?: boolean; // only company foundations (data/corporate.json)
+  steady?: boolean; // only foundations that gave in each of the last four years
+  firstTime?: boolean; // only foundations that often fund groups new to them
+  newHere?: boolean; // only foundations that started giving in the person's places in their latest year
 }
 
 export const NO_NARROW: Narrow = {
@@ -312,7 +352,7 @@ function haystack(e: Entry): string {
 }
 
 export function isNarrowed(n: Narrow): boolean {
-  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local || n.no501 || n.fresh || n.cycle || n.reach || n.corp);
+  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local || n.no501 || n.fresh || n.cycle || n.reach || n.corp || n.steady || n.firstTime || n.newHere);
 }
 
 /** Entries that pass every filter that applies to their source. Every word typed must appear. */
@@ -346,6 +386,9 @@ export function narrow(entries: Entry[], n: Narrow): Entry[] {
       if (n.cycle && e.cycle !== "open" && e.cycle !== "deadline") return false;
       if (n.reach && e.reach !== n.reach) return false;
       if (n.corp && !e.corp) return false;
+      if (n.steady && !e.steady) return false;
+      if (n.firstTime && !e.firstTime) return false;
+      if (n.newHere && !e.newHere) return false;
     }
     return true;
   });

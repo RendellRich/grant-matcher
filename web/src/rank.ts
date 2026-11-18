@@ -39,7 +39,7 @@ export const rankFederal = (records: FederalRec[], p: Profile, sim: Sim): Entry[
 export const rankFoundations = (records: FoundationRec[], p: Profile, state: string, cities: string[], sim: Sim,
   kinds: string[] = KINDS, preselected = false): Entry[] =>
   scoreFoundations(records.filter((r) => kinds.includes(r.kind || "Private foundation")), p, state, cities, sim, preselected)
-    .map((s) => foundationEntry(s, state, p.keywords.length > 0));
+    .map((s) => foundationEntry(s, state, p.keywords.length > 0, cities));
 
 export const rankFlorida = (records: FloridaRec[], p: Profile, sim: Sim, earmarks = false, cities: string[] = []): Entry[] =>
   scoreFlorida(records, p, sim, earmarks, cities).map((s) => floridaEntry(s, p.keywords.length > 0));

@@ -66,7 +66,7 @@ describe.skipIf(!have)("on the test data", () => {
     const p = toProfile(form, now), hasKw = p.keywords.length > 0;
     expect(got.fed).toEqual(scoreFederal(fed!.records, p, similarities(fed!.vecs, ex!.vector)).map((s) => federalEntry(s, hasKw)));
     expect(got.fdn).toEqual(scoreFoundations(fdn!.records.filter((r: { kind?: string }) => KINDS.includes(r.kind || "Private foundation")), p, "FL",
-      expandCities("Tampa", counties), similarities(fdn!.vecs, ex!.vector), false).map((s) => foundationEntry(s, "FL", hasKw)));
+      expandCities("Tampa", counties), similarities(fdn!.vecs, ex!.vector), false).map((s) => foundationEntry(s, "FL", hasKw, expandCities("Tampa", counties))));
     expect(got.fl).toEqual(scoreFlorida(fl!.records, p, similarities(fl!.vecs, ex!.vector), false, expandCities("Tampa", counties)).map((s) => floridaEntry(s, hasKw)));
   });
 
