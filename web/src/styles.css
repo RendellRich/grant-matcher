@@ -271,6 +271,13 @@ input[type="search"], input[type="date"] {
 }
 input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-offset: 0; border-color: var(--accent); }
 .narrow-checks { display: flex; flex-wrap: wrap; gap: 0 1.5rem; }
+/* Foundation filters in named groups, side by side where there is room. */
+.narrow-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .5rem 1.5rem; padding-top: .5rem; }
+.narrow-group { min-width: 0; margin: 0; padding: 0; border: 0; }
+.narrow-group > legend { padding: 0; font-size: .875rem; font-weight: 600; color: var(--muted); }
+.narrow-group .check { align-items: flex-start; padding: .625rem 0; line-height: 1.45; }
+.narrow-group .check input { margin-top: .1875rem; }
+.narrow-toggle { display: none; }
 .narrowed { font-size: .9375rem; color: var(--muted); }
 .link-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 .25rem; font: inherit; font-weight: 600;
   color: var(--accent); background: none; border: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
@@ -289,7 +296,7 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .entry-head .side { font-size: .9375rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
 .entry-head .side.quiet { font-weight: 400; color: var(--muted); }
 .entry-title { font: 600 1.25rem/1.3 var(--serif); letter-spacing: -0.003em; overflow-wrap: anywhere; }
-.entry-title a { display: block; padding: .5rem 0; margin: -.5rem 0; color: var(--ink); text-decoration: none; }  /* 44px tall to the pointer, same layout */
+.entry-title a { display: block; padding: .5625rem 0; margin: -.5625rem 0; color: var(--ink); text-decoration: none; }  /* 44px tall to the pointer, same layout */
 .entry-title a:hover, .entry-title a:focus-visible { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; }
 
 .score { display: inline-flex; align-items: center; gap: .625rem; }
@@ -326,7 +333,8 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .more > summary { padding-right: 10.5rem; font-size: .9375rem; }
 .more-body { display: grid; gap: .75rem; padding: .25rem 0 .75rem 1.375rem; font-size: .9375rem; }
 .summary { max-width: 66ch; }
-.rows { display: grid; grid-template-columns: minmax(7rem, max-content) 1fr; gap: .375rem 1rem; margin: 0; }
+.rows { display: grid; grid-template-columns: minmax(7rem, max-content) 1fr; gap: .375rem 1rem; margin: 0; align-items: baseline; }
+.rows dd a, .more-body > p > a { display: inline-flex; align-items: center; min-height: 44px; }  /* phone, email and website links are easy to tap */
 .rows dt { color: var(--muted); font-weight: 500; }
 .rows dd { margin: 0; overflow-wrap: anywhere; }
 .sub { font-weight: 650; }
@@ -383,7 +391,11 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
   .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem; }
   .tabs [role="tab"] { justify-content: space-between; padding: 0 .75rem; white-space: nowrap; text-align: left; }
   .entry-title { font-size: 1.125rem; }
+  .entry-title a { padding: .6875rem 0; margin: -.6875rem 0; }
   .rule { width: 5.5rem; }
+  /* On a phone the search stays in view and the other filters wait behind one button, so results come sooner. */
+  .narrow-toggle { display: inline-flex; flex: 1 1 100%; justify-content: center; }
+  .narrow:not(.open) .narrow-row .field:not(.grow), .narrow:not(.open) .narrow-groups, .narrow:not(.open) .narrow-checks { display: none; }
   .rows { grid-template-columns: 1fr; gap: 0; }
   .rows dd { margin-bottom: .5rem; }
   .more > summary { padding-right: 0; }

@@ -156,11 +156,11 @@ export function historyFacts(h: GivingHistory | undefined, cities: string[] = []
   const none = { lines: [], steady: false, firstTime: false, newHere: false };
   if (!h || !Array.isArray(h.y) || !h.y.length) return none;
   const latest = h.y[h.y.length - 1];
-  const lines: string[] = [];
+  const parts: string[] = []; // joined into one line, so history takes one row on a card
   const steady = h.steady === true;
-  if (steady) lines.push(`Gave every year from ${latest - 3} to ${latest}`);
+  if (steady) parts.push(`gave every year from ${latest - 3} to ${latest}`);
   const firstTime = typeof h.new === "number" && h.new >= 1 / 3;
-  if (firstTime) lines.push(`${Math.round(h.new! * 100)}% of its ${latest} grantees were new to it`);
+  if (firstTime) parts.push(`${Math.round(h.new! * 100)}% of its ${latest} grantees were new to it`);
   let newHere = false;
   const pl = h.pl ?? {};
   const earlier = h.y.filter((y) => y < latest).length;
@@ -170,12 +170,14 @@ export function historyFacts(h: GivingHistory | undefined, cities: string[] = []
     if (first === latest) {
       newHere = true;
       const named = mine.filter((c) => pl[c.trim().toLowerCase()] === latest).slice(0, 3).join(", ");
-      lines.push(`Its first grants to ${named} came in ${latest}`);
+      parts.push(`its first grants to ${named} came in ${latest}`);
     }
   }
   const row = h.y.length > 1
-    ? { label: "Grants by year", text: h.y.map((y, i) => `${y}: ${(h.n[i] ?? 0).toLocaleString("en-US")}`).join(" · ") }
+    ? { label: "Grants by year", text: h.y.map((y, i) => `${y}: ${(h.n[i] ?? 0).toLocaleString("en-US")}`).join(" · ") } // a year never parts from its count
     : undefined;
+  const joined = parts.join("; ");
+  const lines = joined ? [joined[0].toUpperCase() + joined.slice(1)] : [];
   return { lines, row, steady, firstTime, newHere };
 }
 
@@ -206,6 +208,10 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
   const a = r._apply ?? {};
   const why = sortReasons(s.reasons, s.cautions, "its past grants", hasKw);
   const web = websiteFindings(r._cycle);
+  // The typical grant already sits beside the score, so it isn't repeated as a reason.
+  const repeat = (x: string) => x.startsWith("Typical grant ") && !x.startsWith("Typical grant (");
+  why.fits = why.fits.filter((x) => !repeat(x));
+  why.also = why.also.filter((x) => !repeat(x));
   if (web.line || web.caution) why.also = why.also.filter((x) => x !== "Check its website for open grant cycles"); // already checked
   if (web.line) why.status.unshift(web.line);
   if (company.line) why.status.unshift(company.line);

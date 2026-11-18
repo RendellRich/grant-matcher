@@ -103,6 +103,7 @@ export function App() {
   // Filters narrow what is shown; they never change a score. The search words apply on every tab.
   const [q, setQ] = useState("");
   const [nar, setNar] = useState<Record<SourceKey, Narrow>>({ fed: NO_NARROW, fdn: NO_NARROW, fl: NO_NARROW });
+  const [filtersOpen, setFiltersOpen] = useState(false); // phones fold the filters under one button
   const [tab, setTab] = useState<string>("");
   const [order, setOrder] = useState<SourceKey[]>([]);
   const [phoneOpen, setPhoneOpen] = useState(false);
@@ -480,11 +481,15 @@ export function App() {
     return floridaPanel();
   }
 
-  function tally(k: SourceKey, caption: string) {
+  /** The count line for one source. With filters on it counts what they leave, so it agrees with the list below. */
+  function tally(k: SourceKey, caption: string, shown?: Entry[]) {
+    const on = Boolean(shown) && isNarrowed(cur(k));
+    const s = on ? shown!.filter((e) => e.tier === "Strong").length : strong[k];
+    const p = on ? shown!.filter((e) => e.tier === "Possible").length : possible[k];
     return (
       <div class="tally">
-        <h2>{strong[k] ? <strong>{strong[k].toLocaleString("en-US")}</strong> : "0"} strong,{" "}
-          <strong>{possible[k].toLocaleString("en-US")}</strong> possible {NOUN[k][1]}</h2>
+        <h2>{s ? <strong>{s.toLocaleString("en-US")}</strong> : "0"} strong,{" "}
+          <strong>{p.toLocaleString("en-US")}</strong> possible {NOUN[k][1]}{on ? " with your filters" : ""}</h2>
         <p class="quiet">{caption}</p>
         <div class="key">
           <span class="key-scale" aria-hidden="true">
@@ -515,16 +520,29 @@ export function App() {
     const agencies = k === "fdn" ? [] : [...new Set(all.map((e) => e.agency).filter(Boolean) as string[])].sort();
     const on = isNarrowed(cur(k));
     const id = (s: string) => `${k}-${s}`;
-    const newCount = all.filter((e) => e.isNew).length;
+    // Every count here is of strong and possible matches, the same pool the tab and the line under the filters count.
+    const pool = all.filter((e) => e.tier !== "Long shot");
+    const count = (f: (e: Entry) => unknown) => pool.filter(f).length.toLocaleString("en-US");
+    const newCount = pool.filter((e) => e.isNew).length;
     const since = etoSeen ? etoSeen.since : fresh[k]?.since;
+    const onCount = Object.entries(n).filter(([key, v]) => key !== "q" && Boolean(v)).length;
+    const hasMore = k !== "fl" || agencies.length > 1 || Boolean(newCount && since);
+    const check = (key: "apply" | "open" | "local" | "no501" | "cycle" | "corp" | "steady" | "firstTime" | "newHere", label: string) => (
+      <label class="check"><input type="checkbox" checked={Boolean(n[key])} onChange={(e) => setN(k, { [key]: (e.target as HTMLInputElement).checked })} /><span>{label}</span></label>
+    );
     return (
-      <div class="narrow">
+      <div class={`narrow${filtersOpen ? " open" : ""}`}>
         <div class="narrow-row">
           <div class="field grow">
             <label for={id("q")}>Search these results</label>
             <input id={id("q")} type="search" value={q} placeholder="For example: after school, Hillsborough"
                    onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
           </div>
+          {hasMore ? (
+            <button type="button" class="btn narrow-toggle" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>
+              {filtersOpen ? "Hide filters" : "Filters"}{onCount ? ` (${onCount} on)` : ""}
+            </button>
+          ) : null}
           {k !== "fl" ? (
             <div class="field">
               <label for={id("size")}>{k === "fed" ? "Award size" : "Typical grant"}</label>
@@ -561,35 +579,29 @@ export function App() {
           ) : null}
         </div>
         {k === "fdn" ? (
-          <fieldset class="narrow-checks">
-            <legend class="sr-only">Show only foundations that</legend>
-            <label class="check"><input type="checkbox" checked={n.apply} onChange={(e) => setN(k, { apply: (e.target as HTMLInputElement).checked })} /><span>Publish how to apply</span></label>
-            <label class="check"><input type="checkbox" checked={n.open} onChange={(e) => setN(k, { open: (e.target as HTMLInputElement).checked })} /><span>Don't refuse unsolicited requests</span></label>
-            <label class="check"><input type="checkbox" checked={n.local} onChange={(e) => setN(k, { local: (e.target as HTMLInputElement).checked })} /><span>Based in or funding your cities</span></label>
-            {all.some((e) => e.steady) ? (
-              <label class="check"><input type="checkbox" checked={Boolean(n.steady)} onChange={(e) => setN(k, { steady: (e.target as HTMLInputElement).checked })} />
-                <span>Gave every year for four years ({all.filter((e) => e.steady).length.toLocaleString("en-US")})</span></label>
+          <div class="narrow-groups" role="group" aria-label="Show only foundations that">
+            <fieldset class="narrow-group">
+              <legend>Open to requests</legend>
+              {check("apply", "Publish how to apply")}
+              {check("open", "Haven't said no to unsolicited requests")}
+              {pool.some((e) => e.cycle === "open" || e.cycle === "deadline")
+                ? check("cycle", `Say online that applications are open or a deadline is ahead (${count((e) => e.cycle === "open" || e.cycle === "deadline")})`) : null}
+              {applied.has_501c3 !== "Yes" ? check("no501", "Don't ask for 501(c)(3) proof") : null}
+            </fieldset>
+            {pool.some((e) => e.steady || e.firstTime || e.newHere) ? (
+              <fieldset class="narrow-group">
+                <legend>Giving history</legend>
+                {pool.some((e) => e.steady) ? check("steady", `Gave every year for four years (${count((e) => e.steady)})`) : null}
+                {pool.some((e) => e.firstTime) ? check("firstTime", `Often fund groups new to them (${count((e) => e.firstTime)})`) : null}
+                {pool.some((e) => e.newHere) ? check("newHere", `Started giving in your cities in their latest year (${count((e) => e.newHere)})`) : null}
+              </fieldset>
             ) : null}
-            {all.some((e) => e.firstTime) ? (
-              <label class="check"><input type="checkbox" checked={Boolean(n.firstTime)} onChange={(e) => setN(k, { firstTime: (e.target as HTMLInputElement).checked })} />
-                <span>Often fund groups new to them ({all.filter((e) => e.firstTime).length.toLocaleString("en-US")})</span></label>
-            ) : null}
-            {all.some((e) => e.newHere) ? (
-              <label class="check"><input type="checkbox" checked={Boolean(n.newHere)} onChange={(e) => setN(k, { newHere: (e.target as HTMLInputElement).checked })} />
-                <span>Started giving in your cities in their latest year ({all.filter((e) => e.newHere).length.toLocaleString("en-US")})</span></label>
-            ) : null}
-            {all.some((e) => e.corp) ? (
-              <label class="check"><input type="checkbox" checked={Boolean(n.corp)} onChange={(e) => setN(k, { corp: (e.target as HTMLInputElement).checked })} />
-                <span>Company foundations ({all.filter((e) => e.corp).length.toLocaleString("en-US")})</span></label>
-            ) : null}
-            {all.some((e) => e.cycle === "open" || e.cycle === "deadline") ? (
-              <label class="check"><input type="checkbox" checked={n.cycle} onChange={(e) => setN(k, { cycle: (e.target as HTMLInputElement).checked })} />
-                <span>Say on their website that applications are open or a deadline is ahead ({all.filter((e) => e.cycle === "open" || e.cycle === "deadline").length.toLocaleString("en-US")})</span></label>
-            ) : null}
-            {applied.has_501c3 !== "Yes" ? (
-              <label class="check"><input type="checkbox" checked={n.no501} onChange={(e) => setN(k, { no501: (e.target as HTMLInputElement).checked })} /><span>Don't ask for 501(c)(3) proof</span></label>
-            ) : null}
-          </fieldset>
+            <fieldset class="narrow-group">
+              <legend>Place and type</legend>
+              {check("local", "Based in or funding your cities")}
+              {pool.some((e) => e.corp) ? check("corp", `Company foundations (${count((e) => e.corp)})`) : null}
+            </fieldset>
+          </div>
         ) : null}
         {newCount && since ? (
           <div class="narrow-checks">
@@ -606,7 +618,7 @@ export function App() {
             <button type="button" class="link-btn" onClick={() => setTab("shortlist")}>Open your shortlist</button></p>
         ) : null}
         <p class="narrowed" role="status">
-          {on ? <>Showing {shown.length.toLocaleString("en-US")} of {all.length.toLocaleString("en-US")} {noun}.{" "}
+          {on ? <>Showing {shown.filter((e) => e.tier !== "Long shot").length.toLocaleString("en-US")} of {pool.length.toLocaleString("en-US")} strong and possible {noun}.{" "}
             <button type="button" class="link-btn" onClick={() => { setQ(""); setNar({ ...nar, [k]: NO_NARROW }); }}>Clear filters</button></> : null}
         </p>
       </div>
@@ -632,7 +644,7 @@ export function App() {
     return (
       <>
         {tally("fed", `${fed.data.records.length.toLocaleString("en-US")} open and forecasted federal opportunities that list nonprofits as eligible${updated ? `, updated ${updated}` : ""}.`
-          + (strong.fed ? "" : " No strong federal matches is common for small direct-service groups: much federal money for local programs passes through state agencies first."))}
+          + (strong.fed ? "" : " No strong federal matches is common for small direct-service groups: much federal money for local programs passes through state agencies first."), shown)}
         {!applied.registrations.includes("sam") ? (
           <p class="note">Federal applications need a free SAM.gov registration and a Unique Entity ID first, and approval can take several weeks. Start at <a href="https://sam.gov" target="_blank" rel="noopener">sam.gov<span class="sr-only"> (opens in a new tab)</span></a>.</p>
         ) : null}
@@ -688,7 +700,7 @@ export function App() {
     const picks = shown.filter((e) => e.tier !== "Long shot");
     return (
       <>
-        {tally("fdn", `${recs.length.toLocaleString("en-US")} grantmakers based in ${st} or giving there, from their latest IRS returns. Most funders back groups they already know, so start with an introduction.`)}
+        {tally("fdn", `Scored from ${recs.length.toLocaleString("en-US")} grantmakers based in ${st} or giving there, using their latest IRS returns. Most funders back groups they already know, so start with an introduction.`, shown)}
         {narrowBar("fdn", fdnEntries, shown, "foundations")}
         <details class="filters">
           <summary>More filters and how the score works</summary>
@@ -742,7 +754,7 @@ export function App() {
     const picks = shown.filter((e) => e.tier !== "Long shot");
     return (
       <>
-        {tally("fl", `${open.toLocaleString("en-US")} of ${stateAll.length.toLocaleString("en-US")} Florida state programs (fiscal year ${fl.data.fiscalYear}) are open to nonprofits${county ? `, plus ${county} county program${county === 1 ? "" : "s"} with their own windows` : ""}. State programs are not open calls: check each agency's site for the next window.`)}
+        {tally("fl", `${open.toLocaleString("en-US")} of ${stateAll.length.toLocaleString("en-US")} Florida state programs (fiscal year ${fl.data.fiscalYear}) are open to nonprofits${county ? `, plus ${county} county program${county === 1 ? "" : "s"} with their own windows` : ""}. State programs are not open calls: check each agency's site for the next window.`, shown)}
         {narrowBar("fl", flEntries, shown, "programs")}
         <details class="filters">
           <summary>More filters and how the score works</summary>
@@ -963,7 +975,7 @@ function Footer() {
   return (
     <footer class="footer">
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed nightly. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page.</p>
+      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page.</p>
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Matching runs in your browser; your mission and profile are never sent to a server.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>
