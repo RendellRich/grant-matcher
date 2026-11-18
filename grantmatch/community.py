@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-from .foundations import XML_ROOT, _find, _local, _num, _text, session, year_batches
+from .foundations import XML_ROOT, _find, _local, _num, _text, session, year_batches, current
 from .history import History, default_years
 
 try:
@@ -114,6 +114,7 @@ def build(years: list[int], out_dir: Path) -> None:
     tmp.mkdir(parents=True, exist_ok=True)
     latest: dict[str, dict] = {}
     hist = History()
+    filed: dict[str, int] = {}
     for year in years:
         try:
             batches = year_batches(year, lambda row: row["RETURN_TYPE"] == "990" and row["EIN"] in orgs)
@@ -147,6 +148,7 @@ def build(years: list[int], out_dir: Path) -> None:
                         prev = latest.get(rec["ein"])
                         if prev is None or rec["tax_year"] >= prev["tax_year"]:
                             latest[rec["ein"]] = rec
+                        filed[rec["ein"]] = max(filed.get(rec["ein"], year), year)
                         kept += 1
             except Exception as exc:
                 print(f"{batch}: FAILED {exc}", file=sys.stderr, flush=True)
@@ -154,6 +156,7 @@ def build(years: list[int], out_dir: Path) -> None:
                 path.unlink(missing_ok=True)
             print(f"{batch}: kept {kept} ({time.time() - t0:.0f}s); total {len(latest)}", flush=True)
     tmp.rmdir()
+    latest = current(latest, filed, max(years))
     if not latest:
         raise RuntimeError("No returns parsed; keeping the previous data files")
 
