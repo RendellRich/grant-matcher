@@ -26,12 +26,13 @@ NATIONAL_STATES = 5  # a funder whose latest grants reached this many states giv
 COMPETITIVE = re.compile(r"\b(competitive|request for (applications|proposals)|rfa|rfp|solicitation|notice of funding|scored|review panel)\b", re.I)
 
 
-def _scale(semantic: dict[str, float] | None, ids: pd.Series) -> pd.Series:
-    """Embedding similarity above this source's median, scaled to 0..1."""
+def _scale(semantic: dict[str, float] | None, ids: pd.Series, yardstick: dict[str, float] | None = None) -> pd.Series:
+    """Embedding similarity above this source's median, scaled to 0..1. The median comes from the yardstick
+    records when given (Florida's state programs, so hand-entered county programs never move it)."""
     if not semantic:
         return pd.Series(0.5, index=ids.index)
     vals = ids.map(semantic)
-    base = float(median([v for v in semantic.values()])) if semantic else 0.0
+    base = float(median([v for v in (yardstick or semantic).values()]))
     return ((vals.fillna(base) - base) / SEMANTIC_SPREAD).clip(0, 1)
 
 
@@ -189,8 +190,40 @@ def florida_doc(rec: dict) -> str:
     return f"{rec['title']}. {rec['agency']}. {rec['objectives']} {rec.get('subjects', '')}"
 
 
+# County and city programs (grantmatch/local.py) serve named counties and may need 501(c)(3) status.
+REQUIRES_501C3_CAUTION = {
+    "Pending": "Requires 501(c)(3) status; apply once your IRS letter arrives",
+    "No": "Requires 501(c)(3) status",
+}
+REQUIRES_501C3_SPONSOR = "Requires 501(c)(3) status; ask whether you can apply through your fiscal sponsor"
+
+
+def local_checks(r: dict, p: Profile, city_set: set[str]) -> tuple[int, list[str], list[str]]:
+    """Points, reasons and cautions for a county or city program; nothing for a state program."""
+    places = r.get("places")
+    if not isinstance(places, list) or not places:
+        return 0, [], []
+    points, reasons, cautions = 0, [], []
+    area = r.get("area") or "its county"
+    if city_set & set(places):
+        reasons.append(f"Funds work in {area}, where you work")
+    elif city_set:
+        points -= 40
+        cautions.append(f"Only for work in {area}")
+    else:
+        points -= 10
+        cautions.append(f"Only for work in {area}; add your cities to check")
+    if r.get("requires_501c3") is True and p.has_501c3 in ASKS_501C3_PENALTY:
+        if p.fiscal_sponsor:
+            cautions.append(REQUIRES_501C3_SPONSOR)
+        else:
+            points -= ASKS_501C3_PENALTY[p.has_501c3]
+            cautions.append(REQUIRES_501C3_CAUTION[p.has_501c3])
+    return points, reasons, cautions
+
+
 def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | None = None,
-                  show_earmarks: bool = False) -> pd.DataFrame:
+                  show_earmarks: bool = False, cities: list[str] | tuple = ()) -> pd.DataFrame:
     if not records:
         return pd.DataFrame()
     df = pd.DataFrame(records)
@@ -201,8 +234,13 @@ def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | 
         return df
     df = df.reset_index(drop=True)
     text = df["title"] + " " + df["objectives"] + " " + df["subjects"]
-    weights, best3 = _keyword_weights(p.keywords, text, p.minor_keywords)
-    fit = _scale(semantic, df["id"])
+    # Word rarity and the similarity median are measured on the state programs only, so adding or editing a
+    # hand-entered county program (grantmatch/local.py) never changes a state program's score.
+    state = ~df["id"].astype(str).str.startswith("local-")
+    weights, best3 = _keyword_weights(p.keywords, text[state] if state.any() else text, p.minor_keywords)
+    yardstick = {k: v for k, v in semantic.items() if not str(k).startswith("local-")} if semantic else None
+    fit = _scale(semantic, df["id"], yardstick or None)
+    city_set = {c.strip().lower() for c in cities if c.strip()}
     rows = []
     for i, r in df.iterrows():
         matched = _keyword_hits(p.keywords, text.loc[i])
@@ -220,6 +258,10 @@ def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | 
         if r["earmark"]:
             points -= 40
             cautions.append("Set aside by the Legislature for a named organization")
+        extra, more_reasons, more_cautions = local_checks(r.to_dict(), p, city_set)
+        points += extra
+        reasons += more_reasons
+        cautions += more_cautions
         final = max(0.0, min(100.0, points))
         rows.append({**r.to_dict(), "score": round(final), "tier": _tier(round(final)),
                      "reasons": reasons, "cautions": cautions, "matched": matched})

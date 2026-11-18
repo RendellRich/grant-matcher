@@ -1,0 +1,61 @@
+{
+  "about": "County and city grant programs in Florida, entered by hand from each program's own page. grantmatch/local.py checks this file and turns each entry into a Florida program record. Change an entry only from the official page, and update its checked date.",
+  "programs": [
+    {
+      "slug": "manatee-childrens",
+      "title": "Children's Services Investment",
+      "agency": "Manatee County, Human Services Division, Children's Section",
+      "level": "County",
+      "counties": ["Manatee"],
+      "objectives": "Grants to agencies for programs that serve Manatee County children and families, paid from the county's dedicated children's services property tax. The Children's Services Advisory Board reviews applications and the Board of County Commissioners makes the final awards. Earlier cycles asked for programs serving children from before birth to age 17 who are at risk or economically disadvantaged; check the current guidance.",
+      "who": "Agencies serving Manatee County residents that have 501(c)(3) status with the IRS. Under Resolution R-23-145, an agency may not be affiliated with an abortion service provider as defined in Florida law.",
+      "requires_501c3": true,
+      "application": "Four application types on the county's page, each with budget forms: Results First, Results First New Program, Results as Service (only for the programs the page lists) and System Advocate. Information session December 4, 2026, 10 a.m., Lakewood Ranch Library.",
+      "award": "Award amounts are not stated. Funded programs run October 1 to September 30.",
+      "opens": "2026-12-07",
+      "closes": "2027-01-29",
+      "contact": "Manatee County Children's Services staff, listed on the county's page",
+      "subjects": "Children; Youth; Families; Child welfare; Prevention; Early childhood",
+      "url": "https://www.mymanatee.org/services-and-amenities/service-listing/service-details/apply-for-children's-services-investment",
+      "checked": "2026-11-18"
+    },
+    {
+      "slug": "manatee-health-human-services",
+      "title": "Health and Human Services Investments",
+      "agency": "Manatee County, Community and Veterans Services Department",
+      "level": "County",
+      "counties": ["Manatee"],
+      "objectives": "Funding for community services that improve the health, safety, stability and quality of life of Manatee County residents. Health priorities: dental care and access to care for indigent residents, emergency sheltering, mental and behavioral health services, co-occurring disorders, and care navigators or community health workers. Human services priorities: healthy aging, disability inclusion, food security and nutrition, criminal justice reentry, affordable housing and homelessness prevention, and career development and employment.",
+      "who": "Agencies serving Manatee County residents that have 501(c)(3) status with the IRS and comply with Resolution R-23-145 on affiliations.",
+      "requires_501c3": true,
+      "application": "One application type per agency: Results First (new or returning applicants) or Results as a Service (agencies already funded under that model). Application materials are posted on the county's page when the period opens. Information session December 4, 2026, 10:30 to 11:30 a.m., Lakewood Ranch Library, in person only.",
+      "award": "Award amounts are not stated. County staff score applications with input from the Health and Human Services Investment Review Committee, and the Board of County Commissioners decides. Funding starts October 1, 2027.",
+      "opens": "2026-12-04",
+      "closes": "2027-01-15",
+      "contact": "Manatee County Community and Veterans Services staff, listed on the county's page",
+      "subjects": "Health; Mental health; Disabilities; Food security; Housing; Homelessness; Employment; Aging; Reentry",
+      "url": "https://www.mymanatee.org/services-and-amenities/service-listing/service-details/apply-for-human-services-funding",
+      "checked": "2026-11-18"
+    },
+    {
+      "slug": "pinellas-jwb-community-events",
+      "title": "Community Event Funding",
+      "agency": "Juvenile Welfare Board of Pinellas County",
+      "level": "County",
+      "counties": ["Pinellas"],
+      "objectives": "Small awards for one-time education and community resource events for children and families, local conferences on children and families, and community distribution of school supplies, emergency supplies, food or other basic needs in Pinellas County. Not for fundraising events, events held more than once a year, school-sponsored events, sports leagues, salaries, administrative costs or capital costs.",
+      "who": "Organizations registered as a 501(c)(3), or government entities, whose activity benefits Pinellas County children and families and fits the Juvenile Welfare Board's strategic goals. One award per fiscal year (October 1 to September 30).",
+      "requires_501c3": true,
+      "application": "Send a signed letter on the organization's letterhead 60 to 180 days before the event, describing the activity, its budget, other funding and the amount requested, with a completed W-9, to the address in the application packet.",
+      "award": "$500 to $3,000. Awards are approved by the Juvenile Welfare Board's Chief Executive Officer or designee.",
+      "opens": null,
+      "closes": null,
+      "deadlines": "Rolling: the request must arrive 60 to 180 days before the event.",
+      "contact": "cefundingsupport@jwbpinellas.org",
+      "subjects": "Children; Families; Community events; School supplies; Basic needs; Education",
+      "url": "https://www.jwbpinellas.org/wp-content/uploads/2025/10/Updated-09_25-Procedures-and-Community-Funding-Application-Packet-Revised.Final_.pdf",
+      "web": "https://www.jwbpinellas.org/about/funding-opportunities/",
+      "checked": "2026-11-18"
+    }
+  ]
+}

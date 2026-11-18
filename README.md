@@ -7,6 +7,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Federal grants:** every open and forecasted opportunity on Grants.gov that nonprofits can apply for
 - **Foundations:** private foundations (IRS Form 990-PF) plus community foundations, public foundations, and United Ways (Form 990 Schedule I) that give in your state, with who they funded, typical grant size, and how to apply
 - **Florida state programs:** state programs open to nonprofits from Florida's Catalog of State Financial Assistance, with legislative earmarks filtered out
+- **County programs:** county grant programs for nonprofits, such as Manatee County's children's services funding, entered by hand from each program's own page
 
 **Try it:** [rendellrich.github.io/grant-matcher](https://rendellrich.github.io/grant-matcher/). It runs in your browser: your mission is never sent to a server.
 
@@ -153,6 +154,12 @@ Foundations that check the box saying they only fund preselected organizations a
 
 Florida's Department of Financial Services keeps the Catalog of State Financial Assistance, a list of every state program that pays money to local governments, nonprofits, and businesses. Many entries are money the Legislature set aside for a named organization; those are flagged and hidden by default. The catalog lists programs rather than open calls, so each result links to the agency for its next application window.
 
+## County programs
+
+No public catalog lists county and city grants, so they are kept by hand in `data/local-FL.json`, one entry per program, from the program's own page: the counties it serves, who can apply, whether it requires 501(c)(3) status, the application window when there is one, and the date the page was checked. `grantmatch/local.py` checks every entry (a bad date, an unknown county or a repeated name stops the export) and adds them to the Florida tab as county programs, keyed `fl:local-<slug>`. They score like state programs, with two more rules: points off when your cities are outside the county, and when the program requires 501(c)(3) status you don't have yet. Word rarity and the similarity median are still measured on the state programs alone, so adding or editing an entry never changes a state program's score. The weekly website check reads each program's page, and its closing date goes into `changes.json` like a federal deadline.
+
+To add or change one, edit the file from the official page, update `checked`, and run `python -m grantmatch.local` to check it.
+
 ## Data
 
 A GitHub Action runs twice a day and pulls every posted and forecasted opportunity open to nonprofits (eligibility codes 12, 13, 25 and 99) from the public [Grants.gov API](https://www.grants.gov/api/api-guide) using `search2` and `fetchOpportunity`. No API key is needed. The cleaned file and the opportunity embeddings are published as `data-latest` release assets, and the app reads them from there. A snapshot in `data/` is the fallback. If the embedding model cannot load, the app falls back to TF-IDF similarity.
@@ -210,6 +217,7 @@ grantmatch/match.py     federal scoring, reasons, calendar export
 grantmatch/foundations.py  IRS 990-PF parsing, split by state
 grantmatch/community.py IRS 990 Schedule I for community foundations and United Ways
 grantmatch/florida.py   Florida Catalog of State Financial Assistance
+grantmatch/local.py     county and city programs entered by hand (data/local-FL.json)
 grantmatch/rank_more.py foundation and Florida scoring
 grantmatch/store.py     private workspace storage (GitHub repo or local folder)
 grantmatch/workspace.py pipeline, organization facts, answer library, documents

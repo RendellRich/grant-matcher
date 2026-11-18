@@ -198,9 +198,26 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
   };
 }
 
+/** A county or city program's window (grantmatch/local.py): its due date, and a line while it isn't open yet. */
+export function localWindow(r: FloridaRec, today: Date = new Date()): { due: number | null; line?: string } {
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const day = (d?: string | null) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? ymdDate(d) : null);
+  const opens = day(r.opens), closes = day(r.closes);
+  const due = closes && closes.getTime() >= t0 ? closes.getTime() : null;
+  if (opens && opens.getTime() > t0) return { due, line: `Applications open ${fmtDate(opens)}` };
+  return { due, line: due ? "Taking applications now" : undefined };
+}
+
 export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean): Entry {
   const r = s.rec;
   const why = sortReasons(s.reasons, s.cautions, "its title or objectives", hasKw);
+  const local = Boolean(r.level);
+  const win = local ? localWindow(r) : { due: null };
+  const site = local ? websiteFindings(r._cycle) : { rows: [] as DetailRow[], due: null, line: undefined, caution: undefined };
+  if (win.line) why.status.unshift(win.line);
+  if (site.line) why.status.push(site.line);
+  if (site.caution) why.cautions.push(site.caution);
+  const due = win.due ?? site.due;
   const rows: DetailRow[] = [];
   for (const [label, key] of [["Objectives", "objectives"], ["Who can apply", "applicant_types"], ["How to apply", "application"],
     ["How awards are made", "award"], ["Deadlines", "deadlines"], ["Restrictions", "restrictions"], ["Contact", "contact"]] as const) {
@@ -212,10 +229,18 @@ export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean): Entry {
     const href = siteHref(web);
     rows.push({ label: "Agency site", href, linkText: href.split("://")[1].replace(/\/$/, "").toLowerCase() });
   }
+  if (local) {
+    rows.push(...site.rows);
+    if (r.checked && /^\d{4}-\d{2}-\d{2}$/.test(r.checked)) {
+      rows.push({ label: "Source", text: `Entered by hand from the program's own page, checked ${fmtDate(ymdDate(r.checked))}` });
+    }
+  }
   return {
-    key: `fl:${r.id}`, source: "fl", title: r._title || r.title, url: safeUrl(r.url), catalog: `CSFA ${r.csfa}`,
-    facts: [r.agency, r._assist || ""].filter(Boolean),
-    side: "", agency: r.agency,
+    key: `fl:${r.id}`, source: "fl", title: r._title || r.title, url: safeUrl(r.url),
+    catalog: local ? `${r.level} program` : `CSFA ${r.csfa}`,
+    facts: [r.agency, local ? r.area || "" : r._assist || ""].filter(Boolean),
+    side: due ? `Due ${fmtDate(new Date(due))}` : "", agency: r.agency,
+    sortClose: due,
     score: s.score, tier: s.tier, ...why, rows,
     support: supportIn(`${r.title} ${r.objectives}`),
   };

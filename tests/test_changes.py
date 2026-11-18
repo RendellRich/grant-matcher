@@ -88,7 +88,7 @@ def test_reads_the_exported_files(tmp_path):
     now = current(tmp_path)
     assert now["fed"] == {"fed:9": {"d": "2027-02-01", "s": "posted"}, "fed:8": {"d": None, "s": "forecasted"}}
     assert now["fdn"] == {"fdn:11": {"d": "2027-01-15", "s": "deadline"}}
-    assert current(tmp_path / "nothing") == {"fed": None, "fdn": None}
+    assert current(tmp_path / "nothing") == {"fed": None, "fdn": None, "fl": None}
 
 
 def test_previous_file_that_cannot_be_read_is_none(tmp_path):

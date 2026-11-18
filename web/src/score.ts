@@ -231,9 +231,9 @@ function tierOf(shown: number): Tier {
 const clip01 = (x: number) => Math.min(1, Math.max(0, x));
 
 /** Embedding similarity above the source's median, scaled to 0..1 (rank_more._scale). */
-function scaler(semantic: Map<string, number> | null): (id: string) => number {
+function scaler(semantic: Map<string, number> | null, yardstick?: Map<string, number> | null): (id: string) => number {
   if (!semantic || semantic.size === 0) return () => 0.5;
-  const base = median([...semantic.values()]);
+  const base = median([...(yardstick && yardstick.size ? yardstick : semantic).values()]);
   return (id) => clip01(((semantic.get(id) ?? base) - base) / SEMANTIC_SPREAD);
 }
 
@@ -514,16 +514,46 @@ export interface FloridaRec {
   applicant_types: string; nonprofit_eligible: boolean; earmark: boolean; restrictions: string;
   application: string; award: string; deadlines: string; contact: string; web: string; subjects: string;
   url: string; _title?: string; _assist?: string;
+  // County and city programs only (grantmatch/local.py)
+  level?: string; area?: string; places?: string[]; requires_501c3?: boolean;
+  opens?: string | null; closes?: string | null; checked?: string; _cycle?: WebsiteCycle;
+}
+
+// County and city programs serve named counties and may need 501(c)(3) status. Same as rank_more.py.
+const REQUIRES_501C3_CAUTION = {
+  Pending: "Requires 501(c)(3) status; apply once your IRS letter arrives",
+  No: "Requires 501(c)(3) status",
+} as const;
+const REQUIRES_501C3_SPONSOR = "Requires 501(c)(3) status; ask whether you can apply through your fiscal sponsor";
+
+export function localChecks(r: FloridaRec, p: Profile, citySet: Set<string>): [number, string[], string[]] {
+  if (!Array.isArray(r.places) || !r.places.length) return [0, [], []];
+  let points = 0;
+  const reasons: string[] = [];
+  const cautions: string[] = [];
+  const area = r.area || "its county";
+  if (r.places.some((x) => citySet.has(x))) reasons.push(`Funds work in ${area}, where you work`);
+  else if (citySet.size) { points -= 40; cautions.push(`Only for work in ${area}`); }
+  else { points -= 10; cautions.push(`Only for work in ${area}; add your cities to check`); }
+  if (r.requires_501c3 === true && (p.has501c3 === "Pending" || p.has501c3 === "No")) {
+    if (p.fiscalSponsor) cautions.push(REQUIRES_501C3_SPONSOR);
+    else { points -= ASKS_501C3_PENALTY[p.has501c3]; cautions.push(REQUIRES_501C3_CAUTION[p.has501c3]); }
+  }
+  return [points, reasons, cautions];
 }
 
 export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<string, number> | null,
-                             showEarmarks = false): Scored<FloridaRec>[] {
+                             showEarmarks = false, cities: string[] = []): Scored<FloridaRec>[] {
   let recs = records.filter((r) => r.nonprofit_eligible);
   if (!showEarmarks) recs = recs.filter((r) => !r.earmark);
   if (!recs.length) return [];
   const text = recs.map((r) => r.title + " " + r.objectives + " " + r.subjects);
-  const [weights, best3] = keywordWeights(p.keywords, text.map((t) => t.toLowerCase()), p.minorKeywords);
-  const fit = scaler(semantic);
+  // Measured on the state programs only, as in rank_more.py, so county programs never move a state program's score.
+  const isLocal = (id: string) => id.startsWith("local-");
+  const stateText = text.filter((_, i) => !isLocal(recs[i].id));
+  const [weights, best3] = keywordWeights(p.keywords, (stateText.length ? stateText : text).map((t) => t.toLowerCase()), p.minorKeywords);
+  const fit = scaler(semantic, semantic ? new Map([...semantic].filter(([k]) => !isLocal(k))) : null);
+  const citySet = new Set(cities.map((c) => c.trim().toLowerCase()).filter(Boolean));
   const out = recs.map((r, i): Scored<FloridaRec> => {
     const matched = keywordHits(p.keywords, text[i]);
     let points = 75 * fit(r.id) + 25 * coverageOf(matched, weights, best3);
@@ -535,6 +565,8 @@ export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<st
       points -= 25; cautions.push("Student aid paid to individuals or schools, not to nonprofits");
     }
     if (r.earmark) { points -= 40; cautions.push("Set aside by the Legislature for a named organization"); }
+    const [extra, moreReasons, moreCautions] = localChecks(r, p, citySet);
+    points += extra; reasons.push(...moreReasons); cautions.push(...moreCautions);
     const shown = pyRound(Math.max(0, Math.min(100, points)));
     return { rec: r, score: shown, tier: tierOf(shown), reasons, cautions, matched };
   });
