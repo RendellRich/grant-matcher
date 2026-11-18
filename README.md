@@ -92,6 +92,17 @@ The two pages talk with `postMessage`. The matcher listens only to its parent wi
 
 [`docs/embed-harness.html`](docs/embed-harness.html) stands in for ETO to try it by hand; the steps are at the top of the file.
 
+### Background scoring for ETO
+
+After each data refresh, the deploy workflow scores ETO's saved profile so ETO's count of new strong matches stays current without anyone opening the matcher.
+
+- **How it ranks:** `web/scripts/score-eto.ts` uses the page's own ranking (`web/src/rank.ts`) and the same meaning model, on the data just exported.
+- **What it sends:** it reads the saved profile from ETO with a key made in ETO's CRM, and sends back only the strong grants (key, name, funder, deadline).
+- **What it keeps:** nothing about ETO is written to disk or to the site, and the log shows counts only.
+- **When it runs:** only on `main` in this repository, and only when these repository secrets are set: `ETO_SUPABASE_URL`, `ETO_PUBLISHABLE_KEY` and `ETO_GRANT_MATCHER_KEY`. A failure never stops the deploy.
+
+To check a profile locally without ETO, run `npm run score-eto -- --profile <file>` in `web/`. It prints the number of strong grants and records nothing.
+
 ## Private workspace (optional)
 
 The Streamlit app (`app.py`, at [grant-matcher.streamlit.app](https://grant-matcher.streamlit.app)) still runs and has a signed-in workspace for an organization's own team. It is off unless the deployment has the secrets in `.streamlit/secrets.toml.example`. With them, people on the allowed list can sign in with Google and get:

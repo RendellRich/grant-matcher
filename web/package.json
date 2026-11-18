@@ -9,7 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "score-eto": "vite build --ssr scripts/score-eto.ts --outDir .score-eto --emptyOutDir --logLevel warn && node .score-eto/score-eto.js"
   },
   "dependencies": {
     "@fontsource-variable/public-sans": "^5.3.0",

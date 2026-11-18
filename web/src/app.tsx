@@ -5,13 +5,14 @@ import {
 } from "./data";
 import { embedMission } from "./embed";
 import {
-  federalEntry, floridaEntry, foundationEntry, isNarrowed, narrow, NO_NARROW, profileNarrow, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
+  isNarrowed, narrow, NO_NARROW, profileNarrow, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
 } from "./entries";
 import { download, toCsv, toIcs } from "./exports";
 import { exampleForm, ProfileFormView } from "./form";
-import { BLANK, expandCities, profileKeywords, profileMinorKeywords, sameForm, STATE_NAMES, type ProfileForm } from "./profile";
+import { BLANK, expandCities, sameForm, STATE_NAMES, type ProfileForm } from "./profile";
+import { federalEntries, isBlank, KINDS, queryText, rankFlorida, rankFoundations, toProfile } from "./rank";
 import {
-  closeDate, fmtDate, scoreFederal, scoreFlorida, scoreFoundations,
+  closeDate, fmtDate, scoreFederal,
   type FederalRec, type FloridaRec, type FoundationRec, type Profile,
 } from "./score";
 import { EntryView, IconAlert, IconDownload, IconMark, ResultList, type MarkAction } from "./ui";
@@ -24,7 +25,6 @@ import {
 import { similarities } from "./vectors";
 
 const NOTICE = "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.";
-const KINDS = ["Private foundation", "Community foundation", "Public foundation", "United Way or federated fund"];
 const SHORT: Record<string, string> = { fl: "Florida", fdn: "Foundations", fed: "Federal", shortlist: "Shortlist" };
 const NOUN: Record<SourceKey, [string, string, string]> = {
   fl: ["Florida programs", "Florida programs", "Florida program"],
@@ -35,7 +35,6 @@ const NOUN: Record<SourceKey, [string, string, string]> = {
 type Loaded<T> = { state: "loading" } | { state: "ready"; data: T } | { state: "error" };
 
 const n = (count: number, one: string, many: string) => `${count.toLocaleString("en-US")} ${count === 1 ? one : many}`;
-const queryText = (f: ProfileForm) => f.mission + " " + f.keywords;
 
 const NO_KEYS = new Set<string>();
 const ANSWER_WAIT = 15_000; // how long to wait for ETO before saying it didn't answer
@@ -158,19 +157,9 @@ export function App() {
   const cityList = useMemo(() => expandCities(applied.cities, counties[st] ?? null), [applied.cities, counties, st]);
 
   // ---------- scoring ----------
-  const profile: Profile = useMemo(() => {
-    const now = new Date();
-    return {
-      mission: applied.mission, keywords: profileKeywords(applied), has501c3: applied.has_501c3,
-      budgetBand: applied.budget_band, canCostShare: applied.can_cost_share, categories: applied.categories,
-      includeForecasted: applied.include_forecasted, minDaysLeft: applied.min_days_left,
-      today: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
-      fiscalSponsor: applied.fiscal_sponsor, delivery: applied.delivery, minorKeywords: profileMinorKeywords(applied),
-      yearFounded: applied.year_founded ? +applied.year_founded : null,
-    };
-  }, [applied]);
-  const hasKw = profile.keywords.length > 0;
-  const blank = !applied.mission.trim() && !applied.keywords.trim() && !applied.focus_areas.length;
+  // The same ranking as the background scorer (rank.ts), so ETO's count is the same wherever it is made.
+  const profile: Profile = useMemo(() => toProfile(applied), [applied]);
+  const blank = isBlank(applied);
   const sim = (vecs: Source<unknown>["vecs"]) => (vector && !blank ? similarities(vecs, vector) : null);
 
   const fedScored = useMemo(() => fed.state === "ready" && !blank
@@ -183,13 +172,12 @@ export function App() {
   const fresh: Record<SourceKey, Fresh | null> = { fed: fedFresh, fdn: fdnFresh, fl: flFresh };
   // Inside ETO, New means a strong match ETO hasn't seen, shared by everyone who signs in; elsewhere it is this browser's.
   const mark = <T extends Entry>(list: T[] | null, f: Fresh | null) => (etoSeen ? markOrgNew(list, etoSeen) : markNew(list, f));
-  const fedAll = useMemo(() => mark(fedScored?.map((s) => federalEntry(s, hasKw)) ?? null, fedFresh), [fedScored, fedFresh, etoSeen]);
+  const fedAll = useMemo(() => mark(fedScored ? federalEntries(fedScored, profile) : null, fedFresh), [fedScored, fedFresh, etoSeen]);
   const fdnAll = useMemo(() => mark(fdnSrc?.state === "ready" && !blank
-    ? scoreFoundations(fdnSrc.data.records.filter((r) => fdnKinds.includes(r.kind || "Private foundation")), profile, st,
-      cityList, sim(fdnSrc.data.vecs), fdnPre).map((s) => foundationEntry(s, st, hasKw))
+    ? rankFoundations(fdnSrc.data.records, profile, st, cityList, sim(fdnSrc.data.vecs), fdnKinds, fdnPre)
     : null, fdnFresh), [fdnSrc, profile, vector, fdnKinds, fdnPre, fdnFresh, cityList, etoSeen]);
   const flAll = useMemo(() => mark(fl.state === "ready" && st === "FL" && !blank
-    ? scoreFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar).map((s) => floridaEntry(s, hasKw)) : null, flFresh),
+    ? rankFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar) : null, flFresh),
   [fl, profile, vector, flEar, st, flFresh, etoSeen]);
   // Anything marked submitted on the shortlist stops showing in the results and their counts.
   const done = embedded ? NO_KEYS : shortlist.done;
