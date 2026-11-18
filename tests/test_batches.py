@@ -58,3 +58,9 @@ def test_old_index_without_zips_fails_loudly(monkeypatch):
 def test_no_index_yet(monkeypatch):
     monkeypatch.setattr(F, "session", FakeSession(None, []))
     assert F.batch_ids(2027) is None
+
+
+def test_only_recent_filers_are_listed():
+    latest = {"1": {"ein": "1"}, "2": {"ein": "2"}, "3": {"ein": "3"}}
+    filed = {"1": 2026, "2": 2025, "3": 2024}
+    assert set(F.current(latest, filed, 2026)) == {"1", "2"}

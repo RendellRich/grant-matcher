@@ -231,11 +231,21 @@ def process_batch(year: int, batch: str, ids: set[str], tmp: Path, hist: History
     return out
 
 
+CURRENT_FILING_YEARS = 2
+
+
+def current(latest: dict[str, dict], filed: dict[str, int], newest: int) -> dict[str, dict]:
+    """Only foundations with a return filed in the newest CURRENT_FILING_YEARS filing years. Older years
+    are read for history; a foundation that hasn't filed since may have closed, so it isn't listed."""
+    return {ein: rec for ein, rec in latest.items() if filed.get(ein, 0) > newest - CURRENT_FILING_YEARS}
+
+
 def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None) -> None:
     tmp = out_dir / "_tmp"
     tmp.mkdir(parents=True, exist_ok=True)
     latest: dict[str, dict] = {}
     hist = History()
+    filed: dict[str, int] = {}  # the latest filing year each foundation's return appeared in
     failed: list[tuple[int, str]] = []
     for year in years:
         try:
@@ -261,6 +271,7 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
                 prev = latest.get(rec["ein"])
                 if prev is None or rec["tax_year"] >= prev["tax_year"]:
                     latest[rec["ein"]] = rec
+                filed[rec["ein"]] = max(filed.get(rec["ein"], year), year)
             print(f"{batch}: kept {len(recs)} ({time.time() - t0:.0f}s); total {len(latest)}", flush=True)
     tmp.rmdir()
     # A failed batch from an older year only thins the history; the two newest years carry the current data.
@@ -268,6 +279,7 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
     if len(recent) > 1 or len(failed) > 5 or not latest:
         raise RuntimeError(f"Batches failed: {failed}; keeping the previous data files")
 
+    latest = current(latest, filed, max(years))
     by_state: dict[str, list[dict]] = defaultdict(list)
     for rec in latest.values():
         states = {rec["state"]} | set(rec["recipient_states"])
