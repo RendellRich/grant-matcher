@@ -25,6 +25,23 @@ export interface Meta {
   states: string[];
   federal?: string;
   florida?: string;
+  coverage?: boolean;
+}
+
+/** grantmatch/coverage.py: registered foundations against what the state files hold. */
+export interface Coverage {
+  made_at: string;
+  filing_years: number[];
+  national: {
+    private: { registered: number; efiled: number; listed: number; listed_share: number | null };
+    community: { registered: number; efiled: number; listed: number };
+    states_with_data: number;
+  };
+  states: {
+    state: string;
+    private: { registered: number; efiled: number; listed: number; listed_share: number | null; giving_here: number };
+    community: { registered: number; efiled: number; listed: number; giving_here: number };
+  }[];
 }
 
 async function json<T>(name: string): Promise<T> {
@@ -62,6 +79,7 @@ async function source<T>(name: string): Promise<Source<T>> {
 }
 
 export const loadMeta = () => json<Meta>("meta.json");
+export const loadCoverage = () => json<Coverage>("coverage.json");
 export const loadExamples = () => json<Record<string, Example>>("examples.json");
 export const loadFederal = () => source<FederalRec>("federal");
 export const loadFlorida = () => source<FloridaRec>("florida");

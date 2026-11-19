@@ -24,7 +24,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-from .foundations import XML_ROOT, _find, _local, _num, _text, session, year_batches, current
+from .coverage import tally
+from .foundations import CURRENT_FILING_YEARS, XML_ROOT, _find, _local, _num, _text, current, note, session, year_batches
 from .history import History, default_years
 
 try:
@@ -115,6 +116,7 @@ def build(years: list[int], out_dir: Path) -> None:
     latest: dict[str, dict] = {}
     hist = History()
     filed: dict[str, int] = {}
+    seen: dict[str, dict] = {}  # every return read, listed or not, for the coverage report
     for year in years:
         try:
             batches = year_batches(year, lambda row: row["RETURN_TYPE"] == "990" and row["EIN"] in orgs)
@@ -141,7 +143,10 @@ def build(years: list[int], out_dir: Path) -> None:
                             rec = parse_return(z.read(name))
                         except ET.ParseError:
                             continue
-                        if not rec or not rec["grants"] or rec["ein"] not in orgs:
+                        if not rec or rec["ein"] not in orgs:
+                            continue
+                        note(seen, rec, year, "" if rec["grants"] else "no_grants")
+                        if not rec["grants"]:
                             continue
                         hist.add(rec["ein"], rec["tax_year"], rec["grants"])
                         rec = summarize(rec, orgs[rec["ein"]]["kind"])
@@ -170,6 +175,7 @@ def build(years: list[int], out_dir: Path) -> None:
         payload = {"fetched_at": stamp, "state": st, "years": years, "count": len(recs), "foundations": recs}
         with gzip.open(out_dir / f"{st}.json.gz", "wt", encoding="utf-8") as fh:
             json.dump(payload, fh, separators=(",", ":"))
+    (out_dir / "parsed.json").write_text(json.dumps(tally(seen, set(latest), max(years), CURRENT_FILING_YEARS)), encoding="utf-8")
     kinds = Counter(r["kind"] for r in latest.values())
     print(f"wrote {len(latest)} grantmaking public charities ({dict(kinds)}) into {len(by_state)} state files")
 

@@ -106,6 +106,11 @@ jobs:
         run: |
           python -m grantmatch.embed_states split build/foundations build/community \
             --cache cache/foundation-vectors.npz --parts parts/*.npz --out-cache upload/foundation-vectors.npz
+      - name: Measure coverage against the IRS master file
+        # Registered foundations per state against what the state files hold, for the site's coverage table.
+        # A failure here never stops the publish; the site keeps the last coverage file.
+        continue-on-error: true
+        run: python -m grantmatch.coverage --foundations build/foundations --community build/community --out upload/coverage.json
       - name: Publish as data-latest release assets
         env:
           GH_TOKEN: ${{ github.token }}

@@ -257,6 +257,12 @@ def main() -> None:
                   [all_ids[i] for i in keep], stacked[keep])
             meta["states"].append(state)
 
+    # How much of each state's registered foundations the files hold (grantmatch/coverage.py).
+    raw = fetch("coverage.json")
+    if raw:
+        (out / "coverage.json").write_bytes(raw)
+        meta["coverage"] = True
+
     examples = {}
     for key, ex in EXAMPLES.items():
         vec = embed.embed_query(ex["mission"] + " " + ex["keywords"])

@@ -359,6 +359,16 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 
 .footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); display: grid; gap: .5rem; font-size: .8125rem; color: var(--muted); max-width: 70ch; }
 .footer a { color: inherit; display: inline-flex; align-items: center; min-height: 44px; }
+.coverage { border-top: 0; max-width: none; }
+.coverage-body { display: grid; gap: .5rem; padding: .25rem 0 1rem; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--r); }
+.table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.coverage-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.coverage-table th, .coverage-table td { padding: .375rem .625rem; text-align: left; border-bottom: 1px solid var(--rule); }
+.coverage-table tbody tr:last-child > * { border-bottom: 0; }
+.coverage-table thead th { font-weight: 650; color: var(--ink); vertical-align: bottom; background: var(--paper); }
+.coverage-table tbody th { font-weight: 400; color: var(--ink); min-width: 7.5rem; }
+.coverage-table .n { text-align: right; }
 
 .ready { margin-top: 2.5rem; border-top: 2px solid var(--cloth); }
 .ready > summary { display: flex; align-items: center; gap: .5rem; min-height: 44px; padding: .75rem 0; cursor: pointer; list-style: none; }

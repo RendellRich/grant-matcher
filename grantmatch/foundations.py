@@ -27,6 +27,7 @@ from xml.etree import ElementTree as ET
 
 import requests
 
+from .coverage import tally
 from .history import History, default_years
 
 try:  # some IRS batches use Deflate64, which the standard zipfile cannot read
@@ -147,14 +148,26 @@ def summarize(rec: dict) -> dict:
     return rec
 
 
-def _keep(rec: dict) -> bool:
-    """Foundations a small nonprofit could approach: they pay grants to organizations and do not say
-    they only fund preselected charities, or they publish how to apply."""
+def left_out(rec: dict) -> str:
+    """Why a return isn't listed, or "" when it is. Listed foundations are ones a small nonprofit could
+    approach: they pay grants to organizations and do not say they only fund preselected charities, or they
+    publish how to apply."""
     if not rec["grants"]:
-        return False
+        return "no_grants"
     if rec["preselected_only"] and not rec.get("apply"):
-        return False
-    return True
+        return "preselected"
+    return ""
+
+
+def _keep(rec: dict) -> bool:
+    return not left_out(rec)
+
+
+def note(seen: dict[str, dict], rec: dict, year: int, why: str) -> None:
+    """Remember the outcome of a foundation's latest return, listed or not, for the coverage report."""
+    prev = seen.get(rec["ein"])
+    if prev is None or (year, rec["tax_year"]) >= (prev["filed"], prev["tax_year"]):
+        seen[rec["ein"]] = {"state": rec["state"], "filed": year, "tax_year": rec["tax_year"], "why": why}
 
 
 ZIP_LETTERS = "ABCDEFGH"  # a month's returns come in up to a few zips: 11A, 11B, ...
@@ -204,7 +217,8 @@ def batch_ids(year: int) -> dict[str, set[str]] | None:
     return year_batches(year, lambda row: row["RETURN_TYPE"] == "990PF")
 
 
-def process_batch(year: int, batch: str, ids: set[str], tmp: Path, hist: History | None = None) -> list[dict]:
+def process_batch(year: int, batch: str, ids: set[str], tmp: Path, hist: History | None = None,
+                  seen: dict[str, dict] | None = None) -> list[dict]:
     path = tmp / f"{batch}.zip"
     with session.get(XML_ROOT.format(year=year) + f"{batch}.zip", stream=True, timeout=600) as r:
         r.raise_for_status()
@@ -224,7 +238,12 @@ def process_batch(year: int, batch: str, ids: set[str], tmp: Path, hist: History
                     continue
                 if rec and hist is not None:
                     hist.add(rec["ein"], rec["tax_year"], rec["grants"])  # every year's giving, kept or not
-                if rec and _keep(rec):
+                if not rec:
+                    continue
+                why = left_out(rec)
+                if seen is not None:
+                    note(seen, rec, year, why)
+                if not why:
                     out.append(summarize(rec))
     finally:
         path.unlink(missing_ok=True)
@@ -246,6 +265,7 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
     latest: dict[str, dict] = {}
     hist = History()
     filed: dict[str, int] = {}  # the latest filing year each foundation's return appeared in
+    seen: dict[str, dict] = {}  # every return read, listed or not, for the coverage report
     failed: list[tuple[int, str]] = []
     for year in years:
         try:
@@ -262,7 +282,7 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
                 continue
             t0 = time.time()
             try:
-                recs = process_batch(year, batch, ids, tmp, hist)
+                recs = process_batch(year, batch, ids, tmp, hist, seen)
             except Exception as exc:
                 failed.append((year, batch))
                 print(f"{batch}: FAILED {exc}", file=sys.stderr, flush=True)
@@ -291,6 +311,7 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
         payload = {"fetched_at": stamp, "state": st, "years": years, "count": len(recs), "foundations": recs}
         with gzip.open(out_dir / f"{st}.json.gz", "wt", encoding="utf-8") as fh:
             json.dump(payload, fh, separators=(",", ":"))
+    (out_dir / "parsed.json").write_text(json.dumps(tally(seen, set(latest), max(years), CURRENT_FILING_YEARS)), encoding="utf-8")
     steady = sum(1 for rec in latest.values() if (hist.summary(rec["ein"], rec["tax_year"]) or {}).get("steady"))
     print(f"wrote {len(latest)} foundations into {len(by_state)} state files in {out_dir}; {steady} gave every year")
 

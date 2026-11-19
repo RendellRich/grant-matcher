@@ -9,6 +9,7 @@ import {
 } from "./entries";
 import { download, toCsv, toIcs } from "./exports";
 import { exampleForm, ProfileFormView } from "./form";
+import { CoverageNote } from "./coverage";
 import { BLANK, expandCities, sameForm, STATE_NAMES, type ProfileForm } from "./profile";
 import { federalEntries, isBlank, KINDS, queryText, rankFlorida, rankFoundations, toProfile } from "./rank";
 import {
@@ -468,7 +469,7 @@ export function App() {
               <Checklist />
             </details>
           )}
-          <Footer />
+          <Footer coverage={!!meta?.coverage} />
         </main>
       </div>
     </>
@@ -971,9 +972,10 @@ function Checklist() {
   );
 }
 
-function Footer() {
+function Footer({ coverage }: { coverage: boolean }) {
   return (
     <footer class="footer">
+      {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
       <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page.</p>
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Matching runs in your browser; your mission and profile are never sent to a server.</p>
