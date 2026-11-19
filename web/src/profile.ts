@@ -19,10 +19,13 @@ export type Timing = "" | "open" | "30" | "60" | "90";
 
 export interface Term { id: string; label: string; words: string[] }
 export interface SupportType { id: string; label: string; pattern: string }
+/** A kind of nonprofit: which focus areas to show first and which federal funding areas to start from. */
+export interface OrgType { id: string; label: string; focus: string[]; categories: string[] }
 export const FOCUS_AREAS: Term[] = TERMS.focus_areas;
 export const AGES: Term[] = TERMS.ages;
 export const POPULATIONS: Term[] = TERMS.populations;
 export const SUPPORT_TYPES: SupportType[] = TERMS.support_types;
+export const ORG_TYPES: OrgType[] = TERMS.org_types;
 
 export const DELIVERY: [Delivery, string][] = [
   ["in_person", "In person"], ["online_state", "Online in our state"], ["online_national", "Online nationwide"],
@@ -46,6 +49,7 @@ export const HIDE_PIPELINE: [string, string][] = [["inpipeline", "Already in our
 /** What the person entered. Matches the JSON the Streamlit app saves, so old profile files still load:
  *  every field added later has a default. */
 export interface ProfileForm {
+  org_type: string; // "" or an ORG_TYPES id; it arranges the form and never changes a score
   mission: string;
   keywords: string;
   categories: string[];
@@ -77,7 +81,7 @@ export interface ProfileForm {
 }
 
 export const BLANK: ProfileForm = {
-  mission: "", keywords: "", categories: [], state: "FL", cities: "", has_501c3: "Yes",
+  org_type: "", mission: "", keywords: "", categories: [], state: "FL", cities: "", has_501c3: "Yes",
   budget_band: "$50k to $250k", can_cost_share: false, include_forecasted: true, min_days_left: 14,
   focus_areas: [], ages: [], populations: [], exclude_words: "",
   delivery: "in_person", fiscal_sponsor: false, year_founded: "", registrations: [],
@@ -130,6 +134,7 @@ export function parseProfile(text: string): ProfileForm {
   const d = JSON.parse(text);
   if (!d || typeof d !== "object" || !("mission" in d || "keywords" in d)) throw new Error("not a profile");
   return {
+    org_type: ORG_TYPES.some((t) => t.id === d.org_type) ? d.org_type : "",
     mission: String(d.mission ?? ""),
     keywords: String(d.keywords ?? ""),
     cities: String(d.cities ?? ""),

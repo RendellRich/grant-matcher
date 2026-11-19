@@ -279,6 +279,7 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .narrow-group .check input { margin-top: .1875rem; }
 .narrow-toggle { display: none; }
 .narrowed { font-size: .9375rem; color: var(--muted); }
+.focus-more { margin: -.5rem 0 .75rem; padding-left: 0; }
 .link-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 .25rem; font: inherit; font-weight: 600;
   color: var(--accent); background: none; border: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { profileNarrow, supportIn, type Entry } from "../src/entries";
-import { BLANK, expandCities, expandKeywords, parseProfile, profileKeywords, type ProfileForm } from "../src/profile";
+import { BLANK, expandCities, expandKeywords, FOCUS_AREAS, ORG_TYPES, parseProfile, profileKeywords, type ProfileForm } from "../src/profile";
 
 const base: Entry = {
   key: "x", source: "fed", title: "", url: "", catalog: "", facts: [], side: "", score: 50, tier: "Possible",
@@ -92,5 +92,17 @@ describe("profile filters", () => {
     expect(keys(out)).toEqual(["ok"]);
     expect(out.hidden).toBe(6);
     expect(profileNarrow(null, form({}), today)).toEqual({ entries: null, hidden: 0 });
+  });
+});
+
+describe("type of organization", () => {
+  it("keeps a known type from a saved profile and drops an unknown one", () => {
+    expect(parseProfile(JSON.stringify({ mission: "m", org_type: "animals" })).org_type).toBe("animals");
+    expect(parseProfile(JSON.stringify({ mission: "m", org_type: "made-up" })).org_type).toBe("");
+    expect(parseProfile(JSON.stringify({ mission: "m" })).org_type).toBe("");
+  });
+  it("only lists focus areas that exist", () => {
+    const ids = new Set(FOCUS_AREAS.map((t) => t.id));
+    for (const o of ORG_TYPES) for (const f of o.focus) expect(ids.has(f)).toBe(true);
   });
 });

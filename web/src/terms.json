@@ -16,7 +16,23 @@
     {"id": "health", "label": "Health", "words": ["health care", "healthcare", "wellness", "medical", "dental", "clinic"]},
     {"id": "food", "label": "Food and hunger", "words": ["food insecurity", "hunger", "food bank", "food pantry", "meals", "nutrition"]},
     {"id": "housing", "label": "Housing and homelessness", "words": ["housing", "homeless", "shelter", "affordable housing"]},
-    {"id": "workforce", "label": "Jobs and workforce", "words": ["workforce", "job training", "employment", "career readiness", "vocational"]}
+    {"id": "workforce", "label": "Jobs and workforce", "words": ["workforce", "job training", "employment", "career readiness", "vocational"]},
+    {"id": "youth_mentoring", "label": "Youth development and mentoring", "words": ["youth development", "mentoring", "mentors", "at-risk youth", "youth leadership", "teen programs"]},
+    {"id": "sports", "label": "Sports and recreation", "words": ["youth sports", "sports", "recreation", "athletics", "physical activity", "fitness"]},
+    {"id": "animals", "label": "Animal welfare", "words": ["animal welfare", "animal rescue", "animal shelter", "spay", "neuter", "pet adoption", "humane society", "wildlife rehabilitation", "veterinary"]},
+    {"id": "environment", "label": "Environment and conservation", "words": ["environment", "environmental", "conservation", "climate", "sustainability", "clean water", "watershed", "habitat restoration", "recycling", "land trust"]},
+    {"id": "seniors", "label": "Seniors and aging", "words": ["seniors", "older adults", "aging", "elderly", "dementia", "caregiving", "aging in place"]},
+    {"id": "veterans", "label": "Veterans and military", "words": ["veterans", "service members", "military families", "PTSD", "transitioning service members"]},
+    {"id": "disability_services", "label": "Disability services for all ages", "words": ["people with disabilities", "independent living", "accessibility", "assistive technology", "developmental disabilities", "intellectual disabilities"]},
+    {"id": "recovery", "label": "Addiction and recovery", "words": ["substance use", "addiction", "recovery", "opioid", "harm reduction", "sobriety"]},
+    {"id": "violence", "label": "Domestic violence and abuse", "words": ["domestic violence", "sexual assault", "human trafficking", "survivors", "victim services", "child abuse prevention"]},
+    {"id": "legal_justice", "label": "Legal aid and justice", "words": ["legal aid", "legal services", "reentry", "criminal justice", "juvenile justice", "restorative justice"]},
+    {"id": "immigrants", "label": "Immigrants and refugees", "words": ["immigrants", "refugees", "asylum", "newcomers", "citizenship", "resettlement"]},
+    {"id": "community_dev", "label": "Community and economic development", "words": ["community development", "neighborhood revitalization", "economic development", "small business", "financial literacy", "entrepreneurship"]},
+    {"id": "disaster", "label": "Disaster relief and recovery", "words": ["disaster relief", "disaster recovery", "emergency preparedness", "hurricane", "resilience", "emergency response"]},
+    {"id": "history_culture", "label": "History, museums and libraries", "words": ["historic preservation", "history", "museum", "heritage", "cultural heritage", "library"]},
+    {"id": "civic", "label": "Civic engagement and leadership", "words": ["civic engagement", "voter education", "leadership development", "volunteerism", "community organizing"]},
+    {"id": "faith", "label": "Faith-based programs", "words": ["faith-based", "church", "congregation", "ministry", "interfaith"]}
   ],
   "ages": [
     {"id": "prek", "label": "Pre-K", "words": ["preschool", "pre-k", "early childhood"]},
@@ -36,7 +52,14 @@
     {"id": "rural", "label": "Rural communities", "words": ["rural"]},
     {"id": "color", "label": "Communities of color", "words": ["communities of color", "African American", "Black youth", "Hispanic", "Latino", "Latinx"]},
     {"id": "girls", "label": "Girls", "words": ["girls", "young women"]},
-    {"id": "boys", "label": "Boys and young men", "words": ["boys", "young men"]}
+    {"id": "boys", "label": "Boys and young men", "words": ["boys", "young men"]},
+    {"id": "seniors_pop", "label": "Older adults", "words": ["older adults", "seniors", "elderly"]},
+    {"id": "adults_disab", "label": "Adults with disabilities", "words": ["adults with disabilities", "people with disabilities"]},
+    {"id": "homeless_pop", "label": "People experiencing homelessness", "words": ["people experiencing homelessness", "unhoused", "homeless"]},
+    {"id": "immigrant_pop", "label": "Immigrants and refugees", "words": ["immigrants", "refugees", "newcomers"]},
+    {"id": "justice_pop", "label": "People returning from incarceration", "words": ["formerly incarcerated", "returning citizens", "justice-involved"]},
+    {"id": "survivors_pop", "label": "Survivors of violence or crime", "words": ["survivors", "victims of crime"]},
+    {"id": "lgbtq_pop", "label": "LGBTQ+ people", "words": ["LGBTQ", "LGBTQ+"]}
   ],
   "support_types": [
     {"id": "general", "label": "General operating", "pattern": "general (operating|support|purposes?|charitable)|operating support|unrestricted"},
@@ -48,5 +71,22 @@
     {"id": "training", "label": "Training for staff", "pattern": "professional development|teacher training|staff training|workforce training"},
     {"id": "capital", "label": "Capital and buildings", "pattern": "\\bcapital\\b|\\bconstruction\\b|\\brenovation\\b|\\bfacilit(y|ies)\\b"},
     {"id": "research", "label": "Research", "pattern": "\\bresearch\\b"}
+  ],
+  "org_types": [
+    {"id": "arts", "label": "Arts, culture and humanities", "focus": ["arts", "history_culture", "after_school", "youth_mentoring", "stem"], "categories": ["AR", "HU"]},
+    {"id": "education", "label": "Education and literacy", "focus": ["literacy", "tutoring", "dyslexia", "speech", "early_childhood", "after_school", "stem", "special_ed", "adhd_autism", "social_emotional"], "categories": ["ED"]},
+    {"id": "youth", "label": "Youth development", "focus": ["youth_mentoring", "after_school", "sports", "tutoring", "social_emotional", "stem", "arts", "workforce"], "categories": ["ED", "ISS"]},
+    {"id": "human_services", "label": "Human services and basic needs", "focus": ["food", "housing", "family", "workforce", "seniors", "violence", "disability_services", "immigrants"], "categories": ["ISS", "FN", "HO"]},
+    {"id": "health", "label": "Health and mental health", "focus": ["health", "social_emotional", "recovery", "disability_services", "seniors", "adhd_autism"], "categories": ["HL"]},
+    {"id": "housing_community", "label": "Housing and community development", "focus": ["housing", "community_dev", "workforce", "disaster", "civic"], "categories": ["HO", "CD", "RD"]},
+    {"id": "environment", "label": "Environment and conservation", "focus": ["environment", "animals", "disaster", "community_dev"], "categories": ["ENV", "NR", "EN"]},
+    {"id": "animals", "label": "Animal welfare", "focus": ["animals", "environment"], "categories": ["ENV", "NR", "AG"]},
+    {"id": "seniors", "label": "Seniors and aging", "focus": ["seniors", "health", "food", "housing", "disability_services"], "categories": ["ISS", "HL", "FN"]},
+    {"id": "veterans", "label": "Veterans and military families", "focus": ["veterans", "workforce", "housing", "social_emotional", "recovery"], "categories": ["ISS", "ELT", "HO"]},
+    {"id": "justice", "label": "Legal aid, justice and safety", "focus": ["legal_justice", "violence", "immigrants", "recovery"], "categories": ["LJL"]},
+    {"id": "disaster", "label": "Disaster relief", "focus": ["disaster", "food", "housing", "health"], "categories": ["DPR"]},
+    {"id": "sports", "label": "Sports and recreation", "focus": ["sports", "youth_mentoring", "health"], "categories": ["RT"]},
+    {"id": "faith", "label": "Faith-based", "focus": ["faith", "food", "housing", "family", "youth_mentoring"], "categories": ["ISS", "CD"]},
+    {"id": "civic", "label": "Civic and community groups", "focus": ["civic", "community_dev", "history_culture"], "categories": ["CD"]}
   ]
 }
