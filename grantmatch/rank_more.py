@@ -222,6 +222,28 @@ def local_checks(r: dict, p: Profile, city_set: set[str]) -> tuple[int, list[str
     return points, reasons, cautions
 
 
+# Open calls (grantmatch/california.py) say what a catalog of programs doesn't: a required match, loans, and
+# how the money is paid.
+LOAN_CAUTION = "A loan, not a grant"
+REIMBURSED_CAUTION = "Pays by reimbursement: you spend first and are paid back"
+
+
+def call_checks(r: dict, p: Profile) -> tuple[int, list[str]]:
+    """Points and cautions for an open call's own facts; nothing for a catalog program."""
+    points, cautions = 0, []
+    match = r.get("match")
+    if isinstance(match, str) and match and not p.can_cost_share:
+        points -= 20
+        cautions.append(f"Requires matching funds ({match})")
+    if r.get("loan") is True:
+        points -= 25
+        cautions.append(LOAN_CAUTION)
+    method = r.get("funding_method")
+    if isinstance(method, str) and method.startswith("Reimbursement"):
+        cautions.append(REIMBURSED_CAUTION)
+    return points, cautions
+
+
 def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | None = None,
                   show_earmarks: bool = False, cities: list[str] | tuple = ()) -> pd.DataFrame:
     if not records:
@@ -261,6 +283,9 @@ def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | 
         extra, more_reasons, more_cautions = local_checks(r.to_dict(), p, city_set)
         points += extra
         reasons += more_reasons
+        cautions += more_cautions
+        extra, more_cautions = call_checks(r.to_dict(), p)
+        points += extra
         cautions += more_cautions
         final = max(0.0, min(100.0, points))
         rows.append({**r.to_dict(), "score": round(final), "tier": _tier(round(final)),

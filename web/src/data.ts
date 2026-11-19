@@ -26,6 +26,8 @@ export interface Meta {
   federal?: string;
   florida?: string;
   coverage?: boolean;
+  /** States besides Florida with their own programs file: its name, its source and when it was fetched. */
+  programs?: Record<string, { file: string; source: string; updated?: string }>;
 }
 
 /** grantmatch/coverage.py: registered foundations against what the state files hold. */
@@ -83,6 +85,9 @@ export const loadCoverage = () => json<Coverage>("coverage.json");
 export const loadExamples = () => json<Record<string, Example>>("examples.json");
 export const loadFederal = () => source<FederalRec>("federal");
 export const loadFlorida = () => source<FloridaRec>("florida");
+/** The file holding a state's programs, or null when the state has none. Florida's keeps its own name. */
+export const programsFile = (meta: Meta | null, state: string) => (state === "FL" ? "florida" : meta?.programs?.[state]?.file ?? null);
+export const loadPrograms = (file: string) => source<FloridaRec>(file);
 export const loadFoundations = (state: string) => source<FoundationRec>(`foundations-${state}`);
 /** A state's counties and the cities, towns and Census places in each (grantmatch/counties.py). */
 export const loadCounties = (state: string) => json<Record<string, string[]>>(`counties-${state}.json`);

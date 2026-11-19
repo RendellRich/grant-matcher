@@ -39,6 +39,7 @@ describe.skipIf(!have)("parity with Python scoring", () => {
   const fed = have ? load("federal") : null;
   const fl = have ? load("florida") : null;
   const fdn = have ? load("foundations-FL") : null;
+  const ca = have && existsSync(new URL("programs-CA.json.gz", DIR)) ? load("programs-CA") : null;
   const [y, m, d] = (golden.today ?? "2026-11-14").split("-").map(Number);
 
   for (const c of golden.cases) {
@@ -64,9 +65,10 @@ describe.skipIf(!have)("parity with Python scoring", () => {
         foundations: scoreFoundations(fdn!.records, p, "FL", cities, similarities(fdn!.vecs, q), s.show_preselected)
           .map((r) => ({ id: r.rec.ein, ...pick(r) })),
         florida: scoreFlorida(fl!.records, p, similarities(fl!.vecs, q), s.show_earmarks, cities).map((r) => ({ id: r.rec.id, ...pick(r) })),
+        california: ca ? scoreFlorida(ca.records, p, similarities(ca.vecs, q), false, cities).map((r) => ({ id: r.rec.id, ...pick(r) })) : [],
       };
-      for (const src of ["federal", "foundations", "florida"] as const) {
-        const want = byId(c[src]);
+      for (const src of ["federal", "foundations", "florida", "california"] as const) {
+        const want = byId(c[src] ?? []);
         const have_ = byId(got[src]);
         expect([...have_.keys()].sort(), `${src} ids`).toEqual([...want.keys()].sort());
         for (const [id, w] of want) {
