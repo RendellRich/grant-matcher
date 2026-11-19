@@ -10,6 +10,7 @@ const BASE = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const SIGNING = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
 const KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+const LIVE_KEY = /^(rk|sk)_live_/.test(KEY);
 // Stripe's library won't start without a key, so the endpoint still answers before the secrets are set.
 const stripe = KEY ? new Stripe(KEY, { apiVersion: "2026-10-28.endive" as Stripe.LatestApiVersion, httpClient: Stripe.createFetchHttpClient() }) : (null as unknown as Stripe);
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
@@ -84,6 +85,8 @@ Deno.serve(async (req) => {
     return new Response("Bad signature", { status: 400 });
   }
   if (!HANDLED_EVENTS.includes(event.type)) return new Response("ignored", { status: 200 });
+  // Test events never change accounts while a live key is in place, and the other way around.
+  if (event.livemode !== LIVE_KEY) return new Response("other mode, ignored", { status: 200 });
   try {
     if (await seen(event.id)) return new Response("already done", { status: 200 });
     const obj = event.data.object as unknown as Record<string, unknown>;

@@ -35,7 +35,10 @@ const reply = (origin: string | null, status: number, body: unknown) =>
 /** Where Stripe sends people back: the page they came from (the live site, or a local copy while testing). */
 const siteFor = (origin: string | null) => `${origin && ORIGINS.includes(origin) ? origin : ORIGINS[0]}/grant-matcher/`;
 
-interface Account { id: string; plan: string; status: string; stripe_customer_id: string | null }
+interface Account { id: string; plan: string; status: string; stripe_customer_id: string | null; billing_tester: boolean }
+
+/** A test key takes no real money, so with one in place only tester accounts may check out. */
+const TEST_MODE = /^(rk|sk)_test_/.test(KEY);
 
 async function currentUser(token: string | null): Promise<{ id: string; email: string } | null> {
   if (!token || token.split(".").length !== 3) return null;
@@ -46,7 +49,7 @@ async function currentUser(token: string | null): Promise<{ id: string; email: s
 }
 
 async function accountOf(userId: string): Promise<Account | null> {
-  const res = await fetch(`${BASE}/rest/v1/accounts?owner=eq.${userId}&select=id,plan,status,stripe_customer_id`, { headers: service });
+  const res = await fetch(`${BASE}/rest/v1/accounts?owner=eq.${userId}&select=id,plan,status,stripe_customer_id,billing_tester`, { headers: service });
   if (!res.ok) throw new Error(`accounts ${res.status}`);
   return ((await res.json()) as Account[])[0] ?? null;
 }
@@ -80,6 +83,7 @@ Deno.serve(async (req) => {
     if (!user) return reply(origin, 401, { error: "Sign in first." });
     const acct = await accountOf(user.id);
     if (!acct) return reply(origin, 404, { error: "Your account isn't set up yet. Sign out and back in, then try again." });
+    if (TEST_MODE && !acct.billing_tester) return reply(origin, 503, { error: "Paid plans aren't open yet." });
     const site = siteFor(origin);
 
     // Changing or cancelling a plan happens in Stripe's portal, and so does a second checkout for a paying account.
