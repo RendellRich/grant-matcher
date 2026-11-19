@@ -49,7 +49,7 @@ export function SignIn({ open, onClose }: { open: boolean; onClose: () => void }
       </div>
       {step === "email" ? (
         <form onSubmit={submitEmail} noValidate>
-          <p class="quiet">We'll email you a sign-in code. There's no password. A new email address gets a free account with 3 full searches a month.</p>
+          <p class="quiet">We'll email you a sign-in code. There's no password. A new email address gets a free account, which shows the top 10 matches in each list.</p>
           <div class="field">
             <label for="signin-email">Email</label>
             <input id="signin-email" type="email" autoComplete="email" inputMode="email" value={email}

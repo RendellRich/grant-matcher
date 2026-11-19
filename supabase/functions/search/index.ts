@@ -1,14 +1,15 @@
 // The search gate. The page calls this with a profile and its mission vector.
 //
-//  - A visitor, or an account past its free searches this month, gets a preview: how many strong and possible
-//    matches each source has and the top three (src/server/preview.ts, the page's own scoring).
-//  - A signed-in account with searches left gets short-lived links to the data files for its state, and the
-//    page ranks them itself, the way it always has. public.record_search() counts the search, once per month
-//    per search (see the 20261119170000 migration).
+//  - A visitor gets a preview: how many strong and possible matches each source has, and the top three
+//    (src/server/preview.ts, the page's own scoring).
+//  - A free account gets the counts and the top ten in every source, the same way.
+//  - An active Pro or Consultant account gets short-lived links to the data files for its state, and the page
+//    ranks them itself, the way it always has.
+// public.record_search() says which plan the account has and logs each search once a month, as a hash.
 //
 // The data lives in the private "data" bucket, which only the service role reads. Built into one file by
 // `npm run build:fn` in web/, which bundles the scoring code, and deployed with that file as index.ts.
-import { preview, searchSignature } from "../../../web/src/server/preview";
+import { FREE_SIZE, PREVIEW_SIZE, preview, searchSignature } from "../../../web/src/server/preview";
 import { parseProfile, type ProfileForm } from "../../../web/src/profile";
 import type { RankSources } from "../../../web/src/rank";
 import { decodeF16 } from "../../../web/src/vectors";
@@ -92,7 +93,6 @@ async function source<T>(name: string) {
 }
 
 interface Meta { states: string[]; programs?: Record<string, { file: string }> }
-interface Example { mission: string; keywords: string; categories: string[]; state: string; cities: string }
 
 /** The data files a profile in this state uses, by source. */
 function filesFor(meta: Meta, state: string): Record<"fed" | "fdn" | "fl", string | null> {
@@ -120,7 +120,7 @@ async function signedIn(token: string | null): Promise<boolean> {
   return res.ok;
 }
 
-interface Count { allowed: boolean; reason?: string; used?: number; limit?: number | null; plan?: string; repeat?: boolean }
+interface Count { full: boolean; plan?: string; repeat?: boolean }
 async function recordSearch(token: string, sig: string): Promise<Count> {
   const res = await fetch(`${BASE}/rest/v1/rpc/record_search`, {
     method: "POST",
@@ -135,9 +135,6 @@ async function sha256(text: string): Promise<string> {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-
-const sameExample = (f: ProfileForm, ex: Example | undefined) => Boolean(ex) && f.mission === ex!.mission && f.keywords === ex!.keywords
-  && f.state === ex!.state && f.cities === ex!.cities && [...f.categories].sort().join() === [...ex!.categories].sort().join();
 
 // ---------- the request ----------
 function cors(origin: string | null): Record<string, string> {
@@ -163,12 +160,11 @@ export async function handle(req: Request): Promise<Response> {
   if (req.method !== "POST") return reply(origin, 405, { error: "POST only" });
   const text = await req.text();
   if (text.length > MAX_BODY) return reply(origin, 413, { error: "Request too large" });
-  let form: ProfileForm, vector: number[] | null, example: string;
+  let form: ProfileForm, vector: number[] | null;
   try {
     const body = JSON.parse(text);
     form = parseProfile(JSON.stringify(body.form));
     vector = readVector(body.vector);
-    example = typeof body.example === "string" ? body.example : "";
   } catch {
     return reply(origin, 400, { error: "Send a profile" });
   }
@@ -179,11 +175,8 @@ export async function handle(req: Request): Promise<Response> {
     const user = token !== PUBLIC_KEY && (await signedIn(token));
     let count: Count | null = null;
     if (user) {
-      const examples = await json<Record<string, Example>>("examples.json");
-      count = sameExample(form, examples?.[example])
-        ? { allowed: true, repeat: true }
-        : await recordSearch(token!, await sha256(searchSignature(form)));
-      if (count.allowed) {
+      count = await recordSearch(token!, await sha256(searchSignature(form)));
+      if (count.full) {
         const files = filesFor(meta, form.state);
         const names = Object.values(files).filter(Boolean).flatMap((n) => [`${n}.json.gz`, `${n}.f16`]);
         const have = await tags();
@@ -193,7 +186,7 @@ export async function handle(req: Request): Promise<Response> {
           const j = n && links.get(`${n}.json.gz`), v = n && links.get(`${n}.f16`);
           out[k] = n && j && v ? { name: n, json: j, f16: v, version: `${have.get(`${n}.json.gz`)}|${have.get(`${n}.f16`)}` } : null;
         }
-        return reply(origin, 200, { access: "full", files: out, used: count.used ?? null, limit: count.limit ?? null, plan: count.plan ?? null });
+        return reply(origin, 200, { access: "full", files: out, plan: count.plan ?? null });
       }
     }
     const files = filesFor(meta, form.state);
@@ -204,11 +197,8 @@ export async function handle(req: Request): Promise<Response> {
       json<Record<string, string[]>>(`counties-${form.state}.json`),
     ]);
     const src: RankSources = { fed, fdn, fl, flState: form.state, counties };
-    const pv = preview(form, src, vector);
-    return reply(origin, 200, {
-      access: "preview", reason: user ? "limit" : "visitor", ...pv,
-      used: count?.used ?? null, limit: count?.limit ?? null, plan: count?.plan ?? null,
-    });
+    const pv = user ? preview(form, src, vector, new Date(), FREE_SIZE, true) : preview(form, src, vector, new Date(), PREVIEW_SIZE);
+    return reply(origin, 200, { access: "preview", reason: user ? "free" : "visitor", ...pv, plan: count?.plan ?? null });
   } catch (e) {
     console.error("search failed:", e instanceof Error ? e.message : String(e));
     return reply(origin, 500, { error: "Search is unavailable right now. Try again in a minute." });

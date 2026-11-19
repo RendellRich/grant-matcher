@@ -165,7 +165,7 @@ export function App() {
     const ctl = new AbortController();
     setChecking(true);
     const timer = window.setTimeout(() => {
-      search(applied, vector, exampleKey, ctl.signal)
+      search(applied, vector, ctl.signal)
         .then((g) => { if (!ctl.signal.aborted) { setGate(g); setChecking(false); } })
         .catch(() => { if (!ctl.signal.aborted) { setGate({ state: "error", message: "Search is unavailable right now. Check your connection and try again." }); setChecking(false); } });
     }, 250);
@@ -457,7 +457,6 @@ export function App() {
               : <><strong>No strong matches yet.</strong> {shownOrder.map((k) => n(possible[k], `possible ${NOUN[k][2]}`, `possible ${NOUN[k][1]}`)).join(", ")}. More specific key words usually help.</>}
           </h1>
           <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : hasProgs ? ` and ${stName} state grants` : ""}, ranked against your mission with the reasons spelled out.</p>
-          {usageText() ? <p class="usage">{usageText()}</p> : null}
           <p class="notice">{NOTICE}</p>
         </div>
       </header>
@@ -528,14 +527,6 @@ export function App() {
     </>
   );
 
-  /** How many free searches this month's account has used, when it has a limit. */
-  function usageText(): string {
-    const g = full ?? pv;
-    if (!email || !g || g.limit == null || g.used == null) return "";
-    const left = Math.max(0, g.limit - g.used);
-    return left ? `${g.used} of ${g.limit} free searches used this month. Running a search again, or changing its filters, is free.`
-      : `All ${g.limit} free searches used this month. They reset on the 1st.`;
-  }
 
   function panel(k: string) {
     if (k === "shortlist") return <ShortlistPanel list={shortlist} listed={listed} />;
@@ -695,13 +686,13 @@ export function App() {
     return Number.isNaN(d.getTime()) ? "your last visit" : d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
   }
 
-  /** A preview tab: the counts, the top three if they came from here, and what an account opens. */
+  /** A preview tab: the counts, the matches shown here, and what an account or Pro opens. */
   function previewPanel(k: SourceKey) {
     const c = pv!.counts[k] ?? { strong: 0, possible: 0 };
-    const shown = pv!.source === k ? pv!.entries : [];
+    const shown = pv!.lists[k] ?? [];
     const more = c.strong + c.possible - shown.length;
     const caption = shown.length ? `The top ${shown.length === 1 ? "match" : `${shown.length} matches`} for this profile.`
-      : c.strong + c.possible ? `The top matches for this profile are on the ${NOUN[pv!.source!][0]} tab.` : "";
+      : c.strong + c.possible && pv!.source ? `The top matches for this profile are on the ${NOUN[pv!.source][0]} tab.` : "";
     return (
       <>
         {tally(k, caption)}
@@ -720,7 +711,7 @@ export function App() {
           {pv!.reason === "visitor" ? (
             <>
               <h3 id={`lock-${k}`}>{what} {more === 1 ? "matches" : "match"} this profile</h3>
-              <p>Make a free account to see every match, with the filters, the downloads and the deadline calendar. Free accounts get 3 full searches a month.</p>
+              <p>Make a free account to see the top 10 in each list. It's free, with no password: we email you a sign-in code.</p>
               <div class="lock-actions">
                 <button type="button" class="btn primary" onClick={() => setSignInOpen(true)}>Make a free account</button>
                 <button type="button" class="link-btn" onClick={() => setSignInOpen(true)}>I have an account</button>
@@ -728,8 +719,8 @@ export function App() {
             </>
           ) : (
             <>
-              <h3 id={`lock-${k}`}>You've used your {pv!.limit ?? 3} free searches this month</h3>
-              <p>{what} {more === 1 ? "matches" : "match"} this profile. Pro has unlimited searches. Your free searches reset on the 1st, and any search you already ran this month stays open.</p>
+              <h3 id={`lock-${k}`}>{what} {more === 1 ? "matches" : "match"} this profile</h3>
+              <p>Free accounts see the top 10 in each list. Pro shows every match, with the filters, the downloads and the deadline calendar, and emails you new strong matches each week.</p>
               <div class="lock-actions">
                 <a class="btn primary" href={PLANS_URL} target="_blank" rel="noopener">See Pro<span class="sr-only"> (opens in a new tab)</span></a>
               </div>
@@ -1085,7 +1076,7 @@ function BlankSteps() {
         <li>Add a few key words a matching grant would use.</li>
         <li>Set your state and, if you like, your cities or counties.</li>
       </ol>
-      <p>Then press Update matches. The first search downloads the matching model (about 67 MB) once; after that it runs right here in your browser, and your mission never leaves this device.</p>
+      <p>Then press Update matches. The first search downloads the matching model (about 67 MB) once; after that it reads your mission right here in your browser. Your profile is then sent to Grant Matcher's search server to rank the grants, and isn't saved there.</p>
     </div>
   );
 }
@@ -1139,7 +1130,7 @@ function Footer({ coverage }: { coverage: boolean }) {
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
       <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page. California data from the California Grants Portal, published by the California State Library.</p>
-      <p>Scores are a starting point for your own review, not a guarantee of eligibility. Matching runs in your browser; your mission and profile are never sent to a server.</p>
+      <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there; your shortlist stays in this browser.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>
   );

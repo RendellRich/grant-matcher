@@ -1,20 +1,24 @@
-// What a visitor without a full search sees: how many strong and possible matches each source has, and the
-// top three from the source with the most. Runs in the search function (supabase/functions/search), on the
-// same scoring code as the page, so the counts and the three match what a signed-in search shows first.
+// What a search shows without the full data: how many strong and possible matches each source has, and the top
+// few. A visitor gets the top three from the source with the most; a free account gets the top ten in every
+// source. Runs in the search function (supabase/functions/search), on the same scoring code as the page, so the
+// counts and the matches shown are exactly what a Pro search shows first.
 import { federalEntry, floridaEntry, foundationEntry, profileNarrow, type Entry, type SourceKey } from "../entries";
 import { expandCities, type ProfileForm } from "../profile";
 import { isBlank, KINDS, simFor, toProfile, type RankSources } from "../rank";
 import { scoreFederal, scoreFlorida, scoreFoundations } from "../score";
 
 export const PREVIEW_SIZE = 3;
+/** What a free account sees in each source. */
+export const FREE_SIZE = 10;
 
 export interface Counts { strong: number; possible: number }
 export interface Preview {
   /** Per source shown for this profile; a source without data for the state is left out. */
   counts: Partial<Record<SourceKey, Counts>>;
-  /** The source the three come from (the most strong matches, then the most possible), or null when none match. */
+  /** The source with the most strong matches (then the most possible), or null when none match. */
   source: SourceKey | null;
-  entries: Entry[];
+  /** The matches shown, by source, best first. */
+  lists: Partial<Record<SourceKey, Entry[]>>;
 }
 
 const good = <T extends { tier: string }>(xs: T[]) => xs.filter((x) => x.tier !== "Long shot");
@@ -28,8 +32,10 @@ export function shownSources(f: ProfileForm, hasPrograms: boolean): SourceKey[] 
   return out;
 }
 
-export function preview(f: ProfileForm, src: RankSources, vector: number[] | null, now: Date = new Date(), take = PREVIEW_SIZE): Preview {
-  if (isBlank(f)) return { counts: {}, source: null, entries: [] };
+/** `every` shows `take` from each source (a free account); otherwise only from the leading source (a visitor). */
+export function preview(f: ProfileForm, src: RankSources, vector: number[] | null, now: Date = new Date(), take = PREVIEW_SIZE,
+  every = false): Preview {
+  if (isBlank(f)) return { counts: {}, source: null, lists: {} };
   const p = toProfile(f, now);
   const hasKw = p.keywords.length > 0;
   const cities = expandCities(f.cities, src.counties);
@@ -57,7 +63,9 @@ export function preview(f: ProfileForm, src: RankSources, vector: number[] | nul
     .filter((k) => counts[k]!.strong + counts[k]!.possible > 0)
     .sort((a, b) => counts[b]!.strong - counts[a]!.strong || counts[b]!.possible - counts[a]!.possible);
   const source = ranked[0] ?? null;
-  return { counts, source, entries: source ? lists[source]!.slice(0, take) : [] };
+  const shown: Partial<Record<SourceKey, Entry[]>> = {};
+  for (const k of every ? ranked : source ? [source] : []) shown[k] = lists[k]!.slice(0, take);
+  return { counts, source, lists: shown };
 }
 
 /** The fields that make a search new. Changing anything else (deadlines, sizes, the hide list) refines the

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { BLANK, type ProfileForm } from "../src/profile";
 import { rankAll } from "../src/rank";
 import { profileNarrow } from "../src/entries";
-import { preview, PREVIEW_SIZE, searchSignature, shownSources } from "../src/server/preview";
+import { FREE_SIZE, preview, PREVIEW_SIZE, searchSignature, shownSources } from "../src/server/preview";
 import { decodeF16 } from "../src/vectors";
 
 describe("the search signature", () => {
@@ -26,7 +26,7 @@ describe("the search signature", () => {
     expect(shownSources(BLANK, false)).toEqual(["fed", "fdn"]);
   });
   it("shows nothing for an empty profile", () => {
-    expect(preview(BLANK, { fed: null, fdn: null, fl: null, counties: null }, null)).toEqual({ counts: {}, source: null, entries: [] });
+    expect(preview(BLANK, { fed: null, fdn: null, fl: null, counties: null }, null)).toEqual({ counts: {}, source: null, lists: {} });
   });
 });
 
@@ -55,9 +55,18 @@ describe.skipIf(!have)("on the test data", () => {
         expect(pv.counts[k]).toEqual({ strong: kept.filter((e) => e.tier === "Strong").length, possible: kept.filter((e) => e.tier === "Possible").length });
       }
       expect(pv.source).not.toBeNull();
+      expect(Object.keys(pv.lists)).toEqual([pv.source]);
       const top = (profileNarrow(full[pv.source!], f, now).entries ?? []).slice(0, PREVIEW_SIZE);
-      expect(pv.entries.map((e) => e.key)).toEqual(top.map((e) => e.key));
-      expect(pv.entries).toEqual(top);
+      expect(pv.lists[pv.source!]!.map((e) => e.key)).toEqual(top.map((e) => e.key));
+      expect(pv.lists[pv.source!]).toEqual(top);
+      // a free account: the top ten in every source that has a match
+      const free = preview(f, src!, ex.vector, now, FREE_SIZE, true);
+      expect(free.counts).toEqual(pv.counts);
+      for (const k of ["fed", "fdn", "fl"] as const) {
+        const kept = (profileNarrow(full[k], f, now).entries ?? []).filter((e) => e.tier !== "Long shot");
+        if (kept.length) expect(free.lists[k]).toEqual(kept.slice(0, FREE_SIZE));
+        else expect(free.lists[k]).toBeUndefined();
+      }
     }
   });
   it("ranks the same from the slim copy the search function reads", () => {

@@ -10,7 +10,7 @@ const have = ["federal.json.gz", "foundations-FL.json.gz", "florida.json.gz", "m
 const BASE = "https://gm.test";
 const USER = "aaa.bbb.ccc";
 let searches: { sig: string }[] = [];
-let answer: (sig: string) => Record<string, unknown> = () => ({ allowed: true, used: 1, limit: 3, plan: "free" });
+let answer: (sig: string) => Record<string, unknown> = () => ({ full: false, plan: "free" });
 
 function fakeFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const url = String(input instanceof Request ? input.url : input);
@@ -66,27 +66,39 @@ describe("the search gate", () => {
 
 describe.skipIf(!have)("with the test data", () => {
   it("shows a visitor three results and the counts, and no links", async () => {
-    const r = await call({ form, vector: ex!.vector, example: exKey });
+    const r = await call({ form, vector: ex!.vector });
     expect(r.status).toBe(200);
     expect(r.cors).toBe("https://rendellrich.github.io");
     expect(r.body.access).toBe("preview");
     expect(r.body.reason).toBe("visitor");
-    expect(r.body.entries).toHaveLength(3);
+    expect(Object.values(r.body.lists).flat()).toHaveLength(3);
     expect(r.body.files).toBeUndefined();
     expect(r.body.counts.fed.strong + r.body.counts.fed.possible).toBeGreaterThan(0);
     expect(searches).toHaveLength(0);
   });
-  it("doesn't count an example for a signed-in account, and sends links for its state's files", async () => {
+  it("shows a free account the top ten in every list, and no links", async () => {
     searches = [];
-    const r = await call({ form, vector: ex!.vector, example: exKey }, USER);
+    const r = await call({ form, vector: ex!.vector }, USER);
+    expect(r.body.access).toBe("preview");
+    expect(r.body.reason).toBe("free");
+    expect(r.body.files).toBeUndefined();
+    for (const k of Object.keys(r.body.counts)) {
+      const n = r.body.counts[k].strong + r.body.counts[k].possible;
+      if (n) expect(r.body.lists[k]).toHaveLength(Math.min(10, n));
+    }
+    expect(searches).toHaveLength(1);
+  });
+  it("sends links for its state's files to a Pro account", async () => {
+    answer = () => ({ full: true, plan: "pro" });
+    const r = await call({ form, vector: ex!.vector }, USER);
     expect(r.body.access).toBe("full");
-    expect(searches).toHaveLength(0);
     expect(r.body.files.fed.json).toBe(`${BASE}/storage/v1/object/sign/data/federal.json.gz?token=t`);
     expect(r.body.files.fdn.name).toBe("foundations-FL");
     expect(r.body.files.fl.name).toBe("florida");
-    expect(r.body.entries).toBeUndefined();
+    expect(r.body.lists).toBeUndefined();
+    answer = () => ({ full: false, plan: "free" });
   });
-  it("counts a new search by its hash, and a refinement hashes the same", async () => {
+  it("logs a new search by its hash, and a refinement hashes the same", async () => {
     searches = [];
     const mine = { ...form, mission: `${form.mission} Synthetic change.` };
     await call({ form: mine, vector: ex!.vector }, USER);
@@ -95,14 +107,6 @@ describe.skipIf(!have)("with the test data", () => {
     expect(searches[0].sig).toBe(searches[1].sig);
     expect(searches[0].sig).toMatch(/^[0-9a-f]{64}$/);
     expect(searches[0].sig).not.toBe(createHash("sha256").update(JSON.stringify(form)).digest("hex"));
-  });
-  it("gives an account past its free searches the preview, saying why", async () => {
-    answer = () => ({ allowed: false, reason: "limit", used: 3, limit: 3, plan: "free" });
-    const r = await call({ form: { ...form, mission: "Synthetic other mission" }, vector: ex!.vector }, USER);
-    expect(r.body.access).toBe("preview");
-    expect(r.body.reason).toBe("limit");
-    expect(r.body.used).toBe(3);
-    expect(r.body.entries.length).toBeLessThanOrEqual(3);
   });
   it("treats a forged token as a visitor", async () => {
     const r = await call({ form, vector: ex!.vector }, "xxx.yyy.zzz", "https://evil.test");

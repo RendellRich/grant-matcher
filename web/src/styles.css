@@ -97,7 +97,6 @@ p { margin: 0; text-wrap: pretty; }
 .band-btn:focus-visible { outline-color: var(--on-cloth); }
 .account { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; }
 .account-email { color: var(--on-cloth-muted); font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem; }
-.usage { color: var(--on-cloth-muted); font-size: .875rem; max-width: 66ch; }
 @media (max-width: 40rem) { .account-email { display: none; } }
 .answer { font: 400 clamp(1.5rem, 1.1rem + 1.4vw, 2.125rem)/1.2 var(--sans); letter-spacing: -0.012em; max-width: 36ch; margin-top: .5rem; }
 .answer strong { font-weight: 700; }

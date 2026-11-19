@@ -1,5 +1,6 @@
-// Accounts and the search gate. A visitor sees a preview (three results and the counts); a signed-in account
-// with searches left gets short-lived links to its state's data files and ranks them here, as before. Sign-in
+// Accounts and the search gate. A visitor sees a preview (the counts and three results), a free account the counts
+// and the top ten in each source; a Pro or Consultant account gets short-lived links to its state's data files and
+// ranks them here, as before. Sign-in
 // is by a code sent to the person's email, so it works inside ETO's page too, where a link would open a tab
 // that can't see the framed page's sign-in.
 import { createClient, type Session } from "@supabase/supabase-js";
@@ -21,9 +22,9 @@ export interface FileLink { name: string; json: string; f16: string; version: st
 export type Gate =
   | { state: "idle" }
   | { state: "checking" }
-  | { state: "full"; files: Partial<Record<SourceKey, FileLink | null>>; used: number | null; limit: number | null; plan: string | null }
-  | { state: "preview"; reason: "visitor" | "limit"; counts: Partial<Record<SourceKey, Counts>>; source: SourceKey | null; entries: Entry[];
-      used: number | null; limit: number | null; plan: string | null }
+  | { state: "full"; files: Partial<Record<SourceKey, FileLink | null>>; plan: string | null }
+  | { state: "preview"; reason: "visitor" | "free"; counts: Partial<Record<SourceKey, Counts>>; source: SourceKey | null;
+      lists: Partial<Record<SourceKey, Entry[]>>; plan: string | null }
   | { state: "error"; message: string };
 
 export async function currentSession(): Promise<Session | null> {
@@ -31,21 +32,22 @@ export async function currentSession(): Promise<Session | null> {
   try { return (await supabase.auth.getSession()).data.session; } catch { return null; }
 }
 
-/** Asks the gate for this profile. `example` names the sample profile it came from, which doesn't count. */
-export async function search(form: ProfileForm, vector: number[] | null, example: string, signal?: AbortSignal): Promise<Gate> {
+/** Asks the gate for this profile. */
+export async function search(form: ProfileForm, vector: number[] | null, signal?: AbortSignal): Promise<Gate> {
   if (!SUPABASE_KEY) return { state: "error", message: "Search isn't set up on this copy of the site." };
   const session = await currentSession();
   const res = await fetch(`${SUPABASE_URL}/functions/v1/search`, {
     method: "POST", signal,
     headers: { Authorization: `Bearer ${session?.access_token ?? SUPABASE_KEY}`, apikey: SUPABASE_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ form, vector, example }),
+    body: JSON.stringify({ form, vector }),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) return { state: "error", message: body.error ?? "Search is unavailable right now. Try again in a minute." };
-  if (body.access === "full") return { state: "full", files: body.files ?? {}, used: body.used ?? null, limit: body.limit ?? null, plan: body.plan ?? null };
+  if (body.access === "full") return { state: "full", files: body.files ?? {}, plan: body.plan ?? null };
+  const lists = body.lists && typeof body.lists === "object" ? body.lists : {};
   return {
-    state: "preview", reason: body.reason === "limit" ? "limit" : "visitor", counts: body.counts ?? {}, source: body.source ?? null,
-    entries: Array.isArray(body.entries) ? body.entries : [], used: body.used ?? null, limit: body.limit ?? null, plan: body.plan ?? null,
+    state: "preview", reason: body.reason === "free" ? "free" : "visitor", counts: body.counts ?? {}, source: body.source ?? null,
+    lists: Object.fromEntries(Object.entries(lists).filter(([, v]) => Array.isArray(v))), plan: body.plan ?? null,
   };
 }
 
