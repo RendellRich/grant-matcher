@@ -81,3 +81,13 @@ def test_committed_county_file_covers_manatee():
     data = json.loads(gzip.decompress(path.read_bytes()))
     assert {"Bradenton", "Palmetto", "Ellenton", "Lakewood Ranch"} <= set(data["FL"]["Manatee"])
     assert len(data["FL"]) == 67
+
+
+def test_every_org_type_points_at_real_focus_areas_and_federal_categories():
+    t = terms()
+    focus = {x["id"] for x in t["focus_areas"]}
+    cats = {"AG", "AR", "BC", "CD", "CP", "DPR", "ED", "ELT", "EN", "ENV", "FN", "HL", "HO", "HU", "ISS", "IS", "LJL", "NR", "O", "RD", "RT", "ST", "T"}
+    ids = [o["id"] for o in t["org_types"]]
+    assert len(ids) == len(set(ids))
+    for o in t["org_types"]:
+        assert o["label"] and o["focus"] and set(o["focus"]) <= focus and set(o["categories"]) <= cats

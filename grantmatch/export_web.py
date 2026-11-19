@@ -31,7 +31,7 @@ LOCAL = Path(__file__).resolve().parent.parent / "data"
 # model and text the browser would use (mission, a space, then the key words).
 EXAMPLES = {
     "literacy": {
-        "label": "Youth literacy and learning support",
+        "label": "Youth literacy and learning support", "org_type": "education",
         "mission": "We provide free and sliding-scale structured literacy instruction for children with dyslexia, "
                    "speech and language support, academic tutoring, and coping-skills coaching for children with "
                    "ADHD and autism, so that cost is never a barrier for families.",
@@ -40,13 +40,13 @@ EXAMPLES = {
         "categories": ["ED", "HL", "ISS"], "state": "FL", "cities": "Tampa, Bradenton, Sarasota, St. Petersburg",
     },
     "food": {
-        "label": "Community food pantry",
+        "label": "Community food pantry", "org_type": "human_services",
         "mission": "We run a volunteer food pantry and weekend meal program for families facing food insecurity in our county.",
         "keywords": "food insecurity, food bank, pantry, nutrition, hunger, meals, families, low-income, community",
         "categories": ["FN", "ISS", "CD"], "state": "FL", "cities": "",
     },
     "arts": {
-        "label": "Youth arts program",
+        "label": "Youth arts program", "org_type": "arts",
         "mission": "We offer free after-school music and visual arts classes for middle and high school students in under-served neighborhoods.",
         "keywords": "arts, music, art education, youth, students, after school, creative, under-served",
         "categories": ["AR", "ED", "HU"], "state": "FL", "cities": "",
@@ -379,7 +379,8 @@ def golden(out: Path, examples: dict, path: Path) -> None:
                         has_501c3=spec["has_501c3"], budget_band=spec["budget_band"], can_cost_share=spec["can_cost_share"],
                         categories=spec["categories"], include_forecasted=spec["include_forecasted"],
                         min_days_left=spec["min_days_left"], today=GOLDEN_DAY, fiscal_sponsor=spec["fiscal_sponsor"],
-                        delivery=spec["delivery"], year_founded=spec["year_founded"], minor_keywords=spec["minor_keywords"])
+                        delivery=spec["delivery"], year_founded=spec["year_founded"], minor_keywords=spec["minor_keywords"],
+                        state=spec["state"])
             cities = [c for c in spec["cities"].split(",") if c.strip()]
             cases.append({
                 "name": f"{key}-{n}", "example": key, "spec": spec,

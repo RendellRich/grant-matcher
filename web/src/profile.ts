@@ -1,16 +1,7 @@
-import { BUDGET_BANDS, CATEGORY_NAMES, currentBand } from "./score";
+import { BUDGET_BANDS, CATEGORY_NAMES, currentBand, STATE_NAMES } from "./score";
+export { STATE_NAMES };
 import TERMS from "./terms.json";
 
-export const STATE_NAMES: Record<string, string> = {
-  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California", CO: "Colorado", CT: "Connecticut",
-  DC: "District of Columbia", DE: "Delaware", FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois",
-  IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
-  MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri", MT: "Montana",
-  NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico", NY: "New York",
-  NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania",
-  PR: "Puerto Rico", RI: "Rhode Island", SC: "South Carolina", SD: "South Dakota", TN: "Tennessee", TX: "Texas",
-  UT: "Utah", VT: "Vermont", VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
-};
 export const STATES = Object.keys(STATE_NAMES).sort((a, b) => STATE_NAMES[a].localeCompare(STATE_NAMES[b]));
 
 export type Status501 = "Yes" | "Pending" | "No";
@@ -19,10 +10,13 @@ export type Timing = "" | "open" | "30" | "60" | "90";
 
 export interface Term { id: string; label: string; words: string[] }
 export interface SupportType { id: string; label: string; pattern: string }
+/** A kind of nonprofit: which focus areas to show first and which federal funding areas to start from. */
+export interface OrgType { id: string; label: string; focus: string[]; categories: string[] }
 export const FOCUS_AREAS: Term[] = TERMS.focus_areas;
 export const AGES: Term[] = TERMS.ages;
 export const POPULATIONS: Term[] = TERMS.populations;
 export const SUPPORT_TYPES: SupportType[] = TERMS.support_types;
+export const ORG_TYPES: OrgType[] = TERMS.org_types;
 
 export const DELIVERY: [Delivery, string][] = [
   ["in_person", "In person"], ["online_state", "Online in our state"], ["online_national", "Online nationwide"],
@@ -46,6 +40,7 @@ export const HIDE_PIPELINE: [string, string][] = [["inpipeline", "Already in our
 /** What the person entered. Matches the JSON the Streamlit app saves, so old profile files still load:
  *  every field added later has a default. */
 export interface ProfileForm {
+  org_type: string; // "" or an ORG_TYPES id; it arranges the form and never changes a score
   mission: string;
   keywords: string;
   categories: string[];
@@ -77,7 +72,7 @@ export interface ProfileForm {
 }
 
 export const BLANK: ProfileForm = {
-  mission: "", keywords: "", categories: [], state: "FL", cities: "", has_501c3: "Yes",
+  org_type: "", mission: "", keywords: "", categories: [], state: "FL", cities: "", has_501c3: "Yes",
   budget_band: "$50k to $250k", can_cost_share: false, include_forecasted: true, min_days_left: 14,
   focus_areas: [], ages: [], populations: [], exclude_words: "",
   delivery: "in_person", fiscal_sponsor: false, year_founded: "", registrations: [],
@@ -130,6 +125,7 @@ export function parseProfile(text: string): ProfileForm {
   const d = JSON.parse(text);
   if (!d || typeof d !== "object" || !("mission" in d || "keywords" in d)) throw new Error("not a profile");
   return {
+    org_type: ORG_TYPES.some((t) => t.id === d.org_type) ? d.org_type : "",
     mission: String(d.mission ?? ""),
     keywords: String(d.keywords ?? ""),
     cities: String(d.cities ?? ""),

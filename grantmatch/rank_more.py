@@ -181,7 +181,10 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
     out = pd.DataFrame(rows)
     if out.empty:
         return out
-    return out.sort_values(["score", "grant_count"], ascending=[False, False]).reset_index(drop=True)
+    # Equal scores are common once the meaning points top out, so the closer meaning comes first among them.
+    out["_sim"] = out["ein"].map(semantic or {}).fillna(0.0)
+    return (out.sort_values(["score", "_sim", "grant_count"], ascending=[False, False, False])
+               .drop(columns="_sim").reset_index(drop=True))
 
 
 # ---------------- Florida programs ----------------
@@ -290,4 +293,8 @@ def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | 
         final = max(0.0, min(100.0, points))
         rows.append({**r.to_dict(), "score": round(final), "tier": _tier(round(final)),
                      "reasons": reasons, "cautions": cautions, "matched": matched})
-    return pd.DataFrame(rows).sort_values("score", ascending=False).reset_index(drop=True)
+    out = pd.DataFrame(rows)
+    if out.empty:
+        return out
+    out["_sim"] = out["id"].map(semantic or {}).fillna(0.0)
+    return out.sort_values(["score", "_sim"], ascending=[False, False]).drop(columns="_sim").reset_index(drop=True)

@@ -2,7 +2,7 @@
 // background scorer (scripts/score-eto.ts) both use it, so ETO's strong-match count is the same wherever it is made.
 import { federalEntry, floridaEntry, foundationEntry, type Entry } from "./entries";
 import { expandCities, profileKeywords, profileMinorKeywords, type ProfileForm } from "./profile";
-import { scoreFederal, scoreFlorida, scoreFoundations, type FederalRec, type FloridaRec, type FoundationRec, type Profile } from "./score";
+import { queryText as cleanQuery, scoreFederal, scoreFlorida, scoreFoundations, type FederalRec, type FloridaRec, type FoundationRec, type Profile } from "./score";
 import { strongKeys } from "./seen";
 import { similarities, type VectorSet } from "./vectors";
 
@@ -10,7 +10,7 @@ import { similarities, type VectorSet } from "./vectors";
 export const KINDS = ["Private foundation", "Community foundation", "Public foundation", "United Way or federated fund"];
 
 /** The text the meaning model reads for a profile. */
-export const queryText = (f: ProfileForm) => f.mission + " " + f.keywords;
+export const queryText = (f: ProfileForm) => cleanQuery(f.mission, f.keywords, f.cities);
 
 /** True when there's nothing to match on. */
 export const isBlank = (f: ProfileForm) => !f.mission.trim() && !f.keywords.trim() && !f.focus_areas.length;
@@ -23,7 +23,7 @@ export function toProfile(f: ProfileForm, now: Date = new Date()): Profile {
     includeForecasted: f.include_forecasted, minDaysLeft: f.min_days_left,
     today: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
     fiscalSponsor: f.fiscal_sponsor, delivery: f.delivery, minorKeywords: profileMinorKeywords(f),
-    yearFounded: f.year_founded ? +f.year_founded : null,
+    yearFounded: f.year_founded ? +f.year_founded : null, state: f.state,
   };
 }
 

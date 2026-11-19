@@ -29,6 +29,48 @@ export const CATEGORY_NAMES: Record<string, string> = {
   ST: "Science, technology and research", T: "Transportation",
 };
 
+export const STATE_NAMES: Record<string, string> = {
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California", CO: "Colorado", CT: "Connecticut",
+  DC: "District of Columbia", DE: "Delaware", FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois",
+  IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+  MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri", MT: "Montana",
+  NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico", NY: "New York",
+  NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania",
+  PR: "Puerto Rico", RI: "Rhode Island", SC: "South Carolina", SD: "South Dakota", TN: "Tennessee", TX: "Texas",
+  UT: "Utah", VT: "Vermont", VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
+};
+
+// A title that names one state or territory is usually for groups there ("Centers for Independent Living - Guam").
+// Washington alone is too often a person or the capital, so only "Washington State" counts. Same as match.py.
+const PLACE_NAMES = [...new Set([...Object.entries(STATE_NAMES).filter(([k]) => k !== "WA").map(([, v]) => v), "Washington State",
+  "Guam", "American Samoa", "Virgin Islands", "Northern Mariana Islands", "Palau", "Micronesia", "Marshall Islands"])]
+  .sort((a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0));
+const PLACE = new RegExp(`\\b(${PLACE_NAMES.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`, "g");
+export const PLACE_PENALTY = 25;
+
+/** States or territories a title names, when none of them is the profile's own state. */
+export function otherPlaces(title: string, state: string | undefined): string[] {
+  if (!state) return [];
+  const found = [...new Set([...title.matchAll(PLACE)].map((m) => m[1]))];
+  const home = new Set(state === "WA" ? [STATE_NAMES[state], "Washington State"] : [STATE_NAMES[state] ?? ""]);
+  return !found.length || found.some((f) => home.has(f)) ? [] : found;
+}
+
+// Place names in a mission pull the meaning model toward unrelated programs (Manatee Management & Care), so the
+// text it reads swaps them for "the county". Location is scored elsewhere. Same as query_text in match.py.
+const LEAD = String.raw`(?!(?:In|We|Our|Serving|Across|Throughout|For|Of|At|To|From|With|Within|The|And)\b)`;
+const NAME = LEAD + String.raw`[A-Z][\w.'-]*(?:\s+` + LEAD + String.raw`[A-Z][\w.'-]*)*`;
+const COUNTY_PHRASE = new RegExp(NAME + String.raw`(?:\s*,\s*(?:and\s+|&\s+)?` + NAME + String.raw`|\s+(?:and|&)\s+` + NAME + ")*" +
+  String.raw`\s+(?:County|Counties|county|counties|Parish|Parishes|parish|parishes)\b`, "g");
+
+/** The text the meaning model reads: the mission and key words, with county and typed city names taken out. */
+export function queryText(mission: string, keywords: string, cities = ""): string {
+  let text = mission.replace(COUNTY_PHRASE, "the county");
+  const names = cities.split(",").map((c) => c.trim()).filter((c) => c.length >= 3).sort((a, b) => b.length - a.length);
+  for (const c of names) text = text.replace(new RegExp(String.raw`\b` + c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + String.raw`\b`, "gi"), "");
+  return text.replace(/\s+/g, " ").trim() + " " + keywords;
+}
+
 const RESEARCH_NUMBER = /^(RFA|PAR|PA|NOT)-/i;
 const TARGETED: [RegExp, string, number][] = [
   [/\b(tribal|tribes|native american|indian health|alaska native)\b/i,
@@ -82,6 +124,7 @@ export interface Profile {
   delivery?: "in_person" | "online_state" | "online_national";
   yearFounded?: number | null;
   minorKeywords?: string[]; // words from the ages and populations choices, counted at half weight
+  state?: string; // two-letter code; a grant whose title names only other states or territories loses points
 }
 
 const MINOR_WEIGHT = 0.5;
@@ -351,6 +394,8 @@ export function scoreFederal(records: FederalRec[], p: Profile, semantic: Map<st
     for (const [pattern, note, penalty] of TARGETED) {
       if (pattern.test(r.title)) { points -= penalty; cautions.push(note); break; }
     }
+    const places = otherPlaces(r.title, p.state);
+    if (places.length) { points -= PLACE_PENALTY; cautions.push("Appears limited to " + places.join(" and ")); }
 
     if (r.status === "forecasted") {
       const due = r.close ? `estimated due ${fmtDate(r.close)}` : "dates not set yet";
@@ -521,7 +566,9 @@ export function scoreFoundations(records: FoundationRec[], p: Profile, state: st
     const shown = pyRound(Math.max(0, Math.min(100, points)));
     out.push({ rec: { ...r, in_state: inState }, score: shown, tier: tierOf(shown), reasons, cautions, matched });
   });
-  return out.sort((a, b) => b.score - a.score || (b.rec.grant_count ?? 0) - (a.rec.grant_count ?? 0));
+  // Equal scores are common once the meaning points top out, so the closer meaning comes first among them.
+  const sim = (ein: string) => semantic?.get(ein) ?? 0;
+  return out.sort((a, b) => b.score - a.score || sim(b.rec.ein) - sim(a.rec.ein) || (b.rec.grant_count ?? 0) - (a.rec.grant_count ?? 0));
 }
 
 // ---------- Florida programs ----------
@@ -606,5 +653,6 @@ export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<st
     const shown = pyRound(Math.max(0, Math.min(100, points)));
     return { rec: r, score: shown, tier: tierOf(shown), reasons, cautions, matched };
   });
-  return out.sort((a, b) => b.score - a.score);
+  const sim = (id: string) => semantic?.get(id) ?? 0;
+  return out.sort((a, b) => b.score - a.score || sim(b.rec.id) - sim(a.rec.id));
 }

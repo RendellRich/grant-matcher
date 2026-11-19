@@ -13,6 +13,7 @@ export interface Source<T> {
 
 export interface Example {
   label: string;
+  org_type?: string;
   mission: string;
   keywords: string;
   categories: string[];

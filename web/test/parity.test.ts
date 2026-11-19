@@ -56,7 +56,7 @@ describe.skipIf(!have)("parity with Python scoring", () => {
         has501c3: s.has_501c3, budgetBand: s.budget_band, canCostShare: s.can_cost_share, categories: s.categories,
         includeForecasted: s.include_forecasted, minDaysLeft: s.min_days_left, today: new Date(y, m - 1, d),
         fiscalSponsor: s.fiscal_sponsor ?? false, delivery: s.delivery ?? "in_person", yearFounded: s.year_founded ?? null,
-        minorKeywords: minor,
+        minorKeywords: minor, state: s.state,
       };
       const q = examples[c.example].vector;
       const cities = s.cities.split(",").filter((x: string) => x.trim());

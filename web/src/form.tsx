@@ -2,7 +2,7 @@ import { useRef, useState } from "preact/hooks";
 import type { Example } from "./data";
 import { download } from "./exports";
 import {
-  AGES, BLANK, DELIVERY, FOCUS_AREAS, FUNDER_TYPES, HIDE, HIDE_PIPELINE, parseProfile, POPULATIONS, REGISTRATIONS, STATE_NAMES, STATES, SUPPORT_TYPES, TIMING,
+  AGES, BLANK, DELIVERY, FOCUS_AREAS, ORG_TYPES, FUNDER_TYPES, HIDE, HIDE_PIPELINE, parseProfile, POPULATIONS, REGISTRATIONS, STATE_NAMES, STATES, SUPPORT_TYPES, TIMING,
   type ProfileForm, type Status501, type Timing,
 } from "./profile";
 import { BUDGET_BANDS, CATEGORY_NAMES } from "./score";
@@ -26,7 +26,7 @@ export interface FormProps {
 }
 
 export function exampleForm(ex: Example): ProfileForm {
-  return { ...BLANK, mission: ex.mission, keywords: ex.keywords, categories: [...ex.categories], state: ex.state, cities: ex.cities };
+  return { ...BLANK, org_type: ex.org_type ?? "", mission: ex.mission, keywords: ex.keywords, categories: [...ex.categories], state: ex.state, cities: ex.cities };
 }
 
 const count = (n: number) => (n ? `${n} chosen` : "none chosen");
@@ -53,6 +53,7 @@ function CheckGroup(p: { legend: string; hint?: string; idp: string; items: [str
 export function ProfileFormView(p: FormProps) {
   const { draft, setDraft, idp } = p;
   const [guard, setGuard] = useState<string | null>(null);
+  const [allFocus, setAllFocus] = useState(false);
   const [fileError, setFileError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   // Every change builds on the latest form, so quick changes in a row (or a profile filled in by ETO) never undo each other.
@@ -68,6 +69,19 @@ export function ProfileFormView(p: FormProps) {
     const typed = draft.mission.trim() || draft.keywords.trim() || draft.cities.trim();
     return Boolean(typed) && (draft.mission !== base.mission || draft.keywords !== base.keywords || draft.cities !== base.cities);
   };
+
+  const orgType = ORG_TYPES.find((t) => t.id === draft.org_type);
+  // With a type chosen, its focus areas come first in its own order; anything already checked stays visible.
+  const focusItems = !orgType || allFocus ? FOCUS_AREAS
+    : [...orgType.focus.map((f) => FOCUS_AREAS.find((t) => t.id === f)!).filter(Boolean),
+       ...FOCUS_AREAS.filter((t) => !orgType.focus.includes(t.id) && draft.focus_areas.includes(t.id))];
+
+  // Picking a type fills in its federal funding areas only when none are chosen, so nothing typed is undone.
+  function pickType(v: string) {
+    const t = ORG_TYPES.find((o) => o.id === v);
+    setDraft((d) => ({ ...d, org_type: v, categories: d.categories.length || !t ? d.categories : [...t.categories] }));
+    setAllFocus(false);
+  }
 
   function pickExample(key: string) {
     if (key === p.exampleKey) return;
@@ -117,13 +131,26 @@ export function ProfileFormView(p: FormProps) {
       <fieldset class="group">
         <legend>About your work</legend>
         <div class="field">
+          <label for={id("orgtype")}>Type of organization</label>
+          <p class="hint" id={id("orgtype-hint")}>Shows the focus areas and federal funding areas that fit your work.</p>
+          <select id={id("orgtype")} aria-describedby={id("orgtype-hint")} value={draft.org_type} onChange={(e) => pickType((e.target as HTMLSelectElement).value)}>
+            <option value="">Choose one</option>
+            {ORG_TYPES.map((t) => <option value={t.id} key={t.id}>{t.label}</option>)}
+          </select>
+        </div>
+        <div class="field">
           <label for={id("mission")}>Mission and programs</label>
           <p class="hint" id={id("mission-hint")}>Two or three sentences: who you serve, where, and what you do for them. This counts most.</p>
           <textarea id={id("mission")} rows={6} aria-describedby={id("mission-hint")} value={draft.mission}
                     onInput={(e) => set("mission", (e.target as HTMLTextAreaElement).value)} />
         </div>
-        <CheckGroup legend="Focus areas" hint="Each one adds its own key words, so you don't have to type them." idp={id("focus")}
-                    items={FOCUS_AREAS.map((t) => [t.id, t.label])} chosen={draft.focus_areas} onToggle={toggle("focus_areas")} />
+        <CheckGroup legend="Focus areas" hint={orgType && !allFocus ? "The ones that fit your type of organization. Each adds its own key words." : "Each one adds its own key words, so you don't have to type them."}
+                    idp={id("focus")} items={focusItems.map((t) => [t.id, t.label])} chosen={draft.focus_areas} onToggle={toggle("focus_areas")} />
+        {orgType ? (
+          <button type="button" class="link-btn focus-more" aria-expanded={allFocus} onClick={() => setAllFocus(!allFocus)}>
+            {allFocus ? "Show only the focus areas for my type" : `Show all focus areas (${FOCUS_AREAS.length - focusItems.length} more)`}
+          </button>
+        ) : null}
         <div class="field">
           <label for={id("kw")}>More key words <span class="quiet">(optional)</span></label>
           <p class="hint" id={id("kw-hint")}>Separate with commas. Rare, specific words count more than common ones.</p>
