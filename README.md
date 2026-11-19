@@ -170,6 +170,19 @@ A national program run through local stores, such as Walmart's Spark Good grants
 
 The foundation refresh reads six IRS filing years, enough for five tax years per foundation, and `grantmatch/history.py` keeps a short summary of each foundation's giving across them: grants per year, whether it gave in each of the last four years, the share of its latest year's grantees it hadn't funded before (grantee names are matched loosely, so "Reading Club, Inc." and "The Reading Club" are the same), and, for each state's file, the cities there it has funded with the first year it did. The foundation cards show "Gave every year from 2021 to 2024", "39% of its 2024 grantees were new to it" and "Its first grants to Palmetto came in 2024", a grants-by-year row, and a filter for each. None of this changes a score.
 
+## Coverage
+
+Federal grants cover the whole country, foundations cover every state, and state and county programs cover Florida only. "What the data covers" in the site's footer shows the foundation numbers state by state.
+
+`grantmatch/coverage.py` compares the IRS Exempt Organizations Business Master File with the state files after each foundation refresh:
+
+- **Registered:** private foundations based in the state (those required to file Form 990-PF).
+- **E-filed:** of those, a return in the IRS e-file index for the two newest filing years, which is what the refresh can read.
+- **Listed:** foundations in the state's file. A foundation is listed only when its latest return shows grants to organizations and it doesn't say it only funds preselected charities, so this is never meant to reach 100%.
+- **Giving here:** every listed funder based in the state or with grants there.
+
+Each refresh also writes `parsed.json` beside the state files: per state, how many returns it read and how many were listed, paid no grants, or fund only preselected charities. The report carries those counts once a refresh has run with them. `data/coverage.json` is the snapshot the site falls back to.
+
 ## Data
 
 A GitHub Action runs twice a day and pulls every posted and forecasted opportunity open to nonprofits (eligibility codes 12, 13, 25 and 99) from the public [Grants.gov API](https://www.grants.gov/api/api-guide) using `search2` and `fetchOpportunity`. No API key is needed. The cleaned file and the opportunity embeddings are published as `data-latest` release assets, and the app reads them from there. A snapshot in `data/` is the fallback. If the embedding model cannot load, the app falls back to TF-IDF similarity.
@@ -230,6 +243,7 @@ grantmatch/florida.py   Florida Catalog of State Financial Assistance
 grantmatch/local.py     county and city programs entered by hand (data/local-FL.json)
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
 grantmatch/history.py   each foundation's giving across five tax years
+grantmatch/coverage.py  registered foundations per state against what the state files hold
 grantmatch/rank_more.py foundation and Florida scoring
 grantmatch/store.py     private workspace storage (GitHub repo or local folder)
 grantmatch/workspace.py pipeline, organization facts, answer library, documents
