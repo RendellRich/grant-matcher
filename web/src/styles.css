@@ -461,3 +461,11 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .signin-head h2 { font: 650 1.25rem/1.3 var(--sans); margin: 0; }
 .signin .error { margin: 0; }
 .signin-alt { text-align: center; }
+
+/* Weekly email switch (weekly.tsx) */
+.weekly { display: grid; gap: .5rem; }
+.weekly p { margin: 0; }
+.weekly-h { font-size: 1rem; margin: 0; }
+.weekly-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.weekly-actions .btn { width: auto; }
+.warn-text { color: var(--caution); font-weight: 600; }
