@@ -158,6 +158,8 @@ const FIRST_POSSIBLE = 10;
 export function ResultList(p: {
   name: string; noun: string; entries: Entry[]; marked: Set<string>; onMark: (e: Entry) => void; action?: MarkAction;
   sorts?: [string, ((a: Entry, b: Entry) => number) | null][]; exports?: preact.ComponentChildren; narrowed?: boolean;
+  /** A preview's few results: the lock below says what else there is, so the list doesn't count itself. */
+  preview?: boolean;
 }) {
   const [sortIdx, setSortIdx] = useState(0);
   const good0 = p.entries.filter((e) => e.tier !== "Long shot");
@@ -204,7 +206,7 @@ export function ResultList(p: {
               <li key={e.key}><EntryView e={e} marked={p.marked.has(e.key)} onMark={p.onMark} action={p.action} id={`${p.name}-r${i + 1}`} /></li>
             ))}
           </ol>
-          <div class="list-end">
+          {p.preview ? null : <div class="list-end">
             <p id={`${p.name}-end`} tabIndex={-1} class="count" role={announce ? "status" : undefined}>
               {n < good.length
                 ? `Showing the top ${n.toLocaleString("en-US")} of ${good.length.toLocaleString("en-US")} strong and possible ${p.noun}.`
@@ -219,7 +221,7 @@ export function ResultList(p: {
                 Show the first {first} again
               </button>
             ) : null}
-          </div>
+          </div>}
           {p.exports}
         </>
       )}

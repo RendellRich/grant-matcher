@@ -10,12 +10,14 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "build:fn": "vite build --ssr ../supabase/functions/search/index.ts --outDir ../supabase/functions/search/dist --emptyOutDir --logLevel warn",
     "score-eto": "vite build --ssr scripts/score-eto.ts --outDir .score-eto --emptyOutDir --logLevel warn && node .score-eto/score-eto.js"
   },
   "dependencies": {
     "@fontsource-variable/public-sans": "^5.3.0",
     "@fontsource-variable/source-serif-4": "^5.3.1",
     "@huggingface/transformers": "^4.3.2",
+    "@supabase/supabase-js": "^2.119.2",
     "preact": "^11.2.0"
   },
   "devDependencies": {
