@@ -1,4 +1,4 @@
-# Billing, plans and the weekly email
+# Billing, plans, the weekly email and deadline reminders
 
 How paid plans work, where each piece lives, and how to take Grant Matcher from the Stripe sandbox to real payments.
 Nothing secret is in this file or anywhere in the repository.
@@ -12,7 +12,8 @@ Nothing secret is in this file or anywhere in the repository.
 | `stripe-webhook` function | `supabase/functions/stripe-webhook` | Checks Stripe's signature, then sets the account's plan from the subscription |
 | Shared rules | `supabase/functions/_shared/billing-core.ts` | Lookup keys, which statuses count as paid, the founding coupon prefix (tested in `web/test/billing.test.ts`) |
 | `weekly-email` function | `supabase/functions/weekly-email`, `web/src/server/digest.ts` | Emails each opted-in paid account its new strong matches once a week |
-| Weekly email switch | `web/src/weekly.tsx` | Turns the email on for the current profile, or off; the confirm-to-unsubscribe note |
+| `deadline-reminders` function | `supabase/functions/deadline-reminders`, `web/src/server/reminder-email.ts` | Emails each account with reminders on about shortlisted deadlines 14 and 3 days out |
+| Email switches | `web/src/weekly.tsx` | Turns the weekly email and deadline reminders on or off; keeps the saved shortlist dates in step; the confirm-to-turn-off note |
 | Database | `supabase/migrations/2026111920*`, `...21*`, `...22*`, `...23*` | `billing_events`, the tester flag, the weekly email columns and functions, the schedule |
 
 The plan an account has is decided only by the webhook (or by hand in SQL for a free comp). The page never sets it.
@@ -23,7 +24,7 @@ The plan an account has is decided only by the webhook (or by hand in SQL for a 
 | --- | --- | --- |
 | `STRIPE_SECRET_KEY` | billing, stripe-webhook | A restricted key (see below). `rk_test_` while testing, `rk_live_` when live |
 | `STRIPE_WEBHOOK_SECRET` | stripe-webhook | The webhook destination's signing secret (`whsec_`) |
-| `RESEND_API_KEY` | weekly-email | Resend, API Keys, sending access for solutionsbyrich.com |
+| `RESEND_API_KEY` | weekly-email, deadline-reminders | Resend, API Keys, sending access for solutionsbyrich.com (key `grant-matcher-weekly-email`) |
 
 Restricted key permissions: Write on Customers, Checkout Sessions and Customer portal; Read on Prices, Products and Subscriptions. Everything else None.
 In the Dashboard this is Create secret key, Building your own integration, Custom permissions.
@@ -34,7 +35,7 @@ In the Dashboard this is Create secret key, Building your own integration, Custo
 - **Modes never mix.** The webhook ignores test events when the key is live, and live events when the key is a test key.
 - **Each event once.** Webhook events are recorded in `billing_events` and a repeat is skipped. A failure returns 500 so Stripe retries.
 - **Paid means** plan `pro` or `consultant` with status `active`, `trialing` or `past_due` (Stripe is still retrying). After the last failed retry Stripe cancels the subscription and the account goes back to Free.
-- **The weekly email job** authenticates with a token the database makes for itself (`private.job_tokens`). It is read at call time and never written anywhere.
+- **The email jobs** authenticate with a token the database makes for itself (`private.job_tokens`). It is read at call time and never written anywhere.
 - **Unsubscribe** needs a POST: the email's link opens the page, which asks for one press, so mail scanners that open links can't turn it off. Mail apps' one-click unsubscribe POSTs straight to the function.
 
 ## Stripe setup (sandbox, done)
@@ -66,10 +67,14 @@ In the Dashboard this is Create secret key, Building your own integration, Custo
   - `seeded`: someone just turned the email on; the first email comes a week later.
   - `sent N`: an email went out with N new matches.
   - `failed`: see the function's logs.
+- Deadline reminder runs (every 10 minutes, 12:00 to 15:50 UTC): the same table. `none due` most of the time; `sent N` when N accounts got a reminder email.
+- What an account has saved for reminders: `select key, due, stage, sent14, sent3 from public.reminders where account_id = '...';`
 - Give a free comp: set `plan = 'consultant', status = 'active'` on the account. Test checkouts need `billing_tester = true`.
 
 ## Limits to know
 
 - The weekly email sends one account per run, so about 1,000 a week. Process more per run before passing that.
 - The first weekly email arrives a week after the email is turned on, and only if something new matched.
-- An account whose plan ends keeps its weekly email profile saved but gets no emails until it pays again.
+- An account whose plan ends keeps its weekly email profile and reminder dates saved but gets no emails until it pays again.
+- Deadline reminders go out once each: the two-week one any morning from 14 days out to 4 days out, the three-day one from 3 days out to the day itself. A changed deadline starts both over. Submitted grants drop off.
+- Reminders send up to 25 accounts per run, about 600 a morning.
