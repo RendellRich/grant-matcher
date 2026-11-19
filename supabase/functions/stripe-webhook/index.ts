@@ -9,7 +9,9 @@ import { accountPatch, HANDLED_EVENTS, INVOICE_EVENTS, RISK_EVENTS, SUBSCRIPTION
 const BASE = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const SIGNING = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2026-10-28.endive" as Stripe.LatestApiVersion, httpClient: Stripe.createFetchHttpClient() });
+const KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+// Stripe's library won't start without a key, so the endpoint still answers before the secrets are set.
+const stripe = KEY ? new Stripe(KEY, { apiVersion: "2026-10-28.endive" as Stripe.LatestApiVersion, httpClient: Stripe.createFetchHttpClient() }) : (null as unknown as Stripe);
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 const service = { Authorization: `Bearer ${SERVICE}`, apikey: SERVICE, "Content-Type": "application/json" };
 
@@ -72,6 +74,7 @@ function invoiceSubscription(inv: Stripe.Invoice): string | null {
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("POST only", { status: 405 });
+  if (!KEY || !SIGNING) return new Response("not set up", { status: 503 });
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
   let event: Stripe.Event;

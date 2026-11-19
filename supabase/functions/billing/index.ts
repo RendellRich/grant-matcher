@@ -15,7 +15,9 @@ const PUBLIC_KEY = (() => {
   try { return JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}").default ?? Deno.env.get("SUPABASE_ANON_KEY") ?? ""; } catch { return Deno.env.get("SUPABASE_ANON_KEY") ?? ""; }
 })();
 const ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "https://rendellrich.github.io,http://localhost:5173,http://localhost:4173").split(",").map((s) => s.trim());
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2026-10-28.endive" as Stripe.LatestApiVersion, httpClient: Stripe.createFetchHttpClient() });
+const KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+// Stripe's library won't start without a key, so the function still answers before the key is set.
+const stripe = KEY ? new Stripe(KEY, { apiVersion: "2026-10-28.endive" as Stripe.LatestApiVersion, httpClient: Stripe.createFetchHttpClient() }) : (null as unknown as Stripe);
 
 const service = { Authorization: `Bearer ${SERVICE}`, apikey: SERVICE, "Content-Type": "application/json" };
 
@@ -70,6 +72,7 @@ Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(origin) });
   if (req.method !== "POST") return reply(origin, 405, { error: "POST only" });
+  if (!KEY) return reply(origin, 503, { error: "Paid plans aren't open yet." });
   let body: { action?: string; plan?: string };
   try { body = await req.json(); } catch { return reply(origin, 400, { error: "Send an action" }); }
   try {
