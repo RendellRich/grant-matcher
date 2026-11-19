@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { PLANS_URL, search, signOut, watchSession, type FileLink, type Gate } from "./access";
 import {
-  loadCounties, loadExamples, loadFederal, loadFoundations, loadMeta, loadPrograms, programsFile,
+  loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
   type Example, type Meta, type Source,
 } from "./data";
 import { embedMission } from "./embed";
@@ -16,6 +17,7 @@ import {
   closeDate, fmtDate, scoreFederal,
   type FederalRec, type FloridaRec, type FoundationRec, type Profile,
 } from "./score";
+import { SignIn } from "./signin";
 import { EntryView, IconAlert, IconDownload, IconMark, ResultList, type MarkAction } from "./ui";
 import { embedParent, listen, loadedLabel, payloadFor, post, PROTOCOL, type Incoming, type LoadedFrom, type PipelineItem } from "./parent";
 import { markNew, markOrgNew, newSince, strongKeys, type Fresh, type OrgSeen } from "./seen";
@@ -89,6 +91,14 @@ export function App() {
   const [fed, setFed] = useState<Loaded<Source<FederalRec>>>({ state: "loading" });
   const [progs, setProgs] = useState<Record<string, Loaded<Source<FloridaRec>>>>({});
   const [fdn, setFdn] = useState<Record<string, Loaded<Source<FoundationRec>>>>({});
+  // The search gate (access.ts): a preview for visitors and accounts past their free searches, links to the
+  // data for everyone else. The data files load only from those links.
+  const [gate, setGate] = useState<Gate>({ state: "idle" });
+  const [checking, setChecking] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
+  const [signInOpen, setSignInOpen] = useState(false);
+  const versions = useRef<Record<string, string>>({});
+  useEffect(() => watchSession(setEmail), []);
 
   const [exampleKey, setExampleKey] = useState("literacy");
   const [loadedFrom, setLoadedFrom] = useState<LoadedFrom>("file");
@@ -138,7 +148,6 @@ export function App() {
       const f = exampleForm(first);
       setDraft(f); setApplied(f); setVector(first.vector);
     }).catch(() => setExamples({}));
-    loadFederal().then((d) => setFed({ state: "ready", data: d })).catch(() => setFed({ state: "error" }));
   }, []);
 
   const st = applied.state;
@@ -148,19 +157,36 @@ export function App() {
   const progFile = programsFile(meta, st);
   const hasProgs = Boolean(progFile);
   const fl: Loaded<Source<FloridaRec>> = progs[st] ?? { state: "loading" };
+
+  // Ask the gate whenever the search could change. It counts a search once, so refining one costs nothing.
+  const blankNow = isBlank(applied);
   useEffect(() => {
-    if (!meta || !progFile || progs[st]) return;
-    setProgs((m) => ({ ...m, [st]: { state: "loading" } }));
-    loadPrograms(progFile).then((d) => setProgs((m) => ({ ...m, [st]: { state: "ready", data: d } })))
-      .catch(() => setProgs((m) => ({ ...m, [st]: { state: "error" } })));
-  }, [meta, st]);
+    if (blankNow) { setGate({ state: "idle" }); setChecking(false); return; }
+    const ctl = new AbortController();
+    setChecking(true);
+    const timer = window.setTimeout(() => {
+      search(applied, vector, ctl.signal)
+        .then((g) => { if (!ctl.signal.aborted) { setGate(g); setChecking(false); } })
+        .catch(() => { if (!ctl.signal.aborted) { setGate({ state: "error", message: "Search is unavailable right now. Check your connection and try again." }); setChecking(false); } });
+    }, 250);
+    return () => { ctl.abort(); window.clearTimeout(timer); };
+  }, [applied, vector, email, blankNow]);
+
+  // With links, load (or reuse) the state's files. A new version of a file replaces the old one.
   useEffect(() => {
-    if (!meta || fdn[st]) return;
-    if (!meta.states.includes(st)) return;
-    setFdn((m) => ({ ...m, [st]: { state: "loading" } }));
-    loadFoundations(st).then((d) => setFdn((m) => ({ ...m, [st]: { state: "ready", data: d } })))
-      .catch(() => setFdn((m) => ({ ...m, [st]: { state: "error" } })));
-  }, [meta, st]);
+    if (gate.state !== "full") return;
+    const want = <T,>(key: string, link: FileLink | null | undefined, set: (l: Loaded<Source<T>>) => void) => {
+      if (!link || versions.current[key] === link.version) return;
+      versions.current[key] = link.version;
+      set({ state: "loading" });
+      loadLinked<T>(link).then((d) => set({ state: "ready", data: d })).catch(() => { versions.current[key] = ""; set({ state: "error" }); });
+    };
+    want<FederalRec>("fed", gate.files.fed, setFed);
+    want<FoundationRec>(`fdn-${st}`, gate.files.fdn, (l) => setFdn((m) => ({ ...m, [st]: l })));
+    want<FloridaRec>(`fl-${st}`, gate.files.fl, (l) => setProgs((m) => ({ ...m, [st]: l })));
+  }, [gate]);
+  const pv = gate.state === "preview" ? gate : null;
+  const full = gate.state === "full" ? gate : null;
 
   const [counties, setCounties] = useState<Record<string, Record<string, string[]> | null>>({});
   useEffect(() => {
@@ -215,11 +241,13 @@ export function App() {
   if (applied.funder_types.includes("federal")) lists.fed = fedEntries;
   if (applied.funder_types.some((t) => !["federal", "florida"].includes(t))) lists.fdn = fdnEntries;
   if (hasProgs && applied.funder_types.includes("florida")) lists.fl = flEntries;
-  const keys = Object.keys(lists) as SourceKey[];
+  // A preview brings its own counts; with the data here they come from the lists.
+  const keys = pv ? (Object.keys(pv.counts) as SourceKey[]) : (Object.keys(lists) as SourceKey[]);
   const count = (k: SourceKey, tier: string) => (lists[k] ?? []).filter((e) => e.tier === tier).length;
-  const strong = Object.fromEntries(keys.map((k) => [k, count(k, "Strong")])) as Record<SourceKey, number>;
-  const possible = Object.fromEntries(keys.map((k) => [k, count(k, "Possible")])) as Record<SourceKey, number>;
-  const ready = keys.every((k) => lists[k] !== null || (k === "fdn" && !meta?.states.includes(st)));
+  const strong = Object.fromEntries(keys.map((k) => [k, pv ? pv.counts[k]!.strong : count(k, "Strong")])) as Record<SourceKey, number>;
+  const possible = Object.fromEntries(keys.map((k) => [k, pv ? pv.counts[k]!.possible : count(k, "Possible")])) as Record<SourceKey, number>;
+  const missing = (k: SourceKey) => Boolean(full && !full.files[k]);
+  const ready = Boolean(pv) || (Boolean(full) && !checking && keys.every((k) => lists[k] !== null || missing(k) || (k === "fdn" && !meta?.states.includes(st))));
 
   // Most strong matches first; keep the order unless another source pulls ahead, so tabs don't shuffle under a reader.
   useEffect(() => {
@@ -385,7 +413,7 @@ export function App() {
 
   // ---------- render ----------
   const tabs: [string, string, number | null][] = [
-    ...shownOrder.map((k): [string, string, number | null] => [k, NOUN[k][0], lists[k] ? strong[k] + possible[k] : null]),
+    ...shownOrder.map((k): [string, string, number | null] => [k, NOUN[k][0], pv || lists[k] ? strong[k] + possible[k] : null]),
     ...(embedded ? [] : [["shortlist", "Shortlist", shortlist.items.length] as [string, string, number | null]]),
   ];
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -405,14 +433,25 @@ export function App() {
         <div class="band-inner">
           <div class="masthead">
             <p class="name">Grant Matcher</p>
-            {embedded ? null : (
-              <a class="short-count" href="#results" onClick={() => setTab("shortlist")}>
-                <IconMark on={shortlist.items.length > 0} />Shortlist <span class="num">{shortlist.items.length}</span>
-              </a>
-            )}
+            <div class="mast-links">
+              {embedded ? null : (
+                <a class="short-count" href="#results" onClick={() => setTab("shortlist")}>
+                  <IconMark on={shortlist.items.length > 0} />Shortlist <span class="num">{shortlist.items.length}</span>
+                </a>
+              )}
+              {email ? (
+                <span class="account">
+                  <span class="account-email">{email}</span>
+                  <button type="button" class="band-btn" onClick={() => void signOut()}>Sign out</button>
+                </span>
+              ) : (
+                <button type="button" class="band-btn" onClick={() => setSignInOpen(true)}>Sign in</button>
+              )}
+            </div>
           </div>
           <h1 class="answer" aria-live="polite">
             {blank ? "Describe your work to see which grants fit."
+              : gate.state === "error" ? gate.message
               : !ready ? "Ranking grants for this profile."
               : total ? <><strong>{n(total, "strong match", "strong matches")}</strong> for this profile: {listing}.</>
               : <><strong>No strong matches yet.</strong> {shownOrder.map((k) => n(possible[k], `possible ${NOUN[k][2]}`, `possible ${NOUN[k][1]}`)).join(", ")}. More specific key words usually help.</>}
@@ -484,11 +523,15 @@ export function App() {
           <Footer coverage={!!meta?.coverage} />
         </main>
       </div>
+      <SignIn open={signInOpen} onClose={() => setSignInOpen(false)} />
     </>
   );
 
+
   function panel(k: string) {
     if (k === "shortlist") return <ShortlistPanel list={shortlist} listed={listed} />;
+    if (pv) return previewPanel(k as SourceKey);
+    if (missing(k as SourceKey)) return <p class="note">This data isn't available right now. Try again in a few minutes.</p>;
     if (k === "fed") return federalPanel();
     if (k === "fdn") return foundationPanel();
     return floridaPanel();
@@ -641,6 +684,51 @@ export function App() {
   function fmtVisit(iso: string): string {
     const d = new Date(iso);
     return Number.isNaN(d.getTime()) ? "your last visit" : d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  }
+
+  /** A preview tab: the counts, the matches shown here, and what an account or Pro opens. */
+  function previewPanel(k: SourceKey) {
+    const c = pv!.counts[k] ?? { strong: 0, possible: 0 };
+    const shown = pv!.lists[k] ?? [];
+    const more = c.strong + c.possible - shown.length;
+    const caption = shown.length ? `The top ${shown.length === 1 ? "match" : `${shown.length} matches`} for this profile.`
+      : c.strong + c.possible && pv!.source ? `The top matches for this profile are on the ${NOUN[pv!.source][0]} tab.` : "";
+    return (
+      <>
+        {tally(k, caption)}
+        {shown.length ? <ResultList name={k} noun={NOUN[k][1]} entries={shown} preview {...markProps} /> : null}
+        {more > 0 ? lockCard(k, more, shown.length > 0) : null}
+      </>
+    );
+  }
+
+  function lockCard(k: SourceKey, more: number, someShown: boolean) {
+    const what = someShown ? n(more, `more ${NOUN[k][2]}`, `more ${NOUN[k][1]}`) : n(more, NOUN[k][2], NOUN[k][1]);
+    return (
+      <section class="lock" aria-labelledby={`lock-${k}`}>
+        <div class="lock-rows" aria-hidden="true"><span /><span /><span /></div>
+        <div class="lock-body">
+          {pv!.reason === "visitor" ? (
+            <>
+              <h3 id={`lock-${k}`}>{what} {more === 1 ? "matches" : "match"} this profile</h3>
+              <p>Make a free account to see the top 10 in each list. It's free, with no password: we email you a sign-in code.</p>
+              <div class="lock-actions">
+                <button type="button" class="btn primary" onClick={() => setSignInOpen(true)}>Make a free account</button>
+                <button type="button" class="link-btn" onClick={() => setSignInOpen(true)}>I have an account</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 id={`lock-${k}`}>{what} {more === 1 ? "matches" : "match"} this profile</h3>
+              <p>Free accounts see the top 10 in each list. Pro shows every match, with the filters, the downloads and the deadline calendar, and emails you new strong matches each week.</p>
+              <div class="lock-actions">
+                <a class="btn primary" href={PLANS_URL} target="_blank" rel="noopener">See Pro<span class="sr-only"> (opens in a new tab)</span></a>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+    );
   }
 
   function loading(what: string) {
@@ -988,7 +1076,7 @@ function BlankSteps() {
         <li>Add a few key words a matching grant would use.</li>
         <li>Set your state and, if you like, your cities or counties.</li>
       </ol>
-      <p>Then press Update matches. The first search downloads the matching model (about 67 MB) once; after that it runs right here in your browser, and your mission never leaves this device.</p>
+      <p>Then press Update matches. The first search downloads the matching model (about 67 MB) once; after that it reads your mission right here in your browser. Your profile is then sent to Grant Matcher's search server to rank the grants, and isn't saved there.</p>
     </div>
   );
 }
@@ -1042,7 +1130,7 @@ function Footer({ coverage }: { coverage: boolean }) {
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
       <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page. California data from the California Grants Portal, published by the California State Library.</p>
-      <p>Scores are a starting point for your own review, not a guarantee of eligibility. Matching runs in your browser; your mission and profile are never sent to a server.</p>
+      <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there; your shortlist stays in this browser.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>
   );

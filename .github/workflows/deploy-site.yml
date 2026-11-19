@@ -1,7 +1,9 @@
 name: Deploy site
 
-# Builds the static site in web/ with the latest data and publishes it to GitHub Pages.
-# Runs when the site or scoring code changes on main, and after each data refresh.
+# Builds the static site in web/ and publishes it to GitHub Pages. The grant data itself no longer ships with
+# the site: it is exported to export/, uploaded to the private Supabase bucket the search function reads
+# (grantmatch/server_data.py), and only the small public files (meta, examples, coverage, changes, counties)
+# are copied into the site. Runs when the site or scoring code changes on main, and after each data refresh.
 
 on:
   push:
@@ -12,6 +14,7 @@ on:
       - "grantmatch/display.py"
       - "grantmatch/embed.py"
       - "grantmatch/changes.py"
+      - "grantmatch/server_data.py"
       - ".github/workflows/deploy-site.yml"
   workflow_run:
     workflows: ["Refresh grant data", "Refresh Florida programs", "Refresh foundations", "Refresh funder websites"]
@@ -41,11 +44,27 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - name: Export the latest data for the browser
-        run: python -m grantmatch.export_web web/public/data
+      - name: Export the latest data
+        run: python -m grantmatch.export_web export
       - name: Note deadline and status changes since the last build
         # Public data only. ETO's CRM reads data/changes.json to flag grants it is pursuing (Phase 3).
-        run: python -m grantmatch.changes web/public/data --previous https://rendellrich.github.io/grant-matcher/data/changes.json
+        run: python -m grantmatch.changes export --previous https://rendellrich.github.io/grant-matcher/data/changes.json
+      - name: Upload the data to the private bucket
+        # The ingest function (supabase/functions/ingest) hands out one upload link per file. Without the two
+        # settings the bucket keeps its last upload and the site still works from it.
+        if: github.repository == 'RendellRich/grant-matcher' && github.ref == 'refs/heads/main'
+        env:
+          GM_INGEST_URL: ${{ vars.GM_INGEST_URL }}
+          GM_INGEST_TOKEN: ${{ secrets.GM_INGEST_TOKEN }}
+        run: |
+          python -m grantmatch.server_data slim export
+          if [ -n "$GM_INGEST_URL" ] && [ -n "$GM_INGEST_TOKEN" ]; then
+            python -m grantmatch.server_data upload export
+          else
+            echo "::warning::GM_INGEST_URL or GM_INGEST_TOKEN is not set, so the bucket keeps its last upload."
+          fi
+      - name: Copy the public files into the site
+        run: python -m grantmatch.server_data public export web/public/data
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -53,6 +72,9 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Build
         working-directory: web
+        env:
+          VITE_SUPABASE_URL: ${{ vars.GM_SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ vars.GM_SUPABASE_PUBLISHABLE_KEY }}
         run: |
           npm ci
           npm run model
@@ -72,7 +94,7 @@ jobs:
           ETO_SUPABASE_URL: ${{ secrets.ETO_SUPABASE_URL }}
           ETO_PUBLISHABLE_KEY: ${{ secrets.ETO_PUBLISHABLE_KEY }}
           ETO_GRANT_MATCHER_KEY: ${{ secrets.ETO_GRANT_MATCHER_KEY }}
-        run: npm run score-eto
+        run: npm run score-eto -- --data ../export
 
   deploy:
     needs: build

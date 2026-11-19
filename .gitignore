@@ -16,3 +16,7 @@ build/
 
 # Background scoring build (web/scripts/score-eto.ts)
 web/.score-eto/
+
+# Search function bundle (npm run build:fn in web/) and the exported data before upload
+supabase/functions/*/dist/
+export/

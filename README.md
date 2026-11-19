@@ -9,7 +9,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Florida state programs:** state programs open to nonprofits from Florida's Catalog of State Financial Assistance, with legislative earmarks filtered out
 - **County programs:** county grant programs for nonprofits, such as Manatee County's children's services funding, entered by hand from each program's own page
 
-**Try it:** [rendellrich.github.io/grant-matcher](https://rendellrich.github.io/grant-matcher/). It runs in your browser: your mission is never sent to a server.
+**Try it:** [rendellrich.github.io/grant-matcher](https://rendellrich.github.io/grant-matcher/). Visitors see the top 3 matches, free accounts the top 10 in each list, and Pro every match.
 
 > This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.
 
@@ -50,11 +50,11 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 
 ## How it runs
 
-The public site is a static site in `web/` (Vite, TypeScript, Preact) on GitHub Pages, with no server of its own.
+The public site is a static site in `web/` (Vite, TypeScript, Preact) on GitHub Pages. Accounts, the search gate and the data live in a Supabase project.
 
-- **Matching happens in the browser.** The first time you search with your own mission, the page downloads the same embedding model the data pipeline uses (BAAI/bge-small-en-v1.5, about 67 MB, once) and runs it on your device with [transformers.js](https://github.com/huggingface/transformers.js). Your mission, key words and profile never leave the page. The three examples are scored without the download.
+- **Matching happens in the browser.** The first time you search with your own mission, the page downloads the same embedding model the data pipeline uses (BAAI/bge-small-en-v1.5, about 67 MB, once) and runs it on your device with [transformers.js](https://github.com/huggingface/transformers.js). The profile and that vector then go to the search function (`supabase/functions/search`), which ranks visitors and free accounts on the server with the same code and returns the top matches; Pro accounts get short-lived links to the data and rank in the browser. Profiles are not stored; a signed-in search is logged only as a hash. The three examples are scored without the download.
 - **The scoring is the Python scoring, ported.** `web/src/score.ts` is a line-by-line TypeScript port of `grantmatch/match.py` and `grantmatch/rank_more.py`. A parity test scores 18 example profiles in both, including the checkbox groups, fiscal sponsor, online nationwide and young organization cases, and requires the same results, reasons and cautions.
-- **The data is published with the site.** After each refresh, `grantmatch/export_web.py` writes the records and their embeddings (as float16) for the browser, and the deploy workflow rebuilds the site.
+- **The data lives in a private bucket.** After each refresh, `grantmatch/export_web.py` writes the records and their embeddings (as float16), the deploy workflow uploads them to the Supabase bucket `data` through the ingest function (`grantmatch/server_data.py`), and only the small public files (meta, examples, coverage, changes, counties) ship with the site.
 
 ## Design and accessibility
 
