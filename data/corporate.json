@@ -65,6 +65,38 @@
         "checked": "2026-11-18"
       }
     },
+    {
+      "ein": "912144510",
+      "company": "Albertsons Companies",
+      "home": "CA",
+      "serves": null,
+      "program": {
+        "name": "Albertsons Companies Foundation grants",
+        "who": "Nonprofits in communities where Albertsons Companies stores operate (Albertsons, Safeway, Vons, Jewel-Osco and others). The online system sends each request to the regional team. Naming a store employee as a sponsor strengthens a request.",
+        "amount": "Not stated",
+        "when": "Requests outside a request for proposals can go in any time, for limited funds. Nourishing Neighbors requests for proposals use an invitation code. Answers come about six weeks after a cycle closes.",
+        "how": "Online application from the foundation's community page. Check the Nourishing Neighbors page first for a current request for proposals.",
+        "focus": "Hunger relief through Nourishing Neighbors, plus local community needs",
+        "url": "https://www.albertsonscompanies.com/our-impact/community/overview/default.aspx",
+        "checked": "2026-11-19"
+      }
+    },
+    {
+      "ein": "311192929",
+      "company": "Kroger",
+      "home": "OH",
+      "serves": null,
+      "program": {
+        "name": "Kroger Co. Foundation grants",
+        "who": "501(c)(3) nonprofits in communities Kroger and its stores serve. Request from one store brand only. Funding isn't guaranteed, and Kroger may give a different amount than asked.",
+        "amount": "Not stated",
+        "when": "Foundation grants are reviewed quarterly; the portal shows the next deadline. Allow about 12 weeks.",
+        "how": "Create an account at communitygifts.com and choose Foundation Grant as the request type.",
+        "focus": "Zero Hunger | Zero Waste, health and nutrition, and stronger communities",
+        "url": "https://www.thekrogerco.com/community/",
+        "checked": "2026-11-19"
+      }
+    },
     {"ein": "581586283", "company": "Duke Energy", "home": "NC", "serves": null},
     {"ein": "650031452", "company": "NextEra Energy and FPL", "home": "FL", "serves": null},
     {"ein": "882162851", "company": "Jabil", "home": "FL", "serves": null},
@@ -72,6 +104,27 @@
     {"ein": "431353948", "company": "AT&T", "home": "TX", "serves": null},
     {"ein": "366116535", "company": "Allstate", "home": "IL", "serves": null},
     {"ein": "416017088", "company": "Target", "home": "MN", "serves": null},
-    {"ein": "200721133", "company": "Bank of America", "home": "NC", "serves": null}
+    {"ein": "200721133", "company": "Bank of America", "home": "NC", "serves": null},
+    {"ein": "366110423", "company": "State Farm", "home": "IL", "serves": null},
+    {"ein": "030300865", "company": "Ben & Jerry's", "home": "VT", "serves": null},
+    {"ein": "436044736", "company": "Bayer", "home": "MO", "serves": null},
+    {"ein": "274516157", "company": "Dick's Sporting Goods", "home": "PA", "serves": null},
+    {"ein": "942674980", "company": "Clorox", "home": "CA", "serves": null},
+    {"ein": "346555476", "company": "Sherwin-Williams", "home": "OH", "serves": null},
+    {"ein": "316022301", "company": "Nationwide", "home": "OH", "serves": null},
+    {"ein": "953255038", "company": "Toyota", "home": "TX", "serves": null},
+    {"ein": "222531774", "company": "Subaru", "home": "NJ", "serves": null},
+    {"ein": "411367441", "company": "Wells Fargo", "home": "MN", "serves": null},
+    {"ein": "251202255", "company": "PNC", "home": "PA", "serves": null},
+    {"ein": "411784382", "company": "Best Buy", "home": "MN", "serves": null},
+    {"ein": "843668757", "company": "Tractor Supply", "home": "TN", "serves": null},
+    {"ein": "410694716", "company": "Hormel", "home": "MN", "serves": null},
+    {"ein": "582509396", "company": "Aflac", "home": "GA", "serves": null},
+    {"ein": "611004763", "company": "Humana", "home": "KY", "serves": null},
+    {"ein": "581574705", "company": "Coca-Cola", "home": "GA", "serves": null},
+    {"ein": "431262762", "company": "Enterprise Holdings", "home": "MO", "serves": null},
+    {"ein": "260628722", "company": "Hyundai", "home": "CA", "serves": null},
+    {"ein": "311746458", "company": "Cardinal Health", "home": "OH", "serves": null},
+    {"ein": "953263647", "company": "Mattel", "home": "CA", "serves": null}
   ]
 }
