@@ -126,7 +126,7 @@ export function takeUpgradedParam(): boolean {
 }
 
 /** The account's weekly email of new strong matches (paid plans). */
-export interface DigestInfo { on: boolean; sent_at?: string | null; profile?: unknown }
+export interface DigestInfo { on: boolean; sent_at?: string | null; profile?: unknown; reminders?: boolean; reminder_count?: number }
 
 export async function myDigest(): Promise<DigestInfo | null> {
   if (!supabase) return null;
@@ -142,22 +142,36 @@ export async function saveDigest(form: unknown, vector: number[] | null, on: boo
   return { info: data as DigestInfo };
 }
 
-/** The token from a weekly email's "Turn it off" link (?weekly-off=), taken out of the address bar. */
-export function takeWeeklyOffParam(): string | null {
+/** Which email a "Turn it off" link was for, and its token (?weekly-off= or ?reminders-off=), taken out of the
+ *  address bar. */
+export type EmailKind = "weekly" | "reminders";
+export function takeEmailOffParam(): { kind: EmailKind; token: string } | null {
   try {
     const url = new URL(window.location.href);
-    const t = url.searchParams.get("weekly-off");
-    if (!t) return null;
-    url.searchParams.delete("weekly-off");
-    history.replaceState(null, "", url.toString());
-    return /^[0-9a-f-]{36}$/i.test(t) ? t : null;
+    for (const kind of ["weekly", "reminders"] as const) {
+      const t = url.searchParams.get(`${kind}-off`);
+      if (!t) continue;
+      url.searchParams.delete(`${kind}-off`);
+      history.replaceState(null, "", url.toString());
+      return /^[0-9a-f-]{36}$/i.test(t) ? { kind, token: t } : null;
+    }
+    return null;
   } catch { return null; }
 }
 
-/** Turns the weekly email off for the address the link was sent to. */
-export async function weeklyOff(token: string): Promise<boolean> {
+/** Turns one email off for the address the link was sent to. */
+export async function emailOff(kind: EmailKind, token: string): Promise<boolean> {
+  const fn = kind === "weekly" ? "weekly-email" : "deadline-reminders";
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/weekly-email?off=${encodeURIComponent(token)}`, { method: "POST" });
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}?off=${encodeURIComponent(token)}`, { method: "POST" });
     return res.ok;
   } catch { return false; }
+}
+
+/** Turns deadline reminders on with these shortlisted grants (replacing the last set), or off. */
+export async function saveReminders(on: boolean, items: unknown[]): Promise<{ info?: DigestInfo; error?: string }> {
+  if (!supabase) return { error: "Sign in first." };
+  const { data, error } = await supabase.rpc("set_reminders", { p_on: on, p_items: on ? items : [] });
+  if (error) return { error: error.message.includes("Pro") ? "Deadline reminders come with Pro." : "Couldn't save that. Try again in a minute." };
+  return { info: data as DigestInfo };
 }
