@@ -47,6 +47,53 @@ TARGETED = [
     (re.compile(r"\bindemnity\b", re.I),
      "Insurance for museum exhibitions, not a cash grant", 35),
 ]
+# A title that names one state or territory is usually for groups there ("Centers for Independent Living - Guam").
+STATE_NAMES = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California", "CO": "Colorado",
+    "CT": "Connecticut", "DC": "District of Columbia", "DE": "Delaware", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii",
+    "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana",
+    "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi",
+    "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey",
+    "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
+    "OR": "Oregon", "PA": "Pennsylvania", "PR": "Puerto Rico", "RI": "Rhode Island", "SC": "South Carolina",
+    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont", "VA": "Virginia",
+    "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming",
+}
+# Washington alone is too often a person or the capital, so only "Washington State" counts.
+PLACE_NAMES = sorted({*(v for k, v in STATE_NAMES.items() if k != "WA"), "Washington State", "Guam", "American Samoa",
+                      "Virgin Islands", "Northern Mariana Islands", "Palau", "Micronesia", "Marshall Islands"},
+                     key=lambda n: (-len(n), n))
+PLACE = re.compile(r"\b(" + "|".join(re.escape(n) for n in PLACE_NAMES) + r")\b")
+PLACE_PENALTY = 25
+
+
+def other_places(title: str, state: str) -> list[str]:
+    """States or territories a title names, when none of them is the profile's own state."""
+    if not state:
+        return []
+    found = list(dict.fromkeys(PLACE.findall(title)))
+    home = STATE_NAMES.get(state, "")
+    home_names = {home, "Washington State"} if state == "WA" else {home}
+    return [] if not found or home_names & set(found) else found
+
+
+# Place names in a mission ("Manatee and Sarasota counties") pull the meaning model toward unrelated programs
+# (Manatee Management & Care), so the text it reads swaps them for "the county". Location is scored elsewhere.
+# A capitalized word that begins a sentence ("In", "Serving") is not part of the name.
+_LEAD = r"(?!(?:In|We|Our|Serving|Across|Throughout|For|Of|At|To|From|With|Within|The|And)\b)"
+_NAME = _LEAD + r"[A-Z][\w.'-]*(?:\s+" + _LEAD + r"[A-Z][\w.'-]*)*"
+COUNTY_PHRASE = re.compile(_NAME + r"(?:\s*,\s*(?:and\s+|&\s+)?" + _NAME + r"|\s+(?:and|&)\s+" + _NAME + r")*"
+                           r"\s+(?:County|Counties|county|counties|Parish|Parishes|parish|parishes)\b")
+
+
+def query_text(mission: str, keywords: str, cities: str = "") -> str:
+    """The text the meaning model reads: the mission and key words, with county and typed city names taken out."""
+    text = COUNTY_PHRASE.sub("the county", mission)
+    for city in sorted((c.strip() for c in cities.split(",") if len(c.strip()) >= 3), key=len, reverse=True):
+        text = re.sub(r"\b" + re.escape(city) + r"\b", "", text, flags=re.I)
+    return re.sub(r"\s+", " ", text).strip() + " " + keywords
+
+
 RESEARCH_TITLE = re.compile(r"\b(research|investigators?|scientists?|fellowships?|clinical trials?)\b", re.I)
 # Embedding similarity is judged against the mission's own baseline (its median over all grants):
 # a grant this far above the median earns full mission points.
@@ -77,6 +124,7 @@ class Profile:
     year_founded: int | None = None
     # Words from the ages and populations choices: they describe who is served, not the work, so they count half.
     minor_keywords: list[str] = field(default_factory=list)
+    state: str = ""  # two-letter code; a grant whose title names only other states or territories loses points
 
 
 def load_frame(records: list[dict]) -> pd.DataFrame:
@@ -235,6 +283,10 @@ def score(df: pd.DataFrame, p: Profile, semantic: dict[str, float] | None = None
                 points -= penalty
                 cautions.append(note)
                 break
+        places = other_places(r["title"], p.state)
+        if places:
+            points -= PLACE_PENALTY
+            cautions.append("Appears limited to " + " and ".join(places))
 
         if r["status"] == "forecasted":
             due = f"estimated due {r['close']:%b %d, %Y}" if pd.notna(r["close"]) and r["close"] else "dates not set yet"

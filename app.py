@@ -20,6 +20,7 @@ from grantmatch import ui_workspace as uiw
 from grantmatch import workspace as wsp
 from grantmatch.store import GitHubStore, LocalStore, StoreError
 from grantmatch.match import BUDGET_BANDS, CATEGORY_NAMES, Profile, current_band, _money, load_frame, score, to_ics
+from grantmatch.match import query_text as make_query_text
 from grantmatch.rank_more import score_florida, score_foundations
 
 RELEASE = "https://github.com/RendellRich/grant-matcher/releases/download/data-latest/"
@@ -850,9 +851,9 @@ profile = Profile(
     mission=mission,
     keywords=[k.strip() for k in keywords.split(",") if k.strip()],
     has_501c3=has_501c3, budget_band=budget_band, can_cost_share=can_cost_share, categories=categories,
-    include_forecasted=include_forecasted, min_days_left=min_days,
+    include_forecasted=include_forecasted, min_days_left=min_days, state=state,
 )
-query_text = mission + " " + keywords
+query_text = make_query_text(mission, keywords, cities)
 has_kw = bool(profile.keywords)
 city_list = [c for c in cities.split(",") if c.strip()]
 KINDS_ALL = ["Private foundation", "Community foundation", "Public foundation", "United Way or federated fund"]

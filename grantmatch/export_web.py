@@ -379,7 +379,8 @@ def golden(out: Path, examples: dict, path: Path) -> None:
                         has_501c3=spec["has_501c3"], budget_band=spec["budget_band"], can_cost_share=spec["can_cost_share"],
                         categories=spec["categories"], include_forecasted=spec["include_forecasted"],
                         min_days_left=spec["min_days_left"], today=GOLDEN_DAY, fiscal_sponsor=spec["fiscal_sponsor"],
-                        delivery=spec["delivery"], year_founded=spec["year_founded"], minor_keywords=spec["minor_keywords"])
+                        delivery=spec["delivery"], year_founded=spec["year_founded"], minor_keywords=spec["minor_keywords"],
+                        state=spec["state"])
             cities = [c for c in spec["cities"].split(",") if c.strip()]
             cases.append({
                 "name": f"{key}-{n}", "example": key, "spec": spec,
