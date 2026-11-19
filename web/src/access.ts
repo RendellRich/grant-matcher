@@ -9,7 +9,7 @@ import type { Counts } from "./server/preview";
 
 // Both are public by design: the publishable key only lets the page call what row level security allows.
 export const SUPABASE_URL: string = import.meta.env.VITE_SUPABASE_URL || "https://lthfecwgvpekrjjqszof.supabase.co";
-export const SUPABASE_KEY: string = import.meta.env.VITE_SUPABASE_KEY || "";
+export const SUPABASE_KEY: string = import.meta.env.VITE_SUPABASE_KEY || "sb_publishable_S2pcGw5_agbrzxP5u-JKvQ_8xcHBIqz";
 /** Where the plans and the waitlist are. */
 export const PLANS_URL = "https://solutionsbyrich.com/grant-matcher/";
 
