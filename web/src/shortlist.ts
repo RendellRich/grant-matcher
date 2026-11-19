@@ -154,3 +154,17 @@ export function shortlistIcs(items: Item[], listed: Listed, today: Date, stamp: 
   lines.push("END:VCALENDAR");
   return lines.join("\r\n") + "\r\n";
 }
+
+/** What deadline reminders need for each shortlisted grant not yet submitted whose deadline is today or later. */
+export interface ReminderItem { key: string; title: string; url: string; source: string; stage: Stage; due: string }
+export function reminderItems(items: Item[], listed: Listed, today: Date, max = 200): ReminderItem[] {
+  const out: ReminderItem[] = [];
+  for (const x of byDeadline(items, listed)) {
+    if (x.stage === "submitted") continue;
+    const d = deadline(x, listed);
+    if (!d?.date || d.gone || daysUntil(d.date, today) < 0) continue;
+    out.push({ key: x.key, title: x.title, url: x.url || "", source: x.source, stage: x.stage, due: d.date });
+    if (out.length >= max) break;
+  }
+  return out;
+}

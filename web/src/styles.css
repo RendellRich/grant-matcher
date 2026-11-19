@@ -466,6 +466,7 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .weekly { display: grid; gap: .5rem; }
 .weekly p { margin: 0; }
 .weekly-h { font-size: 1rem; margin: 0; }
+.weekly-h2 { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--rule, currentColor); }
 .weekly-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 .weekly-actions .btn { width: auto; }
 .warn-text { color: var(--caution); font-weight: 600; }
