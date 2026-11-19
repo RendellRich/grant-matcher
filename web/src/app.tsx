@@ -97,8 +97,10 @@ export function App() {
   const [checking, setChecking] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [signInOpen, setSignInOpen] = useState(false);
+  // False until the saved sign-in has been read, so a signed-in visitor isn't asked to sign in while it loads.
+  const [sessionKnown, setSessionKnown] = useState(false);
   const versions = useRef<Record<string, string>>({});
-  useEffect(() => watchSession(setEmail), []);
+  useEffect(() => watchSession((e) => { setEmail(e); setSessionKnown(true); }), []);
   // Billing: a plan picked on the pricing page waits through sign-in; coming back from Stripe, the page asks
   // again a few times until the webhook has switched the plan on.
   const [billNote, setBillNote] = useState<{ ok: boolean; text: string } | null>(null);
@@ -119,12 +121,13 @@ export function App() {
   }
   useEffect(() => {
     const plan = pendingUpgrade.current;
-    if (!plan) return;
+    if (!plan || !sessionKnown) return;
     if (!email) { setSignInOpen(true); return; }
+    setSignInOpen(false);
     pendingUpgrade.current = null;
     clearUpgrade();
     void upgrade(plan);
-  }, [email]);
+  }, [email, sessionKnown]);
   useEffect(() => {
     if (upgraded.current) setBillNote({ ok: true, text: "Thanks for upgrading. Your full results will appear here in a few seconds." });
   }, []);
