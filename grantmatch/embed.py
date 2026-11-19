@@ -62,7 +62,7 @@ def main() -> None:
     limit = 2000
     if kind == "federal":
         records, key, doc = payload["opportunities"], "id", doc_text
-    elif kind == "florida":
+    elif kind in ("florida", "programs"):  # any state's programs (grantmatch/florida.py, california.py)
         records, key, doc = payload["programs"], "id", florida_doc
     elif kind == "foundations":
         records, key, doc, limit = payload["foundations"], "ein", foundation_doc, 1000

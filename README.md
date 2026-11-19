@@ -154,7 +154,12 @@ Foundations that check the box saying they only fund preselected organizations a
 
 Florida's Department of Financial Services keeps the Catalog of State Financial Assistance, a list of every state program that pays money to local governments, nonprofits, and businesses. Many entries are money the Legislature set aside for a named organization; those are flagged and hidden by default. The catalog lists programs rather than open calls, so each result links to the agency for its next application window.
 
-## County programs
+## California state grants
+
+California's agencies post every grant and loan opportunity to the [California Grants Portal](https://www.grants.ca.gov/), which the State Library publishes as public-domain open data, updated daily. `grantmatch/california.py` reads that file and keeps the open and forecasted calls, in the same fields as Florida's programs so the same scorer reads them. Unlike Florida's catalog these are open calls, so each record also carries its open date, deadline, required match, whether it is a loan, and how the money is paid (most pay by reimbursement).
+
+The data is refreshed daily and published with the release. The site does not show it yet: the state tab still follows Florida only.
+
 
 No public catalog lists county and city grants, so they are kept by hand in `data/local-FL.json`, one entry per program, from the program's own page: the counties it serves, who can apply, whether it requires 501(c)(3) status, the application window when there is one, and the date the page was checked. `grantmatch/local.py` checks every entry (a bad date, an unknown county or a repeated name stops the export) and adds them to the Florida tab as county programs, keyed `fl:local-<slug>`. They score like state programs, with two more rules: points off when your cities are outside the county, and when the program requires 501(c)(3) status you don't have yet. Word rarity and the similarity median are still measured on the state programs alone, so adding or editing an entry never changes a state program's score. The weekly website check reads each program's page, and its closing date goes into `changes.json` like a federal deadline.
 
@@ -192,6 +197,7 @@ A GitHub Action runs twice a day and pulls every posted and forecasted opportuni
 | Grants.gov (`search2`, `fetchOpportunity`) | twice a day | `refresh-data.yml` |
 | IRS Form 990-PF e-file XML ([Form 990 series downloads](https://www.irs.gov/charities-non-profits/form-990-series-downloads)), latest return per foundation, split by state, every state | monthly | `refresh-foundations.yml` |
 | IRS Form 990 Schedule I for organizations the [Exempt Organizations Business Master File](https://www.irs.gov/charities-non-profits/exempt-organizations-business-master-file-extract-eo-bmf) codes T31 (community foundations), T30 (public foundations), and T70 (United Ways and federated funds) | monthly | `refresh-foundations.yml` |
+| [California Grants Portal](https://data.ca.gov/dataset/california-grants-portal) open data, open and forecasted calls | daily | `refresh-california.yml` |
 | Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
 | Each foundation's own website (the home page and the grants or apply page it links to), for an open cycle, a deadline ahead, an application link, or a note that it isn't taking requests | weekly | `refresh-websites.yml` |
 
@@ -240,6 +246,7 @@ grantmatch/match.py     federal scoring, reasons, calendar export
 grantmatch/foundations.py  IRS 990-PF parsing, split by state
 grantmatch/community.py IRS 990 Schedule I for community foundations and United Ways
 grantmatch/florida.py   Florida Catalog of State Financial Assistance
+grantmatch/california.py  California Grants Portal open calls
 grantmatch/local.py     county and city programs entered by hand (data/local-FL.json)
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
 grantmatch/history.py   each foundation's giving across five tax years
