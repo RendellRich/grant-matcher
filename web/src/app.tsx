@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { PLANS_URL, search, signOut, watchSession, type FileLink, type Gate } from "./access";
+import { billing, clearUpgrade, isPaid, PLANS_URL, search, signOut, takeUpgradedParam, takeUpgradeParam, watchSession, type FileLink, type Gate } from "./access";
 import {
   loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
   type Example, type Meta, type Source,
@@ -97,8 +97,40 @@ export function App() {
   const [checking, setChecking] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [signInOpen, setSignInOpen] = useState(false);
+  // False until the saved sign-in has been read, so a signed-in visitor isn't asked to sign in while it loads.
+  const [sessionKnown, setSessionKnown] = useState(false);
   const versions = useRef<Record<string, string>>({});
-  useEffect(() => watchSession(setEmail), []);
+  useEffect(() => watchSession((e) => { setEmail(e); setSessionKnown(true); }), []);
+  // Billing: a plan picked on the pricing page waits through sign-in; coming back from Stripe, the page asks
+  // again a few times until the webhook has switched the plan on.
+  const [billNote, setBillNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [billBusy, setBillBusy] = useState(false);
+  const [recheck, setRecheck] = useState(0);
+  const pendingUpgrade = useRef(takeUpgradeParam());
+  const upgraded = useRef(takeUpgradedParam());
+  async function upgrade(plan: "pro" | "consultant" = "pro") {
+    if (!email) { pendingUpgrade.current = plan; try { sessionStorage.setItem("gm-upgrade", plan); } catch { /* */ } setSignInOpen(true); return; }
+    setBillBusy(true); setBillNote(null);
+    const problem = await billing("checkout", plan);
+    if (problem) { setBillBusy(false); setBillNote({ ok: false, text: problem }); }
+  }
+  async function managePlan() {
+    setBillBusy(true); setBillNote(null);
+    const problem = await billing("portal");
+    if (problem) { setBillBusy(false); setBillNote({ ok: false, text: problem }); }
+  }
+  useEffect(() => {
+    const plan = pendingUpgrade.current;
+    if (!plan || !sessionKnown) return;
+    if (!email) { setSignInOpen(true); return; }
+    setSignInOpen(false);
+    pendingUpgrade.current = null;
+    clearUpgrade();
+    void upgrade(plan);
+  }, [email, sessionKnown]);
+  useEffect(() => {
+    if (upgraded.current) setBillNote({ ok: true, text: "Thanks for upgrading. Your full results will appear here in a few seconds." });
+  }, []);
 
   const [exampleKey, setExampleKey] = useState("literacy");
   const [loadedFrom, setLoadedFrom] = useState<LoadedFrom>("file");
@@ -170,7 +202,7 @@ export function App() {
         .catch(() => { if (!ctl.signal.aborted) { setGate({ state: "error", message: "Search is unavailable right now. Check your connection and try again." }); setChecking(false); } });
     }, 250);
     return () => { ctl.abort(); window.clearTimeout(timer); };
-  }, [applied, vector, email, blankNow]);
+  }, [applied, vector, email, blankNow, recheck]);
 
   // With links, load (or reuse) the state's files. A new version of a file replaces the old one.
   useEffect(() => {
@@ -187,6 +219,15 @@ export function App() {
   }, [gate]);
   const pv = gate.state === "preview" ? gate : null;
   const full = gate.state === "full" ? gate : null;
+  const plan = (full ?? pv)?.plan ?? null;
+  // After checkout, ask again every few seconds (up to about half a minute) until the plan shows as paid.
+  useEffect(() => {
+    if (!upgraded.current || !email) return;
+    if (full) { upgraded.current = false; setBillNote({ ok: true, text: "Your plan is active. Every match is open now." }); return; }
+    if (recheck >= 10) { upgraded.current = false; setBillNote({ ok: false, text: "Your payment went through, but the plan hasn't switched on yet. Reload the page in a minute, or email ren@solutionsbyrich.com." }); return; }
+    const t = window.setTimeout(() => setRecheck((n) => n + 1), 3000);
+    return () => window.clearTimeout(t);
+  }, [gate, email]);
 
   const [counties, setCounties] = useState<Record<string, Record<string, string[]> | null>>({});
   useEffect(() => {
@@ -442,6 +483,9 @@ export function App() {
               {email ? (
                 <span class="account">
                   <span class="account-email">{email}</span>
+                  {embedded ? null : isPaid(plan)
+                    ? <button type="button" class="band-btn" disabled={billBusy} onClick={() => void managePlan()}>Manage plan</button>
+                    : <button type="button" class="band-btn" disabled={billBusy} onClick={() => void upgrade("pro")}>Upgrade</button>}
                   <button type="button" class="band-btn" onClick={() => void signOut()}>Sign out</button>
                 </span>
               ) : (
@@ -481,6 +525,7 @@ export function App() {
             </div>
           ) : null}
           {embedded && sentNote && !sentNote.ok ? <p class="toast warn" role="alert">{sentNote.text}</p> : null}
+          {billNote ? <p class={`note${billNote.ok ? "" : " warn-note"}`} role={billNote.ok ? "status" : "alert"}>{billNote.text}</p> : null}
           {!embedded && dueSoon.length && tab !== "shortlist" ? (
             <p class="note due-soon">
               <strong>{dueSoon.length === 1 ? "1 grant on your shortlist is" : `${dueSoon.length} grants on your shortlist are`} due within a week</strong>
@@ -722,7 +767,8 @@ export function App() {
               <h3 id={`lock-${k}`}>{what} {more === 1 ? "matches" : "match"} this profile</h3>
               <p>Free accounts see the top 10 in each list. Pro shows every match, with the filters, the downloads and the deadline calendar, and emails you new strong matches each week.</p>
               <div class="lock-actions">
-                <a class="btn primary" href={PLANS_URL} target="_blank" rel="noopener">See Pro<span class="sr-only"> (opens in a new tab)</span></a>
+                <button type="button" class="btn primary" disabled={billBusy} onClick={() => void upgrade("pro")}>{billBusy ? "Opening checkout" : "Get Pro, $39 a month"}</button>
+                <a class="link-btn" href={PLANS_URL} target="_blank" rel="noopener">Compare plans<span class="sr-only"> (opens in a new tab)</span></a>
               </div>
             </>
           )}

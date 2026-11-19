@@ -76,3 +76,51 @@ export function watchSession(on: (email: string | null) => void): () => void {
   const { data } = supabase.auth.onAuthStateChange((_event, s) => on(s?.user.email ?? null));
   return () => data.subscription.unsubscribe();
 }
+
+/** Starts a Pro or Consultant checkout, or opens the billing portal, and goes there. Returns an error to show. */
+export async function billing(action: "checkout" | "portal", plan?: "pro" | "consultant"): Promise<string | null> {
+  const session = await currentSession();
+  if (!session) return "Sign in first.";
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/billing`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ action, plan }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.url) return body.error ?? "Billing is unavailable right now. Try again in a minute.";
+    window.location.assign(body.url);
+    return null;
+  } catch {
+    return "Billing is unavailable right now. Check your connection and try again.";
+  }
+}
+
+export const isPaid = (plan: string | null | undefined) => plan === "pro" || plan === "consultant";
+
+/** A plan the person picked on the pricing page (?upgrade=pro), kept through sign-in. */
+export function takeUpgradeParam(): "pro" | "consultant" | null {
+  try {
+    const url = new URL(window.location.href);
+    const p = url.searchParams.get("upgrade");
+    if (p === "pro" || p === "consultant") {
+      sessionStorage.setItem("gm-upgrade", p);
+      url.searchParams.delete("upgrade");
+      history.replaceState(null, "", url.toString());
+    }
+    const saved = sessionStorage.getItem("gm-upgrade");
+    return saved === "pro" || saved === "consultant" ? saved : null;
+  } catch { return null; }
+}
+export function clearUpgrade(): void { try { sessionStorage.removeItem("gm-upgrade"); } catch { /* */ } }
+
+/** True once, right after Stripe sends someone back from a finished checkout (?upgraded=1). */
+export function takeUpgradedParam(): boolean {
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("upgraded") !== "1") return false;
+    url.searchParams.delete("upgraded");
+    history.replaceState(null, "", url.toString());
+    return true;
+  } catch { return false; }
+}
