@@ -171,6 +171,30 @@ def tidy_program(rec: dict) -> dict:
     return rec
 
 
+# States besides Florida with their own adapter: the data file's name, where it comes from, and the label
+# the site puts before each call's number.
+STATE_PROGRAMS = {
+    "CA": {"file": "california", "source": "California Grants Portal", "catalog": "Grants Portal"},
+}
+
+
+def program_vectors(records: list[dict], raw: bytes | None) -> tuple[list[str], np.ndarray]:
+    """Vectors for every record, in record order. The published vectors are used where they exist; a record
+    without one (the vectors file is missing, or older than the records) is embedded here."""
+    from .rank_more import florida_doc
+    have: dict[str, np.ndarray] = {}
+    if raw:
+        ids, vecs = vectors(raw)
+        have = dict(zip(ids, vecs))
+    missing = [r for r in records if r["id"] not in have]
+    if missing:
+        new = embed.embed_texts([florida_doc(r)[:2000] for r in missing]).astype(np.float16)
+        have.update(zip((r["id"] for r in missing), new))
+    ids = [r["id"] for r in records]
+    stacked = np.stack([have[i] for i in ids]).astype(np.float16) if ids else np.zeros((0, 384), dtype=np.float16)
+    return ids, stacked
+
+
 def write(out: Path, name: str, payload: dict, ids: list[str], vecs: np.ndarray) -> None:
     payload = {**payload, "vec_ids": ids, "dim": int(vecs.shape[1]) if len(ids) else 384}
     # Stored gzipped: with every state's foundations the plain JSON would pass GitHub Pages' 1 GB limit.
@@ -220,6 +244,21 @@ def main() -> None:
         write(out, "florida", {"fetched_at": payload.get("fetched_at", ""), "fiscal_year": payload.get("fiscal_year", ""),
                                "records": records}, ids, vecs)
         meta["florida"] = payload.get("fiscal_year", "")
+
+    # Other states' programs (STATE_PROGRAMS), one file each; the site's state tab follows the profile's state.
+    for state, spec in STATE_PROGRAMS.items():
+        raw = fetch(f"{spec['file']}.json.gz")
+        if not raw:
+            continue
+        payload = json.loads(gzip.decompress(raw))
+        records = [tidy_program(r) for r in payload["programs"]]
+        for r in records:
+            r["_catalog"] = f"{spec['catalog']} {r.get('number', '')}".strip()
+            r["_assist"] = (r.get("assistance") or "").replace("; ", " or ")
+        ids, vecs = program_vectors(records, fetch(f"{spec['file']}.npz"))
+        write(out, f"programs-{state}", {"fetched_at": payload.get("fetched_at", ""), "state": state, "records": records}, ids, vecs)
+        meta.setdefault("programs", {})[state] = {"file": f"programs-{state}", "source": spec["source"],
+                                                  "updated": payload.get("fetched_at", "")}
 
     # Foundations: private (990-PF) and community/public (Schedule I), one file per state.
     states = foundation_states()
@@ -323,6 +362,7 @@ def golden(out: Path, examples: dict, path: Path) -> None:
     fl, fl_ids, fl_v = load("florida")
     fdn, fdn_ids, fdn_v = load("foundations-FL")
     frame = load_frame(fed)
+    ca = load("programs-CA") if (out / "programs-CA.json.gz").exists() else None
     cases = []
     for key, ex in examples.items():
         q = np.array(ex["vector"], dtype=np.float32)
@@ -347,6 +387,8 @@ def golden(out: Path, examples: dict, path: Path) -> None:
                 "foundations": rows(score_foundations(fdn, p, "FL", cities, sims(fdn_ids, fdn_v, q),
                                                       spec["show_preselected"]), "ein"),
                 "florida": rows(score_florida(fl, p, sims(fl_ids, fl_v, q), spec["show_earmarks"], cities), "id"),
+                # Another state's open calls through the same scorer: matching funds, loans and reimbursement.
+                "california": rows(score_florida(ca[0], p, sims(ca[1], ca[2], q), False, cities), "id") if ca else [],
             })
     path.write_text(json.dumps({"today": GOLDEN_DAY.isoformat(), "cases": cases}), encoding="utf-8")
     print(f"golden: {len(cases)} cases to {path}")

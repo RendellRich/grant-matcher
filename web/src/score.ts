@@ -534,6 +534,9 @@ export interface FloridaRec {
   // County and city programs only (grantmatch/local.py)
   level?: string; area?: string; places?: string[]; requires_501c3?: boolean;
   opens?: string | null; closes?: string | null; checked?: string; _cycle?: WebsiteCycle;
+  // Open calls only (grantmatch/california.py)
+  state?: string; number?: string; status?: string; match?: string; loan?: boolean; funding_method?: string;
+  loi?: boolean; updated?: string | null; _catalog?: string;
 }
 
 // County and city programs serve named counties and may need 501(c)(3) status. Same as rank_more.py.
@@ -557,6 +560,20 @@ export function localChecks(r: FloridaRec, p: Profile, citySet: Set<string>): [n
     else { points -= ASKS_501C3_PENALTY[p.has501c3]; cautions.push(REQUIRES_501C3_CAUTION[p.has501c3]); }
   }
   return [points, reasons, cautions];
+}
+
+// Open calls say what a catalog of programs doesn't: a required match, loans, and how the money is paid.
+// Same as rank_more.py.
+const LOAN_CAUTION = "A loan, not a grant";
+const REIMBURSED_CAUTION = "Pays by reimbursement: you spend first and are paid back";
+
+export function callChecks(r: FloridaRec, p: Profile): [number, string[]] {
+  let points = 0;
+  const cautions: string[] = [];
+  if (typeof r.match === "string" && r.match && !p.canCostShare) { points -= 20; cautions.push(`Requires matching funds (${r.match})`); }
+  if (r.loan === true) { points -= 25; cautions.push(LOAN_CAUTION); }
+  if (typeof r.funding_method === "string" && r.funding_method.startsWith("Reimbursement")) cautions.push(REIMBURSED_CAUTION);
+  return [points, cautions];
 }
 
 export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<string, number> | null,
@@ -584,6 +601,8 @@ export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<st
     if (r.earmark) { points -= 40; cautions.push("Set aside by the Legislature for a named organization"); }
     const [extra, moreReasons, moreCautions] = localChecks(r, p, citySet);
     points += extra; reasons.push(...moreReasons); cautions.push(...moreCautions);
+    const [callPoints, callCautions] = callChecks(r, p);
+    points += callPoints; cautions.push(...callCautions);
     const shown = pyRound(Math.max(0, Math.min(100, points)));
     return { rec: r, score: shown, tier: tierOf(shown), reasons, cautions, matched };
   });

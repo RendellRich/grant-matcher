@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
-  loadCounties, loadExamples, loadFederal, loadFlorida, loadFoundations, loadMeta,
+  loadCounties, loadExamples, loadFederal, loadFoundations, loadMeta, loadPrograms, programsFile,
   type Example, type Meta, type Source,
 } from "./data";
 import { embedMission } from "./embed";
@@ -26,12 +26,13 @@ import {
 import { similarities } from "./vectors";
 
 const NOTICE = "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.";
-const SHORT: Record<string, string> = { fl: "Florida", fdn: "Foundations", fed: "Federal", shortlist: "Shortlist" };
-const NOUN: Record<SourceKey, [string, string, string]> = {
-  fl: ["Florida programs", "Florida programs", "Florida program"],
+// The state tab is named for the profile's state: "Florida programs", "California programs".
+const shortName = (k: string, state: string) => (k === "fl" ? state : { fdn: "Foundations", fed: "Federal", shortlist: "Shortlist" }[k] ?? k);
+const nouns = (state: string): Record<SourceKey, [string, string, string]> => ({
+  fl: [`${state} programs`, `${state} programs`, `${state} program`],
   fdn: ["Foundations", "foundations", "foundation"],
   fed: ["Federal grants", "federal grants", "federal grant"],
-};
+});
 
 type Loaded<T> = { state: "loading" } | { state: "ready"; data: T } | { state: "error" };
 
@@ -86,7 +87,7 @@ export function App() {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [examples, setExamples] = useState<Record<string, Example> | null>(null);
   const [fed, setFed] = useState<Loaded<Source<FederalRec>>>({ state: "loading" });
-  const [fl, setFl] = useState<Loaded<Source<FloridaRec>>>({ state: "loading" });
+  const [progs, setProgs] = useState<Record<string, Loaded<Source<FloridaRec>>>>({});
   const [fdn, setFdn] = useState<Record<string, Loaded<Source<FoundationRec>>>>({});
 
   const [exampleKey, setExampleKey] = useState("literacy");
@@ -138,10 +139,21 @@ export function App() {
       setDraft(f); setApplied(f); setVector(first.vector);
     }).catch(() => setExamples({}));
     loadFederal().then((d) => setFed({ state: "ready", data: d })).catch(() => setFed({ state: "error" }));
-    loadFlorida().then((d) => setFl({ state: "ready", data: d })).catch(() => setFl({ state: "error" }));
   }, []);
 
   const st = applied.state;
+  const stName = STATE_NAMES[st] ?? st;
+  const NOUN = nouns(stName);
+  // The state tab follows the profile's state: Florida's catalog and county programs, or another state's open calls.
+  const progFile = programsFile(meta, st);
+  const hasProgs = Boolean(progFile);
+  const fl: Loaded<Source<FloridaRec>> = progs[st] ?? { state: "loading" };
+  useEffect(() => {
+    if (!meta || !progFile || progs[st]) return;
+    setProgs((m) => ({ ...m, [st]: { state: "loading" } }));
+    loadPrograms(progFile).then((d) => setProgs((m) => ({ ...m, [st]: { state: "ready", data: d } })))
+      .catch(() => setProgs((m) => ({ ...m, [st]: { state: "error" } })));
+  }, [meta, st]);
   useEffect(() => {
     if (!meta || fdn[st]) return;
     if (!meta.states.includes(st)) return;
@@ -170,7 +182,7 @@ export function App() {
   // What's new since the last visit is about the data, not the profile, so it is worked out once per source.
   const fedFresh = useMemo(() => (fed.state === "ready" ? newSince("fed", fed.data.records.map((r) => r.id)) : null), [fed]);
   const fdnFresh = useMemo(() => (fdnSrc?.state === "ready" ? newSince(`fdn-${st}`, fdnSrc.data.records.map((r) => r.ein)) : null), [fdnSrc]);
-  const flFresh = useMemo(() => (fl.state === "ready" ? newSince("fl", fl.data.records.map((r) => r.id)) : null), [fl]);
+  const flFresh = useMemo(() => (fl.state === "ready" ? newSince(st === "FL" ? "fl" : `fl-${st}`, fl.data.records.map((r) => r.id)) : null), [fl]);
   const fresh: Record<SourceKey, Fresh | null> = { fed: fedFresh, fdn: fdnFresh, fl: flFresh };
   // Inside ETO, New means a strong match ETO hasn't seen, shared by everyone who signs in; elsewhere it is this browser's.
   const mark = <T extends Entry>(list: T[] | null, f: Fresh | null) => (etoSeen ? markOrgNew(list, etoSeen) : markNew(list, f));
@@ -178,7 +190,7 @@ export function App() {
   const fdnAll = useMemo(() => mark(fdnSrc?.state === "ready" && !blank
     ? rankFoundations(fdnSrc.data.records, profile, st, cityList, sim(fdnSrc.data.vecs), fdnKinds, fdnPre)
     : null, fdnFresh), [fdnSrc, profile, vector, fdnKinds, fdnPre, fdnFresh, cityList, etoSeen]);
-  const flAll = useMemo(() => mark(fl.state === "ready" && st === "FL" && !blank
+  const flAll = useMemo(() => mark(fl.state === "ready" && hasProgs && !blank
     ? rankFlorida(fl.data.records, profile, sim(fl.data.vecs), flEar, cityList) : null, flFresh),
   [fl, profile, vector, flEar, st, flFresh, cityList, etoSeen]);
   // Anything marked submitted on the shortlist stops showing in the results and their counts.
@@ -202,7 +214,7 @@ export function App() {
   const lists: Partial<Record<SourceKey, Entry[] | null>> = {};
   if (applied.funder_types.includes("federal")) lists.fed = fedEntries;
   if (applied.funder_types.some((t) => !["federal", "florida"].includes(t))) lists.fdn = fdnEntries;
-  if (st === "FL" && applied.funder_types.includes("florida")) lists.fl = flEntries;
+  if (hasProgs && applied.funder_types.includes("florida")) lists.fl = flEntries;
   const keys = Object.keys(lists) as SourceKey[];
   const count = (k: SourceKey, tier: string) => (lists[k] ?? []).filter((e) => e.tier === tier).length;
   const strong = Object.fromEntries(keys.map((k) => [k, count(k, "Strong")])) as Record<SourceKey, number>;
@@ -405,7 +417,7 @@ export function App() {
               : total ? <><strong>{n(total, "strong match", "strong matches")}</strong> for this profile: {listing}.</>
               : <><strong>No strong matches yet.</strong> {shownOrder.map((k) => n(possible[k], `possible ${NOUN[k][2]}`, `possible ${NOUN[k][1]}`)).join(", ")}. More specific key words usually help.</>}
           </h1>
-          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : ""}, ranked against your mission with the reasons spelled out.</p>
+          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : hasProgs ? ` and ${stName} state grants` : ""}, ranked against your mission with the reasons spelled out.</p>
           <p class="notice">{NOTICE}</p>
         </div>
       </header>
@@ -452,7 +464,7 @@ export function App() {
                   <button type="button" role="tab" key={k} id={`tab-${k}`} aria-label={c !== null ? `${label}, ${c}` : label} aria-selected={tab === k} aria-controls={`panel-${k}`}
                           tabIndex={tab === k ? 0 : -1} ref={(el) => { tabRefs.current[k] = el; }}
                           onClick={() => setTab(k)} onKeyDown={(ev) => onTabKey(ev as KeyboardEvent, i)}>
-                    <span><span class="tab-long">{label}</span><span class="tab-short" aria-hidden="true">{SHORT[k]}</span></span>{c !== null ? <span class="tab-count">{c.toLocaleString("en-US")}</span> : null}
+                    <span><span class="tab-long">{label}</span><span class="tab-short" aria-hidden="true">{shortName(k, stName)}</span></span>{c !== null ? <span class="tab-count">{c.toLocaleString("en-US")}</span> : null}
                   </button>
                 ))}
               </div>
@@ -466,7 +478,7 @@ export function App() {
           {blank ? null : (
             <details class="ready">
               <summary><h2>Getting ready to apply</h2></summary>
-              <Checklist />
+              <Checklist state={st} />
             </details>
           )}
           <Footer coverage={!!meta?.coverage} />
@@ -744,7 +756,48 @@ export function App() {
     );
   }
 
+  /** Another state's open calls (grantmatch/california.py): each has its own dates, match and payment terms. */
+  function callsPanel() {
+    if (fl.state === "error") return <p class="error">{stName} program data could not be loaded right now. Try again in a few minutes.</p>;
+    if (!flEntries || fl.state !== "ready") return loading(`${stName} programs`);
+    const all = fl.data.records;
+    const open = all.filter((r) => r.nonprofit_eligible).length;
+    const info = meta?.programs?.[st];
+    const updated = fl.data.fetchedAt ? fmtStamp(fl.data.fetchedAt) : "";
+    const shown = narrowed("fl", flEntries);
+    const picks = shown.filter((e) => e.tier !== "Long shot");
+    return (
+      <>
+        {tally("fl", `${open.toLocaleString("en-US")} of ${all.length.toLocaleString("en-US")} open ${stName} state grant and loan calls list nonprofits as eligible${info?.source ? `, from the ${info.source}` : ""}${updated ? `, updated ${updated}` : ""}. County and city programs aren't covered for ${stName} yet.`, shown)}
+        {narrowBar("fl", flEntries, shown, "programs")}
+        <details class="filters">
+          <summary>How the score works</summary>
+          <div class="filters-body">
+            <ul class="how">
+              <li>Up to 75 points for how closely the call's purpose matches your mission</li>
+              <li>Up to 25 points for your key words in its title and purpose, with rare words worth more</li>
+              <li>Points off for matching funds you can't provide, for loans, and for student aid paid to individuals or schools</li>
+              <li>A call that pays by reimbursement gets a caution, not a lower score</li>
+              <li>Strong is 60 and up, possible is 35 to 59</li>
+            </ul>
+          </div>
+        </details>
+        <ResultList name="fl" noun="programs" entries={shown} narrowed={isNarrowed(cur("fl"))} {...markProps}
+          sorts={[["Best fit", null],
+            ["Closing soonest", (a, b) => (a.sortClose ?? Infinity) - (b.sortClose ?? Infinity)]]}
+          exports={picks.length ? (
+            <div class="exports">
+              <button type="button" class="btn" onClick={() => download(`${stName.toLowerCase().replace(/\s+/g, "-")}-matches.csv`, entriesCsv(picks), "text/csv")}>
+                <IconDownload />Download {stName} matches (CSV)
+              </button>
+            </div>
+          ) : null} />
+      </>
+    );
+  }
+
   function floridaPanel() {
+    if (st !== "FL") return callsPanel();
     if (fl.state === "error") return <p class="error">Florida program data could not be loaded right now. Try again in a few minutes.</p>;
     if (!flEntries || fl.state !== "ready") return loading("Florida programs");
     const all = fl.data.records;
@@ -793,11 +846,12 @@ function pickRest(f: ProfileForm): Partial<ProfileForm> {
 }
 
 function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
-  const src = { fed: "Federal grant", fdn: "Foundation", fl: "Florida program" } as const;
+  const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
+    : e.key.startsWith("fl:ca-") ? "California grant" : "Florida program");
   const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
   return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
     items.map((e) => {
-      const row = [src[e.source], e.score, e.tier, e.title, e.catalog, e.facts.join("; "), e.side,
+      const row = [src(e), e.score, e.tier, e.title, e.catalog, e.facts.join("; "), e.side,
         [...e.fits, ...e.also, ...e.status].join("; "), e.cautions.join("; "), e.url];
       return withStage ? [e.stage ? STAGE_LABEL[e.stage] : "", e.stageAt ? e.stageAt.slice(0, 10) : "", ...row] : row;
     }));
@@ -939,7 +993,7 @@ function BlankSteps() {
   );
 }
 
-function Checklist() {
+function Checklist({ state }: { state: string }) {
   return (
     <div class="checklist">
       <h2>Getting ready to apply</h2>
@@ -962,12 +1016,22 @@ function Checklist() {
         <li>Look at who they funded last year. If they fund groups like yours near you, mention that connection.</li>
         <li>Community foundations in your county are often the best first call, and many run small grant cycles for new nonprofits.</li>
       </ul>
-      <h3>For Florida state programs</h3>
-      <ul>
+      {state === "CA" ? (
+        <>
+          <h3>For California state grants</h3>
+          <ul>
+            <li>Most California calls pay by reimbursement: you spend first and are paid back, so plan your cash before you apply.</li>
+            <li>Many have no set deadline. Open the grant page on each call for its current rules before you start.</li>
+            <li>Some ask for a letter of intent first. "How to apply" on each call says so.</li>
+          </ul>
+        </>
+      ) : null}
+      {state === "FL" ? <h3>For Florida state programs</h3> : null}
+      {state === "FL" ? <ul>
         <li>The state pays grants and contracts to registered vendors. Register at <a href="https://www.myfloridamarketplace.com" target="_blank" rel="noopener">MyFloridaMarketPlace</a> and keep a Florida Substitute W-9 on file with the Department of Financial Services.</li>
         <li>Each agency posts its own application windows. Use the agency link on each program to find the next one.</li>
         <li>County programs are entered by hand from each county's own page, with the date they were checked. Confirm the dates and rules there before you apply.</li>
-      </ul>
+      </ul> : null}
     </div>
   );
 }
@@ -977,7 +1041,7 @@ function Footer({ coverage }: { coverage: boolean }) {
     <footer class="footer">
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page.</p>
+      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page. California data from the California Grants Portal, published by the California State Library.</p>
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Matching runs in your browser; your mission and profile are never sent to a server.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>

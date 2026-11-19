@@ -28,12 +28,14 @@ function source<T>(dir: string, name: string): { records: T[]; vecs: VectorSet }
 }
 
 export function loadSources(dir: string, state: string): RankSources {
-  const meta = JSON.parse(readFileSync(join(dir, "meta.json"), "utf8")) as { states: string[] };
+  const meta = JSON.parse(readFileSync(join(dir, "meta.json"), "utf8")) as { states: string[]; programs?: Record<string, { file: string }> };
+  const programs = state === "FL" ? "florida" : meta.programs?.[state]?.file;
   const counties = join(dir, `counties-${state}.json`);
   return {
     fed: source(dir, "federal"),
     fdn: meta.states.includes(state) ? source(dir, `foundations-${state}`) : null,
-    fl: source(dir, "florida"),
+    fl: programs ? source(dir, programs) : null,
+    flState: state,
     counties: existsSync(counties) ? JSON.parse(readFileSync(counties, "utf8")) : null,
   };
 }

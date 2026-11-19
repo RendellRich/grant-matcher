@@ -48,7 +48,9 @@ interface Loaded<T> { records: T[]; vecs: VectorSet }
 export interface RankSources {
   fed: Loaded<FederalRec> | null;
   fdn: Loaded<FoundationRec> | null;
+  /** The state's programs, and the state they are for (Florida unless said). */
   fl: Loaded<FloridaRec> | null;
+  flState?: string;
   counties: Record<string, string[]> | null;
 }
 
@@ -60,7 +62,7 @@ export function rankAll(f: ProfileForm, src: RankSources, vector: number[] | nul
   return {
     fed: src.fed ? rankFederal(src.fed.records, p, simFor(src.fed.vecs, vector)) : null,
     fdn: src.fdn ? rankFoundations(src.fdn.records, p, f.state, cities, simFor(src.fdn.vecs, vector)) : null,
-    fl: src.fl && f.state === "FL" ? rankFlorida(src.fl.records, p, simFor(src.fl.vecs, vector), false, cities) : null,
+    fl: src.fl && f.state === (src.flState ?? "FL") ? rankFlorida(src.fl.records, p, simFor(src.fl.vecs, vector), false, cities) : null,
   };
 }
 

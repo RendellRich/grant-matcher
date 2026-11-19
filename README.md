@@ -158,7 +158,17 @@ Florida's Department of Financial Services keeps the Catalog of State Financial 
 
 California's agencies post every grant and loan opportunity to the [California Grants Portal](https://www.grants.ca.gov/), which the State Library publishes as public-domain open data, updated daily. `grantmatch/california.py` reads that file and keeps the open and forecasted calls, in the same fields as Florida's programs so the same scorer reads them. Unlike Florida's catalog these are open calls, so each record also carries its open date, deadline, required match, whether it is a loan, and how the money is paid (most pay by reimbursement).
 
-The data is refreshed daily and published with the release. The site does not show it yet: the state tab still follows Florida only.
+The data is refreshed daily and published with the release. On the site, the state tab follows the profile's state: a Florida profile sees Florida programs, a California profile sees California programs, and other states have no state tab yet.
+
+Open calls are scored like Florida's programs, with three checks of their own:
+
+| Part | Effect |
+|---|---|
+| Requires matching funds you cannot provide | minus 20 |
+| A loan, not a grant | minus 25 |
+| Pays by reimbursement only | a caution, no points off |
+
+To add a state, write an adapter that produces the same record fields, add it to `STATE_PROGRAMS` in `grantmatch/export_web.py`, and give it a refresh workflow. The site needs no change.
 
 
 No public catalog lists county and city grants, so they are kept by hand in `data/local-FL.json`, one entry per program, from the program's own page: the counties it serves, who can apply, whether it requires 501(c)(3) status, the application window when there is one, and the date the page was checked. `grantmatch/local.py` checks every entry (a bad date, an unknown county or a repeated name stops the export) and adds them to the Florida tab as county programs, keyed `fl:local-<slug>`. They score like state programs, with two more rules: points off when your cities are outside the county, and when the program requires 501(c)(3) status you don't have yet. Word rarity and the similarity median are still measured on the state programs alone, so adding or editing an entry never changes a state program's score. The weekly website check reads each program's page, and its closing date goes into `changes.json` like a federal deadline.

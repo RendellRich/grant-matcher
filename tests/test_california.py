@@ -81,3 +81,22 @@ def test_the_snapshot_scores_with_the_state_program_scorer():
     scored = score_florida(recs, Profile(mission="Reading help for children", keywords=["children", "education"]))
     assert len(scored) == sum(r["nonprofit_eligible"] for r in recs)
     assert scored.iloc[0]["score"] >= scored.iloc[-1]["score"]
+
+
+def test_open_calls_lose_points_for_a_match_and_for_loans_and_flag_reimbursement():
+    def one(profile=None, **over):
+        rec = california.normalize(row(**{"MatchingFunds": "Not Required", "FundingMethod": "Advance(s)", **over}))
+        return score_florida([rec], profile or Profile(mission="Reading help", keywords=["literacy"])).iloc[0]
+
+    plain = one()
+    assert plain["cautions"] == [] and plain["score"] > 30  # room to lose points before the floor at zero
+    matched = one(MatchingFunds="25%")
+    assert matched["cautions"] == ["Requires matching funds (25%)"] and abs(plain["score"] - matched["score"] - 20) <= 1  # each score is rounded on its own
+    can = one(Profile(mission="Reading help", keywords=["literacy"], can_cost_share=True), MatchingFunds="25%")
+    assert can["cautions"] == [] and can["score"] == plain["score"]
+    loan = one(Type="Loan")
+    assert loan["cautions"] == ["A loan, not a grant"] and abs(plain["score"] - loan["score"] - 25) <= 1
+    paid_back = one(FundingMethod="Reimbursement(s)")
+    assert paid_back["cautions"] == ["Pays by reimbursement: you spend first and are paid back"]
+    assert paid_back["score"] == plain["score"]
+    assert one(FundingMethod="Advances & Reimbursement(s)")["cautions"] == []

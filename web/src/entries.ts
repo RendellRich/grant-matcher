@@ -265,13 +265,15 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
   };
 }
 
-/** A county or city program's window (grantmatch/local.py): its due date, and a line while it isn't open yet. */
+/** A county or city program's window (grantmatch/local.py), or an open call's (grantmatch/california.py): its
+ * due date, and a line while it isn't open yet. */
 export function localWindow(r: FloridaRec, today: Date = new Date()): { due: number | null; line?: string } {
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const day = (d?: string | null) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? ymdDate(d) : null);
   const opens = day(r.opens), closes = day(r.closes);
   const due = closes && closes.getTime() >= t0 ? closes.getTime() : null;
   if (opens && opens.getTime() > t0) return { due, line: `Applications open ${fmtDate(opens)}` };
+  if (!due && r.status && r.deadlines === "Ongoing") return { due, line: "Taking applications with no set deadline" };
   return { due, line: due ? "Taking applications now" : undefined };
 }
 
@@ -279,16 +281,18 @@ export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean): Entry {
   const r = s.rec;
   const why = sortReasons(s.reasons, s.cautions, "its title or objectives", hasKw);
   const local = Boolean(r.level);
-  const win = local ? localWindow(r) : { due: null };
+  const call = Boolean(r.status); // an open call, not a catalog program
+  const win = local || call ? localWindow(r) : { due: null };
   const site = local ? websiteFindings(r._cycle) : { rows: [] as DetailRow[], due: null, line: undefined, caution: undefined };
   if (win.line) why.status.unshift(win.line);
   if (site.line) why.status.push(site.line);
   if (site.caution) why.cautions.push(site.caution);
   const due = win.due ?? site.due;
   const rows: DetailRow[] = [];
-  for (const [label, key] of [["Objectives", "objectives"], ["Who can apply", "applicant_types"], ["How to apply", "application"],
-    ["How awards are made", "award"], ["Deadlines", "deadlines"], ["Restrictions", "restrictions"], ["Contact", "contact"]] as const) {
-    const t = present(r[key]).slice(0, 900);
+  for (const [label, key] of [[call ? "Purpose" : "Objectives", "objectives"], ["Who can apply", "applicant_types"], ["How to apply", "application"],
+    [call ? "Funding" : "How awards are made", "award"], ["Deadlines", "deadlines"], [call ? "Where and conditions" : "Restrictions", "restrictions"], ["Contact", "contact"]] as const) {
+    const raw = present(r[key]);
+    const t = (key === "deadlines" && r.closes && raw === r.closes ? fmtDate(ymdDate(raw)) : raw).slice(0, 900);
     if (t) rows.push({ label, text: t });
   }
   const web = present(r.web);
@@ -304,9 +308,9 @@ export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean): Entry {
   }
   return {
     key: `fl:${r.id}`, source: "fl", title: r._title || r.title, url: safeUrl(r.url),
-    catalog: local ? `${r.level} program` : `CSFA ${r.csfa}`,
+    catalog: local ? `${r.level} program` : r._catalog || `CSFA ${r.csfa}`,
     facts: [r.agency, local ? r.area || "" : r._assist || ""].filter(Boolean),
-    side: due ? `Due ${fmtDate(new Date(due))}` : "", agency: r.agency,
+    side: due ? `Due ${fmtDate(new Date(due))}` : call && r.deadlines === "Ongoing" ? "Ongoing" : "", agency: r.agency,
     sortClose: due,
     score: s.score, tier: s.tier, ...why, rows,
     support: supportIn(`${r.title} ${r.objectives}`),
