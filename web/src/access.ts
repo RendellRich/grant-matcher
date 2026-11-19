@@ -124,3 +124,40 @@ export function takeUpgradedParam(): boolean {
     return true;
   } catch { return false; }
 }
+
+/** The account's weekly email of new strong matches (paid plans). */
+export interface DigestInfo { on: boolean; sent_at?: string | null; profile?: unknown }
+
+export async function myDigest(): Promise<DigestInfo | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("my_digest");
+  return error ? null : (data as DigestInfo);
+}
+
+/** Turns the weekly email on for this profile, or off (which deletes the saved profile). */
+export async function saveDigest(form: unknown, vector: number[] | null, on: boolean): Promise<{ info?: DigestInfo; error?: string }> {
+  if (!supabase) return { error: "Sign in first." };
+  const { data, error } = await supabase.rpc("save_digest", { p_profile: on ? form : null, p_vector: on ? vector : null, p_on: on });
+  if (error) return { error: error.message.includes("Pro") ? "The weekly email comes with Pro." : "Couldn't save that. Try again in a minute." };
+  return { info: data as DigestInfo };
+}
+
+/** The token from a weekly email's "Turn it off" link (?weekly-off=), taken out of the address bar. */
+export function takeWeeklyOffParam(): string | null {
+  try {
+    const url = new URL(window.location.href);
+    const t = url.searchParams.get("weekly-off");
+    if (!t) return null;
+    url.searchParams.delete("weekly-off");
+    history.replaceState(null, "", url.toString());
+    return /^[0-9a-f-]{36}$/i.test(t) ? t : null;
+  } catch { return null; }
+}
+
+/** Turns the weekly email off for the address the link was sent to. */
+export async function weeklyOff(token: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/weekly-email?off=${encodeURIComponent(token)}`, { method: "POST" });
+    return res.ok;
+  } catch { return false; }
+}

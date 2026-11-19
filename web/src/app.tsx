@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { billing, clearUpgrade, isPaid, PLANS_URL, search, signOut, takeUpgradedParam, takeUpgradeParam, watchSession, type FileLink, type Gate } from "./access";
+import { billing, clearUpgrade, isPaid, PLANS_URL, search, signOut, takeUpgradedParam, takeUpgradeParam, takeWeeklyOffParam, watchSession, type FileLink, type Gate } from "./access";
 import {
   loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
   type Example, type Meta, type Source,
@@ -18,6 +18,7 @@ import {
   type FederalRec, type FloridaRec, type FoundationRec, type Profile,
 } from "./score";
 import { SignIn } from "./signin";
+import { WeeklyEmail, WeeklyOff } from "./weekly";
 import { EntryView, IconAlert, IconDownload, IconMark, ResultList, type MarkAction } from "./ui";
 import { embedParent, listen, loadedLabel, payloadFor, post, PROTOCOL, type Incoming, type LoadedFrom, type PipelineItem } from "./parent";
 import { markNew, markOrgNew, newSince, strongKeys, type Fresh, type OrgSeen } from "./seen";
@@ -108,6 +109,7 @@ export function App() {
   const [recheck, setRecheck] = useState(0);
   const pendingUpgrade = useRef(takeUpgradeParam());
   const upgraded = useRef(takeUpgradedParam());
+  const [weeklyOffToken] = useState(takeWeeklyOffParam);
   async function upgrade(plan: "pro" | "consultant" = "pro") {
     if (!email) { pendingUpgrade.current = plan; try { sessionStorage.setItem("gm-upgrade", plan); } catch { /* */ } setSignInOpen(true); return; }
     setBillBusy(true); setBillNote(null);
@@ -526,6 +528,8 @@ export function App() {
           ) : null}
           {embedded && sentNote && !sentNote.ok ? <p class="toast warn" role="alert">{sentNote.text}</p> : null}
           {billNote ? <p class={`note${billNote.ok ? "" : " warn-note"}`} role={billNote.ok ? "status" : "alert"}>{billNote.text}</p> : null}
+          {weeklyOffToken ? <WeeklyOff token={weeklyOffToken} /> : null}
+          {!embedded && email && isPaid(plan) ? <WeeklyEmail email={email} form={applied} vector={vector} /> : null}
           {!embedded && dueSoon.length && tab !== "shortlist" ? (
             <p class="note due-soon">
               <strong>{dueSoon.length === 1 ? "1 grant on your shortlist is" : `${dueSoon.length} grants on your shortlist are`} due within a week</strong>
