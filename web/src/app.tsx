@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { SyncNote, useAccountSync } from "./accountsync";
 import { PlanNote } from "./plannote";
 import { ClientBar } from "./clients";
-import { parseWorkspace } from "./sync";
+import { parseWorkspace, readOwnProfile, writeOwnProfile } from "./sync";
 import { billing, clearUpgrade, isPaid, myWorkspace, PLANS_URL, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
   loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
@@ -16,7 +16,7 @@ import { download, toCsv, toIcs } from "./exports";
 import { summariesFile } from "./summary";
 import { exampleForm, ProfileFormView } from "./form";
 import { CoverageNote } from "./coverage";
-import { BLANK, expandCities, sameForm, STATE_NAMES, type ProfileForm } from "./profile";
+import { BLANK, expandCities, parseProfile, sameForm, STATE_NAMES, type ProfileForm } from "./profile";
 import { federalEntries, isBlank, KINDS, queryText, rankFlorida, rankFoundations, toProfile } from "./rank";
 import {
   closeDate, fmtDate, scoreFederal,
@@ -147,6 +147,8 @@ export function App() {
   const [vector, setVector] = useState<number[] | null>(null);
   // The profile on screen is the person's own (searched with, or loaded from their account), not an example.
   const [ownProfile, setOwnProfile] = useState(false);
+  const appliedRef = useRef<ProfileForm>(BLANK);
+  const vectorRef = useRef<number[] | null>(null);
   const searched = useRef(false); // the person pressed Update matches this visit
   const fromAccount = useRef(false); // the account's saved profile is on screen; the example must not replace it
   const [busy, setBusy] = useState("");
@@ -188,6 +190,15 @@ export function App() {
     loadExamples().then((ex) => {
       setExamples(ex);
       if (fromParent.current || fromAccount.current) return; // ETO's or the account's profile came first
+      // A paid account's own profile from the last visit opens instead of the example.
+      const own = readOwnProfile();
+      if (own && !embedded) {
+        try {
+          const f = parseProfile(JSON.stringify(own.form));
+          setDraft(f); setApplied(f); setVector(own.vector); setExampleKey(""); setLoadedFrom("account"); setOwnProfile(true);
+          return;
+        } catch { writeOwnProfile(null); }
+      }
       const first = ex.literacy ?? Object.values(ex)[0];
       const f = exampleForm(first);
       setDraft(f); setApplied(f); setVector(first.vector);
@@ -459,6 +470,8 @@ export function App() {
   function loadFromAccount(f: ProfileForm, v: number[] | null): boolean {
     if (searched.current || fromAccount.current || embedded || fromParent.current) return false;
     fromAccount.current = true;
+    // Already on screen from this browser's copy: keep it, so the matches aren't ranked again.
+    if (sameForm(f, appliedRef.current)) { setOwnProfile(true); if (v && !vectorRef.current) setVector(v); return true; }
     setLoadedFrom("account");
     setExampleKey("");
     setDraft(f);
@@ -474,6 +487,7 @@ export function App() {
     setExampleKey("");
     if (!f) {
       const b = { ...BLANK, state: applied.state };
+      writeOwnProfile(null); // this client has no profile yet, so the next visit doesn't open another client's
       setDraft(b); setApplied(b); setVector(null); setOwnProfile(false);
       setStatus("New client. Describe their work, then press Update matches.");
       return;
@@ -498,6 +512,15 @@ export function App() {
     return out;
   }
   const synced = Boolean(sync.ws?.paid && sync.ws.on);
+  appliedRef.current = applied;
+  vectorRef.current = vector;
+  // Keep the account's own profile in this browser while saving is on; forget it when saving stops or on sign-out.
+  useEffect(() => {
+    if (sync.ws && !sync.ws.on) writeOwnProfile(null);
+    else if (synced && ownProfile && !isBlank(applied)) writeOwnProfile(applied, vector);
+  }, [synced, sync.ws?.on, ownProfile, applied, vector]);
+  const hadEmail = useRef<string | null>(null);
+  useEffect(() => { if (hadEmail.current && !email && sessionKnown) writeOwnProfile(null); hadEmail.current = email; }, [email, sessionKnown]);
 
   function loadProfile(f: ProfileForm) {
     setLoadedFrom("file");
