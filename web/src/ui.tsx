@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Entry } from "./entries";
 import { readySummary, type ReadyCheck } from "./ready";
+import { download } from "./exports";
+import { grantSummary, summaryFileName } from "./summary";
 
 // ---------- icons: one stroke family, 1.75px at 20px ----------
 
@@ -180,8 +182,31 @@ function Details({ e, rest }: { e: Entry; rest: string[] }) {
         {e.source === "fed" && e.url ? (
           <p><a href={e.url} target="_blank" rel="noopener">Read the full notice on Grants.gov<span class="sr-only"> (opens in a new tab)</span></a></p>
         ) : null}
+        <SummaryActions e={e} />
       </div>
     </details>
+  );
+}
+
+/** A one-page summary for a grant writer: copy it to paste anywhere, or download it as a text file. */
+function SummaryActions({ e }: { e: Entry }) {
+  const [said, setSaid] = useState("");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(grantSummary(e));
+      setSaid("Copied. Paste it into your document.");
+    } catch {
+      setSaid("Your browser blocked copying; download it instead.");
+    }
+  };
+  return (
+    <div class="summary-actions">
+      <button type="button" class="btn" onClick={copy}>Copy one-page summary<span class="sr-only"> of {e.title}</span></button>
+      <button type="button" class="btn quiet-btn" onClick={() => download(summaryFileName(e), grantSummary(e), "text/plain")}>
+        <IconDownload />Download as text<span class="sr-only">: {e.title}</span>
+      </button>
+      <span class="quiet" role="status">{said}</span>
+    </div>
   );
 }
 

@@ -342,6 +342,8 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .can-apply .ca-ok .icon { color: var(--accent); }
 .can-apply .ca-check .icon, .can-apply .ca-no .icon { color: var(--caution); }
 .can-apply .ca-no { font-weight: 650; }
+.summary-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: .75rem; }
+.summary-actions .quiet { font-size: .875rem; }
 
 .entry-actions { position: relative; }
 .mark-btn {
