@@ -333,6 +333,15 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .why .good .icon { color: var(--accent); }
 .why .warn .icon { color: var(--caution); }
 .why .also { color: var(--muted); }
+/* "Can we apply?": one wrapping line of short checks, the same icons as the reasons, no fills */
+.can-apply { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .875rem; font-size: .875rem; }
+.can-apply-head { font-weight: 650; color: var(--ink); }
+.can-apply ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem .875rem; }
+.can-apply li { display: inline-flex; align-items: center; gap: .3125rem; white-space: nowrap; color: var(--ink); }
+.can-apply .icon { width: 16px; height: 16px; flex: none; }
+.can-apply .ca-ok .icon { color: var(--accent); }
+.can-apply .ca-check .icon, .can-apply .ca-no .icon { color: var(--caution); }
+.can-apply .ca-no { font-weight: 650; }
 
 .entry-actions { position: relative; }
 .mark-btn {

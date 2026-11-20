@@ -125,6 +125,7 @@ export interface Profile {
   yearFounded?: number | null;
   minorKeywords?: string[]; // words from the ages and populations choices, counted at half weight
   state?: string; // two-letter code; a grant whose title names only other states or territories loses points
+  registrations?: string[]; // "sam", "grantsgov", "audit": what the "Can we apply?" checks read, never scored
 }
 
 const MINOR_WEIGHT = 0.5;

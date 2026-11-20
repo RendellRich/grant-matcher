@@ -176,6 +176,10 @@ No public catalog lists county and city grants, so they are kept by hand in `dat
 
 To add or change one, edit the file from the official page, update `checked`, and run `python -m grantmatch.local` to check it.
 
+## Can we apply?
+
+Every card ends with a short checklist of what usually stops a small nonprofit, checked against the profile (`web/src/ready.ts`): whether 501(c)(3) status is required, whether SAM.gov registration is needed (every federal grant; others when their text says so), whether a match is required, whether it pays by reimbursement or is a loan, and whether it is taking applications now (open, not open yet, between rounds, invitation only, not taking requests). Each source says different things, so each gets its own reader, and a check is left out when the record doesn't say. The profile's registrations ("SAM.gov and a UEI") turn the SAM.gov check green. It never changes a score; the caution and status lines it repeats stay off the card but still drive the filters and the CSV.
+
 ## Company foundations
 
 The IRS data can't tell a company's foundation from a family's. `data/corporate.json` names company foundations by EIN, the company behind each, and, where the company's own giving page says so, the local program a small nonprofit can apply to: who can apply, the amount, when and how. `grantmatch/corporate.py` checks the file, and the foundation cards show the company and its program, with a filter for company foundations. None of this changes a score.

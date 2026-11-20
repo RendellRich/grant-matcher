@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Entry } from "./entries";
+import { readySummary, type ReadyCheck } from "./ready";
 
 // ---------- icons: one stroke family, 1.75px at 20px ----------
 
@@ -50,11 +51,15 @@ export function EntryView(p: {
   e: Entry; marked: boolean; onMark: (e: Entry) => void; id?: string; stage?: preact.ComponentChildren; action?: MarkAction;
 }) {
   const { e } = p;
+  // Lines the "Can we apply?" checks already say stay off the card (the filters still read them).
+  const covered = new Set(e.covered ?? []);
+  const cautions = e.cautions.filter((x) => !covered.has(x));
+  const statusAll = e.status.filter((x) => !covered.has(x));
   // Fits and cautions always show. The other lines fill up to MAX_WHY rows, dated and history lines first; the rest wait in the details.
-  const room = Math.max(0, MAX_WHY - e.fits.length - e.cautions.length);
-  const status = e.status.slice(0, room);
+  const room = Math.max(0, MAX_WHY - e.fits.length - cautions.length - (e.ready?.length ? 1 : 0));
+  const status = statusAll.slice(0, room);
   const also = e.also.slice(0, room - status.length);
-  const rest = [...e.also.slice(also.length), ...e.status.slice(status.length)];
+  const rest = [...e.also.slice(also.length), ...statusAll.slice(status.length)];
   return (
     <article class="entry" aria-labelledby={`t-${e.key}`}>
       <div class="entry-top">
@@ -78,10 +83,11 @@ export function EntryView(p: {
       </p>
       <ul class="why">
         {e.fits.map((x) => <li class="good" key={x}><IconCheck /><span><span class="sr-only">Fits: </span>{x}</span></li>)}
-        {e.cautions.map((x) => <li class="warn" key={x}><IconAlert /><span><span class="sr-only">Caution: </span>{x}</span></li>)}
+        {cautions.map((x) => <li class="warn" key={x}><IconAlert /><span><span class="sr-only">Caution: </span>{x}</span></li>)}
         {also.map((x) => <li class="also" key={x}><IconInfo /><span><span class="sr-only">Also: </span>{x}</span></li>)}
         {status.map((x) => <li class="also" key={x}><IconClock /><span><span class="sr-only">Status: </span>{x}</span></li>)}
       </ul>
+      {e.ready?.length ? <ReadyLine checks={e.ready} id={`r-${e.key}`} /> : null}
       {p.stage}
       <div class="entry-actions">
         {p.action ? (
@@ -105,12 +111,40 @@ export function EntryView(p: {
 
 const MAX_WHY = 6;
 
+const SR: Record<ReadyCheck["state"], string> = { ok: "Fine: ", check: "Check: ", no: "Stops you: " };
+
+/** "Can we apply?" on the card: a few words per check on one wrapping line; the details give the sentences. */
+function ReadyLine({ checks, id }: { checks: ReadyCheck[]; id: string }) {
+  return (
+    <div class="can-apply">
+      <span class="can-apply-head" id={id}>Can we apply?<span class="sr-only"> {readySummary(checks)}.</span></span>
+      <ul aria-labelledby={id}>
+        {checks.map((c) => (
+          <li class={`ca-${c.state}`} key={c.key}>{c.state === "ok" ? <IconCheck /> : <IconAlert />}
+            <span><span class="sr-only">{SR[c.state]}</span>{c.label}</span></li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Details({ e, rest }: { e: Entry; rest: string[] }) {
   const label = e.source === "fdn" ? "How to apply and past grants" : e.source === "fed" ? "Summary" : "Details";
   return (
     <details class="more">
       <summary>{label}<span class="sr-only"> for {e.title}</span></summary>
       <div class="more-body">
+        {e.ready?.length ? (
+          <>
+            <p class="sub">Can we apply? {readySummary(e.ready)}</p>
+            <ul class="why">
+              {e.ready.map((c) => (
+                <li class={c.state === "ok" ? "good" : "warn"} key={c.key}>{c.state === "ok" ? <IconCheck /> : <IconAlert />}
+                  <span><span class="sr-only">{SR[c.state]}</span>{c.note}</span></li>
+              ))}
+            </ul>
+          </>
+        ) : null}
         {rest.length ? (
           <ul class="why">
             {rest.map((x) => <li class="also" key={x}><IconInfo /><span><span class="sr-only">Also: </span>{x}</span></li>)}
