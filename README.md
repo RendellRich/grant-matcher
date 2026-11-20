@@ -298,8 +298,8 @@ docs/images/            README screenshots
 
 ## Roadmap
 
+- Consultant plan: up to 10 client profiles, each with its own shortlist, quick switching between clients, and a weekly email per client or one combined
 - More states' grant catalogs
-- Email digest of new matches each week
 
 ## Why I built it
 
