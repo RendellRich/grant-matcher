@@ -1,0 +1,95 @@
+name: Deploy functions
+
+# Rebuilds and deploys the three bundled Supabase functions (search, weekly-email, deadline-reminders)
+# when the code they bundle changes, so a change to the scoring or the cards reaches visitors and free
+# accounts without anyone pasting a bundle by hand. billing, stripe-webhook and ingest stay manual.
+# Needs the repository secret SUPABASE_ACCESS_TOKEN (a Supabase personal access token); without it the
+# job says so and stops without failing.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/src/**"
+      - "web/package.json"
+      - "web/package-lock.json"
+      - "supabase/functions/search/**"
+      - "supabase/functions/weekly-email/**"
+      - "supabase/functions/deadline-reminders/**"
+      - "supabase/config.toml"
+      - ".github/workflows/deploy-functions.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-functions
+  cancel-in-progress: false
+
+env:
+  PROJECT_REF: lthfecwgvpekrjjqszof
+  SUPABASE_URL: https://lthfecwgvpekrjjqszof.supabase.co
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check for the access token
+        id: token
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::warning::SUPABASE_ACCESS_TOKEN is not set, so the functions were not deployed. Add it under Settings, Secrets and variables, Actions."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Test and build the bundles
+        if: steps.token.outputs.ok == 'true'
+        working-directory: web
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build:fn
+          npm run build:digest
+          npm run build:reminders
+          ls -la ../supabase/functions/*/dist/index.js
+      - uses: supabase/setup-cli@v1
+        if: steps.token.outputs.ok == 'true'
+        with:
+          version: latest
+      - name: Deploy
+        if: steps.token.outputs.ok == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          for fn in search weekly-email deadline-reminders; do
+            supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --use-api
+          done
+      - name: Check search answers a visitor
+        if: steps.token.outputs.ok == 'true'
+        env:
+          KEY: ${{ vars.GM_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          body='{"form":{"mission":"Free literacy tutoring for children","keywords":"literacy, reading","state":"FL","cities":"Tampa"},"vector":null}'
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o out.json -w '%{http_code}' -X POST "$SUPABASE_URL/functions/v1/search" \
+              -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: application/json" -d "$body")
+            if [ "$code" = "200" ] && grep -q '"lists"' out.json; then break; fi
+            sleep 10
+          done
+          echo "HTTP $code"; head -c 400 out.json; echo
+          [ "$code" = "200" ] && grep -q '"lists"' out.json
+          if grep -q '"ready"' out.json; then echo "Cards carry the Can we apply? checks."; else echo "::warning::No ready checks in the preview; check the bundle."; fi
