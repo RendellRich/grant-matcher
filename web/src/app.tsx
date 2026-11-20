@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { SyncNote, useAccountSync } from "./accountsync";
+import { PlanNote } from "./plannote";
 import { billing, clearUpgrade, isPaid, PLANS_URL, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
   loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
@@ -561,6 +562,7 @@ export function App() {
           {embedded && sentNote && !sentNote.ok ? <p class="toast warn" role="alert">{sentNote.text}</p> : null}
           {billNote ? <p class={`note${billNote.ok ? "" : " warn-note"}`} role={billNote.ok ? "status" : "alert"}>{billNote.text}</p> : null}
           {emailOffLink ? <EmailOff kind={emailOffLink.kind} token={emailOffLink.token} /> : null}
+          {!embedded && email && paidFor === email ? <PlanNote email={email} /> : null}
           {!embedded && email && isPaid(plan) ? <WeeklyEmail email={email} form={applied} vector={vector} reminders={reminders} /> : null}
           {!embedded && email && isPaid(plan) ? <SyncNote ws={sync.ws} turn={sync.turn} state={sync.state} /> : null}
           {!embedded && dueSoon.length && tab !== "shortlist" ? (

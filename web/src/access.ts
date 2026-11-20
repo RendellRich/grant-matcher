@@ -7,6 +7,7 @@ import { createClient, type Session } from "@supabase/supabase-js";
 import type { Entry, SourceKey } from "./entries";
 import type { ProfileForm } from "./profile";
 import type { Counts } from "./server/preview";
+import type { PlanView } from "../../supabase/functions/_shared/billing-core";
 
 // Both are public by design: the publishable key only lets the page call what row level security allows.
 export const SUPABASE_URL: string = import.meta.env.VITE_SUPABASE_URL || "https://lthfecwgvpekrjjqszof.supabase.co";
@@ -219,4 +220,24 @@ export async function setSync(on: boolean): Promise<unknown | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("set_sync", { p_on: on });
   return error ? null : data;
+}
+
+// ---------- the plan line ----------
+export type { PlanView };
+export interface PlanStatus { plan: string; status: string; billing: PlanView | null }
+
+/** How a paid plan is billed and when it renews, or null when it can't be read right now. */
+export async function planStatus(): Promise<PlanStatus | null> {
+  const session = await currentSession();
+  if (!session) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/billing`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "status" }),
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return body && typeof body.plan === "string" ? (body as PlanStatus) : null;
+  } catch { return null; }
 }
