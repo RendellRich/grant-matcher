@@ -1,6 +1,6 @@
 # Billing, plans, the weekly email and deadline reminders
 
-How paid plans work, where each piece lives, and how to take Grant Matcher from the Stripe sandbox to real payments.
+How paid plans work, where each piece lives, and how it runs on real payments.
 Nothing secret is in this file or anywhere in the repository.
 
 ## The pieces
@@ -46,15 +46,29 @@ In the Dashboard this is Create secret key, Building your own integration, Custo
 - Webhook destination: `https://lthfecwgvpekrjjqszof.supabase.co/functions/v1/stripe-webhook` with the 9 events in `HANDLED_EVENTS`.
 - Billing settings: Smart Retries (8 tries in 2 weeks), cancel after the last retry, emails for expiring cards, failed card payments and payments that need confirmation, receipts for payments and refunds.
 
-## Going live
+## Live mode (done, November 19, 2026)
 
-1. Finish Stripe's account activation (verify email, Activate Payments: the LLC's EIN, bank account, ID).
-2. In live mode, repeat the sandbox setup above. Sandbox objects and settings don't carry over. The lookup keys must match exactly, because the code finds prices by them.
-3. Make a live restricted key with the same permissions and replace `STRIPE_SECRET_KEY`.
-4. Make the live webhook destination and replace `STRIPE_WEBHOOK_SECRET` with its signing secret.
-5. Upload the policy pages (`/grant-matcher/terms/`, `/privacy/`, `/refunds/`) if they aren't live yet, and set them in Stripe's public business details.
-6. Point the pricing page's Pro button at `https://rendellrich.github.io/grant-matcher/?upgrade=pro`. Keep Consultant on the waitlist until its features exist.
-7. Buy Pro once with a real card on your own account, check the account switches to Pro, then refund it from the Dashboard.
+Real payments are on. Stripe account: Solutions by Rich LLC (live, activated with the LLC's EIN). The sandbox stays as it was for testing.
+
+- Products copied from the sandbox with Stripe's copy tool, same product IDs. The Pro price keeps lookup key `gm_pro_monthly`. Consultant has no live price yet, so it stays waitlist only.
+- Founding price: coupon `FOUNDING_PRO` ($10 off Pro forever, 50 uses) and promotion code `FOUNDING29` (first-time customers, 50 uses).
+- Billing portal: cancel at period end with a reason, update card, invoices, name and billing address. Email and phone changes off, so the Stripe email can't drift from the Grant Matcher sign-in. No plan switching.
+- Public details: Terms and Privacy links, support email ren@solutionsbyrich.com. The phone number is not printed on receipts.
+- Failed payments: retries on, the subscription cancels after the last one, failed-card and expiring-card emails with Stripe's hosted update page. Receipts for payments and refunds.
+- Radar Lite (free). Stripe Tax off.
+- Webhook destination `grant-matcher-supabase` (`we_1UdfHCIQhluXffqOVMC9TsGh`), same URL and the same 9 events.
+- Restricted key `grant-matcher-live` (`rk_live_`), same permissions as above. Both live values are in the Supabase secrets.
+- The pricing page at solutionsbyrich.com/grant-matcher sends Get Pro to `https://rendellrich.github.io/grant-matcher/?upgrade=pro`.
+
+Checked: the live key creates live customers and checkout sessions. Not yet checked: the webhook signing secret. The first real sale proves it. If an event fails, Stripe retries for up to 3 days, so fix the secret and the account catches up on the next retry.
+
+After the first sale, run the first query under Everyday checks and confirm a `checkout.session.completed` row with `livemode = true`, then check that account is `pro` and `founding`.
+
+Stripe sign-in uses Google Authenticator for two-step. Keep the backup code somewhere safe. Without a working method you can't create keys or reveal secrets.
+
+### Switching back to the sandbox
+
+Put the `rk_test_` key and the sandbox webhook secret back in Supabase. Checkout then works only for accounts with `billing_tester = true`.
 
 ## Everyday checks
 
@@ -69,7 +83,8 @@ In the Dashboard this is Create secret key, Building your own integration, Custo
   - `failed`: see the function's logs.
 - Deadline reminder runs (every 10 minutes, 12:00 to 15:50 UTC): the same table. `none due` most of the time; `sent N` when N accounts got a reminder email.
 - What an account has saved for reminders: `select key, due, stage, sent14, sent3 from public.reminders where account_id = '...';`
-- Give a free comp: set `plan = 'consultant', status = 'active'` on the account. Test checkouts need `billing_tester = true`.
+- Give a free comp: set `plan = 'consultant', status = 'active'` on the account.
+- A `stripe_customer_id` saved while testing in the sandbox breaks checkout and the portal in live mode. Set it to null and the next checkout makes a live one.
 
 ## Limits to know
 
