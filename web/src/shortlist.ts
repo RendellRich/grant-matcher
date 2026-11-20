@@ -1,6 +1,7 @@
 // The shortlist, with where each grant stands: saved for later, being applied for, or submitted.
 // Submitted ones leave the results so they stop coming up, and stay on the shortlist with their date.
-// Kept in this browser only, under the same key as before stages existed.
+// Kept in this browser under the same key as before stages existed. Pro accounts also save it to the account
+// (sync.ts), so it follows them to other devices.
 
 import type { Entry } from "./entries";
 
@@ -13,7 +14,8 @@ export const STAGES: { id: Stage; label: string; since: string }[] = [
 ];
 export const STAGE_LABEL: Record<Stage, string> = { saved: "Saved", applying: "Applying", submitted: "Submitted" };
 
-export type Item = Entry & { stage: Stage; stageAt: string; due?: string }; // due: the person's own date, "YYYY-MM-DD"
+// due: the person's own date, "YYYY-MM-DD". at: when this item last changed, so two devices' copies can be merged.
+export type Item = Entry & { stage: Stage; stageAt: string; due?: string; at?: string };
 
 const isStage = (v: unknown): v is Stage => v === "saved" || v === "applying" || v === "submitted";
 
@@ -26,6 +28,7 @@ export function parseShortlist(raw: string | null): Item[] {
       .map((e) => ({
         ...e, stage: isStage(e.stage) ? e.stage : "saved", stageAt: typeof e.stageAt === "string" ? e.stageAt : "",
         due: typeof e.due === "string" && YMD.test(e.due) ? e.due : undefined,
+        at: typeof e.at === "string" ? e.at : undefined,
       }));
   } catch {
     return [];
@@ -36,11 +39,11 @@ export function parseShortlist(raw: string | null): Item[] {
 export function toggle(items: Item[], e: Entry, now: Date = new Date()): Item[] {
   if (items.some((x) => x.key === e.key)) return items.filter((x) => x.key !== e.key);
   const { isNew: _drop, ...rest } = e; // "new" is about one visit, not worth keeping
-  return [...items, { ...rest, stage: "saved", stageAt: now.toISOString() }];
+  return [...items, { ...rest, stage: "saved", stageAt: now.toISOString(), at: now.toISOString() }];
 }
 
 export function setStage(items: Item[], key: string, stage: Stage, now: Date = new Date()): Item[] {
-  return items.map((x) => (x.key === key && x.stage !== stage ? { ...x, stage, stageAt: now.toISOString() } : x));
+  return items.map((x) => (x.key === key && x.stage !== stage ? { ...x, stage, stageAt: now.toISOString(), at: now.toISOString() } : x));
 }
 
 export function submittedKeys(items: Item[]): Set<string> {
@@ -61,9 +64,9 @@ export const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).p
 const parseYmd = (s: string) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 
 /** The person's own deadline for one entry; an empty value clears it. */
-export function setDue(items: Item[], key: string, due: string): Item[] {
+export function setDue(items: Item[], key: string, due: string, now: Date = new Date()): Item[] {
   const v = YMD.test(due) ? due : undefined;
-  return items.map((x) => (x.key === key ? { ...x, due: v } : x));
+  return items.map((x) => (x.key === key && x.due !== v ? { ...x, due: v, at: now.toISOString() } : x));
 }
 
 /** What Grants.gov lists today for each shortlisted federal grant: its close date, null for none, or

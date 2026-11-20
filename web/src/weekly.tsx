@@ -48,7 +48,7 @@ export function WeeklyEmail(p: { email: string; form: ProfileForm; vector: numbe
       {info.on ? (
         <p>On. Each week we email {p.email} the new strong matches for {same ? "this profile" : "the profile you saved"}.</p>
       ) : (
-        <p>Get new strong matches for this profile by email each week. Your profile is saved to your account only while this is on.</p>
+        <p>Get new strong matches for this profile by email each week.</p>
       )}
       <div class="weekly-actions">
         {!info.on ? (
@@ -65,7 +65,7 @@ export function WeeklyEmail(p: { email: string; form: ProfileForm; vector: numbe
       {info.reminders ? (
         <p>On. We email {p.email} 14 days and 3 days before {count ? `each of the ${plural(count, "deadline")} on your shortlist` : "each deadline you add to your shortlist"}. Mark a grant Submitted and its reminders stop.</p>
       ) : (
-        <p>Get an email 14 days and 3 days before each deadline on your shortlist. The shortlisted grants and their dates are saved to your account only while this is on.</p>
+        <p>Get an email 14 days and 3 days before each deadline on your shortlist.</p>
       )}
       <div class="weekly-actions">
         {!info.reminders ? (

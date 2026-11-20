@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { SyncNote, useAccountSync } from "./accountsync";
 import { billing, clearUpgrade, isPaid, PLANS_URL, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
   loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
@@ -61,6 +62,7 @@ function useShortlist() {
     stage: (key: string, s: Stage) => save(setStage(items, key, s)),
     due: (key: string, d: string) => save(setDue(items, key, d)),
     clear: () => { setItems([]); try { localStorage.removeItem("gm-shortlist"); } catch { /* */ } },
+    replace: (next: Item[]) => save(next), // the account's copy (accountsync.tsx)
   };
 }
 type Shortlist = ReturnType<typeof useShortlist>;
@@ -140,6 +142,10 @@ export function App() {
   const [draft, setDraft] = useState<ProfileForm>(BLANK);
   const [applied, setApplied] = useState<ProfileForm>(BLANK);
   const [vector, setVector] = useState<number[] | null>(null);
+  // The profile on screen is the person's own (searched with, or loaded from their account), not an example.
+  const [ownProfile, setOwnProfile] = useState(false);
+  const searched = useRef(false); // the person pressed Update matches this visit
+  const fromAccount = useRef(false); // the account's saved profile is on screen; the example must not replace it
   const [busy, setBusy] = useState("");
   const [status, setStatus] = useState("");
   const [modelFailed, setModelFailed] = useState(false);
@@ -178,7 +184,7 @@ export function App() {
     loadMeta().then(setMeta).catch(() => setMeta({ states: [] }));
     loadExamples().then((ex) => {
       setExamples(ex);
-      if (fromParent.current) return; // ETO's own profile arrived first; the example must not replace it
+      if (fromParent.current || fromAccount.current) return; // ETO's or the account's profile came first
       const first = ex.literacy ?? Object.values(ex)[0];
       const f = exampleForm(first);
       setDraft(f); setApplied(f); setVector(first.vector);
@@ -223,6 +229,9 @@ export function App() {
   const pv = gate.state === "preview" ? gate : null;
   const full = gate.state === "full" ? gate : null;
   const plan = (full ?? pv)?.plan ?? null;
+  // Once the account shows as paid, it stays so for this sign-in, so a search in flight doesn't stop saving.
+  const [paidFor, setPaidFor] = useState<string | null>(null);
+  useEffect(() => { if (!email) setPaidFor(null); else if (isPaid(plan)) setPaidFor(email); }, [email, plan]);
   // After checkout, ask again every few seconds (up to about half a minute) until the plan shows as paid.
   useEffect(() => {
     if (!upgraded.current || !email) return;
@@ -338,6 +347,8 @@ export function App() {
     setBusy("");
     setVector(v);
     setApplied(f);
+    searched.current = true;
+    setOwnProfile(true);
     setStatus("updated");
   }
 
@@ -433,12 +444,31 @@ export function App() {
     const ex = examples?.[key];
     const f = ex ? exampleForm(ex) : { ...BLANK, state: draft.state };
     setExampleKey(key);
+    setOwnProfile(false);
     setDraft(f);
     // An example applies at once, and has its vector ready, so nothing needs downloading.
     setApplied(f);
     setVector(ex ? ex.vector : null);
     setStatus("");
   }
+
+  // The profile saved to a Pro account, put on screen once per visit unless the person already searched.
+  function loadFromAccount(f: ProfileForm, v: number[] | null): boolean {
+    if (searched.current || fromAccount.current || embedded || fromParent.current) return false;
+    fromAccount.current = true;
+    setLoadedFrom("account");
+    setExampleKey("");
+    setDraft(f);
+    // update() marks the profile as the person's own once it is on screen, so nothing older is saved over it.
+    if (v || !(f.mission.trim() || f.keywords.trim())) { setApplied(f); setVector(v); setOwnProfile(true); setStatus("Loaded the profile saved to your account."); }
+    else void update(f, true); // saved without a vector: read the mission here
+    return true;
+  }
+  const sync = useAccountSync({
+    email, enabled: !embedded && !!email && paidFor === email, items: shortlist.items, replace: shortlist.replace,
+    applied, vector, ownProfile, loadProfile: loadFromAccount,
+  });
+  const synced = Boolean(sync.ws?.paid && sync.ws.on);
 
   function loadProfile(f: ProfileForm) {
     setLoadedFrom("file");
@@ -532,6 +562,7 @@ export function App() {
           {billNote ? <p class={`note${billNote.ok ? "" : " warn-note"}`} role={billNote.ok ? "status" : "alert"}>{billNote.text}</p> : null}
           {emailOffLink ? <EmailOff kind={emailOffLink.kind} token={emailOffLink.token} /> : null}
           {!embedded && email && isPaid(plan) ? <WeeklyEmail email={email} form={applied} vector={vector} reminders={reminders} /> : null}
+          {!embedded && email && isPaid(plan) ? <SyncNote ws={sync.ws} turn={sync.turn} /> : null}
           {!embedded && dueSoon.length && tab !== "shortlist" ? (
             <p class="note due-soon">
               <strong>{dueSoon.length === 1 ? "1 grant on your shortlist is" : `${dueSoon.length} grants on your shortlist are`} due within a week</strong>
@@ -580,7 +611,7 @@ export function App() {
 
 
   function panel(k: string) {
-    if (k === "shortlist") return <ShortlistPanel list={shortlist} listed={listed} />;
+    if (k === "shortlist") return <ShortlistPanel list={shortlist} listed={listed} synced={synced} />;
     if (pv) return previewPanel(k as SourceKey);
     if (missing(k as SourceKey)) return <p class="note">This data isn't available right now. Try again in a few minutes.</p>;
     if (k === "fed") return federalPanel();
@@ -1006,7 +1037,7 @@ function fmtStamp(iso: string): string {
 const fmtYmd = (d: string) => fmtDate(new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)));
 const fmtIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-function ShortlistPanel({ list, listed }: { list: Shortlist; listed: Listed }) {
+function ShortlistPanel({ list, listed, synced }: { list: Shortlist; listed: Listed; synced: boolean }) {
   const [confirm, setConfirm] = useState(false);
   const [moved, setMoved] = useState<{ key: string; text: string } | null>(null);
   // Changing a stage moves the entry to another group; keep focus on its stage control there.
@@ -1015,7 +1046,7 @@ function ShortlistPanel({ list, listed }: { list: Shortlist; listed: Listed }) {
     return (
       <div class="tally">
         <h2>Your shortlist is empty</h2>
-        <p class="quiet">Press Add to shortlist on any result to save it here. Move it to Applying when you start the application, and to Submitted once it is sent, so it stops showing in your results. The shortlist stays in this browser on this device, and nothing is sent anywhere.</p>
+        <p class="quiet">Press Add to shortlist on any result to save it here. Move it to Applying when you start the application, and to Submitted once it is sent, so it stops showing in your results. {synced ? "Your shortlist is saved to your account, so it's the same wherever you sign in." : "The shortlist stays in this browser on this device, and nothing is sent anywhere."}</p>
       </div>
     );
   }
@@ -1034,7 +1065,7 @@ function ShortlistPanel({ list, listed }: { list: Shortlist; listed: Listed }) {
     <>
       <div class="tally">
         <h2><strong>{list.items.length}</strong> on your shortlist</h2>
-        <p class="quiet">{groups.map((g) => `${g.items.length} ${g.label.toLowerCase()}`).join(", ")}. Kept in this browser on this device. Scores are from when you added each one.</p>
+        <p class="quiet">{groups.map((g) => `${g.items.length} ${g.label.toLowerCase()}`).join(", ")}. {synced ? "Kept with your account, on every device." : "Kept in this browser on this device."} Scores are from when you added each one.</p>
         <p class="sr-only" role="status">{moved?.text ?? ""}</p>
       </div>
       {soon.length ? (
@@ -1186,7 +1217,7 @@ function Footer({ coverage }: { coverage: boolean }) {
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
       <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page. California data from the California Grants Portal, published by the California State Library.</p>
-      <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there; your shortlist stays in this browser.</p>
+      <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there. Your shortlist stays in this browser, unless you have Pro and save your profile and shortlist to your account.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>
   );

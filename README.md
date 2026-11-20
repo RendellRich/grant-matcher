@@ -44,7 +44,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Narrows the list** without changing any score: search words across every result and its details, award size, deadline and agency for federal grants, agency for Florida programs, and for foundations their typical grant, whether they publish how to apply, whether they refuse unsolicited requests, and whether they're based in or fund your cities.
 - **Marks what's new.** Grants, foundations and programs that weren't in the data at your last visit carry a New tag, and "Only new since your last visit" shows just those. The record of what you've seen stays in your browser.
 - **Flags eligibility while your 501(c)(3) is pending.** Foundations whose own filing asks for 501(c)(3) status or an IRS determination letter get a caution and a lower score, with a note about a fiscal sponsor, and one checkbox hides them. Federal grants that require 501(c)(3) status say the same.
-- **Keeps a shortlist** of the results you mark, saved in your browser on your device, with its own CSV. Each one has a stage: Saved, Applying or Submitted, with the date it moved. Submitted ones stop showing in the results and stay on the shortlist.
+- **Keeps a shortlist** of the results you mark, saved in your browser and, on Pro, to your account so it is the same on every device, with its own CSV. Each one has a stage: Saved, Applying or Submitted, with the date it moved. Submitted ones stop showing in the results and stay on the shortlist.
 - **Tracks deadlines** for what is on the shortlist: set your own date for any grant (federal ones start from the Grants.gov date), see what is due in the next 30 days under Coming up, get a note on each visit when something is due within a week, and download a calendar file with reminders two weeks and three days before each deadline. If Grants.gov moves a deadline or drops a grant you saved, the shortlist says so.
 - **Saves your profile** as a small JSON file you can load next time. Nothing is stored on a server, so the profile clears when you close the page.
 
@@ -176,6 +176,15 @@ To add a state, write an adapter that produces the same record fields, add it to
 No public catalog lists county and city grants, so they are kept by hand in `data/local-FL.json`, one entry per program, from the program's own page: the counties it serves, who can apply, whether it requires 501(c)(3) status, the application window when there is one, and the date the page was checked. `grantmatch/local.py` checks every entry (a bad date, an unknown county or a repeated name stops the export) and adds them to the Florida tab as county programs, keyed `fl:local-<slug>`. They score like state programs, with two more rules: points off when your cities are outside the county, and when the program requires 501(c)(3) status you don't have yet. Word rarity and the similarity median are still measured on the state programs alone, so adding or editing an entry never changes a state program's score. The weekly website check reads each program's page, and its closing date goes into `changes.json` like a federal deadline.
 
 To add or change one, edit the file from the official page, update `checked`, and run `python -m grantmatch.local` to check it.
+
+## Profile and shortlist on any device
+
+On a paid plan the page saves the profile you last searched with (and the mission vector your browser made, so another device doesn't download the model) and the whole shortlist to the account, in the `profiles` and `shortlist_items` tables (`supabase/migrations/20261120140000_saved_workspace.sql`, `web/src/sync.ts`, `web/src/accountsync.tsx`). Another device that signs in loads them: the saved profile replaces the example unless you already searched this visit, and the shortlist follows the rules below.
+
+- The browser keeps its own copy as before, and remembers which account and version it came from and whether it changed since.
+- On sign-in a clean copy takes the account's; a changed one, or one never linked to an account, is merged with the account's and saved. A copy from a different account is replaced, never mixed in.
+- A save names the version it started from. If another device saved in between, the server returns its copy, the page merges the two (every item on either list, the newer copy of each) and saves again. A grant removed on one device while another changed the list can come back; removing it again sticks.
+- "Stop saving and delete the account copy" turns it off and deletes the saved profile and shortlist. Free accounts keep everything in the browser only.
 
 ## Can we apply?
 
