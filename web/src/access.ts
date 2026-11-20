@@ -193,26 +193,44 @@ export async function saveReminders(on: boolean, items: unknown[]): Promise<{ in
 
 // ---------- profile and shortlist on any device (sync.ts) ----------
 
-/** The account's saved profile and shortlist, or null when signed out or unreachable. */
-export async function myWorkspace(): Promise<unknown | null> {
+/** The account's saved profile and shortlist (for client `id` on Consultant), or null when signed out or unreachable. */
+export async function myWorkspace(id: string | null = null): Promise<unknown | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc("my_workspace");
+  const { data, error } = await supabase.rpc("my_workspace", { p_id: id });
   return error ? null : data;
 }
 
-export async function saveProfileRemote(form: ProfileForm, vector: number[] | null): Promise<boolean> {
+export async function saveProfileRemote(form: ProfileForm, vector: number[] | null, id: string | null = null): Promise<boolean> {
   if (!supabase) return false;
-  const { data, error } = await supabase.rpc("save_profile", { p_profile: form, p_vector: vector });
+  const { data, error } = await supabase.rpc("save_profile", { p_profile: form, p_vector: vector, p_id: id });
   return !error && (data as { ok?: boolean })?.ok === true;
 }
 
 /** Saves the shortlist over version `base`. A conflict brings back the account's newer copy. */
 export type ShortlistSave = { ok: true; version: number } | { ok: false; version?: number; shortlist?: unknown; off?: boolean; failed?: boolean };
-export async function saveShortlistRemote(items: unknown[], base: number): Promise<ShortlistSave> {
+export async function saveShortlistRemote(items: unknown[], base: number, id: string | null = null): Promise<ShortlistSave> {
   if (!supabase) return { ok: false, failed: true };
-  const { data, error } = await supabase.rpc("save_shortlist", { p_items: items, p_base: base });
+  const { data, error } = await supabase.rpc("save_shortlist", { p_items: items, p_base: base, p_id: id });
   if (error || !data) return { ok: false, failed: true };
   return data as ShortlistSave;
+}
+
+/** Consultant client profiles: add, rename, delete. Each returns an error to show, or the new id. */
+export async function addClient(label: string): Promise<{ id?: string; error?: string }> {
+  if (!supabase) return { error: "Sign in first." };
+  const { data, error } = await supabase.rpc("add_client", { p_label: label });
+  if (error) return { error: /keeps 10/.test(error.message) ? "You have 10 clients, the most this plan keeps." : /Name the client|Consultant|Turn on saving/.test(error.message) ? error.message : "Couldn't add that client. Try again in a minute." };
+  return { id: (data as { id?: string })?.id };
+}
+export async function renameClient(id: string, label: string): Promise<string | null> {
+  if (!supabase) return "Sign in first.";
+  const { error } = await supabase.rpc("rename_client", { p_id: id, p_label: label });
+  return error ? (/Name the client/.test(error.message) ? error.message : "Couldn't rename that client. Try again in a minute.") : null;
+}
+export async function deleteClient(id: string): Promise<string | null> {
+  if (!supabase) return "Sign in first.";
+  const { error } = await supabase.rpc("delete_client", { p_id: id });
+  return error ? (/at least one/.test(error.message) ? error.message : "Couldn't delete that client. Try again in a minute.") : null;
 }
 
 /** Turns saving to the account on, or off (which deletes the saved copies). Returns the new workspace. */
