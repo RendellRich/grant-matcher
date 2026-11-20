@@ -9,6 +9,7 @@ import {
   isNarrowed, narrow, NO_NARROW, profileNarrow, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
 } from "./entries";
 import { download, toCsv, toIcs } from "./exports";
+import { summariesFile } from "./summary";
 import { exampleForm, ProfileFormView } from "./form";
 import { CoverageNote } from "./coverage";
 import { BLANK, expandCities, sameForm, STATE_NAMES, type ProfileForm } from "./profile";
@@ -1069,6 +1070,9 @@ function ShortlistPanel({ list, listed }: { list: Shortlist; listed: Listed }) {
         ) : null}
         <button type="button" class="btn" onClick={() => download("shortlist.csv", entriesCsv(list.items, true), "text/csv")}>
           <IconDownload />Download your shortlist (CSV)
+        </button>
+        <button type="button" class="btn" onClick={() => download("shortlist-summaries.txt", summariesFile(list.items), "text/plain")}>
+          <IconDownload />Download one-page summaries (.txt)
         </button>
         {confirm ? (
           <span class="confirm" role="alert">Remove all {list.items.length}?
