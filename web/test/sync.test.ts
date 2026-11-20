@@ -55,3 +55,14 @@ describe("account sync", () => {
     expect(w.shortlist?.[0].stage).toBe("saved");
   });
 });
+
+import { saveLine } from "../src/accountsync";
+describe("save status line", () => {
+  it("says what happened to the last change", () => {
+    expect(saveLine({ kind: "idle" })).toBeNull();
+    expect(saveLine({ kind: "saving" })?.warn).toBe(false);
+    expect(saveLine({ kind: "saved", at: new Date(2026, 10, 20, 14, 5) })?.text).toBe("Last saved at 2:05 PM.");
+    expect(saveLine({ kind: "failed", what: "save" })).toMatchObject({ warn: true });
+    expect(saveLine({ kind: "failed", what: "load" })?.text).toMatch(/Couldn't reach your account/);
+  });
+});
