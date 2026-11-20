@@ -722,6 +722,26 @@
       "subjects": "Tourism; Events; Arts; Culture; Recreation",
       "url": "https://s3.us-east-1.amazonaws.com/crystalriver-2019/images/FY2027-Special-Event-Marketing-Grant.pdf",
       "checked": "2026-11-20"
+    },
+    {
+      "slug": "lee-opioid-abatement",
+      "title": "Opioid Abatement Plan Request for Applications",
+      "agency": "Lee County Human and Veteran Services",
+      "level": "County",
+      "counties": ["Lee"],
+      "objectives": "Five-year grants for projects aligned with the 2025 Lee County Opioid Abatement Plan, including new programs or services that do not yet exist in the county, to improve outcomes for people and families affected by substance use.",
+      "who": "Nonprofits with 501(c)(3) status or public agencies, authorized to do business in Florida, that have provided continuous direct services for at least 12 months before the deadline.",
+      "requires_501c3": true,
+      "application": "A pre-application is required; applicants who meet the minimum threshold are invited to submit a full application by email. Contracts are cost reimbursement, and applicants must commit to the full five-year term.",
+      "award": "$100,000 to $750,000 per year for five years; partial funding possible.",
+      "opens": null,
+      "closes": null,
+      "deadlines": "The 2026 request was released March 2, 2026, with pre-applications due March 13 and applications due May 11, 2026 at 5 p.m. Watch the funding page for the next round.",
+      "contact": "Tara Martinson, tmartinson@leegov.com",
+      "subjects": "Substance use; Opioids; Behavioral health; Prevention; Treatment; Recovery",
+      "url": "https://www.leefl.gov/DocumentCenter/View/1116/RFA-051126-OAP---Request-for-Applications-for-Projects-Aligned-with-the-Lee-County-Opioid-Abatement-Plan-PDF",
+      "web": "https://www.leefl.gov/341/Funding-Opportunities",
+      "checked": "2026-11-20"
     }
   ]
 }
