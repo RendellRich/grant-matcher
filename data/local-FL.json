@@ -333,25 +333,6 @@
       "checked": "2026-11-20"
     },
     {
-      "slug": "clearwater-cultural-affairs",
-      "title": "Cultural Affairs Nonprofit Grant Program",
-      "agency": "City of Clearwater",
-      "level": "City",
-      "counties": ["Pinellas"],
-      "objectives": "City grants for cultural programs and projects that benefit Clearwater.",
-      "who": "Public entities or Florida nonprofit, tax-exempt corporations. Groups do not have to be based in Clearwater, but the benefit must be local.",
-      "requires_501c3": false,
-      "application": "Apply separately for each unique cultural program or project. A sample application is posted.",
-      "award": "Varies by project; no organization may receive more than $250,000 in total over the program.",
-      "opens": null,
-      "closes": null,
-      "deadlines": "See the city's site for the current cycle.",
-      "contact": "stephanie.scalos@myclearwater.com",
-      "subjects": "Arts; Culture; Events",
-      "url": "https://www.myclearwater.com/files/sharedassets/public/v/3/economic-development/documents/culturalaffairsnonprofitgrantprogram_application-sample-only-1.pdf",
-      "checked": "2026-11-19"
-    },
-    {
       "slug": "clearwater-public-services",
       "title": "Public Service Provider Funding (CDBG)",
       "agency": "City of Clearwater, Affordable Housing and Community Development",
