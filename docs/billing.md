@@ -32,7 +32,7 @@ In the Dashboard this is Create secret key, Building your own integration, Custo
 ## Safety rules built in
 
 - **Test key, tester accounts only.** While the key is a test key, `billing` lets only accounts with `billing_tester = true` check out. Everyone else sees "Paid plans aren't open yet", so nobody can unlock Pro with Stripe's public test cards.
-- **Yearly.** The page sends `interval: "year"` (or the pricing page links `?upgrade=pro&interval=year`) and the function looks up the `_yearly` key instead of `_monthly`. Yearly checkouts take no promotion codes: the founding coupon is $10 off every invoice, which makes monthly $29 but would only take $10 off a year. The founding price is monthly only. A monthly subscriber who wants yearly needs plan switching turned on in the portal, which is off for now.
+- **Yearly.** The page sends `interval: "year"` (or the pricing page links `?upgrade=pro&interval=year`) and the function looks up the `_yearly` key instead of `_monthly`. Yearly checkouts take no promotion codes: the founding coupon is $10 off every invoice, which makes monthly $29 but would only take $10 off a year. The founding price is monthly only. Subscribers switch between monthly and yearly in the portal (see Live mode). A founding subscriber who switches to yearly keeps the $10 coupon, so pays $380 a year.
 - **Modes never mix.** The webhook ignores test events when the key is live, and live events when the key is a test key.
 - **Each event once.** Webhook events are recorded in `billing_events` and a repeat is skipped. A failure returns 500 so Stripe retries.
 - **Paid means** plan `pro` or `consultant` with status `active`, `trialing` or `past_due` (Stripe is still retrying). After the last failed retry Stripe cancels the subscription and the account goes back to Free.
@@ -53,8 +53,9 @@ Real payments are on. Stripe account: Solutions by Rich LLC (live, activated wit
 
 - Products copied from the sandbox with Stripe's copy tool, same product IDs. The Pro price keeps lookup key `gm_pro_monthly`. Yearly Pro ($390, lookup key `gm_pro_yearly`) added November 20, 2026. Consultant has no live price yet, so it stays waitlist only.
 - Founding price: coupon `FOUNDING_PRO` ($10 off Pro forever, 50 uses) and promotion code `FOUNDING29` (first-time customers, 50 uses).
-- Billing portal: cancel at period end with a reason, update card, invoices, name and billing address. Email and phone changes off, so the Stripe email can't drift from the Grant Matcher sign-in. No plan switching.
+- Billing portal: cancel at period end with a reason, update card, invoices, name and billing address. Email and phone changes off, so the Stripe email can't drift from the Grant Matcher sign-in. Plan switching on (November 20, 2026) between Pro monthly and Pro yearly: monthly to yearly applies at once, prorated and invoiced immediately; yearly to monthly applies when the paid year ends. No promotion codes or quantity changes in the portal.
 - Public details: Terms and Privacy links, support email ren@solutionsbyrich.com. The phone number is not printed on receipts.
+- Renewal reminders: on (November 20, 2026), 7 days before every renewal, monthly and yearly. Card-update links in all emails go to Stripe's hosted page (the legacy custom link to solutionsbyrich.com is gone and can't be restored). Emails include a link to the customer portal.
 - Failed payments: retries on, the subscription cancels after the last one, failed-card and expiring-card emails with Stripe's hosted update page. Receipts for payments and refunds.
 - Radar Lite (free). Stripe Tax off.
 - Webhook destination `grant-matcher-supabase` (`we_1UdfHCIQhluXffqOVMC9TsGh`), same URL and the same 9 events.
