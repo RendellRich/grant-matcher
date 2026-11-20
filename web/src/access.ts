@@ -141,7 +141,11 @@ export function takeUpgradedParam(): boolean {
 }
 
 /** The account's weekly email of new strong matches (paid plans). */
-export interface DigestInfo { on: boolean; sent_at?: string | null; profile?: unknown; reminders?: boolean; reminder_count?: number }
+export interface DigestInfo {
+  on: boolean; sent_at?: string | null; profile?: unknown; reminders?: boolean; reminder_count?: number;
+  /** Consultant: one email per client or one combined, and each client's weekly email. */
+  plan?: string; mode?: "each" | "combined"; clients?: { id: string; label: string; on: boolean; ready: boolean }[];
+}
 
 export async function myDigest(): Promise<DigestInfo | null> {
   if (!supabase) return null;
@@ -184,9 +188,10 @@ export async function emailOff(kind: EmailKind, token: string): Promise<boolean>
 }
 
 /** Turns deadline reminders on with these shortlisted grants (replacing the last set), or off. */
-export async function saveReminders(on: boolean, items: unknown[]): Promise<{ info?: DigestInfo; error?: string }> {
+/** Reminders for the shortlist; on Consultant, `client` says whose shortlist it is (that client's set is replaced). */
+export async function saveReminders(on: boolean, items: unknown[], client: string | null = null): Promise<{ info?: DigestInfo; error?: string }> {
   if (!supabase) return { error: "Sign in first." };
-  const { data, error } = await supabase.rpc("set_reminders", { p_on: on, p_items: on ? items : [] });
+  const { data, error } = await supabase.rpc("set_reminders", { p_on: on, p_items: on ? items : [], p_id: client });
   if (error) return { error: error.message.includes("Pro") ? "Deadline reminders come with Pro." : "Couldn't save that. Try again in a minute." };
   return { info: data as DigestInfo };
 }
@@ -258,4 +263,17 @@ export async function planStatus(): Promise<PlanStatus | null> {
     const body = await res.json();
     return body && typeof body.plan === "string" ? (body as PlanStatus) : null;
   } catch { return null; }
+}
+
+/** Consultant: turns the weekly email on or off for one client, and picks one email per client or one combined. */
+export async function saveClientDigest(id: string, on: boolean): Promise<{ info?: DigestInfo; error?: string }> {
+  if (!supabase) return { error: "Sign in first." };
+  const { data, error } = await supabase.rpc("save_client_digest", { p_id: id, p_on: on });
+  if (error) return { error: /Search with this client/.test(error.message) ? "Search with this client's profile first, then turn the email on." : "Couldn't save that. Try again in a minute." };
+  return { info: data as DigestInfo };
+}
+export async function setDigestMode(mode: "each" | "combined"): Promise<{ info?: DigestInfo; error?: string }> {
+  if (!supabase) return { error: "Sign in first." };
+  const { data, error } = await supabase.rpc("set_digest_mode", { p_mode: mode });
+  return error ? { error: "Couldn't save that. Try again in a minute." } : { info: data as DigestInfo };
 }

@@ -57,7 +57,7 @@ export async function handle(req: Request): Promise<Response> {
         }),
       });
       if (!res.ok) throw new Error(`resend ${res.status} ${(await res.text()).slice(0, 200)}`);
-      await rpc("mark_reminders", { p_account: a.account_id, p_keys: a.items.map((x) => x.key) });
+      await rpc("mark_reminders", { p_account: a.account_id, p_keys: a.items.map((x) => `${x.client ?? ""}|${x.key}`) });
       sent++;
     } catch (e) {
       failed++;

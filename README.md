@@ -191,7 +191,7 @@ On a paid plan the page saves the profile you last searched with (and the missio
 
 A Consultant account keeps up to 10 client profiles (`supabase/migrations/20261120180000_client_profiles.sql`, `web/src/clients.tsx`). A Client menu above the profile opens a client: the page saves anything not yet saved for the one on screen, then loads the other's profile and shortlist. A new client starts blank. Rename and Delete act on the client that's open; the last one can't be deleted. Each device remembers the client it last had open. Pro keeps a single profile and sees no menu.
 
-Still to come (part two): the weekly email per client or combined, and deadline reminders for every client's shortlist. Until then the weekly email and reminders follow the client that's open.
+**Emails** (`supabase/migrations/20261120200000_client_emails.sql`). The weekly email is turned on per client and uses that client's saved profile; each client remembers which matches it was already sent. The account picks one email per client or one combined email with a section for each client. Deadline reminders cover every client's shortlist: turning them on sends each client's open deadlines, and after that the open client's set follows its shortlist. Each reminder says which client the grant is for. A Consultant account that had the weekly email before clients keeps it for its first client.
 
 ## Can we apply?
 
@@ -304,7 +304,6 @@ docs/images/            README screenshots
 
 ## Roadmap
 
-- Consultant plan: a weekly email per client or one combined, and deadline reminders across every client (client profiles, switching and per-client shortlists are built)
 - More states' grant catalogs
 
 ## Why I built it

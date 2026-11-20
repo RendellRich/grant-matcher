@@ -3,9 +3,12 @@
 // with the page's own code (web/src/server/digest.ts), and emails the strong matches it hasn't sent before.
 // The first run after someone turns the email on only remembers what already matches, so the first email holds
 // what is new since then. POST ?off=<token> turns the email off (the page's confirm button, and one-click).
+// Consultant accounts get an email per client, or one combined email, for each client the email is on for;
+// each client remembers what it was sent (public.finish_client_digests).
 //
 // Secrets: RESEND_API_KEY (sending). Built into one file by `npm run build:digest` in web/.
-import { newStrong, digestEmail, type DigestAccount } from "../../../web/src/server/digest";
+import { combinedEmail, newStrong, digestEmail, type DigestAccount } from "../../../web/src/server/digest";
+import type { Entry } from "../../../web/src/entries";
 import { parseProfile } from "../../../web/src/profile";
 import type { RankSources } from "../../../web/src/rank";
 import { decodeF16 } from "../../../web/src/vectors";
@@ -113,13 +116,35 @@ export async function handle(req: Request): Promise<Response> {
   if (!RESEND) return new Response("not set up", { status: 503 });
   const acct = await rpc<DigestAccount | null>("take_digest");
   if (!acct) return new Response("none due", { status: 200 });
+  const oneClick = `${BASE}/functions/v1/weekly-email?off=${acct.token}`;
+  const turnOff = `${SITE}?weekly-off=${acct.token}`;
+  if (Array.isArray(acct.clients)) {
+    // Consultant: score each client's saved profile; a client just turned on only remembers what matches now.
+    try {
+      const sources = new Map<string, Promise<RankSources>>();
+      const seen: Record<string, string[]> = {};
+      const sections: { client: string; fresh: Entry[]; form: ReturnType<typeof parseProfile> }[] = [];
+      for (const c of acct.clients) {
+        const form = parseProfile(JSON.stringify(c.profile));
+        if (!sources.has(form.state)) sources.set(form.state, sourcesFor(form.state));
+        const { fresh, all } = newStrong(form, await sources.get(form.state)!, c.vector, c.seen, new Date());
+        seen[c.id] = all;
+        if (c.seen !== null && fresh.length) sections.push({ client: c.label, fresh, form });
+      }
+      if (sections.length && acct.mode === "combined") await send(acct.email, combinedEmail(sections, SITE, turnOff), oneClick);
+      else for (const s of sections) await send(acct.email, digestEmail(s.form, s.fresh, SITE, turnOff, s.client), oneClick);
+      await rpc("finish_client_digests", { p_id: acct.id, p_seen: seen });
+      return new Response(`clients ${acct.clients.length}, sent ${sections.length ? (acct.mode === "combined" ? 1 : sections.length) : 0}`, { status: 200 });
+    } catch (e) {
+      console.error("weekly-email failed:", acct.id, e instanceof Error ? e.message : String(e));
+      return new Response("failed", { status: 500 });
+    }
+  }
   try {
     const form = parseProfile(JSON.stringify(acct.profile));
     const src = await sourcesFor(form.state);
     const { fresh, all } = newStrong(form, src, acct.vector, acct.seen, new Date());
     if (acct.seen !== null && fresh.length) {
-      const oneClick = `${BASE}/functions/v1/weekly-email?off=${acct.token}`;
-      const turnOff = `${SITE}?weekly-off=${acct.token}`;
       await send(acct.email, digestEmail(form, fresh, SITE, turnOff), oneClick);
     }
     await rpc("finish_digest", { p_id: acct.id, p_seen: all });

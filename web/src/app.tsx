@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { SyncNote, useAccountSync } from "./accountsync";
 import { PlanNote } from "./plannote";
 import { ClientBar } from "./clients";
-import { billing, clearUpgrade, isPaid, PLANS_URL, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
+import { parseWorkspace } from "./sync";
+import { billing, clearUpgrade, isPaid, myWorkspace, PLANS_URL, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
   loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
   type Example, type Meta, type Source,
@@ -486,6 +487,16 @@ export function App() {
     applied, vector, ownProfile, loadProfile: loadFromAccount, showProfile: showClientProfile,
   });
   const consultant = Boolean(sync.ws?.paid && sync.ws.on && sync.ws.plan === "consultant");
+  // Consultant: every client's open deadlines, the open one from the page and the rest from the account.
+  async function allClientReminders(): Promise<{ id: string; items: ReturnType<typeof reminderItems> }[]> {
+    const out = [];
+    for (const c of sync.ws?.clients ?? []) {
+      if (c.id === sync.ws?.id) { out.push({ id: c.id, items: reminders }); continue; }
+      const w = parseWorkspace(await myWorkspace(c.id));
+      out.push({ id: c.id, items: reminderItems(w.shortlist ?? [], listed, new Date()) });
+    }
+    return out;
+  }
   const synced = Boolean(sync.ws?.paid && sync.ws.on);
 
   function loadProfile(f: ProfileForm) {
@@ -584,7 +595,8 @@ export function App() {
           {billNote ? <p class={`note${billNote.ok ? "" : " warn-note"}`} role={billNote.ok ? "status" : "alert"}>{billNote.text}</p> : null}
           {emailOffLink ? <EmailOff kind={emailOffLink.kind} token={emailOffLink.token} /> : null}
           {!embedded && email && paidFor === email ? <PlanNote email={email} /> : null}
-          {!embedded && email && paidFor === email ? <WeeklyEmail email={email} form={applied} vector={vector} reminders={reminders} /> : null}
+          {!embedded && email && paidFor === email ? <WeeklyEmail email={email} form={applied} vector={vector} reminders={reminders}
+            clients={consultant && sync.ws?.id ? { client: { id: sync.ws.id, label: sync.ws.clients.find((c) => c.id === sync.ws!.id)?.label ?? "This client" }, allReminders: allClientReminders } : null} /> : null}
           {!embedded && email && paidFor === email ? <SyncNote ws={sync.ws} turn={sync.turn} state={sync.state} /> : null}
           {!embedded && dueSoon.length && tab !== "shortlist" ? (
             <p class="note due-soon">
