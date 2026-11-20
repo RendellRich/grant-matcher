@@ -180,6 +180,8 @@ To add or change one, edit the file from the official page, update `checked`, an
 
 The IRS data can't tell a company's foundation from a family's. `data/corporate.json` names company foundations by EIN, the company behind each, and, where the company's own giving page says so, the local program a small nonprofit can apply to: who can apply, the amount, when and how. `grantmatch/corporate.py` checks the file, and the foundation cards show the company and its program, with a filter for company foundations. None of this changes a score.
 
+Both hand-kept lists go stale when a program changes after it was entered. Every Thursday `grantmatch/watch.py` (workflow `watch-pages.yml`) reads each page the two files point to, HTML, PDF or Word, and compares it with last week's reading, kept as `watch-state.json.gz` on the data-latest release. It opens or adds to a `page-watch` issue listing new status wording ("on hold", "now accepting", "applications are closed"), sentences added or removed, blank pages, pages it could not reach and entries checked more than 90 days ago. It never edits an entry: a person reads the page, updates the entry and sets its `checked` date. Some government sites turn away automated readers; those show as "could not reach" and need a look in a browser.
+
 A national program run through local stores, such as Walmart's Spark Good grants, is listed in every state it serves, even when the foundation's IRS return names other states among the top 12 it gave to. Without that, the Walmart Foundation was missing from Florida's list.
 
 ## Giving over several years
@@ -260,6 +262,7 @@ grantmatch/florida.py   Florida Catalog of State Financial Assistance
 grantmatch/california.py  California Grants Portal open calls
 grantmatch/local.py     county and city programs entered by hand (data/local-FL.json)
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
+grantmatch/watch.py     weekly check of the pages behind both hand-kept lists
 grantmatch/history.py   each foundation's giving across five tax years
 grantmatch/coverage.py  registered foundations per state against what the state files hold
 grantmatch/rank_more.py foundation and Florida scoring

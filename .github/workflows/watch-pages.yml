@@ -1,0 +1,57 @@
+name: Watch hand-kept program pages
+
+# Reads every page that data/local-FL.json and data/corporate.json point to, compares it with last
+# week's reading, and opens (or adds to) a "page-watch" issue listing the entries a person should check:
+# new status wording such as "on hold", changed text, blank pages, unreachable pages and old entries.
+# It never edits the data. Weekly, the day after the funder website check; a few minutes.
+
+on:
+  schedule:
+    - cron: "41 11 * * 4"   # Thursdays
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Get last week's readings
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download data-latest -p watch-state.json.gz -D build --clobber || echo "No earlier readings; this is the first run."
+      - name: Read every page
+        id: watch
+        run: python -m grantmatch.watch --state build/watch-state.json.gz --report build/watch-report.md
+      - name: Save this week's readings
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
+          gh release upload data-latest build/watch-state.json.gz --clobber
+      - name: Open or add to the review issue
+        if: steps.watch.outputs.flagged != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create page-watch --color BFD4F2 --description "Hand-kept entries to recheck" 2>/dev/null || true
+          open=$(gh issue list --label page-watch --state open --json number --jq '.[0].number')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file build/watch-report.md
+          else
+            gh issue create --title "Page watcher: entries to recheck" --label page-watch --body-file build/watch-report.md
+          fi
+      - name: Keep this schedule from expiring
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/watch-pages.yml/enable"
