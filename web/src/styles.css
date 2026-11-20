@@ -481,3 +481,8 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .weekly-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 .weekly-actions .btn { width: auto; }
 .warn-text { color: var(--caution); font-weight: 600; }
+
+/* Consultant: the client menu above the profile */
+.clients { display: grid; gap: .25rem; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--rule); }
+.client-actions { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+.client-name { display: grid; gap: .5rem; }

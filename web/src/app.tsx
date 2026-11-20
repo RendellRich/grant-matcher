@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { SyncNote, useAccountSync } from "./accountsync";
 import { PlanNote } from "./plannote";
-import { billing, clearUpgrade, isPaid, PLANS_URL, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
+import { ClientBar } from "./clients";
+import { parseWorkspace } from "./sync";
+import { billing, clearUpgrade, isPaid, myWorkspace, PLANS_URL, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
   loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
   type Example, type Meta, type Source,
@@ -465,10 +467,36 @@ export function App() {
     else void update(f, true); // saved without a vector: read the mission here
     return true;
   }
+  // Consultant: another client's profile (or a blank one for a new client) replaces the one on screen.
+  function showClientProfile(f: ProfileForm | null, v: number[] | null) {
+    fromAccount.current = true;
+    setLoadedFrom("account");
+    setExampleKey("");
+    if (!f) {
+      const b = { ...BLANK, state: applied.state };
+      setDraft(b); setApplied(b); setVector(null); setOwnProfile(false);
+      setStatus("New client. Describe their work, then press Update matches.");
+      return;
+    }
+    setDraft(f);
+    if (v || !(f.mission.trim() || f.keywords.trim())) { setApplied(f); setVector(v); setOwnProfile(true); setStatus(""); }
+    else void update(f, true);
+  }
   const sync = useAccountSync({
     email, enabled: !embedded && !!email && paidFor === email, items: shortlist.items, replace: shortlist.replace,
-    applied, vector, ownProfile, loadProfile: loadFromAccount,
+    applied, vector, ownProfile, loadProfile: loadFromAccount, showProfile: showClientProfile,
   });
+  const consultant = Boolean(sync.ws?.paid && sync.ws.on && sync.ws.plan === "consultant");
+  // Consultant: every client's open deadlines, the open one from the page and the rest from the account.
+  async function allClientReminders(): Promise<{ id: string; items: ReturnType<typeof reminderItems> }[]> {
+    const out = [];
+    for (const c of sync.ws?.clients ?? []) {
+      if (c.id === sync.ws?.id) { out.push({ id: c.id, items: reminders }); continue; }
+      const w = parseWorkspace(await myWorkspace(c.id));
+      out.push({ id: c.id, items: reminderItems(w.shortlist ?? [], listed, new Date()) });
+    }
+    return out;
+  }
   const synced = Boolean(sync.ws?.paid && sync.ws.on);
 
   function loadProfile(f: ProfileForm) {
@@ -518,7 +546,7 @@ export function App() {
               {email ? (
                 <span class="account">
                   <span class="account-email">{email}</span>
-                  {embedded ? null : isPaid(plan)
+                  {embedded ? null : isPaid(plan) || paidFor === email
                     ? <button type="button" class="band-btn" disabled={billBusy} onClick={() => void managePlan()}>Manage plan</button>
                     : <button type="button" class="band-btn" disabled={billBusy} onClick={() => void upgrade("pro")}>Upgrade</button>}
                   <button type="button" class="band-btn" onClick={() => void signOut()}>Sign out</button>
@@ -549,6 +577,10 @@ export function App() {
             </button>
           </div>
           <div id="profile-panel" ref={panelRef} class={`profile-panel${phoneOpen || blank ? " open" : ""}`}>
+            {consultant ? (
+              <ClientBar clients={sync.ws!.clients.length ? sync.ws!.clients : [{ id: "", label: "My organization" }]} current={sync.ws!.id}
+                         onSwitch={sync.switchTo} onAdd={sync.add} onRename={sync.rename} onDelete={sync.remove} />
+            ) : null}
             <ProfileFormView idp="p" {...formProps} />
           </div>
         </aside>
@@ -563,8 +595,9 @@ export function App() {
           {billNote ? <p class={`note${billNote.ok ? "" : " warn-note"}`} role={billNote.ok ? "status" : "alert"}>{billNote.text}</p> : null}
           {emailOffLink ? <EmailOff kind={emailOffLink.kind} token={emailOffLink.token} /> : null}
           {!embedded && email && paidFor === email ? <PlanNote email={email} /> : null}
-          {!embedded && email && isPaid(plan) ? <WeeklyEmail email={email} form={applied} vector={vector} reminders={reminders} /> : null}
-          {!embedded && email && isPaid(plan) ? <SyncNote ws={sync.ws} turn={sync.turn} state={sync.state} /> : null}
+          {!embedded && email && paidFor === email ? <WeeklyEmail email={email} form={applied} vector={vector} reminders={reminders}
+            clients={consultant && sync.ws?.id ? { client: { id: sync.ws.id, label: sync.ws.clients.find((c) => c.id === sync.ws!.id)?.label ?? "This client" }, allReminders: allClientReminders } : null} /> : null}
+          {!embedded && email && paidFor === email ? <SyncNote ws={sync.ws} turn={sync.turn} state={sync.state} /> : null}
           {!embedded && dueSoon.length && tab !== "shortlist" ? (
             <p class="note due-soon">
               <strong>{dueSoon.length === 1 ? "1 grant on your shortlist is" : `${dueSoon.length} grants on your shortlist are`} due within a week</strong>

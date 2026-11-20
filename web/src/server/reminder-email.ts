@@ -6,7 +6,8 @@ export interface ReminderAccount {
   account_id: string;
   email: string;
   token: string;
-  items: { key: string; title: string; url: string; source: string; stage: string; due: string; days: number }[];
+  // client and client_label: which Consultant client the grant is on the shortlist of ('' on Pro).
+  items: { key: string; client?: string; client_label?: string; title: string; url: string; source: string; stage: string; due: string; days: number }[];
 }
 
 const LABEL: Record<string, string> = { fed: "Federal grant", fdn: "Foundation", fl: "State program" };
@@ -21,9 +22,11 @@ export function reminderEmail(a: ReminderAccount, site: string, turnOff: string)
   const subject = items.length === 1
     ? `Grant deadline ${when(first.days)}: ${first.title.length > 70 ? `${first.title.slice(0, 69).trimEnd()}…` : first.title}`
     : `${items.length} grant deadlines coming up, the first ${when(first.days)}`;
+  // Consultant: say which client each grant is for.
+  const forWho = (x: (typeof items)[number]) => (x.client_label ? ` &middot; ${esc(x.client_label)}` : "");
   const rows = items.map((x) => `
     <tr><td style="padding:14px 0;border-top:1px solid #e0e2d9">
-      <div style="font-size:12px;color:#5a5e53;text-transform:uppercase;letter-spacing:.04em">${esc(LABEL[x.source] ?? "Grant")} &middot; ${esc(x.stage === "applying" ? "Applying" : "Saved")}</div>
+      <div style="font-size:12px;color:#5a5e53;text-transform:uppercase;letter-spacing:.04em">${esc(LABEL[x.source] ?? "Grant")} &middot; ${esc(x.stage === "applying" ? "Applying" : "Saved")}${forWho(x)}</div>
       <a href="${esc(x.url || site)}" style="font-size:17px;font-weight:600;color:#355025">${esc(x.title)}</a>
       <div style="margin-top:4px;color:#23261f"><strong>${esc(day(x.due))}</strong>, ${esc(when(x.days))}</div>
     </td></tr>`).join("");
@@ -41,7 +44,7 @@ Grant Matcher by Solutions by Rich LLC &middot; ren@solutionsbyrich.com</td></tr
   const text = [
     items.length === 1 ? "Grant Matcher: a deadline on your shortlist is coming up." : "Grant Matcher: deadlines on your shortlist are coming up.",
     "",
-    ...items.flatMap((x) => [x.title, `${day(x.due)}, ${when(x.days)}`, x.url || site, ""]),
+    ...items.flatMap((x) => [x.title, `${day(x.due)}, ${when(x.days)}${x.client_label ? ` | for ${x.client_label}` : ""}`, x.url || site, ""]),
     `Open your shortlist: ${site}`,
     "",
     "Mark a grant Submitted on your shortlist and its reminders stop.",

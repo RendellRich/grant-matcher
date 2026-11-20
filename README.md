@@ -187,6 +187,12 @@ On a paid plan the page saves the profile you last searched with (and the missio
 - The "On any device" box shows the last save time, or says when a save or load failed. A failed save stays marked as changed in the browser and is tried again after 30 seconds, when the connection comes back, or on the next visit.
 - "Stop saving and delete the account copy" turns it off and deletes the saved profile and shortlist. Free accounts keep everything in the browser only.
 
+## Consultant client profiles
+
+A Consultant account keeps up to 10 client profiles (`supabase/migrations/20261120180000_client_profiles.sql`, `web/src/clients.tsx`). A Client menu above the profile opens a client: the page saves anything not yet saved for the one on screen, then loads the other's profile and shortlist. A new client starts blank. Rename and Delete act on the client that's open; the last one can't be deleted. Each device remembers the client it last had open. Pro keeps a single profile and sees no menu.
+
+**Emails** (`supabase/migrations/20261120200000_client_emails.sql`). The weekly email is turned on per client and uses that client's saved profile; each client remembers which matches it was already sent. The account picks one email per client or one combined email with a section for each client. Deadline reminders cover every client's shortlist: turning them on sends each client's open deadlines, and after that the open client's set follows its shortlist. Each reminder says which client the grant is for. A Consultant account that had the weekly email before clients keeps it for its first client.
+
 ## Can we apply?
 
 Every card ends with a short checklist of what usually stops a small nonprofit, checked against the profile (`web/src/ready.ts`): whether 501(c)(3) status is required, whether SAM.gov registration is needed (every federal grant; others when their text says so), whether a match is required, whether it pays by reimbursement or is a loan, and whether it is taking applications now (open, not open yet, between rounds, invitation only, not taking requests). Each source says different things, so each gets its own reader, and a check is left out when the record doesn't say. The profile's registrations ("SAM.gov and a UEI") turn the SAM.gov check green. It never changes a score; the caution and status lines it repeats stay off the card but still drive the filters and the CSV.
@@ -298,7 +304,6 @@ docs/images/            README screenshots
 
 ## Roadmap
 
-- Consultant plan: up to 10 client profiles, each with its own shortlist, quick switching between clients, and a weekly email per client or one combined
 - More states' grant catalogs
 
 ## Why I built it

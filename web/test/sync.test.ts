@@ -6,7 +6,7 @@ import { mergeShortlists, onLoad, parseWorkspace, type Workspace } from "../src/
 
 const entry = (key: string) => ({ key, title: key, source: "fed" }) as unknown as Entry;
 const t = (h: number) => new Date(Date.UTC(2026, 10, 20, h));
-const ws = (shortlist: Item[] | null, version = 3): Workspace => ({ paid: true, on: true, profile: null, vector: null, version, shortlist });
+const ws = (shortlist: Item[] | null, version = 3, id: string | null = "p1"): Workspace => ({ paid: true, plan: "pro", on: true, clients: [], id, profile: null, vector: null, version, shortlist });
 
 describe("account sync", () => {
   it("dates every change, so the newer copy of an item wins", () => {
@@ -47,12 +47,21 @@ describe("account sync", () => {
     expect(onLoad([], null, "a@x", ws(saved))).toEqual({ items: saved, push: false });
     expect(onLoad(local, { account: "b@x", version: 5, dirty: true }, "a@x", ws(saved))).toEqual({ items: saved, push: false });
   });
+  it("takes the account's copy when this browser's list is another client's", () => {
+    const local = toggle([], entry("fed:1"), t(1));
+    const saved = toggle([], entry("fed:9"), t(2));
+    expect(onLoad(local, { account: "a@x", version: 3, dirty: true, profile: "p2" }, "a@x", ws(saved, 3, "p1"))).toEqual({ items: saved, push: false });
+    expect(onLoad(local, { account: "a@x", version: 3, dirty: true, profile: "p1" }, "a@x", ws(saved, 3, "p1"))).toEqual({ items: local, push: true });
+  });
   it("reads what the account sends", () => {
     expect(parseWorkspace(null)).toMatchObject({ paid: false, on: false, shortlist: null, version: 0 });
     const w = parseWorkspace({ paid: true, on: true, version: 4, vector: [1, 2], profile: { mission: "m" }, shortlist: [{ key: "fed:1" }, { nokey: 1 }] });
     expect(w.vector).toBeNull();
     expect(w.shortlist?.map((x) => x.key)).toEqual(["fed:1"]);
     expect(w.shortlist?.[0].stage).toBe("saved");
+    const c = parseWorkspace({ plan: "consultant", id: "p2", profiles: [{ id: "p1", label: "Tampa Literacy" }, { id: "p2", label: " " }, { nope: 1 }] });
+    expect(c.clients).toEqual([{ id: "p1", label: "Tampa Literacy" }, { id: "p2", label: "My organization" }]);
+    expect(c).toMatchObject({ plan: "consultant", id: "p2" });
   });
 });
 
