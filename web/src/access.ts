@@ -78,14 +78,14 @@ export function watchSession(on: (email: string | null) => void): () => void {
 }
 
 /** Starts a Pro or Consultant checkout, or opens the billing portal, and goes there. Returns an error to show. */
-export async function billing(action: "checkout" | "portal", plan?: "pro" | "consultant"): Promise<string | null> {
+export async function billing(action: "checkout" | "portal", plan?: "pro" | "consultant", interval: Interval = "month"): Promise<string | null> {
   const session = await currentSession();
   if (!session) return "Sign in first.";
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/billing`, {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ action, plan }),
+      body: JSON.stringify({ action, plan, interval }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok || !body.url) return body.error ?? "Billing is unavailable right now. Try again in a minute.";
@@ -98,18 +98,32 @@ export async function billing(action: "checkout" | "portal", plan?: "pro" | "con
 
 export const isPaid = (plan: string | null | undefined) => plan === "pro" || plan === "consultant";
 
-/** A plan the person picked on the pricing page (?upgrade=pro), kept through sign-in. */
-export function takeUpgradeParam(): "pro" | "consultant" | null {
+export type Interval = "month" | "year";
+export interface Upgrade { plan: "pro" | "consultant"; interval: Interval }
+
+/** "pro" or "pro:year", as kept in sessionStorage. */
+export function parseUpgrade(v: string | null): Upgrade | null {
+  const [plan, interval] = (v ?? "").split(":");
+  if (plan !== "pro" && plan !== "consultant") return null;
+  return { plan, interval: interval === "year" ? "year" : "month" };
+}
+export const saveUpgrade = (u: Upgrade): void => {
+  try { sessionStorage.setItem("gm-upgrade", u.interval === "year" ? `${u.plan}:year` : u.plan); } catch { /* */ }
+};
+
+/** A plan the person picked on the pricing page (?upgrade=pro, &interval=year for yearly), kept through sign-in. */
+export function takeUpgradeParam(): Upgrade | null {
   try {
     const url = new URL(window.location.href);
-    const p = url.searchParams.get("upgrade");
-    if (p === "pro" || p === "consultant") {
-      sessionStorage.setItem("gm-upgrade", p);
+    const picked = parseUpgrade(url.searchParams.get("upgrade"));
+    if (picked) {
+      if (url.searchParams.get("interval") === "year") picked.interval = "year";
+      saveUpgrade(picked);
       url.searchParams.delete("upgrade");
+      url.searchParams.delete("interval");
       history.replaceState(null, "", url.toString());
     }
-    const saved = sessionStorage.getItem("gm-upgrade");
-    return saved === "pro" || saved === "consultant" ? saved : null;
+    return parseUpgrade(sessionStorage.getItem("gm-upgrade"));
   } catch { return null; }
 }
 export function clearUpgrade(): void { try { sessionStorage.removeItem("gm-upgrade"); } catch { /* */ } }

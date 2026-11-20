@@ -1,6 +1,7 @@
 // What the Stripe webhook writes to an account (supabase/functions/_shared/billing-core.ts).
 import { describe, expect, it } from "vitest";
-import { accountPatch, HANDLED_EVENTS, isPaidPlan, planForLookupKey, type SubscriptionView } from "../../supabase/functions/_shared/billing-core";
+import { accountPatch, HANDLED_EVENTS, intervalOf, isPaidPlan, lookupKeyFor, planForLookupKey, promoCodesAllowed, type SubscriptionView } from "../../supabase/functions/_shared/billing-core";
+import { parseUpgrade } from "../src/access";
 
 const sub = (over: Partial<SubscriptionView> = {}): SubscriptionView => ({
   id: "sub_synthetic1", customer: "cus_synthetic1", status: "active",
@@ -15,6 +16,24 @@ describe("billing", () => {
     expect(planForLookupKey(null)).toBeNull();
     expect(isPaidPlan("pro")).toBe(true);
     expect(isPaidPlan("free")).toBe(false);
+  });
+  it("knows the yearly prices, and checks out monthly unless asked for yearly", () => {
+    expect(planForLookupKey("gm_pro_yearly")).toBe("pro");
+    expect(planForLookupKey("gm_consultant_yearly")).toBe("consultant");
+    expect(lookupKeyFor("pro", "year")).toBe("gm_pro_yearly");
+    expect(lookupKeyFor("pro", intervalOf(undefined))).toBe("gm_pro_monthly");
+    expect(intervalOf("weekly")).toBe("month");
+    expect(accountPatch(sub({ items: [{ price: { lookup_key: "gm_pro_yearly" } }] })).plan).toBe("pro");
+  });
+  it("keeps the founding code to monthly checkouts", () => {
+    expect(promoCodesAllowed("month")).toBe(true);
+    expect(promoCodesAllowed("year")).toBe(false);
+  });
+  it("reads a saved upgrade choice", () => {
+    expect(parseUpgrade("pro")).toEqual({ plan: "pro", interval: "month" });
+    expect(parseUpgrade("pro:year")).toEqual({ plan: "pro", interval: "year" });
+    expect(parseUpgrade("free")).toBeNull();
+    expect(parseUpgrade(null)).toBeNull();
   });
   it("sets the plan and status from an active subscription", () => {
     expect(accountPatch(sub())).toEqual({ plan: "pro", status: "active", stripe_subscription_id: "sub_synthetic1", founding: false });

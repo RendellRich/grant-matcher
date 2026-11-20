@@ -1,13 +1,13 @@
 // Starts a Pro or Consultant subscription (Stripe Checkout) or opens Stripe's billing portal for a signed-in
 // account. The page calls it with the account's own sign-in token:
 //
-//   POST { "action": "checkout", "plan": "pro" | "consultant" }  ->  { "url": "https://checkout.stripe.com/..." }
+//   POST { "action": "checkout", "plan": "pro" | "consultant", "interval"?: "month" | "year" }  ->  { "url": "https://checkout.stripe.com/..." }
 //   POST { "action": "portal" }                                   ->  { "url": "https://billing.stripe.com/..." }
 //
 // The plan itself only changes when Stripe tells stripe-webhook that a subscription started or changed.
 // Secrets: STRIPE_SECRET_KEY (a restricted key). Prices are found by lookup key (_shared/billing-core.ts).
 import Stripe from "npm:stripe@23";
-import { CHECKOUT_LABEL, isPaidPlan, LOOKUP_KEYS } from "../_shared/billing-core.ts";
+import { CHECKOUT_LABEL, intervalOf, isPaidPlan, lookupKeyFor, promoCodesAllowed } from "../_shared/billing-core.ts";
 
 const BASE = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(origin) });
   if (req.method !== "POST") return reply(origin, 405, { error: "POST only" });
   if (!KEY) return reply(origin, 503, { error: "Paid plans aren't open yet." });
-  let body: { action?: string; plan?: string };
+  let body: { action?: string; plan?: string; interval?: string };
   try { body = await req.json(); } catch { return reply(origin, 400, { error: "Send an action" }); }
   try {
     const user = await currentUser(req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? null);
@@ -94,7 +94,8 @@ Deno.serve(async (req) => {
     }
     if (body.action !== "checkout" || !isPaidPlan(body.plan)) return reply(origin, 400, { error: "Choose Pro or Consultant." });
 
-    const prices = await stripe.prices.list({ lookup_keys: [LOOKUP_KEYS[body.plan]], active: true, limit: 1 });
+    const interval = intervalOf(body.interval);
+    const prices = await stripe.prices.list({ lookup_keys: [lookupKeyFor(body.plan, interval)], active: true, limit: 1 });
     const price = prices.data[0];
     if (!price) return reply(origin, 503, { error: "That plan isn't for sale yet." });
     const customer = await customerFor(acct, user.id, user.email);
@@ -103,7 +104,7 @@ Deno.serve(async (req) => {
       customer,
       client_reference_id: acct.id,
       line_items: [{ price: price.id, quantity: 1 }],
-      allow_promotion_codes: true,
+      allow_promotion_codes: promoCodesAllowed(interval),
       subscription_data: { metadata: { account_id: acct.id } },
       success_url: `${site}?upgraded=1`,
       cancel_url: site,

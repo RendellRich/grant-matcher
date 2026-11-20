@@ -32,6 +32,7 @@ In the Dashboard this is Create secret key, Building your own integration, Custo
 ## Safety rules built in
 
 - **Test key, tester accounts only.** While the key is a test key, `billing` lets only accounts with `billing_tester = true` check out. Everyone else sees "Paid plans aren't open yet", so nobody can unlock Pro with Stripe's public test cards.
+- **Yearly.** The page sends `interval: "year"` (or the pricing page links `?upgrade=pro&interval=year`) and the function looks up the `_yearly` key instead of `_monthly`. Yearly checkouts take no promotion codes: the founding coupon is $10 off every invoice, which makes monthly $29 but would only take $10 off a year. The founding price is monthly only. A monthly subscriber who wants yearly needs plan switching turned on in the portal, which is off for now.
 - **Modes never mix.** The webhook ignores test events when the key is live, and live events when the key is a test key.
 - **Each event once.** Webhook events are recorded in `billing_events` and a repeat is skipped. A failure returns 500 so Stripe retries.
 - **Paid means** plan `pro` or `consultant` with status `active`, `trialing` or `past_due` (Stripe is still retrying). After the last failed retry Stripe cancels the subscription and the account goes back to Free.
@@ -40,7 +41,7 @@ In the Dashboard this is Create secret key, Building your own integration, Custo
 
 ## Stripe setup (sandbox, done)
 
-- Products: Grant Matcher Pro ($39 a month, lookup key `gm_pro_monthly`) and Grant Matcher Consultant ($89 a month, lookup key `gm_consultant_monthly`, price switched off until its features exist). Tax behavior exclusive.
+- Products: Grant Matcher Pro ($39 a month, lookup key `gm_pro_monthly`; $390 a year, lookup key `gm_pro_yearly`) and Grant Matcher Consultant ($89 a month, lookup key `gm_consultant_monthly`, price switched off until its features exist). Tax behavior exclusive.
 - Founding price: coupon `FOUNDING_PRO`, $10 off forever, 50 uses, Pro only. Promotion code `FOUNDING29`, new customers only.
 - Billing portal: update card, invoices, name and address, cancel at period end with a reason. Plan switching off while one plan is for sale. Links to the Terms and Privacy pages.
 - Webhook destination: `https://lthfecwgvpekrjjqszof.supabase.co/functions/v1/stripe-webhook` with the 9 events in `HANDLED_EVENTS`.
@@ -50,7 +51,7 @@ In the Dashboard this is Create secret key, Building your own integration, Custo
 
 Real payments are on. Stripe account: Solutions by Rich LLC (live, activated with the LLC's EIN). The sandbox stays as it was for testing.
 
-- Products copied from the sandbox with Stripe's copy tool, same product IDs. The Pro price keeps lookup key `gm_pro_monthly`. Consultant has no live price yet, so it stays waitlist only.
+- Products copied from the sandbox with Stripe's copy tool, same product IDs. The Pro price keeps lookup key `gm_pro_monthly`. Yearly Pro ($390, lookup key `gm_pro_yearly`) added November 20, 2026. Consultant has no live price yet, so it stays waitlist only.
 - Founding price: coupon `FOUNDING_PRO` ($10 off Pro forever, 50 uses) and promotion code `FOUNDING29` (first-time customers, 50 uses).
 - Billing portal: cancel at period end with a reason, update card, invoices, name and billing address. Email and phone changes off, so the Stripe email can't drift from the Grant Matcher sign-in. No plan switching.
 - Public details: Terms and Privacy links, support email ren@solutionsbyrich.com. The phone number is not printed on receipts.

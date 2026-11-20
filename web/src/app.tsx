@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { billing, clearUpgrade, isPaid, PLANS_URL, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate } from "./access";
+import { billing, clearUpgrade, isPaid, PLANS_URL, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
   loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
   type Example, type Meta, type Source,
@@ -111,10 +111,10 @@ export function App() {
   const pendingUpgrade = useRef(takeUpgradeParam());
   const upgraded = useRef(takeUpgradedParam());
   const [emailOffLink] = useState(takeEmailOffParam);
-  async function upgrade(plan: "pro" | "consultant" = "pro") {
-    if (!email) { pendingUpgrade.current = plan; try { sessionStorage.setItem("gm-upgrade", plan); } catch { /* */ } setSignInOpen(true); return; }
+  async function upgrade(plan: "pro" | "consultant" = "pro", interval: Interval = "month") {
+    if (!email) { pendingUpgrade.current = { plan, interval }; saveUpgrade({ plan, interval }); setSignInOpen(true); return; }
     setBillBusy(true); setBillNote(null);
-    const problem = await billing("checkout", plan);
+    const problem = await billing("checkout", plan, interval);
     if (problem) { setBillBusy(false); setBillNote({ ok: false, text: problem }); }
   }
   async function managePlan() {
@@ -123,13 +123,13 @@ export function App() {
     if (problem) { setBillBusy(false); setBillNote({ ok: false, text: problem }); }
   }
   useEffect(() => {
-    const plan = pendingUpgrade.current;
-    if (!plan || !sessionKnown) return;
+    const picked = pendingUpgrade.current;
+    if (!picked || !sessionKnown) return;
     if (!email) { setSignInOpen(true); return; }
     setSignInOpen(false);
     pendingUpgrade.current = null;
     clearUpgrade();
-    void upgrade(plan);
+    void upgrade(picked.plan, picked.interval);
   }, [email, sessionKnown]);
   useEffect(() => {
     if (upgraded.current) setBillNote({ ok: true, text: "Thanks for upgrading. Your full results will appear here in a few seconds." });
@@ -774,6 +774,7 @@ export function App() {
               <p>Free accounts see the top 10 in each list. Pro shows every match, with the filters, the downloads and the deadline calendar, and emails you new strong matches each week.</p>
               <div class="lock-actions">
                 <button type="button" class="btn primary" disabled={billBusy} onClick={() => void upgrade("pro")}>{billBusy ? "Opening checkout" : "Get Pro, $39 a month"}</button>
+                <button type="button" class="link-btn" disabled={billBusy} onClick={() => void upgrade("pro", "year")}>Or $390 a year (2 months free)</button>
                 <a class="link-btn" href={PLANS_URL} target="_blank" rel="noopener">Compare plans<span class="sr-only"> (opens in a new tab)</span></a>
               </div>
             </>

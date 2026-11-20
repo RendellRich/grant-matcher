@@ -1,8 +1,9 @@
 # Settings the Supabase command-line tool reads when the "Deploy functions" workflow deploys.
 # search, weekly-email and deadline-reminders run from one bundled file each, built in web/ by
 # `npm run build:fn`, `build:digest` and `build:reminders`; the bundles are not committed.
-# None of them checks a Supabase login token: search reads the caller's own session, and the two
-# email jobs are called by pg_cron with the service role.
+# billing and stripe-webhook deploy from their index.ts with _shared/billing-core.ts.
+# None of them checks a Supabase login token: search and billing read the caller's own session, the two
+# email jobs are called by pg_cron with the service role, and Stripe signs each webhook call.
 project_id = "lthfecwgvpekrjjqszof"
 
 [functions.search]
@@ -15,4 +16,12 @@ verify_jwt = false
 
 [functions.deadline-reminders]
 entrypoint = "./functions/deadline-reminders/dist/index.js"
+verify_jwt = false
+
+[functions.billing]
+entrypoint = "./functions/billing/index.ts"
+verify_jwt = false
+
+[functions.stripe-webhook]
+entrypoint = "./functions/stripe-webhook/index.ts"
 verify_jwt = false
