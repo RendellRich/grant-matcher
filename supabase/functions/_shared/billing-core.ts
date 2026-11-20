@@ -1,16 +1,30 @@
 // The parts of billing that don't talk to Stripe or the database, so they can be tested on their own
 // (web/test/billing.test.ts). Used by supabase/functions/billing and supabase/functions/stripe-webhook.
 
-/** Each plan's monthly price, found in Stripe by its lookup key so test and live mode need no settings. */
-export const LOOKUP_KEYS = { pro: "gm_pro_monthly", consultant: "gm_consultant_monthly" } as const;
+/** Each plan's monthly and yearly prices, found in Stripe by lookup key so test and live mode need no settings. */
+export const LOOKUP_KEYS = {
+  pro: { month: "gm_pro_monthly", year: "gm_pro_yearly" },
+  consultant: { month: "gm_consultant_monthly", year: "gm_consultant_yearly" },
+} as const;
 export type PaidPlan = keyof typeof LOOKUP_KEYS;
+export type Interval = "month" | "year";
 
 export const isPaidPlan = (p: unknown): p is PaidPlan => p === "pro" || p === "consultant";
+/** Monthly unless the page asked for yearly. */
+export const intervalOf = (i: unknown): Interval => (i === "year" ? "year" : "month");
+
+export const lookupKeyFor = (plan: PaidPlan, interval: Interval): string => LOOKUP_KEYS[plan][interval];
 
 export function planForLookupKey(key: string | null | undefined): PaidPlan | null {
-  for (const [plan, k] of Object.entries(LOOKUP_KEYS)) if (k === key) return plan as PaidPlan;
+  for (const [plan, keys] of Object.entries(LOOKUP_KEYS)) if (Object.values(keys).includes(key as never)) return plan as PaidPlan;
   return null;
 }
+
+/**
+ * Promotion codes only on monthly checkouts. The founding coupon is $10 off every invoice, which is the
+ * $29 founding price on monthly but would only take $10 off a whole year.
+ */
+export const promoCodesAllowed = (interval: Interval): boolean => interval === "month";
 
 /** The part of a Stripe Subscription the account needs. */
 export interface SubscriptionView {
