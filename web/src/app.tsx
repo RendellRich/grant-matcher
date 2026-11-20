@@ -3,7 +3,7 @@ import { SyncNote, useAccountSync } from "./accountsync";
 import { PlanNote } from "./plannote";
 import { ClientBar } from "./clients";
 import { parseWorkspace, readOwnProfile, writeOwnProfile } from "./sync";
-import { billing, clearUpgrade, isPaid, myWorkspace, PLANS_URL, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
+import { billing, clearUpgrade, isPaid, myWorkspace, PLANS_URL, takeSignInReturn, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
   loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
   type Example, type Meta, type Source,
@@ -116,6 +116,7 @@ export function App() {
   const pendingUpgrade = useRef(takeUpgradeParam());
   const upgraded = useRef(takeUpgradedParam());
   const [emailOffLink] = useState(takeEmailOffParam);
+  const [signInProblem] = useState(takeSignInReturn);
   async function upgrade(plan: "pro" | "consultant" = "pro", interval: Interval = "month") {
     if (!email) { pendingUpgrade.current = { plan, interval }; saveUpgrade({ plan, interval }); setSignInOpen(true); return; }
     setBillBusy(true); setBillNote(null);
@@ -616,6 +617,7 @@ export function App() {
           ) : null}
           {embedded && sentNote && !sentNote.ok ? <p class="toast warn" role="alert">{sentNote.text}</p> : null}
           {billNote ? <p class={`note${billNote.ok ? "" : " warn-note"}`} role={billNote.ok ? "status" : "alert"}>{billNote.text}</p> : null}
+          {signInProblem ? <p class="note warn-note" role="alert">{signInProblem}</p> : null}
           {emailOffLink ? <EmailOff kind={emailOffLink.kind} token={emailOffLink.token} /> : null}
           {!embedded && email && paidFor === email ? <PlanNote email={email} /> : null}
           {!embedded && email && paidFor === email ? <WeeklyEmail email={email} form={applied} vector={vector} reminders={reminders}
