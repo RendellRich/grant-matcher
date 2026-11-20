@@ -16,7 +16,8 @@ export const SUPABASE_KEY: string = import.meta.env.VITE_SUPABASE_KEY || "sb_pub
 export const PLANS_URL = "https://solutionsbyrich.com/grant-matcher/";
 
 export const supabase = SUPABASE_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: "gm-auth" } })
+  // PKCE, and reading the session from the address bar, so Sign in with Google can come back to the page.
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce", storageKey: "gm-auth" } })
   : null;
 
 export interface FileLink { name: string; json: string; f16: string; version: string }
@@ -66,6 +67,47 @@ export async function verifyCode(email: string, code: string): Promise<string | 
   return error ? "That code didn't work. Codes expire after an hour; ask for a new one if it's old." : null;
 }
 
+/** True when Sign in with Google is switched on for the project (Supabase's public auth settings). */
+export async function googleEnabled(): Promise<boolean> {
+  if (!SUPABASE_KEY) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_KEY } });
+    return res.ok && (await res.json())?.external?.google === true;
+  } catch { return false; }
+}
+
+/** Goes to Google to sign in, and comes back to this page. An account that signed in by email code before is the
+ *  same account when the Google email matches. Returns an error to show, or nothing while the page leaves. */
+export async function signInWithGoogle(): Promise<string | null> {
+  if (!supabase) return "Sign-in isn't set up on this copy of the site.";
+  const back = `${window.location.origin}${window.location.pathname}`;
+  const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: back } });
+  return error ? "Google sign-in isn't available right now. Use the email code instead." : null;
+}
+
+/** What Google or Supabase said when a sign-in came back with an error (?error_description=), taken out of the
+ *  address bar. A successful return's ?code= is left for the sign-in library, and cleared once signed in. */
+export function takeSignInReturn(): string | null {
+  try {
+    const url = new URL(window.location.href);
+    const problem = url.searchParams.get("error_description") ?? url.searchParams.get("error");
+    let changed = false;
+    for (const k of ["error", "error_code", "error_description"]) if (url.searchParams.has(k)) { url.searchParams.delete(k); changed = true; }
+    if (changed) history.replaceState(null, "", url.toString());
+    return problem ? "Google sign-in didn't finish. Try again, or use the email code." : null;
+  } catch { return null; }
+}
+
+/** Takes a used ?code= (from Sign in with Google) out of the address bar. */
+function clearCodeParam(): void {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("code")) return;
+    url.searchParams.delete("code");
+    history.replaceState(null, "", url.toString());
+  } catch { /* */ }
+}
+
 export async function signOut(): Promise<void> {
   await supabase?.auth.signOut();
 }
@@ -74,7 +116,10 @@ export async function signOut(): Promise<void> {
 export function watchSession(on: (email: string | null) => void): () => void {
   if (!supabase) { on(null); return () => undefined; }
   void currentSession().then((s) => on(s?.user.email ?? null));
-  const { data } = supabase.auth.onAuthStateChange((_event, s) => on(s?.user.email ?? null));
+  const { data } = supabase.auth.onAuthStateChange((_event, s) => {
+    if (s) clearCodeParam();
+    on(s?.user.email ?? null);
+  });
   return () => data.subscription.unsubscribe();
 }
 

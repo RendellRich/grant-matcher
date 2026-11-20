@@ -486,3 +486,8 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .clients { display: grid; gap: .25rem; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--rule); }
 .client-actions { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
 .client-name { display: grid; gap: .5rem; }
+
+/* Sign in with Google, above the email code */
+.google-btn { display: inline-flex; align-items: center; justify-content: center; gap: .625rem; width: 100%; }
+.signin-or { display: flex; align-items: center; gap: .75rem; color: var(--muted); font-size: .875rem; }
+.signin-or::before, .signin-or::after { content: ""; flex: 1; border-top: 1px solid var(--rule); }

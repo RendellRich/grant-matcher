@@ -193,6 +193,16 @@ A Consultant account keeps up to 10 client profiles (`supabase/migrations/202611
 
 **Emails** (`supabase/migrations/20261120200000_client_emails.sql`). The weekly email is turned on per client and uses that client's saved profile; each client remembers which matches it was already sent. The account picks one email per client or one combined email with a section for each client. Deadline reminders cover every client's shortlist: turning them on sends each client's open deadlines, and after that the open client's set follows its shortlist. Each reminder says which client the grant is for. A Consultant account that had the weekly email before clients keeps it for its first client.
 
+## Signing in
+
+People sign in with a code sent by email, or with Google; there are no passwords (`web/src/signin.tsx`). The Google button shows only once the Google provider is switched on in Supabase (the page reads Supabase's public auth settings). Google sends people back to the page, which finishes the sign-in itself (PKCE). Someone who used the email code before and then picks Google with the same address gets the same account.
+
+Setting up Google (once): in Google Cloud, an OAuth client of type Web application with authorized JavaScript origin `https://rendellrich.github.io` and redirect URI `https://lthfecwgvpekrjjqszof.supabase.co/auth/v1/callback`; in Supabase, Authentication, Sign In / Providers, Google, with that client's ID and secret, and `https://rendellrich.github.io/grant-matcher/**` under Authentication, URL Configuration, Redirect URLs.
+
+## When a paid plan ends
+
+When Stripe ends a subscription, the webhook moves the account to Free and the database dates it (`plan_ended_at`, `supabase/migrations/20261120220000_lapsed_cleanup.sql`). What the account saved (profiles and shortlists, Consultant clients, the weekly email's profile, deadline reminders) is kept for a year in case the person comes back, then a daily job deletes it. The account itself stays, so the person can still sign in on Free. Paying again clears the date.
+
 ## Can we apply?
 
 Every card ends with a short checklist of what usually stops a small nonprofit, checked against the profile (`web/src/ready.ts`): whether 501(c)(3) status is required, whether SAM.gov registration is needed (every federal grant; others when their text says so), whether a match is required, whether it pays by reimbursement or is a loan, and whether it is taking applications now (open, not open yet, between rounds, invitation only, not taking requests). Each source says different things, so each gets its own reader, and a check is left out when the record doesn't say. The profile's registrations ("SAM.gov and a UEI") turn the SAM.gov check green. It never changes a score; the caution and status lines it repeats stay off the card but still drive the filters and the CSV.
