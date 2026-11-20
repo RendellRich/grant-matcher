@@ -103,3 +103,16 @@ export function readClient(account: string): string | null {
 export function writeClient(account: string, id: string | null): void {
   try { if (id) localStorage.setItem(CLIENT_KEY, JSON.stringify({ account, id })); else localStorage.removeItem(CLIENT_KEY); } catch { /* private mode */ }
 }
+
+/** The paid account's own profile, kept in this browser too, so the page opens on it instead of an example
+ *  and doesn't rank twice (example, then the account's copy) on every visit. */
+const OWN_KEY = "gm-own-profile";
+export function readOwnProfile(): { form: unknown; vector: number[] | null } | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(OWN_KEY) ?? "null");
+    return v && typeof v.form === "object" ? { form: v.form, vector: Array.isArray(v.vector) && v.vector.length === 384 ? v.vector : null } : null;
+  } catch { return null; }
+}
+export function writeOwnProfile(form: unknown | null, vector: number[] | null = null): void {
+  try { if (form) localStorage.setItem(OWN_KEY, JSON.stringify({ form, vector })); else localStorage.removeItem(OWN_KEY); } catch { /* private mode */ }
+}
