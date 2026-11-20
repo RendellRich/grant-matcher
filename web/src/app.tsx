@@ -562,7 +562,7 @@ export function App() {
           {billNote ? <p class={`note${billNote.ok ? "" : " warn-note"}`} role={billNote.ok ? "status" : "alert"}>{billNote.text}</p> : null}
           {emailOffLink ? <EmailOff kind={emailOffLink.kind} token={emailOffLink.token} /> : null}
           {!embedded && email && isPaid(plan) ? <WeeklyEmail email={email} form={applied} vector={vector} reminders={reminders} /> : null}
-          {!embedded && email && isPaid(plan) ? <SyncNote ws={sync.ws} turn={sync.turn} /> : null}
+          {!embedded && email && isPaid(plan) ? <SyncNote ws={sync.ws} turn={sync.turn} state={sync.state} /> : null}
           {!embedded && dueSoon.length && tab !== "shortlist" ? (
             <p class="note due-soon">
               <strong>{dueSoon.length === 1 ? "1 grant on your shortlist is" : `${dueSoon.length} grants on your shortlist are`} due within a week</strong>

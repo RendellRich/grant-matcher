@@ -184,6 +184,7 @@ On a paid plan the page saves the profile you last searched with (and the missio
 - The browser keeps its own copy as before, and remembers which account and version it came from and whether it changed since.
 - On sign-in a clean copy takes the account's; a changed one, or one never linked to an account, is merged with the account's and saved. A copy from a different account is replaced, never mixed in.
 - A save names the version it started from. If another device saved in between, the server returns its copy, the page merges the two (every item on either list, the newer copy of each) and saves again. A grant removed on one device while another changed the list can come back; removing it again sticks.
+- The "On any device" box shows the last save time, or says when a save or load failed. A failed save stays marked as changed in the browser and is tried again after 30 seconds, when the connection comes back, or on the next visit.
 - "Stop saving and delete the account copy" turns it off and deletes the saved profile and shortlist. Free accounts keep everything in the browser only.
 
 ## Can we apply?
