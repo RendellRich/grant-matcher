@@ -1,0 +1,18 @@
+# Settings the Supabase command-line tool reads when the "Deploy functions" workflow deploys.
+# search, weekly-email and deadline-reminders run from one bundled file each, built in web/ by
+# `npm run build:fn`, `build:digest` and `build:reminders`; the bundles are not committed.
+# None of them checks a Supabase login token: search reads the caller's own session, and the two
+# email jobs are called by pg_cron with the service role.
+project_id = "lthfecwgvpekrjjqszof"
+
+[functions.search]
+entrypoint = "./functions/search/dist/index.js"
+verify_jwt = false
+
+[functions.weekly-email]
+entrypoint = "./functions/weekly-email/dist/index.js"
+verify_jwt = false
+
+[functions.deadline-reminders]
+entrypoint = "./functions/deadline-reminders/dist/index.js"
+verify_jwt = false
