@@ -3,11 +3,12 @@
 //
 //   POST { "action": "checkout", "plan": "pro" | "consultant", "interval"?: "month" | "year" }  ->  { "url": "https://checkout.stripe.com/..." }
 //   POST { "action": "portal" }                                   ->  { "url": "https://billing.stripe.com/..." }
+//   POST { "action": "status" }                                   ->  { "plan", "status", "billing": PlanView | null }
 //
 // The plan itself only changes when Stripe tells stripe-webhook that a subscription started or changed.
 // Secrets: STRIPE_SECRET_KEY (a restricted key). Prices are found by lookup key (_shared/billing-core.ts).
 import Stripe from "npm:stripe@23";
-import { CHECKOUT_LABEL, intervalOf, isPaidPlan, lookupKeyFor, promoCodesAllowed } from "../_shared/billing-core.ts";
+import { CHECKOUT_LABEL, intervalOf, isPaidPlan, lookupKeyFor, planView, promoCodesAllowed } from "../_shared/billing-core.ts";
 
 const BASE = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -35,7 +36,7 @@ const reply = (origin: string | null, status: number, body: unknown) =>
 /** Where Stripe sends people back: the page they came from (the live site, or a local copy while testing). */
 const siteFor = (origin: string | null) => `${origin && ORIGINS.includes(origin) ? origin : ORIGINS[0]}/grant-matcher/`;
 
-interface Account { id: string; plan: string; status: string; stripe_customer_id: string | null; billing_tester: boolean }
+interface Account { id: string; plan: string; status: string; stripe_customer_id: string | null; stripe_subscription_id: string | null; billing_tester: boolean }
 
 /** A test key takes no real money, so with one in place only tester accounts may check out. */
 const TEST_MODE = /^(rk|sk)_test_/.test(KEY);
@@ -49,7 +50,7 @@ async function currentUser(token: string | null): Promise<{ id: string; email: s
 }
 
 async function accountOf(userId: string): Promise<Account | null> {
-  const res = await fetch(`${BASE}/rest/v1/accounts?owner=eq.${userId}&select=id,plan,status,stripe_customer_id,billing_tester`, { headers: service });
+  const res = await fetch(`${BASE}/rest/v1/accounts?owner=eq.${userId}&select=id,plan,status,stripe_customer_id,stripe_subscription_id,billing_tester`, { headers: service });
   if (!res.ok) throw new Error(`accounts ${res.status}`);
   return ((await res.json()) as Account[])[0] ?? null;
 }
@@ -85,6 +86,29 @@ Deno.serve(async (req) => {
     if (!acct) return reply(origin, 404, { error: "Your account isn't set up yet. Sign out and back in, then try again." });
     if (TEST_MODE && !acct.billing_tester) return reply(origin, 503, { error: "Paid plans aren't open yet." });
     const site = siteFor(origin);
+
+    // The plan line on the page: how it's billed, what it costs and when it renews or ends. A plan given by hand
+    // (no Stripe subscription) has no billing to show.
+    if (body.action === "status") {
+      if (!acct.stripe_subscription_id || !paidAndActive(acct)) return reply(origin, 200, { plan: acct.plan, status: acct.status, billing: null });
+      const sub = await stripe.subscriptions.retrieve(acct.stripe_subscription_id, { expand: ["discounts"] });
+      const coupons = ((sub.discounts ?? []) as unknown[]).flatMap((d) => {
+        if (!d || typeof d === "string") return [];
+        const disc = d as { coupon?: unknown; source?: { coupon?: unknown } };
+        const c = (disc.source?.coupon ?? disc.coupon) as { id: string; amount_off?: number | null; percent_off?: number | null } | string | null | undefined;
+        return c ? [c] : [];
+      });
+      const view = planView({
+        status: sub.status, cancel_at_period_end: sub.cancel_at_period_end, cancel_at: sub.cancel_at ?? null,
+        schedule: typeof sub.schedule === "string" ? sub.schedule : sub.schedule?.id ?? null,
+        items: sub.items.data.map((i) => ({
+          current_period_end: (i as unknown as { current_period_end?: number }).current_period_end ?? null,
+          price: { lookup_key: i.price.lookup_key ?? null, unit_amount: i.price.unit_amount ?? null, currency: i.price.currency, recurring: i.price.recurring ? { interval: i.price.recurring.interval } : null },
+        })),
+        coupons,
+      });
+      return reply(origin, 200, { plan: acct.plan, status: acct.status, billing: view });
+    }
 
     // Changing or cancelling a plan happens in Stripe's portal, and so does a second checkout for a paying account.
     if (body.action === "portal" || (body.action === "checkout" && paidAndActive(acct))) {
