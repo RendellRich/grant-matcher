@@ -3,6 +3,8 @@ import {
   asks501c3, fmtDate, money, type CompanyGiving, type FederalExtra, type GivingHistory, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier, type WebsiteCycle,
 } from "./score";
 import { SUPPORT_TYPES, splitList, type ProfileForm } from "./profile";
+import { federalReadiness, floridaReadiness, foundationReadiness, type ReadyCheck } from "./ready";
+import type { Profile } from "./score";
 
 export type SourceKey = "fl" | "fdn" | "fed";
 
@@ -53,6 +55,8 @@ export interface Entry {
   newHere?: boolean; // its first grants to one of the person's places came in its latest year
   reach?: "national" | "state" | ""; // a foundation that gives in 5 or more states, or mostly in the person's state
   forecast?: boolean; // a federal forecast, not open yet
+  ready?: ReadyCheck[]; // "Can we apply?": the facts that stop a small nonprofit, checked against the profile
+  covered?: string[]; // cautions and status lines the checks already say, left off the card (still filtered on)
 }
 
 const SUPPORT = SUPPORT_TYPES.map((t) => [t.id, new RegExp(t.pattern, "i")] as const);
@@ -102,18 +106,19 @@ function phone(v: string): DetailRow | null {
 
 const plural = (n: number, noun: string) => `${n.toLocaleString("en-US")} ${n === 1 ? noun : noun + "s"}`;
 
-export function federalEntry(s: Scored<FederalRec & FederalExtra>, hasKw: boolean): Entry {
+export function federalEntry(s: Scored<FederalRec & FederalExtra>, hasKw: boolean, p?: Profile): Entry {
   const r = s.rec;
   const label = r.status === "forecasted" ? "Est. due" : "Due";
   const why = sortReasons(s.reasons, s.cautions, "its description", hasKw);
   const desc = r.description || "";
+  // the date is already in the right-hand column; the CSV keeps the scorer's full wording
+  const status = why.status.map((x) => (r.close ? x.replace(/ \(estimated due [^)]*\)/, "") : x));
   return {
     key: `fed:${r.id}`, source: "fed", title: r._title || r.title, url: safeUrl(r.url), catalog: r.number,
     facts: [r.agency, `Award ${r.award_range}`],
     side: r.close ? `${label} ${fmtDate(r.close)}` : "No close date",
     score: s.score, tier: s.tier, ...why,
-    // the date is already in the right-hand column; the CSV keeps the scorer's full wording
-    status: why.status.map((x) => (r.close ? x.replace(/ \(estimated due [^)]*\)/, "") : x)),
+    status,
     summary: desc.slice(0, 1500) + (desc.length > 1500 ? "..." : ""),
     eligibility: r.eligibility_text ? r.eligibility_text.slice(0, 800) : "",
     sortClose: r.close ? r.close.getTime() : null,
@@ -123,8 +128,11 @@ export function federalEntry(s: Scored<FederalRec & FederalExtra>, hasKw: boolea
     amountHigh: (r.award_ceiling && r.award_ceiling > 0 ? r.award_ceiling : null) ?? (r.award_floor || null),
     support: supportIn(`${r.title} ${desc}`),
     forecast: r.status === "forecasted",
+    ...(p ? ready(federalReadiness(r, p, [...why.cautions, ...status])) : {}),
   };
 }
+
+const ready = (x: { checks: ReadyCheck[]; covered: string[] }) => ({ ready: x.checks, covered: x.covered });
 
 const ymdDate = (d: string) => new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10));
 const shortDay = (d: string) => ymdDate(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -201,7 +209,7 @@ export function companyRows(c: CompanyGiving | undefined): { rows: DetailRow[]; 
   return { rows, side: range ? `Grants ${range}` : undefined, line: `Runs ${p.name}${range ? `, ${range}` : ""}` };
 }
 
-export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: boolean, cities: string[] = []): Entry {
+export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: boolean, cities: string[] = [], p?: Profile): Entry {
   const r = s.rec;
   const company = companyRows(r._corp);
   const past = historyFacts(r.hist, cities);
@@ -262,6 +270,7 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
     closedToUnsolicited: s.cautions.includes("Says it does not accept unsolicited requests"),
     local: s.reasons.some((x) => x.startsWith("Funded ") || x.startsWith("Based in ")),
     asks501c3: asks501c3(s.rec),
+    ...(p ? ready(foundationReadiness(r, p, asks501c3(s.rec), s.reasons.includes("Publishes how to apply"), why.cautions)) : {}),
   };
 }
 
@@ -277,7 +286,7 @@ export function localWindow(r: FloridaRec, today: Date = new Date()): { due: num
   return { due, line: due ? "Taking applications now" : undefined };
 }
 
-export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean): Entry {
+export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean, p?: Profile): Entry {
   const r = s.rec;
   const why = sortReasons(s.reasons, s.cautions, "its title or objectives", hasKw);
   const local = Boolean(r.level);
@@ -314,6 +323,7 @@ export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean): Entry {
     sortClose: due,
     score: s.score, tier: s.tier, ...why, rows,
     support: supportIn(`${r.title} ${r.objectives}`),
+    ...(p ? ready(floridaReadiness(r, p, [...why.cautions, ...why.status])) : {}),
   };
 }
 

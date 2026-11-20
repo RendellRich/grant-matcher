@@ -23,7 +23,7 @@ export function toProfile(f: ProfileForm, now: Date = new Date()): Profile {
     includeForecasted: f.include_forecasted, minDaysLeft: f.min_days_left,
     today: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
     fiscalSponsor: f.fiscal_sponsor, delivery: f.delivery, minorKeywords: profileMinorKeywords(f),
-    yearFounded: f.year_founded ? +f.year_founded : null, state: f.state,
+    yearFounded: f.year_founded ? +f.year_founded : null, state: f.state, registrations: f.registrations,
   };
 }
 
@@ -32,17 +32,17 @@ export const simFor = (vecs: VectorSet, vector: number[] | null) => (vector ? si
 
 /** Federal entries from scored rows; the page keeps the scored rows too, for its exports. */
 export const federalEntries = (scored: ReturnType<typeof scoreFederal>, p: Profile): Entry[] =>
-  scored.map((s) => federalEntry(s, p.keywords.length > 0));
+  scored.map((s) => federalEntry(s, p.keywords.length > 0, p));
 
 export const rankFederal = (records: FederalRec[], p: Profile, sim: Sim): Entry[] => federalEntries(scoreFederal(records, p, sim), p);
 
 export const rankFoundations = (records: FoundationRec[], p: Profile, state: string, cities: string[], sim: Sim,
   kinds: string[] = KINDS, preselected = false): Entry[] =>
   scoreFoundations(records.filter((r) => kinds.includes(r.kind || "Private foundation")), p, state, cities, sim, preselected)
-    .map((s) => foundationEntry(s, state, p.keywords.length > 0, cities));
+    .map((s) => foundationEntry(s, state, p.keywords.length > 0, cities, p));
 
 export const rankFlorida = (records: FloridaRec[], p: Profile, sim: Sim, earmarks = false, cities: string[] = []): Entry[] =>
-  scoreFlorida(records, p, sim, earmarks, cities).map((s) => floridaEntry(s, p.keywords.length > 0));
+  scoreFlorida(records, p, sim, earmarks, cities).map((s) => floridaEntry(s, p.keywords.length > 0, p));
 
 interface Loaded<T> { records: T[]; vecs: VectorSet }
 export interface RankSources {

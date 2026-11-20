@@ -44,13 +44,13 @@ export function preview(f: ProfileForm, src: RankSources, vector: number[] | nul
   for (const k of shownSources(f, hasPrograms)) {
     // Entries are built for strong and possible matches only: long shots are never part of a preview.
     if (k === "fed" && src.fed) {
-      lists.fed = good(scoreFederal(src.fed.records, p, simFor(src.fed.vecs, vector))).map((s) => federalEntry(s, hasKw));
+      lists.fed = good(scoreFederal(src.fed.records, p, simFor(src.fed.vecs, vector))).map((s) => federalEntry(s, hasKw, p));
     } else if (k === "fdn" && src.fdn) {
       const recs = src.fdn.records.filter((r) => KINDS.includes(r.kind || "Private foundation"));
       lists.fdn = good(scoreFoundations(recs, p, f.state, cities, simFor(src.fdn.vecs, vector), false))
-        .map((s) => foundationEntry(s, f.state, hasKw, cities));
+        .map((s) => foundationEntry(s, f.state, hasKw, cities, p));
     } else if (k === "fl" && src.fl) {
-      lists.fl = good(scoreFlorida(src.fl.records, p, simFor(src.fl.vecs, vector), false, cities)).map((s) => floridaEntry(s, hasKw));
+      lists.fl = good(scoreFlorida(src.fl.records, p, simFor(src.fl.vecs, vector), false, cities)).map((s) => floridaEntry(s, hasKw, p));
     }
   }
   const counts: Partial<Record<SourceKey, Counts>> = {};
