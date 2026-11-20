@@ -189,3 +189,34 @@ export async function saveReminders(on: boolean, items: unknown[]): Promise<{ in
   if (error) return { error: error.message.includes("Pro") ? "Deadline reminders come with Pro." : "Couldn't save that. Try again in a minute." };
   return { info: data as DigestInfo };
 }
+
+// ---------- profile and shortlist on any device (sync.ts) ----------
+
+/** The account's saved profile and shortlist, or null when signed out or unreachable. */
+export async function myWorkspace(): Promise<unknown | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("my_workspace");
+  return error ? null : data;
+}
+
+export async function saveProfileRemote(form: ProfileForm, vector: number[] | null): Promise<boolean> {
+  if (!supabase) return false;
+  const { data, error } = await supabase.rpc("save_profile", { p_profile: form, p_vector: vector });
+  return !error && (data as { ok?: boolean })?.ok === true;
+}
+
+/** Saves the shortlist over version `base`. A conflict brings back the account's newer copy. */
+export type ShortlistSave = { ok: true; version: number } | { ok: false; version?: number; shortlist?: unknown; off?: boolean; failed?: boolean };
+export async function saveShortlistRemote(items: unknown[], base: number): Promise<ShortlistSave> {
+  if (!supabase) return { ok: false, failed: true };
+  const { data, error } = await supabase.rpc("save_shortlist", { p_items: items, p_base: base });
+  if (error || !data) return { ok: false, failed: true };
+  return data as ShortlistSave;
+}
+
+/** Turns saving to the account on, or off (which deletes the saved copies). Returns the new workspace. */
+export async function setSync(on: boolean): Promise<unknown | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("set_sync", { p_on: on });
+  return error ? null : data;
+}

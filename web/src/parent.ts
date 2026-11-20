@@ -147,7 +147,7 @@ export function post(origin: string, m: Outgoing): void {
 }
 
 /** Where a loaded profile came from, for the example menu's extra option. */
-export type LoadedFrom = "file" | "eto";
+export type LoadedFrom = "file" | "eto" | "account";
 export function loadedLabel(from: LoadedFrom): string {
-  return from === "eto" ? "ETO's saved profile" : "Loaded from a file";
+  return from === "eto" ? "ETO's saved profile" : from === "account" ? "Saved to your account" : "Loaded from a file";
 }
