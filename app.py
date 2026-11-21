@@ -29,13 +29,12 @@ SITE_URL = "https://rendellrich.github.io/grant-matcher/"
 NOTICE = "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services."
 
 PRESETS = {
-    "Youth literacy and learning support": {
-        "mission": "We provide free and sliding-scale structured literacy instruction for children with dyslexia, "
-                   "speech and language support, academic tutoring, and coping-skills coaching for children with "
-                   "ADHD and autism, so that cost is never a barrier for families.",
-        "keywords": "literacy, reading, dyslexia, tutoring, speech, language, children, youth, students, ADHD, autism, disabilities, low-income families, after school",
-        "categories": ["ED", "HL", "ISS"],
-        "state": "FL", "cities": "Tampa, Bradenton, Sarasota, St. Petersburg",
+    "Youth reading program": {
+        "mission": "We run a free after-school reading program that pairs elementary students who are behind in "
+                   "reading with trained volunteer tutors, and we send home books and activities families can use together.",
+        "keywords": "literacy, reading, tutoring, elementary, children, students, after school, volunteers, families, low-income",
+        "categories": ["ED", "HU", "ISS"],
+        "state": "FL", "cities": "",
     },
     "Community food pantry": {
         "mission": "We run a volunteer food pantry and weekend meal program for families facing food insecurity in our county.",
