@@ -197,7 +197,11 @@ A Consultant account keeps up to 10 client profiles (`supabase/migrations/202611
 
 People sign in with a code sent by email, or with Google; there are no passwords (`web/src/signin.tsx`). The Google button shows only once the Google provider is switched on in Supabase (the page reads Supabase's public auth settings). Google sends people back to the page, which finishes the sign-in itself (PKCE). Someone who used the email code before and then picks Google with the same address gets the same account.
 
-Setting up Google (once): in Google Cloud, an OAuth client of type Web application with authorized JavaScript origin `https://rendellrich.github.io` and redirect URI `https://lthfecwgvpekrjjqszof.supabase.co/auth/v1/callback`; in Supabase, Authentication, Sign In / Providers, Google, with that client's ID and secret, and `https://rendellrich.github.io/grant-matcher/**` under Authentication, URL Configuration, Redirect URLs.
+Google setup (done Nov 2026): the Google Cloud project "Grant Matcher" (`grant-matcher-515400`) belongs to ren@solutionsbyrich.com, a free Cloud Identity account on the verified solutionsbyrich.com domain. Its web OAuth client "Grant Matcher web" has one redirect URI, `https://lthfecwgvpekrjjqszof.supabase.co/auth/v1/callback`, and no JavaScript origins, since sign-in goes through Supabase. The client ID and secret live only in Supabase (Authentication, Sign In / Providers, Google). Supabase's Site URL is `https://rendellrich.github.io/grant-matcher/` and `https://rendellrich.github.io/grant-matcher/**` is its only redirect URL.
+
+Google's sign-in screen shows "Grant Matcher" because the branding is verified. That depends on the branding page listing only domains we own: solutionsbyrich.com is the one authorized domain, and the home page, privacy policy and terms links all point to solutionsbyrich.com/grant-matcher. Google adds a domain to that list whenever a client URI uses it, so after editing the client, check that the Supabase and github.io domains have not come back. If they have, remove them and save, or the screen falls back to showing the Supabase address.
+
+Rotating the secret: Google shows a new secret only once. Add a secret on the client, paste it into Supabase's Google provider and save, check that Google sign-in still works, then disable the old secret.
 
 ## When a paid plan ends
 
