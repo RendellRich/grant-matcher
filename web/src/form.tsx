@@ -155,7 +155,7 @@ export function ProfileFormView(p: FormProps) {
           <label for={id("kw")}>More key words <span class="quiet">(optional)</span></label>
           <p class="hint" id={id("kw-hint")}>Separate with commas. Rare, specific words count more than common ones.</p>
           <textarea id={id("kw")} rows={3} aria-describedby={id("kw-hint")} value={draft.keywords}
-                    placeholder="For example: Orton-Gillingham, sliding scale"
+                    placeholder="For example: tutoring, summer camp"
                     onInput={(e) => set("keywords", (e.target as HTMLTextAreaElement).value)} />
         </div>
         <details class="cats">

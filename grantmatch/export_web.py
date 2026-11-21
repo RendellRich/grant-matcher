@@ -31,13 +31,11 @@ LOCAL = Path(__file__).resolve().parent.parent / "data"
 # model and text the browser would use (mission, a space, then the key words).
 EXAMPLES = {
     "literacy": {
-        "label": "Youth literacy and learning support", "org_type": "education",
-        "mission": "We provide free and sliding-scale structured literacy instruction for children with dyslexia, "
-                   "speech and language support, academic tutoring, and coping-skills coaching for children with "
-                   "ADHD and autism, so that cost is never a barrier for families.",
-        "keywords": "literacy, reading, dyslexia, tutoring, speech, language, children, youth, students, ADHD, autism, "
-                    "disabilities, low-income families, after school",
-        "categories": ["ED", "HL", "ISS"], "state": "FL", "cities": "Tampa, Bradenton, Sarasota, St. Petersburg",
+        "label": "Youth reading program", "org_type": "education",
+        "mission": "We run a free after-school reading program that pairs elementary students who are behind in "
+                   "reading with trained volunteer tutors, and we send home books and activities families can use together.",
+        "keywords": "literacy, reading, tutoring, elementary, children, students, after school, volunteers, families, low-income",
+        "categories": ["ED", "HU", "ISS"], "state": "FL", "cities": "",
     },
     "food": {
         "label": "Community food pantry", "org_type": "human_services",
