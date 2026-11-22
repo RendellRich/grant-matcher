@@ -74,3 +74,20 @@ def test_foundations_read_but_not_listed_are_written_with_why(tmp_path):
     rows = [json.loads(line) for line in gzip.decompress(path.read_bytes()).decode().splitlines()]
     assert {r["id"]: r["reason"] for r in rows} == {"2": "no_grants", "3": "no_recent_return"}
     assert path.name.endswith(".jsonl.gz") and not path.name.endswith(".json.gz")  # stays out of the state files
+
+
+def test_a_second_report_the_same_day_counts_only_what_is_really_new(tmp_path, monkeypatch):
+    parts = tmp_path / "parts"
+    parts.mkdir()
+    with gzip.open(parts / "skipped-federal.json.gz", "wt") as fh:
+        json.dump({"rows": [FED, {**FED, "id": "2", "name": "Tribes Only"}]}, fh)
+    today = skipped.datetime.now(skipped.timezone.utc).date().isoformat()
+    prev = tmp_path / "prev.csv"
+    prev.write_text("Source,ID,First seen\nFederal (Grants.gov),1," + today + "\n", encoding="utf-8")
+    out_file = tmp_path / "gh.txt"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
+    monkeypatch.setattr("sys.argv", ["skipped", "--parts", str(parts), "--previous", str(prev),
+                                     "--decisions", str(tmp_path / "none.csv"),
+                                     "--csv", str(tmp_path / "s.csv"), "--md", str(tmp_path / "s.md")])
+    skipped.main()
+    assert "new=1" in out_file.read_text()
