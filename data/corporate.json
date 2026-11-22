@@ -100,7 +100,22 @@
     {"ein": "581586283", "company": "Duke Energy", "home": "NC", "serves": null},
     {"ein": "650031452", "company": "NextEra Energy and FPL", "home": "FL", "serves": null},
     {"ein": "882162851", "company": "Jabil", "home": "FL", "serves": null},
-    {"ein": "270304734", "company": "Mosaic", "home": "FL", "serves": null},
+    {
+      "ein": "270304734",
+      "company": "Mosaic",
+      "home": "FL",
+      "serves": null,
+      "program": {
+        "name": "Mosaic community investment grants",
+        "who": "501(c)(3) organizations near Mosaic's phosphate and potash operations and offices (in Florida, its Tampa headquarters and Central Florida mining and processing communities), with written nondiscrimination policies. Not for individuals, grantmakers, political, advocacy or private membership groups, endowment campaigns, or faith-based groups except community-wide charitable work. Mosaic prefers requests under 10% of the organization's budget and under 50% of the program's.",
+        "amount": "Not stated",
+        "when": "Four deadlines a year at midnight Eastern: March 20, June 22, September 21 and December 21, 2026, each with about four months of review (the December 21 round is decided by April 19, 2027).",
+        "how": "Apply through Mosaic's online grant application for U.S. and Canadian organizations, linked from its community investment guidelines; one application covers The Mosaic Company and its foundation.",
+        "focus": "Hunger and local food systems, agricultural education, habitat conservation, nutrient stewardship and watershed restoration, and the communities where Mosaic employees live and volunteer",
+        "url": "https://mosaicco.com/fileLibrary/publicFiles/0-2026-Funding-Guidelines.pdf",
+        "checked": "2026-11-21"
+      }
+    },
     {"ein": "431353948", "company": "AT&T", "home": "TX", "serves": null},
     {"ein": "366116535", "company": "Allstate", "home": "IL", "serves": null},
     {"ein": "416017088", "company": "Target", "home": "MN", "serves": null},
