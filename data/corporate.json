@@ -97,7 +97,22 @@
         "checked": "2026-11-19"
       }
     },
-    {"ein": "581586283", "company": "Duke Energy", "home": "NC", "serves": null},
+    {
+      "ein": "581586283",
+      "company": "Duke Energy",
+      "home": "NC",
+      "serves": null,
+      "program": {
+        "name": "Duke Energy Foundation grants",
+        "who": "Nonprofits serving communities where Duke Energy customers live and work, in the states Duke Energy serves. Check the foundation's eligibility guidelines first.",
+        "amount": "Up to $20,000 for rolling grants; larger themed calls are announced from time to time.",
+        "when": "Requests of $20,000 or less are taken year-round. Review can take three months or more.",
+        "how": "Read the eligibility guidelines and focus areas, contact the regional grant representative for your state with your idea, then apply through the foundation's online application once eligibility is confirmed.",
+        "focus": "Vibrant economies (workforce development, community revitalization, energy and engineering education), climate resiliency (environment, disaster preparedness, green space in underserved communities), and opportunity and inclusion",
+        "url": "https://foundation.duke-energy.com/grants",
+        "checked": "2026-11-21"
+      }
+    },
     {"ein": "650031452", "company": "NextEra Energy and FPL", "home": "FL", "serves": null},
     {"ein": "882162851", "company": "Jabil", "home": "FL", "serves": null},
     {
@@ -118,7 +133,22 @@
     },
     {"ein": "431353948", "company": "AT&T", "home": "TX", "serves": null},
     {"ein": "366116535", "company": "Allstate", "home": "IL", "serves": null},
-    {"ein": "416017088", "company": "Target", "home": "MN", "serves": null},
+    {
+      "ein": "416017088",
+      "company": "Target",
+      "home": "MN",
+      "serves": "*",
+      "program": {
+        "name": "Target Community Engagement Funds",
+        "who": "501(c)(3) public charities, and K-12 public, charter and nonprofit private schools and colleges with an NCES number. Target's store and distribution center leaders choose local grants. Target says most of its other grants are by invitation only.",
+        "amount": "$1,000 to $15,000",
+        "when": "Two cycles a year. In 2026: April 6 to May 6 (decided in July) and August 3 to September 4 (decided in November). Both are closed; the next cycle opens in April 2027.",
+        "how": "Read the program guidelines, then apply from the Community Engagement Funds page while a cycle is open. An organization can have up to 10 applications at a time and can't apply for the same program in both cycles.",
+        "focus": "Thriving families (basic needs, youth development), vibrant neighborhoods (community and green spaces), creative and cultural programming, and workforce development",
+        "url": "https://corporate.target.com/about/purpose-history/communities/grants-corporate-giving/community-engagement-funds",
+        "checked": "2026-11-21"
+      }
+    },
     {"ein": "200721133", "company": "Bank of America", "home": "NC", "serves": null},
     {"ein": "366110423", "company": "State Farm", "home": "IL", "serves": null},
     {"ein": "030300865", "company": "Ben & Jerry's", "home": "VT", "serves": null},

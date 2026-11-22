@@ -100,3 +100,14 @@ def test_open_calls_lose_points_for_a_match_and_for_loans_and_flag_reimbursement
     assert paid_back["cautions"] == ["Pays by reimbursement: you spend first and are paid back"]
     assert paid_back["score"] == plain["score"]
     assert one(FundingMethod="Advances & Reimbursement(s)")["cautions"] == []
+
+
+def test_agency_notes_that_name_nonprofits_override_the_category_list():
+    r = california.normalize(row(ApplicantType="Public Agency",
+                                 ApplicantTypeNotes="Cities, counties and non-profit corporations (as deemed eligible)."))
+    assert r["nonprofit_eligible"] is True and r["applicant_types"].startswith("Nonprofits aren't among")
+    assert california.normalize(row(ApplicantType="Individual; Public Agency",
+                                    ApplicantTypeNotes="Open to all public and private entities."))["nonprofit_eligible"] is True
+    assert california.normalize(row(ApplicantType="Public Agency",
+                                    ApplicantTypeNotes="Nonprofits are not eligible."))["nonprofit_eligible"] is False
+    assert california.normalize(row(ApplicantType="Public Agency", ApplicantTypeNotes="Local public agencies"))["nonprofit_eligible"] is False

@@ -59,3 +59,17 @@ def test_money_is_written_the_same_way_everywhere():
     assert il._money("2120450.00") == "$2,120,450"
     assert il._money("$250000 - $25000000") == "$250,000 - $25,000,000"
     assert il._money("Not Applicable") == ""
+
+
+def test_filler_text_counts_as_nothing_said_and_community_action_agencies_count():
+    row = il.list_rows(LIST)[1]
+    see = il.normalize(row, {"Eligible Applicants": "Government Organizations; Other", "Applicant Eligibility": "SEE NOFO"})
+    assert see["nonprofit_eligible"] is True and "isn't stated; read the notice" in see["applicant_types"]
+    blank = il.normalize(row, {"Applicant Eligibility Information": "N/A"})
+    assert blank["nonprofit_eligible"] is True and blank["applicant_types"].startswith("Not stated")
+    clerks = il.normalize(row, {"Applicant Eligibility Information": "Only open to Illinois county clerks."})
+    assert clerks["nonprofit_eligible"] is False and clerks["applicant_types"] == "Only open to Illinois county clerks."
+    caa = il.normalize(row, {"Applicant Eligibility Information": "A Community Action Agency offering weatherization."})
+    assert caa["nonprofit_eligible"] is True
+    gov = il.normalize(row, {"Eligible Applicants": "Government Organizations", "Applicant Eligibility": "N/A"})
+    assert gov["nonprofit_eligible"] is False

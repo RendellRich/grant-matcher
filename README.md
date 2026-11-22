@@ -162,9 +162,11 @@ California's agencies post every grant and loan opportunity to the [California G
 
 The data is refreshed daily and published with the release. On the site, the state tab follows the profile's state: a Florida profile sees Florida programs, a California or Illinois profile sees that state's grants, and other states have no state tab yet.
 
+When the portal's applicant categories leave nonprofits out but the agency's own notes name them ("non-profit corporations", "all public and private entities"), the call is shown with a note to check the notice first.
+
 ## Illinois state grants
 
-Under Illinois' Grant Accountability and Transparency Act, every state agency posts its Notices of Funding Opportunity to one public list kept by the Governor's Office of Management and Budget ([CSFA opportunity list](https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx)): the title, agency, application window and award range. Notices run in the state's grants system link to a public AmpliFund page with the description, who may apply, award size and match; the rest link to the catalog's own notice and program pages. `grantmatch/illinois.py` reads the list and each page, daily, into the same record fields as California's. Who may apply comes from the state's own applicant categories ("Nonprofit Organizations"); only when a notice says "Others" or gives no categories does it read the eligibility text. A notice that says nothing either way is kept, and its card says so.
+Under Illinois' Grant Accountability and Transparency Act, every state agency posts its Notices of Funding Opportunity to one public list kept by the Governor's Office of Management and Budget ([CSFA opportunity list](https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx)): the title, agency, application window and award range. Notices run in the state's grants system link to a public AmpliFund page with the description, who may apply, award size and match; the rest link to the catalog's own notice and program pages. `grantmatch/illinois.py` reads the list and each page, daily, into the same record fields as California's. Who may apply comes from the state's own applicant categories ("Nonprofit Organizations"); only when a notice says "Others" or gives no categories does it read the eligibility text. A notice that says nothing either way (blank, "N/A" or "SEE NOFO") is kept, and its card says so. Community action agencies count as nonprofits.
 
 Open calls are scored like Florida's programs, with three checks of their own:
 
@@ -192,13 +194,13 @@ Every refresh leaves some grants and funders out on purpose, and each one now sa
 | Florida catalog | Programs not open to nonprofits, and money set aside for a named organization | read from `florida.json.gz` |
 | Private foundations, community foundations | Every return read but not listed: no grants to organizations, funds only charities it picks with no way to apply, or no return in the two newest filing years | `foundations.py`, `community.py` (`skipped.jsonl.gz`) |
 
-Each Friday `grantmatch/skipped.py` (workflow `skipped-report.yml`) joins them into `skipped-grants.csv` on the data-latest release, one row per grant or funder with a plain reason and the date it was first seen, and replaces the body of the open `skip-review` issue with counts by source and reason, what is new since last week, every federal and state row, and the largest foundations left out. A comment marks weeks with new entries. To record a decision, add a row to `data/skip-review.csv` (source, id, decision, note); every later report shows it. The review never changes what the site shows.
+Each Friday `grantmatch/skipped.py` (workflow `skipped-report.yml`) joins them into `skipped-grants.csv` on the data-latest release, one row per grant or funder with a plain reason and the date it was first seen, and replaces the body of the open `skip-review` issue with counts by source and reason, what is new since last week, every federal and state row, and the largest foundations left out. A comment marks weeks with new entries. To record a decision, add a row to `data/skip-review.csv` (source, id, decision, note); every later report shows it. Decisions so far use `justified` (the skip is right), `check` (it may be wrong; read the notice) and `fixed` (a filter rule was wrong and has been changed, so the grant now shows). The review file itself never changes what the site shows; a `fixed` decision always comes with a code change.
 
 ## Sources researched and not added yet
 
 - **New York.** The Grants Gateway and the SFS Vendor Portal list state opportunities but offer no public export. A third-party site (OpenGrants) publishes a daily CSV of New York state programs, but states no license for reuse, so it isn't used.
 - **Other states with one public list.** Worth checking next: Texas eGrants (the Governor's criminal justice grants), Washington, Colorado and Maryland, each of which posts calls on agency pages rather than one feed.
-- **Company programs.** `data/corporate.json` names 35 company foundations; 7 have a program written up from the company's own page (Walmart, Publix, Truist, TD Bank, Albertsons, Kroger, Mosaic). The rest are labels only until someone reads each company's giving page.
+- **Company programs.** `data/corporate.json` names 35 company foundations; 9 have a program written up from the company's own page (Walmart, Publix, Truist, TD Bank, Albertsons, Kroger, Mosaic, Duke Energy, Target). The rest are labels only until someone reads each company's giving page. Bank of America's grant pages build their text with scripts, so its RFP dates could only be read on third-party sites; it stays a label until its own page can be read.
 
 ## Profile and shortlist on any device
 

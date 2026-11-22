@@ -273,14 +273,16 @@ def main() -> None:
         if path and path.exists():
             rows += hidden_programs(path, source)
     today = datetime.now(timezone.utc).date().isoformat()
-    out, text = build(rows, load_previous(args.previous), load_decisions(args.decisions), today, missing, args.csv_link)
+    previous = load_previous(args.previous)
+    out, text = build(rows, previous, load_decisions(args.decisions), today, missing, args.csv_link)
     args.csv.parent.mkdir(parents=True, exist_ok=True)
     with open(args.csv, "w", newline="", encoding="utf-8-sig") as fh:  # the BOM lets Excel read the accents
         w = csv.DictWriter(fh, fieldnames=COLUMNS)
         w.writeheader()
         w.writerows(out)
     args.md.write_text(text, encoding="utf-8")
-    fresh = sum(1 for c in out if c["First seen"] == today) if args.previous and args.previous.exists() else 0
+    # New means not in the last report's CSV; a first-seen date of today is not enough, since a report can run twice a day
+    fresh = sum(1 for r in rows if (r["source"], r.get("id", "")) not in previous) if previous else 0
     print(f"{len(out):,} rows; new since last report: {fresh:,}")
     gh_out = os.environ.get("GITHUB_OUTPUT")
     if gh_out:
