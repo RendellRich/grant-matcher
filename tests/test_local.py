@@ -27,7 +27,8 @@ def test_the_real_file_loads_and_every_key_suits_eto():
     assert records, "data/local-FL.json should have programs"
     for r in records:
         assert r["id"].startswith("local-") and len(f"fl:{r['id']}") <= 63
-        assert r["nonprofit_eligible"] and not r["earmark"] and r["places"]
+        assert r["nonprofit_eligible"] and not r["earmark"]
+        assert r["places"] or r["area"] == "all of Florida"  # statewide entries name no places
 
 
 def test_bad_entries_are_named():
@@ -126,3 +127,12 @@ def test_county_programs_never_move_a_state_programs_score():
     alone = score_florida(state, PROFILE, sims, cities=["Bradenton"]).set_index("id")["score"]
     mixed = score_florida(state + [rec], PROFILE, sims, cities=["Bradenton"]).set_index("id")["score"]
     assert mixed.drop(rec["id"]).sort_index().tolist() == alone.sort_index().tolist()
+
+
+def test_statewide_and_community_foundation_entries():
+    state = local.to_record(entry(level="State", counties=["Statewide"]), COUNTIES)
+    assert state["area"] == "all of Florida" and state["places"] == [] and state["level"] == "State"
+    assert local.check(entry(level="State", counties=["Statewide"]), COUNTIES) == []
+    assert "not both" in " ".join(local.check(entry(counties=["Statewide", "Manatee"]), COUNTIES))
+    cf = local.to_record(entry(level="Community foundation", counties=["Manatee"]), COUNTIES)
+    assert cf["level"] == "Community foundation" and "manatee" in cf["places"]
