@@ -167,7 +167,9 @@ def note(seen: dict[str, dict], rec: dict, year: int, why: str) -> None:
     """Remember the outcome of a foundation's latest return, listed or not, for the coverage report."""
     prev = seen.get(rec["ein"])
     if prev is None or (year, rec["tax_year"]) >= (prev["filed"], prev["tax_year"]):
-        seen[rec["ein"]] = {"state": rec["state"], "filed": year, "tax_year": rec["tax_year"], "why": why}
+        seen[rec["ein"]] = {"state": rec["state"], "filed": year, "tax_year": rec["tax_year"], "why": why,
+                            "name": rec.get("name", ""), "city": rec.get("city", ""), "assets": rec.get("assets"),
+                            "website": rec.get("website", ""), "grant_count": len(rec.get("grants") or [])}
 
 
 ZIP_LETTERS = "ABCDEFGH"  # a month's returns come in up to a few zips: 11A, 11B, ...
@@ -259,6 +261,24 @@ def current(latest: dict[str, dict], filed: dict[str, int], newest: int) -> dict
     return {ein: rec for ein, rec in latest.items() if filed.get(ein, 0) > newest - CURRENT_FILING_YEARS}
 
 
+def write_left_out(path: Path, seen: dict[str, dict], listed: set[str], newest: int, source: str) -> int:
+    """Every return read that isn't listed, with why, one JSON line each, for the skipped-grants review
+    (grantmatch/skipped.py). The .jsonl name keeps it out of the per-state *.json.gz files."""
+    n = 0
+    with gzip.open(path, "wt", encoding="utf-8") as fh:
+        for ein, s in seen.items():
+            if ein in listed:
+                continue
+            why = "no_recent_return" if s["filed"] <= newest - CURRENT_FILING_YEARS else (s["why"] or "older_return_listed")
+            fh.write(json.dumps({"source": source, "id": ein, "name": s.get("name", ""), "state": s.get("state", ""),
+                                 "city": s.get("city", ""), "reason": why, "tax_year": s.get("tax_year", ""),
+                                 "filed": s["filed"], "assets": s.get("assets"), "website": s.get("website", ""),
+                                 "url": f"https://projects.propublica.org/nonprofits/organizations/{ein}"},
+                                separators=(",", ":")) + "\n")
+            n += 1
+    return n
+
+
 def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None) -> None:
     tmp = out_dir / "_tmp"
     tmp.mkdir(parents=True, exist_ok=True)
@@ -312,6 +332,7 @@ def build(years: list[int], out_dir: Path, only_batches: list[str] | None = None
         with gzip.open(out_dir / f"{st}.json.gz", "wt", encoding="utf-8") as fh:
             json.dump(payload, fh, separators=(",", ":"))
     (out_dir / "parsed.json").write_text(json.dumps(tally(seen, set(latest), max(years), CURRENT_FILING_YEARS)), encoding="utf-8")
+    write_left_out(out_dir / "skipped.jsonl.gz", seen, set(latest), max(years), "foundation")
     steady = sum(1 for rec in latest.values() if (hist.summary(rec["ein"], rec["tax_year"]) or {}).get("steady"))
     print(f"wrote {len(latest)} foundations into {len(by_state)} state files in {out_dir}; {steady} gave every year")
 

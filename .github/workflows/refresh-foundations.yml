@@ -122,6 +122,10 @@ jobs:
           ls build/foundations/*.json.gz build/community/*.json.gz | xargs -n1 basename | sed 's/.json.gz//' | sort -u \
             | python -c "import json,sys; print(json.dumps([s.strip() for s in sys.stdin if s.strip()]))" > upload/states.json
           echo "states: $(cat upload/states.json)"
+          # What each refresh read but left out, for the weekly skipped-grants review (grantmatch/skipped.py).
+          for dir in foundations community; do
+            if [ -f "build/$dir/skipped.jsonl.gz" ]; then cp "build/$dir/skipped.jsonl.gz" "upload/skipped-$dir.jsonl.gz"; fi
+          done
           gh release upload data-latest upload/* --clobber
 
   keep-schedule:

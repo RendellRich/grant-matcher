@@ -20,7 +20,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - name: Pull opportunities from Grants.gov
-        run: python -m grantmatch.fetch --out build/opportunities.json.gz
+        run: python -m grantmatch.fetch --out build/opportunities.json.gz --skipped build/skipped-federal.json.gz
       - name: Build semantic embeddings
         run: python -m grantmatch.embed federal build/opportunities.json.gz build/embeddings.npz
       - name: Publish as the data-latest release assets
@@ -30,7 +30,7 @@ jobs:
           gh release view data-latest >/dev/null 2>&1 || \
             gh release create data-latest --title "Latest grant data" \
               --notes "Refreshed twice a day from the Grants.gov API. The app reads opportunities.json.gz and embeddings.npz from here."
-          gh release upload data-latest build/opportunities.json.gz build/embeddings.npz --clobber
+          gh release upload data-latest build/opportunities.json.gz build/embeddings.npz build/skipped-federal.json.gz --clobber
       - name: Keep this schedule from expiring
         if: always()
         env:

@@ -24,6 +24,7 @@ function section(title: string, lines: string[]): string[] {
 function sourceLabel(e: Entry): string {
   if (e.source === "fl" && / program$/.test(e.catalog)) return ""; // "County program" is already the catalog
   if (e.source === "fl" && e.key.startsWith("fl:ca-")) return "California state grant";
+  if (e.source === "fl" && e.key.startsWith("fl:il-")) return "Illinois state grant";
   return SOURCE[e.source];
 }
 

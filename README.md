@@ -160,7 +160,11 @@ Florida's Department of Financial Services keeps the Catalog of State Financial 
 
 California's agencies post every grant and loan opportunity to the [California Grants Portal](https://www.grants.ca.gov/), which the State Library publishes as public-domain open data, updated daily. `grantmatch/california.py` reads that file and keeps the open and forecasted calls, in the same fields as Florida's programs so the same scorer reads them. Unlike Florida's catalog these are open calls, so each record also carries its open date, deadline, required match, whether it is a loan, and how the money is paid (most pay by reimbursement).
 
-The data is refreshed daily and published with the release. On the site, the state tab follows the profile's state: a Florida profile sees Florida programs, a California profile sees California programs, and other states have no state tab yet.
+The data is refreshed daily and published with the release. On the site, the state tab follows the profile's state: a Florida profile sees Florida programs, a California or Illinois profile sees that state's grants, and other states have no state tab yet.
+
+## Illinois state grants
+
+Under Illinois' Grant Accountability and Transparency Act, every state agency posts its Notices of Funding Opportunity to one public list kept by the Governor's Office of Management and Budget ([CSFA opportunity list](https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx)): the title, agency, application window and award range. Notices run in the state's grants system link to a public AmpliFund page with the description, who may apply, award size and match; the rest link to the catalog's own notice and program pages. `grantmatch/illinois.py` reads the list and each page, daily, into the same record fields as California's. Who may apply comes from the state's own applicant categories ("Nonprofit Organizations"); only when a notice says "Others" or gives no categories does it read the eligibility text. A notice that says nothing either way is kept, and its card says so.
 
 Open calls are scored like Florida's programs, with three checks of their own:
 
@@ -173,9 +177,28 @@ Open calls are scored like Florida's programs, with three checks of their own:
 To add a state, write an adapter that produces the same record fields, add it to `STATE_PROGRAMS` in `grantmatch/export_web.py`, and give it a refresh workflow. The site needs no change.
 
 
-No public catalog lists county and city grants, so they are kept by hand in `data/local-FL.json`, one entry per program, from the program's own page: the counties it serves, who can apply, whether it requires 501(c)(3) status, the application window when there is one, and the date the page was checked. `grantmatch/local.py` checks every entry (a bad date, an unknown county or a repeated name stops the export) and adds them to the Florida tab as county programs, keyed `fl:local-<slug>`. They score like state programs, with two more rules: points off when your cities are outside the county, and when the program requires 501(c)(3) status you don't have yet. Word rarity and the similarity median are still measured on the state programs alone, so adding or editing an entry never changes a state program's score. The weekly website check reads each program's page, and its closing date goes into `changes.json` like a federal deadline.
+No public catalog lists county and city grants, community foundation grant cycles, or the state agency calls Florida's catalog leaves out (federal money the state passes through, such as 21st Century Community Learning Centers, AmeriCorps and VOCA victim assistance, and statewide councils such as Florida Humanities), so they are kept by hand in `data/local-FL.json`, one entry per program, from the program's own page: the counties it serves, who can apply, whether it requires 501(c)(3) status, the application window when there is one, and the date the page was checked. `grantmatch/local.py` checks every entry (a bad date, an unknown county or a repeated name stops the export) and adds them to the Florida tab, keyed `fl:local-<slug>`. Each entry's `level` is `State`, `County`, `City` or `Community foundation`; a statewide entry lists its counties as `["Statewide"]` and gets no place rule. They score like state programs, with two more rules: points off when your cities are outside the county, and when the program requires 501(c)(3) status you don't have yet. Word rarity and the similarity median are still measured on the state programs alone, so adding or editing an entry never changes a state program's score. The weekly website check reads each program's page, and its closing date goes into `changes.json` like a federal deadline.
 
 To add or change one, edit the file from the official page, update `checked`, and run `python -m grantmatch.local` to check it.
+
+## Skipped grants review
+
+Every refresh leaves some grants and funders out on purpose, and each one now says who and why, so the reasons can be checked rather than trusted:
+
+| Source | Left out or hidden | Written by |
+|---|---|---|
+| Grants.gov | Open and forecasted opportunities nonprofits can't apply for, with who can (flagged when the eligibility notes mention nonprofits after all), and any whose details couldn't be read | `grantmatch/fetch.py --skipped` |
+| California portal, Illinois notices | Rows dropped (deadline passed, no title), and calls the state says nonprofits can't apply for | `california.py`, `illinois.py` |
+| Florida catalog | Programs not open to nonprofits, and money set aside for a named organization | read from `florida.json.gz` |
+| Private foundations, community foundations | Every return read but not listed: no grants to organizations, funds only charities it picks with no way to apply, or no return in the two newest filing years | `foundations.py`, `community.py` (`skipped.jsonl.gz`) |
+
+Each Friday `grantmatch/skipped.py` (workflow `skipped-report.yml`) joins them into `skipped-grants.csv` on the data-latest release, one row per grant or funder with a plain reason and the date it was first seen, and replaces the body of the open `skip-review` issue with counts by source and reason, what is new since last week, every federal and state row, and the largest foundations left out. A comment marks weeks with new entries. To record a decision, add a row to `data/skip-review.csv` (source, id, decision, note); every later report shows it. The review never changes what the site shows.
+
+## Sources researched and not added yet
+
+- **New York.** The Grants Gateway and the SFS Vendor Portal list state opportunities but offer no public export. A third-party site (OpenGrants) publishes a daily CSV of New York state programs, but states no license for reuse, so it isn't used.
+- **Other states with one public list.** Worth checking next: Texas eGrants (the Governor's criminal justice grants), Washington, Colorado and Maryland, each of which posts calls on agency pages rather than one feed.
+- **Company programs.** `data/corporate.json` names 35 company foundations; 7 have a program written up from the company's own page (Walmart, Publix, Truist, TD Bank, Albertsons, Kroger, Mosaic). The rest are labels only until someone reads each company's giving page.
 
 ## Profile and shortlist on any device
 
@@ -250,6 +273,9 @@ A GitHub Action runs twice a day and pulls every posted and forecasted opportuni
 | IRS Form 990-PF e-file XML ([Form 990 series downloads](https://www.irs.gov/charities-non-profits/form-990-series-downloads)), latest return per foundation, split by state, every state | monthly | `refresh-foundations.yml` |
 | IRS Form 990 Schedule I for organizations the [Exempt Organizations Business Master File](https://www.irs.gov/charities-non-profits/exempt-organizations-business-master-file-extract-eo-bmf) codes T31 (community foundations), T30 (public foundations), and T70 (United Ways and federated funds) | monthly | `refresh-foundations.yml` |
 | [California Grants Portal](https://data.ca.gov/dataset/california-grants-portal) open data, open and forecasted calls | daily | `refresh-california.yml` |
+| Illinois [CSFA list of open funding notices](https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx) and each notice's page | daily | `refresh-illinois.yml` |
+| Pages behind the hand-kept lists (`local-FL.json`, `corporate.json`) | weekly | `watch-pages.yml` |
+| Skipped grants review (`skipped-grants.csv` and the `skip-review` issue) | weekly | `skipped-report.yml` |
 | Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
 | Each foundation's own website (the home page and the grants or apply page it links to), for an open cycle, a deadline ahead, an application link, or a note that it isn't taking requests | weekly | `refresh-websites.yml` |
 
@@ -299,7 +325,9 @@ grantmatch/foundations.py  IRS 990-PF parsing, split by state
 grantmatch/community.py IRS 990 Schedule I for community foundations and United Ways
 grantmatch/florida.py   Florida Catalog of State Financial Assistance
 grantmatch/california.py  California Grants Portal open calls
-grantmatch/local.py     county and city programs entered by hand (data/local-FL.json)
+grantmatch/illinois.py  Illinois open funding notices (GATA/CSFA)
+grantmatch/local.py     Florida programs entered by hand: state calls, county and city grants, community foundation cycles
+grantmatch/skipped.py   the weekly list of grants left out, and why
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
 grantmatch/watch.py     weekly check of the pages behind both hand-kept lists
 grantmatch/history.py   each foundation's giving across five tax years

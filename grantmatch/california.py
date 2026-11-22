@@ -147,23 +147,37 @@ def normalize(row: dict) -> dict:
     }
 
 
-def build_records(rows: list[dict], today: str | None = None) -> list[dict]:
-    """Open and forecasted calls, one per portal id, without any whose deadline has already passed."""
+def build_records(rows: list[dict], today: str | None = None, skips: list[dict] | None = None) -> list[dict]:
+    """Open and forecasted calls, one per portal id, without any whose deadline has already passed. Open or
+    forecasted rows left out for another reason are added to skips, when given, for the skipped-grants review."""
     today = today or datetime.now(timezone.utc).date().isoformat()
     seen: dict[str, dict] = {}
     for row in rows:
-        if (row.get("Status") or "").strip().lower() not in OPEN_STATUSES or not (row.get("PortalID") or "").strip():
+        if (row.get("Status") or "").strip().lower() not in OPEN_STATUSES:
+            continue
+        if not (row.get("PortalID") or "").strip():
+            if skips is not None:
+                skips.append({"source": "california", "id": "", "name": _clean(row.get("Title")), "state": "CA",
+                              "funder": _clean(row.get("AgencyDept")), "reason": "no_portal_id",
+                              "detail": "The portal row has no ID, so it can't be linked", "url": PORTAL})
             continue
         rec = normalize(row)
         if not rec["title"] or (rec["closes"] and rec["closes"] < today):
+            if skips is not None:
+                skips.append({"source": "california", "id": rec["id"], "name": rec["title"] or "(no title)", "state": "CA",
+                              "funder": rec["agency"], "url": rec["url"],
+                              "reason": "deadline_passed" if rec["title"] else "no_title",
+                              "detail": f"Marked {row.get('Status', '').strip()} but the deadline was {rec['closes']}"
+                              if rec["title"] else "The portal row has no title"})
             continue
         seen[rec["id"]] = rec
     return sorted(seen.values(), key=lambda r: r["id"])
 
 
-def build(out: Path, source: Path | None = None) -> int:
+def build(out: Path, source: Path | None = None, skipped_out: Path | None = None) -> int:
     rows = fetch_rows(source)
-    records = build_records(rows)
+    skips: list[dict] = []
+    records = build_records(rows, skips=skips)
     if len(records) < MIN_ROWS:
         raise RuntimeError(f"Only {len(records)} open calls in {len(rows)} rows; keeping the previous data file")
     payload = {
@@ -178,6 +192,10 @@ def build(out: Path, source: Path | None = None) -> int:
         json.dump(payload, fh, separators=(",", ":"))
     open_ones = sum(1 for r in records if r["nonprofit_eligible"])
     print(f"wrote {len(records)} open California calls to {out}; {open_ones} open to nonprofits")
+    if skipped_out is not None:
+        from .fetch import write_skips
+        write_skips(skipped_out, skips)
+        print(f"wrote {len(skips)} left-out California rows to {skipped_out}")
     return len(records)
 
 
@@ -185,8 +203,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", default="data/california.json.gz", type=Path)
     ap.add_argument("--csv", type=Path, help="read a downloaded copy of the portal's CSV")
+    ap.add_argument("--skipped", type=Path, help="also write the open rows left out, and why")
     args = ap.parse_args()
-    build(args.out, args.csv)
+    build(args.out, args.csv, args.skipped)
 
 
 if __name__ == "__main__":

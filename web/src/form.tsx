@@ -105,6 +105,13 @@ export function ProfileFormView(p: FormProps) {
   return (
     <form class="profile" onSubmit={(ev) => { ev.preventDefault(); p.onUpdate(); }} aria-labelledby={id("h")}>
       <h2 id={id("h")} class="form-title">Your organization</h2>
+      {ex && draft.mission === ex.mission ? (
+        <div class="sample-note" role="note">
+          <p><strong>This is a sample, not your saved profile.</strong> It describes a made-up organization so you can see how
+            matching works. Replace it with your own work, or clear it and start blank.</p>
+          <button type="button" class="link-btn" onClick={() => p.onExample("blank")}>Clear the sample</button>
+        </div>
+      ) : null}
 
       <div class="field">
         <label for={id("ex")}>Start from an example</label>
