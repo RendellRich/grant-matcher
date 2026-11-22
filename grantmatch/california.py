@@ -30,6 +30,12 @@ PORTAL = "https://www.grants.ca.gov/"
 OPEN_STATUSES = ("active", "forecasted")
 VAGUE = re.compile(r"^dependa?nt on\b", re.I)  # the portal's stock answer when an agency gives no figure
 DATE = re.compile(r"^(\d{4}-\d{2}-\d{2})\b")
+# The agency's own applicant notes, when they name nonprofits the category list leaves out
+NOTES_NONPROFIT = re.compile(r"non-?\s?profit|not-for-profit|all public and private entities", re.I)
+NOTES_NO_NONPROFIT = re.compile(r"\b(?:no|not|nor|ineligible|cannot)\b[^.]{0,50}(?:non-?\s?profit|not-for-profit)"
+    r"|(?:non-?\s?profit|not-for-profit)s?\b[^.;]{0,25}\b(?:not|ineligible|cannot)\b", re.I)
+NOTES_SAY = ("Nonprofits aren't among the portal's applicant categories, but the agency's notes say they can "
+             "apply or partner; check the notice before applying. ")
 MIN_ROWS = 20  # fewer open calls than this means the file is broken, not that California stopped granting
 
 session = requests.Session()
@@ -91,6 +97,7 @@ def normalize(row: dict) -> dict:
     kinds = [k.strip() for k in (row.get("Type") or "").split(";") if k.strip()]
     applicants = [a.strip() for a in (row.get("ApplicantType") or "").split(";") if a.strip()]
     notes = _clean(row.get("ApplicantTypeNotes"))
+    by_notes = "Nonprofit" not in applicants and bool(NOTES_NONPROFIT.search(notes)) and not NOTES_NO_NONPROFIT.search(notes)
     deadline = (row.get("ApplicationDeadline") or "").strip()
     closes = _day(deadline)
     match = _clean(row.get("MatchingFunds"))
@@ -123,8 +130,8 @@ def normalize(row: dict) -> dict:
         "agency": _clean(row.get("AgencyDept")),
         "objectives": f"{_clean(row.get('Purpose'))} {_clean(row.get('Description'))}".strip()[:3000],
         "assistance": "; ".join(kinds),
-        "applicant_types": "; ".join(applicants) + (f". {notes}" if notes else ""),
-        "nonprofit_eligible": "Nonprofit" in applicants,
+        "applicant_types": (NOTES_SAY if by_notes else "") + "; ".join(applicants) + (f". {notes}" if notes else ""),
+        "nonprofit_eligible": "Nonprofit" in applicants or by_notes,
         "earmark": False,
         "restrictions": " ".join(limits)[:1500],
         "application": " ".join(how),

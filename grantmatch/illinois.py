@@ -34,8 +34,11 @@ PAUSE = 0.3  # seconds between pages, to stay polite
 session = requests.Session()
 session.headers.update({"User-Agent": "grant-matcher (github.com/RendellRich/grant-matcher)"})
 
-NONPROFIT = re.compile(r"non-?\s?profit|not-for-profit|community[- ]based organi[sz]ation|501\s*\(c\)", re.I)
-NO_NONPROFIT = re.compile(r"\b(?:no|not|nor|ineligible|cannot)\b[^.]{0,50}(?:non-?\s?profit|not-for-profit)", re.I)
+NONPROFIT = re.compile(r"non-?\s?profit|not-for-profit|community[- ]based organi[sz]ation|community action agenc|501\s*\(c\)", re.I)
+# Filler the state puts in an eligibility box when it says nothing there
+PLACEHOLDER = re.compile(r"^\W*(?:n/?a|none|see (?:the )?(?:nofo|notice|application manual)\b[^.]*)?\W*$", re.I)
+NO_NONPROFIT = re.compile(r"\b(?:no|not|nor|ineligible|cannot)\b[^.]{0,50}(?:non-?\s?profit|not-for-profit)"
+    r"|(?:non-?\s?profit|not-for-profit)s?\b[^.;]{0,25}\b(?:not|ineligible|cannot)\b", re.I)
 AMPLIFUND_LABELS = {
     "Description", "Awarding Agency Name", "Agency Contact Name", "Agency Contact Email", "Program",
     "Fund Activity Categories", "Departments", "Opportunity Manager", "Posted Date", "Announcement Type",
@@ -164,14 +167,19 @@ def normalize(row: dict, f: dict) -> dict:
     nofo = re.search(r"(?:nofo=|Details/)([\w-]+)", row["detail"])
     who = f.get("Eligible Applicants", "").rstrip(";, ")
     who_more = f.get("Applicant Eligibility Information") or f.get("Applicant Eligibility", "")
+    if PLACEHOLDER.match(who_more):
+        who_more = ""
     if who and not re.search(r"\bothers?\b", who, re.I):
         # The state's own categories decide; "public and non-profit universities" stays an education grant.
         nonprofit = bool(NONPROFIT_TYPES.search(who))
     else:  # "Others", or no categories: read the eligibility text and the description
         text = f"{who_more} {f.get('Description', '')}"
         nonprofit = bool(NONPROFIT.search(text)) and not NO_NONPROFIT.search(text)
-    if not who and not who_more:  # nothing said either way: keep it, and say so on the card
-        nonprofit, who = True, "Not stated on the state's listing; read the notice"
+        if not nonprofit and not who_more and not NO_NONPROFIT.search(text):
+            # Nothing says who else may apply: keep it, and say so on the card
+            nonprofit = True
+            who = f"{who}. Whether nonprofits can apply isn't stated; read the notice" if who else \
+                "Not stated on the state's listing; read the notice"
     objectives = " ".join(t for t in (f.get("Description") or f.get("Short Description", ""), f.get("Objective", "")) if t)
     match = _clean(f.get("Matching Requirement") or f.get("Cost Sharing or Matching Requirements", ""))
     match = "" if match.lower() in ("", "no", "none", "n/a") else ("Required" if match.lower() == "yes" else match)
@@ -194,7 +202,7 @@ def normalize(row: dict, f: dict) -> dict:
         "agency": f.get("Awarding Agency Name") or row["agency"],
         "objectives": _clean(objectives)[:3000],
         "assistance": f.get("Type of Assistance Instrument") or f.get("Award Type") or "Grant",
-        "applicant_types": _clean(f"{who}. {who_more}" if who_more else who)[:1200],
+        "applicant_types": _clean(". ".join(t for t in (who, who_more) if t))[:1200],
         "nonprofit_eligible": nonprofit,
         "earmark": False,
         "restrictions": _clean(f.get("Funding Restrictions", ""))[:1500],
