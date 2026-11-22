@@ -200,7 +200,7 @@ Each Friday `grantmatch/skipped.py` (workflow `skipped-report.yml`) joins them i
 
 - **New York.** The Grants Gateway and the SFS Vendor Portal list state opportunities but offer no public export. A third-party site (OpenGrants) publishes a daily CSV of New York state programs, but states no license for reuse, so it isn't used.
 - **Other states with one public list.** Worth checking next: Texas eGrants (the Governor's criminal justice grants), Washington, Colorado and Maryland, each of which posts calls on agency pages rather than one feed.
-- **Company programs.** `data/corporate.json` names 35 company foundations; 7 have a program written up from the company's own page (Walmart, Publix, Truist, TD Bank, Albertsons, Kroger, Mosaic). The rest are labels only until someone reads each company's giving page.
+- **Company programs.** `data/corporate.json` names 35 company foundations; 9 have a program written up from the company's own page (Walmart, Publix, Truist, TD Bank, Albertsons, Kroger, Mosaic, Duke Energy, Target). The rest are labels only until someone reads each company's giving page. Bank of America's grant pages build their text with scripts, so its RFP dates could only be read on third-party sites; it stays a label until its own page can be read.
 
 ## Profile and shortlist on any device
 
