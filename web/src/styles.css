@@ -219,6 +219,8 @@ details[open] > summary::before { transform: rotate(45deg); }
 .mark-btn:disabled { cursor: default; }
 .mark-btn.on:disabled { color: var(--accent); }
 .note.blank { display: grid; gap: .625rem; }
+.sample-note { border-left: 3px solid var(--accent); background: var(--paper); padding: .625rem .875rem; border-radius: var(--r); margin: 0 0 1rem; display: grid; gap: .375rem; justify-items: start; }
+.sample-note p { margin: 0; }
 .note.blank ol { margin: 0; padding-left: 1.25rem; }
 
 .tabs { display: flex; flex-wrap: wrap; gap: .25rem; border-bottom: 2px solid var(--cloth); margin-bottom: 1.5rem; }
