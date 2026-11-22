@@ -20,7 +20,8 @@ from pathlib import Path
 LOCAL = Path(__file__).resolve().parent.parent / "data"
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{2,50}$")
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-LEVELS = ("County", "City")
+LEVELS = ("State", "County", "City", "Community foundation")
+STATEWIDE = "Statewide"  # counties: ["Statewide"] for a program open across Florida
 REQUIRED = ("slug", "title", "agency", "level", "counties", "objectives", "who", "application", "award", "url", "checked")
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
           "November", "December"]
@@ -44,8 +45,11 @@ def check(entry: dict, counties: dict[str, list[str]]) -> list[str]:
         problems.append(f"slug {slug!r} must be lowercase letters, digits and hyphens")
     if entry.get("level") and entry["level"] not in LEVELS:
         problems.append(f"level must be one of {', '.join(LEVELS)}")
-    for c in entry.get("counties") or []:
-        if counties and c not in counties:
+    names = entry.get("counties") or []
+    if STATEWIDE in names and len(names) > 1:
+        problems.append(f"counties is either [{STATEWIDE!r}] or a list of counties, not both")
+    for c in names:
+        if counties and c != STATEWIDE and c not in counties:
             problems.append(f"unknown county {c!r}")
     for k in ("opens", "closes", "checked"):
         v = entry.get(k)
@@ -76,7 +80,10 @@ def deadline_text(entry: dict) -> str:
 def to_record(entry: dict, counties: dict[str, list[str]], fiscal_year: str = "") -> dict:
     """A Florida program record (the shape grantmatch.florida writes) with the local fields added."""
     names = list(entry["counties"])
-    area = (names[0] + " County") if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1] + " counties"
+    if names == [STATEWIDE]:
+        names, area = [], "all of Florida"  # no places: the scorer then treats it as open statewide
+    else:
+        area = (names[0] + " County") if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1] + " counties"
     places = set()
     for c in names:
         places |= {c.lower(), f"{c.lower()} county"}

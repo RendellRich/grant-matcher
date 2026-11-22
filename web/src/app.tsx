@@ -1040,7 +1040,7 @@ export function App() {
     const picks = shown.filter((e) => e.tier !== "Long shot");
     return (
       <>
-        {tally("fl", `${open.toLocaleString("en-US")} of ${stateAll.length.toLocaleString("en-US")} Florida state programs (fiscal year ${fl.data.fiscalYear}) are open to nonprofits${county ? `, plus ${county} county program${county === 1 ? "" : "s"} with their own windows` : ""}. State programs are not open calls: check each agency's site for the next window.`, shown)}
+        {tally("fl", `${open.toLocaleString("en-US")} of ${stateAll.length.toLocaleString("en-US")} Florida state programs (fiscal year ${fl.data.fiscalYear}) are open to nonprofits${county ? `, plus ${county} program${county === 1 ? "" : "s"} with their own application windows (state agency calls, county and city grants, and community foundation cycles)` : ""}. Catalog programs are not open calls: check each agency's site for the next window.`, shown)}
         {narrowBar("fl", flEntries, shown, "programs")}
         <details class="filters">
           <summary>More filters and how the score works</summary>
@@ -1079,7 +1079,7 @@ function pickRest(f: ProfileForm): Partial<ProfileForm> {
 
 function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
   const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
-    : e.key.startsWith("fl:ca-") ? "California grant" : "Florida program");
+    : e.key.startsWith("fl:ca-") ? "California grant" : e.key.startsWith("fl:il-") ? "Illinois grant" : "Florida program");
   const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
   return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
     items.map((e) => {
@@ -1261,6 +1261,15 @@ function Checklist({ state }: { state: string }) {
           </ul>
         </>
       ) : null}
+      {state === "IL" ? (
+        <>
+          <h3>For Illinois state grants</h3>
+          <ul>
+            <li>Illinois requires every applicant to register and pre-qualify in the GATA Grantee Portal before applying. Start at <a href="https://gata.illinois.gov" target="_blank" rel="noopener">gata.illinois.gov</a>; it can take a few weeks.</li>
+            <li>Each notice has its own window and rules. Open the notice from each grant for the current version.</li>
+          </ul>
+        </>
+      ) : null}
       {state === "FL" ? <h3>For Florida state programs</h3> : null}
       {state === "FL" ? <ul>
         <li>The state pays grants and contracts to registered vendors. Register at <a href="https://www.myfloridamarketplace.com" target="_blank" rel="noopener">MyFloridaMarketPlace</a> and keep a Florida Substitute W-9 on file with the Department of Financial Services.</li>
@@ -1276,7 +1285,7 @@ function Footer({ coverage }: { coverage: boolean }) {
     <footer class="footer">
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and county programs entered by hand from each program's own page. California data from the California Grants Portal, published by the California State Library.</p>
+      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page and rechecked every week. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget.</p>
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there. Your shortlist stays in this browser, unless you have Pro and save your profile and shortlist to your account.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>

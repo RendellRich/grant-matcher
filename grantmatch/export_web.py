@@ -173,6 +173,7 @@ def tidy_program(rec: dict) -> dict:
 # the site puts before each call's number.
 STATE_PROGRAMS = {
     "CA": {"file": "california", "source": "California Grants Portal", "catalog": "Grants Portal"},
+    "IL": {"file": "illinois", "source": "Illinois Catalog of State Financial Assistance", "catalog": "Illinois NOFO"},
 }
 
 
