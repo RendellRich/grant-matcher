@@ -25,7 +25,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from .coverage import tally
-from .foundations import CURRENT_FILING_YEARS, XML_ROOT, _find, _local, _num, _text, current, note, session, year_batches
+from .foundations import CURRENT_FILING_YEARS, XML_ROOT, _find, _local, _num, _text, current, note, session, write_left_out, year_batches
 from .history import History, default_years
 
 try:
@@ -176,6 +176,7 @@ def build(years: list[int], out_dir: Path) -> None:
         with gzip.open(out_dir / f"{st}.json.gz", "wt", encoding="utf-8") as fh:
             json.dump(payload, fh, separators=(",", ":"))
     (out_dir / "parsed.json").write_text(json.dumps(tally(seen, set(latest), max(years), CURRENT_FILING_YEARS)), encoding="utf-8")
+    write_left_out(out_dir / "skipped.jsonl.gz", seen, set(latest), max(years), "community")
     kinds = Counter(r["kind"] for r in latest.values())
     print(f"wrote {len(latest)} grantmaking public charities ({dict(kinds)}) into {len(by_state)} state files")
 

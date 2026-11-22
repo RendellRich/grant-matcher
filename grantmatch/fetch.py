@@ -125,18 +125,20 @@ def normalize(hit: dict, detail: dict) -> dict:
     }
 
 
-def build(out: Path, limit: int | None = None) -> int:
+def build(out: Path, limit: int | None = None, skipped_out: Path | None = None) -> int:
     hits = search_ids()
     if limit:
         hits = hits[:limit]
     print(f"{len(hits)} opportunities to fetch", flush=True)
     records, failures = [], 0
+    failed: list[dict] = []
     for i, hit in enumerate(hits, 1):
         try:
             detail = _post("fetchOpportunity", {"opportunityId": int(hit["id"])})
             records.append(normalize(hit, detail))
         except Exception as exc:  # one bad record should not sink the nightly refresh
             failures += 1
+            failed.append(hit)
             print(f"skip {hit.get('id')}: {exc}", file=sys.stderr)
         if i % 100 == 0:
             print(f"  {i}/{len(hits)}", flush=True)
@@ -153,15 +155,93 @@ def build(out: Path, limit: int | None = None) -> int:
     with gzip.open(out, "wt", encoding="utf-8") as f:
         json.dump(payload, f, separators=(",", ":"))
     print(f"wrote {len(records)} records to {out} ({failures} skipped)")
+    if skipped_out is not None and not limit:
+        try:  # the review list must never stop the data refresh
+            rows = skipped({r["id"] for r in records}, failed)
+            write_skips(skipped_out, rows)
+            print(f"wrote {len(rows)} left-out opportunities to {skipped_out}")
+        except Exception as exc:
+            write_skips(skipped_out, [], error=str(exc))
+            print(f"could not list the left-out opportunities: {exc}", file=sys.stderr)
     return len(records)
+
+
+# Who Grants.gov says can apply, by code (search2's eligibilities).
+ELIGIBILITY = {
+    "00": "State governments", "01": "County governments", "02": "City or township governments",
+    "04": "Special district governments", "05": "Independent school districts",
+    "06": "Public and state colleges and universities", "07": "Federally recognized tribal governments",
+    "08": "Public and Indian housing authorities", "11": "Tribal organizations", "12": "501(c)(3) nonprofits",
+    "13": "Nonprofits without 501(c)(3) status", "20": "Private colleges and universities", "21": "Individuals",
+    "22": "For-profit organizations", "23": "Small businesses", "25": "Others (see the notice)", "99": "Unrestricted",
+}
+
+
+NONPROFIT_WORDS = re.compile(r"non-?profit|\bNGOs?\b|non-?governmental organi[sz]ation|501\s*\(c\)|community[- ]based organi[sz]ation|faith-based", re.I)
+
+
+NOT_NONPROFIT = re.compile(r"\b(?:no|not|nor|ineligible|excluded?|cannot|can't)\b[^.]{0,60}(?:non-?profit|NGO)", re.I)
+
+
+def skipped(kept: set[str], failed: list[dict] | None = None) -> list[dict]:
+    """Open and forecasted opportunities that are not in the data file, and why: Grants.gov doesn't list
+    nonprofits among who can apply, or the opportunity's details couldn't be read this run."""
+    hits, start = [], 0
+    while True:
+        data = _post("search2", {"oppStatuses": "forecasted|posted", "rows": PAGE_SIZE, "startRecordNum": start})
+        page = data.get("oppHits", [])
+        hits.extend(page)
+        start += len(page)
+        if not page or start >= data.get("hitCount", 0):
+            break
+        time.sleep(PAUSE_SECONDS)
+    failed_ids = {str(h.get("id")) for h in failed or []}
+    rows = []
+    for hit in hits:
+        oid = str(hit["id"])
+        if oid in kept:
+            continue
+        row = {
+            "source": "federal", "id": oid, "name": clean_text(hit.get("title")), "funder": clean_text(hit.get("agency")),
+            "state": "", "url": f"https://www.grants.gov/search-results-detail/{oid}",
+            "status": hit.get("oppStatus", ""), "close_date": _date(hit.get("closeDate")),
+        }
+        if oid in failed_ids:
+            rows.append({**row, "reason": "read_failed", "detail": "Grants.gov did not return its details this run"})
+            continue
+        try:
+            detail = _post("fetchOpportunity", {"opportunityId": int(oid)})
+            block = (detail.get("forecast") if hit.get("oppStatus") == "forecasted" else detail.get("synopsis")) \
+                or detail.get("synopsis") or detail.get("forecast") or {}
+            codes = [a["id"] for a in block.get("applicantTypes") or []]
+            who = "; ".join(ELIGIBILITY.get(c, c) for c in codes) or "not stated"
+            note = clean_text(block.get("applicantEligibilityDesc"))[:400]
+            # The codes leave nonprofits out, but the notes sometimes let them in ("individuals and NGOs can apply").
+            reason = ("notes_mention_nonprofits" if NONPROFIT_WORDS.search(note) and not NOT_NONPROFIT.search(note)
+                      else "not_nonprofit_eligible")
+            rows.append({**row, "reason": reason, "detail": f"Who can apply: {who}." + (f" Notes: {note}" if note else "")})
+        except Exception as exc:  # the list is a review aid; one unreadable record still gets a row
+            rows.append({**row, "reason": "not_nonprofit_eligible", "detail": f"Eligibility could not be read ({exc})"})
+        time.sleep(PAUSE_SECONDS)
+    return rows
+
+
+def write_skips(path: Path, rows: list[dict], error: str = "") -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"fetched_at": datetime.now(timezone.utc).isoformat(timespec="minutes"), "rows": rows}
+    if error:
+        payload["error"] = error
+    with gzip.open(path, "wt", encoding="utf-8") as f:
+        json.dump(payload, f, separators=(",", ":"))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", default="data/opportunities.json.gz", type=Path)
     parser.add_argument("--limit", type=int, default=None, help="fetch only the first N (for testing)")
+    parser.add_argument("--skipped", type=Path, default=None, help="also write the opportunities left out, and why")
     args = parser.parse_args()
-    build(args.out, args.limit)
+    build(args.out, args.limit, args.skipped)
 
 
 if __name__ == "__main__":
