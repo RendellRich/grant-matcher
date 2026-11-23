@@ -91,3 +91,17 @@ def test_a_second_report_the_same_day_counts_only_what_is_really_new(tmp_path, m
                                      "--csv", str(tmp_path / "s.csv"), "--md", str(tmp_path / "s.md")])
     skipped.main()
     assert "new=1" in out_file.read_text()
+
+
+def test_a_show_decision_puts_a_hidden_state_call_back_with_the_note():
+    from grantmatch.export_web import apply_reviews
+    recs = [{"id": "ca-1", "nonprofit_eligible": False, "applicant_types": "Public Agency"},
+            {"id": "ca-2", "nonprofit_eligible": False, "applicant_types": "Business"},
+            {"id": "ca-3", "nonprofit_eligible": True, "applicant_types": "Nonprofit"}]
+    decisions = {("california", "ca-1"): {"decision": "show", "note": "Community groups can apply."},
+                 ("california", "ca-2"): {"decision": "justified", "note": "Businesses only."},
+                 ("illinois", "ca-3"): {"decision": "show", "note": "x"}}
+    assert apply_reviews(recs, "california", decisions) == 1
+    assert recs[0]["nonprofit_eligible"] is True
+    assert recs[0]["applicant_types"] == "Shown after review: Community groups can apply. Public Agency"
+    assert recs[1]["nonprofit_eligible"] is False and recs[2]["applicant_types"] == "Nonprofit"

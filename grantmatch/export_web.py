@@ -22,6 +22,7 @@ import requests
 from . import embed
 from . import corporate
 from . import local as local_programs
+from .skipped import load_decisions
 from .display import assistance_label, bracket_caps, format_address, present, shouting, tidy_name, tidy_text
 
 RELEASE = "https://github.com/RendellRich/grant-matcher/releases/download/data-latest/"
@@ -169,6 +170,20 @@ def tidy_program(rec: dict) -> dict:
     return rec
 
 
+def apply_reviews(records: list[dict], source: str, decisions: dict) -> int:
+    """A `show` decision in data/skip-review.csv puts a state call back on the site that the filter hid as
+    not open to nonprofits, with the reviewer's note at the front of who can apply. Returns how many."""
+    shown = 0
+    for r in records:
+        d = decisions.get((source, r.get("id", "")))
+        if d and d.get("decision", "").strip().lower() == "show" and r.get("nonprofit_eligible") is False:
+            r["nonprofit_eligible"] = True
+            note = (d.get("note") or "").strip()
+            r["applicant_types"] = f"Shown after review: {note} " + (r.get("applicant_types") or "")
+            shown += 1
+    return shown
+
+
 # States besides Florida with their own adapter: the data file's name, where it comes from, and the label
 # the site puts before each call's number.
 STATE_PROGRAMS = {
@@ -228,6 +243,7 @@ def main() -> None:
         payload = json.loads(gzip.decompress(raw))
         ids, vecs = vectors(fetch("florida.npz"))
         records = [tidy_program(r) for r in payload["programs"]]
+        apply_reviews(records, "florida", load_decisions(None))
         # County and city programs entered by hand (grantmatch/local.py) join the state's, embedded here.
         extra = local_programs.load(fiscal_year=payload.get("fiscal_year", ""))
         if extra:
@@ -251,6 +267,7 @@ def main() -> None:
             continue
         payload = json.loads(gzip.decompress(raw))
         records = [tidy_program(r) for r in payload["programs"]]
+        apply_reviews(records, spec["file"], load_decisions(None))
         for r in records:
             r["_catalog"] = f"{spec['catalog']} {r.get('number', '')}".strip()
             r["_assist"] = (r.get("assistance") or "").replace("; ", " or ")
