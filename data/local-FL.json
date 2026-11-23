@@ -1017,6 +1017,26 @@
       "url": "https://www.hfuw.org/our-impact/investments/",
       "checked": "2026-11-23",
       "contact": "Heart of Florida United Way, 407-839-4357"
+    },
+    {
+      "slug": "doh-cinotti-screening-grants",
+      "title": "Cinotti Health Care Screening and Services Grant Program",
+      "agency": "Florida Department of Health",
+      "level": "State",
+      "counties": ["Statewide"],
+      "objectives": "State grants to expand free health care screenings and services for the public run by nonprofits, in these categories: autism, cancer, COPD, dental, diabetes, hearing, heart disease, hypertension, kidney disease, scoliosis, stroke and vision. A program must be new for the organization, or an existing one brought to new locations, a mobile health unit, or more staff.",
+      "who": "Nonprofit organizations (hospitals, universities, charities and foundations count), applying under their own federal employer ID number, to start screening or service programs they have not offered before or to expand existing ones to new places. Individuals cannot apply.",
+      "requires_501c3": false,
+      "application": "Read RFA 26-005 and apply through the Department of Health's online upload system linked from the Cinotti Grant Program page. Email questions with the subject \"RFA 26-005 Questions\" to CinottiGrantProgram@flhealth.gov by December 2, 2026. A pre-application webinar was held November 17, 2026.",
+      "award": "$250,000 to $750,000 per award from about $10,000,000, for a 12-month budget period from July 1, 2027 to June 30, 2028. Fixed-price contract paid as deliverables are completed.",
+      "opens": "2026-11-03",
+      "closes": "2027-01-06",
+      "deadlines": "Applications must be received by January 6, 2027 at 5:00 p.m. Questions are due December 2, 2026.",
+      "subjects": "Health; Health screening; Prevention; Chronic disease; Dental; Vision; Hearing; Mobile health",
+      "url": "https://www.floridahealth.gov/funding-grants/cinotti-grant-program/",
+      "web": "https://www.floridahealth.gov/wp-content/uploads/2026/11/FINAL-RFA-26-005-Cinotti-Grant-Program-11-2-26.pdf",
+      "checked": "2026-11-23",
+      "contact": "CinottiGrantProgram@flhealth.gov"
     }
   ]
 }
