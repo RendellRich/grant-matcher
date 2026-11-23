@@ -11,7 +11,7 @@ or hides unless asked (set aside by the Legislature for a named organization); t
 The report joins them into one CSV, one row per grant or funder with a plain reason, and a short Markdown
 summary for the review issue: counts by source and reason, what is new since last week, and the rows most
 worth a second look. Decisions a person makes go in data/skip-review.csv (source, id, decision, note), so a
-reviewed row says so in every later report. Only a `show` decision on a state call changes the site (export_web).
+reviewed row says so in every later report. Only a `show` or `hide` decision on a state program changes the site (export_web).
 
 Run:  python -m grantmatch.skipped --parts build/skips --florida build/florida.json.gz \
           --california build/california.json.gz --previous build/prev.csv --csv build/skipped-grants.csv --md build/report.md
@@ -69,6 +69,11 @@ REASONS = {
         "Left out", "By invitation only",
         "The state's notice says the agency invites who applies, so an organization can't apply on its own.",
         "Does the program also run an open round, or would the agency take an inquiry?"),
+    "review_hidden": (
+        "Hidden after review", "Hidden after a person read it",
+        "A reviewer read the notice and found nonprofits can't use it, though the state's listing says they can. "
+        "The review note says why.",
+        "Has the program changed since the review?"),
     "earmark": (
         "Hidden unless asked", "Set aside for a named organization",
         "The Legislature directed this money to a specific organization, so others can't apply.",
@@ -108,8 +113,9 @@ def _read_rows(path: Path) -> tuple[list[dict], str]:
     return data, ""
 
 
-def hidden_programs(path: Path, source: str) -> list[dict]:
-    """Programs in a state file that the site never shows (not open to nonprofits) or hides (earmarks)."""
+def hidden_programs(path: Path, source: str, decisions: dict | None = None) -> list[dict]:
+    """Programs in a state file that the site never shows (not open to nonprofits), hides (earmarks), or hides
+    because a review decision says `hide`."""
     payload = json.loads(gzip.decompress(path.read_bytes()))
     rows = []
     for r in payload.get("programs", []):
@@ -117,6 +123,8 @@ def hidden_programs(path: Path, source: str) -> list[dict]:
             reason = "state_not_nonprofit"
         elif r.get("earmark"):
             reason = "earmark"
+        elif (decisions or {}).get((source, r.get("id", "")), {}).get("decision", "").strip().lower() == "hide":
+            reason = "review_hidden"
         else:
             continue
         rows.append({"source": source, "id": r.get("id", ""), "name": r.get("title", ""), "funder": r.get("agency", ""),
@@ -187,8 +195,8 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
              f"{len(rows):,} grants and funders are left out or hidden. {reviewed:,} have a review decision. "
              + (f"The full list is the CSV on the data-latest release: {csv_link}" if csv_link else ""), "",
              "To record a decision, add a row to `data/skip-review.csv` (source, id, decision, note); every later "
-             "report carries it. A `show` decision on a state call puts it back on the site with the note; "
-             "other decisions change nothing there.", ""]
+             "report carries it. On a state program, `show` puts it back on the site with the note and `hide` takes "
+             "it off; other decisions change nothing there.", ""]
     if missing:
         lines += ["**Not in this report yet:** " + "; ".join(missing), ""]
     lines += ["## By source and reason", "", "| Source | Reason | Status | Count |", "|---|---|---|---:|"]
@@ -270,16 +278,17 @@ def main() -> None:
                 missing.append(f"{label.split(' (')[0]}: the last refresh couldn't make its list ({err[:120]})")
         else:
             missing.append(label)
+    decisions = load_decisions(args.decisions)
     if args.florida and args.florida.exists():
-        rows += hidden_programs(args.florida, "florida")
+        rows += hidden_programs(args.florida, "florida", decisions)
     else:
         missing.append("Florida catalog")
     for path, source in ((args.california, "california"), (args.illinois, "illinois")):
         if path and path.exists():
-            rows += hidden_programs(path, source)
+            rows += hidden_programs(path, source, decisions)
     today = datetime.now(timezone.utc).date().isoformat()
     previous = load_previous(args.previous)
-    out, text = build(rows, previous, load_decisions(args.decisions), today, missing, args.csv_link)
+    out, text = build(rows, previous, decisions, today, missing, args.csv_link)
     args.csv.parent.mkdir(parents=True, exist_ok=True)
     with open(args.csv, "w", newline="", encoding="utf-8-sig") as fh:  # the BOM lets Excel read the accents
         w = csv.DictWriter(fh, fieldnames=COLUMNS)
