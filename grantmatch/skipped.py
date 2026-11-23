@@ -11,7 +11,7 @@ or hides unless asked (set aside by the Legislature for a named organization); t
 The report joins them into one CSV, one row per grant or funder with a plain reason, and a short Markdown
 summary for the review issue: counts by source and reason, what is new since last week, and the rows most
 worth a second look. Decisions a person makes go in data/skip-review.csv (source, id, decision, note), so a
-reviewed row says so in every later report. The report never changes what the site shows.
+reviewed row says so in every later report. Only a `show` decision on a state call changes the site (export_web).
 
 Run:  python -m grantmatch.skipped --parts build/skips --florida build/florida.json.gz \
           --california build/california.json.gz --previous build/prev.csv --csv build/skipped-grants.csv --md build/report.md
@@ -182,8 +182,9 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
     lines = [f"# Skipped grants review, {today}", "",
              f"{len(rows):,} grants and funders are left out or hidden. {reviewed:,} have a review decision. "
              + (f"The full list is the CSV on the data-latest release: {csv_link}" if csv_link else ""), "",
-             "Nothing here changes the site. To record a decision, add a row to `data/skip-review.csv` "
-             "(source, id, decision, note); every later report carries it.", ""]
+             "To record a decision, add a row to `data/skip-review.csv` (source, id, decision, note); every later "
+             "report carries it. A `show` decision on a state call puts it back on the site with the note; "
+             "other decisions change nothing there.", ""]
     if missing:
         lines += ["**Not in this report yet:** " + "; ".join(missing), ""]
     lines += ["## By source and reason", "", "| Source | Reason | Status | Count |", "|---|---|---|---:|"]

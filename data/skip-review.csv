@@ -1,16 +1,16 @@
 source,id,decision,note
 california,ca-37277,fixed,"Tribes lead, but the notes let nonprofits join as co-applicants. Now shown with a check-first note."
 california,ca-152751,justified,Only school districts and other public agencies can apply. Nonprofits often run the programs as partners.
-california,ca-194916,check,Open to school food authorities. A private nonprofit school in the school lunch program may qualify.
+california,ca-194916,justified,"Read the notice: for school food authorities running the school lunch program. Only a nonprofit that runs its own school lunch program could apply, which few small nonprofits do."
 california,ca-5302,justified,Public airports only.
 california,ca-1848,justified,Bond financing for businesses.
 california,ca-192603,justified,Cities and counties only.
-california,ca-1614,check,"Loans for property owners, developers and local governments. A nonprofit that owns property might qualify."
+california,ca-1614,show,"DTSC says CLEAN loans are for property owners, developers, community groups and local governments, so a nonprofit that owns a brownfield site can apply. It is a loan."
 california,ca-81941,fixed,The notes say all public and private entities can apply. Now shown.
 california,ca-25793,justified,Tribal governments only.
-california,ca-29966,check,"Categories list businesses, individuals and agencies; the manual decides. Worth reading if clean energy fits."
+california,ca-29966,justified,Read the notice: cost share only for winners of specific federal clean hydrogen awards. Not a fit for small nonprofits.
 california,ca-27053,justified,Only government agencies can apply. Tribes too.
-california,ca-175263,check,"Categories list businesses, individuals, agencies and tribes; the manual decides."
+california,ca-175263,justified,Read the notice: cost share only for winners of specific federal geothermal awards. Not a fit for small nonprofits.
 california,ca-150465,justified,Only government agencies can apply.
 california,ca-190524,justified,Local governments and special districts only.
 california,ca-190533,justified,Local governments and special districts only.
@@ -39,7 +39,7 @@ california,ca-1086,justified,Fuel tank owners only.
 illinois,il-6ad59bf5-0090-4b81-b8bb-61467a00149d,justified,FEMA already chose the applicants.
 illinois,il-c26bbaa0-f76c-4361-883c-baad38af30e0,justified,Only government agencies can apply.
 illinois,il-2043,justified,Public airport owners only.
-illinois,il-19fe33de-352d-4076-af69-f5e488aadcc4,check,"Lists businesses and schools, not nonprofits. A nonprofit marina may still qualify under the federal rules."
+illinois,il-19fe33de-352d-4076-af69-f5e488aadcc4,justified,"Read the notice: for transient boat docking facilities (boats 26 feet or more), with a 25 percent match. The state lists businesses, schools and individuals; a rare fit for nonprofits."
 illinois,il-4300,justified,"Cities, villages, townships and counties only."
 illinois,il-2010,justified,"Cities, villages, townships and counties only."
 illinois,il-2890,justified,"Cities, villages, townships and counties only."
@@ -60,18 +60,18 @@ illinois,il-f8f04274-3926-4d8b-931c-ca6529a8442f,justified,9-1-1 boards only.
 illinois,il-3205cf42-85fd-4264-92e1-e08d769984b5,justified,9-1-1 boards only.
 illinois,il-4362,justified,"For four-year colleges, including nonprofit ones; not for small nonprofits. This was a deliberate rule."
 illinois,il-080262b1-a942-40bc-b2f8-df74ac6eae7a,justified,Only government agencies can apply.
-illinois,il-4319,check,For public radio and TV stations. Many are nonprofits; the listing just files them under Other.
+illinois,il-4319,show,Only for public radio and TV stations that qualify for Corporation for Public Broadcasting grants; most of those stations are nonprofits.
 illinois,il-96cfaf33-1937-4ed7-aae7-292274008de5,justified,Only government agencies can apply.
 illinois,il-98bfb672-ecd6-484a-8245-8d3aa1483d51,fixed,Both eligibility boxes were blank or N/A. Now shown with a read-the-notice note.
 illinois,il-0baf2c5b-9e47-44d2-be5f-19d3c9af4583,justified,Only government agencies can apply.
-illinois,il-4336,check,For certified tourism bureaus. Many are nonprofits; the listing files them under Other.
+illinois,il-4336,justified,Read the notice: only for certified local tourism and convention bureaus with international products. Those bureaus know about this grant already.
 illinois,il-2725,justified,Water systems run by local governments.
 illinois,il-1a9e6c14-6014-4bf2-b567-0b29ac435a37,justified,Line-item capital money already directed by the Legislature.
 illinois,il-8dab1978-8557-47d8-a7be-0fdb20ab5c35,justified,Line-item capital money already directed by the Legislature.
 illinois,il-7a1b8cd3-55bb-4c22-8942-ed76fc21df03,justified,Line-item capital money already directed by the Legislature.
-illinois,il-4361,check,For school food authorities. A private nonprofit school in the school lunch program may qualify.
+illinois,il-4361,justified,"Read the notice: for school food authorities that run the school lunch program, which few small nonprofits do."
 illinois,il-a17a8e7f-382c-45af-9d45-6539fc303030,justified,Only government agencies can apply.
-illinois,il-10ebd914-6f5a-43f4-a311-5574c65e5ba6,check,"Says only who can't apply (forest preserves, local governments). Read the notice to see who can."
+illinois,il-10ebd914-6f5a-43f4-a311-5574c65e5ba6,justified,Read the notice: the funding is by invitation only.
 illinois,il-8efd6920-1ed7-4901-924e-3b212e7e13dd,justified,Only government agencies can apply.
 illinois,il-1998,justified,Only government agencies can apply.
 illinois,il-e0cddd3a-f2eb-4a4e-9d96-4cddad2e957d,fixed,"For community action agencies, which are usually nonprofits. Now shown."
@@ -82,3 +82,4 @@ illinois,il-4354,justified,Public schools only.
 illinois,il-4347,justified,Companies only.
 illinois,il-c98f8c15-3e68-4075-8202-616b4b2e6cfd,justified,Only government agencies can apply.
 illinois,il-2260ef6a-a97f-4107-8ace-7fa39ed4cb6e,justified,Fire departments run by local governments.
+federal,337035,justified,Read the notice: an embassy program for alumni of US exchange programs working in Italy. Not for US nonprofits.
