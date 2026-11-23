@@ -105,3 +105,18 @@ def test_a_show_decision_puts_a_hidden_state_call_back_with_the_note():
     assert recs[0]["nonprofit_eligible"] is True
     assert recs[0]["applicant_types"] == "Shown after review: Community groups can apply. Public Agency"
     assert recs[1]["nonprofit_eligible"] is False and recs[2]["applicant_types"] == "Nonprofit"
+
+
+def test_a_hide_decision_takes_a_state_program_off_and_the_report_lists_it(tmp_path):
+    from grantmatch.export_web import apply_reviews
+    recs = [{"id": "fl-1", "nonprofit_eligible": True, "applicant_types": "Non-Profit"},
+            {"id": "fl-2", "nonprofit_eligible": True, "applicant_types": "Non-Profit"}]
+    decisions = {("florida", "fl-1"): {"decision": "hide", "note": "Student scholarship."}}
+    assert apply_reviews(recs, "florida", decisions) == 1
+    assert recs[0]["nonprofit_eligible"] is False and recs[1]["nonprofit_eligible"] is True
+    path = tmp_path / "florida.json.gz"
+    with gzip.open(path, "wt") as fh:
+        json.dump({"programs": [{"id": "fl-1", "title": "Scholarship", "nonprofit_eligible": True, "earmark": False},
+                                {"id": "fl-2", "title": "Open grant", "nonprofit_eligible": True, "earmark": False}]}, fh)
+    rows = skipped.hidden_programs(path, "florida", decisions)
+    assert [(r["id"], r["reason"]) for r in rows] == [("fl-1", "review_hidden")]

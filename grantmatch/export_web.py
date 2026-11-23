@@ -171,17 +171,22 @@ def tidy_program(rec: dict) -> dict:
 
 
 def apply_reviews(records: list[dict], source: str, decisions: dict) -> int:
-    """A `show` decision in data/skip-review.csv puts a state call back on the site that the filter hid as
-    not open to nonprofits, with the reviewer's note at the front of who can apply. Returns how many."""
-    shown = 0
+    """Review decisions in data/skip-review.csv for state programs. `show` puts back a program the filter hid
+    as not open to nonprofits, with the reviewer's note at the front of who can apply; `hide` takes off one
+    the state lists as open to nonprofits that they can't really use. Returns how many changed."""
+    changed = 0
     for r in records:
         d = decisions.get((source, r.get("id", "")))
-        if d and d.get("decision", "").strip().lower() == "show" and r.get("nonprofit_eligible") is False:
+        decision = (d or {}).get("decision", "").strip().lower()
+        if decision == "show" and r.get("nonprofit_eligible") is False:
             r["nonprofit_eligible"] = True
             note = (d.get("note") or "").strip()
             r["applicant_types"] = f"Shown after review: {note} " + (r.get("applicant_types") or "")
-            shown += 1
-    return shown
+            changed += 1
+        elif decision == "hide" and r.get("nonprofit_eligible") is not False:
+            r["nonprofit_eligible"] = False
+            changed += 1
+    return changed
 
 
 # States besides Florida with their own adapter: the data file's name, where it comes from, and the label
