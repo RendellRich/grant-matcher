@@ -205,3 +205,16 @@ def test_direct_appropriations_and_sole_source_awards_are_earmarks():
     assert is_earmark("Database", "", "Grants", "Sole Source Award as directed in LOF 2022-218", "")
     assert not is_earmark("Arts Grants", "", "Grants", "Applications are scored by a panel.", "",
                           "Apply online; see the direct appropriation section of the guidelines.")
+
+
+def test_company_foundation_limited_to_named_counties_ranks_like_a_county_program():
+    corp = {"company": "Sample Power", "places": ["pinellas", "pinellas county", "st. petersburg"],
+            "area": "the 1 counties Sample Power serves in Florida"}
+    plain = score_foundations([fdn()], PROFILE, "FL", ["st. petersburg"]).iloc[0]["score"]
+    inside = score_foundations([fdn(_corp=corp)], PROFILE, "FL", ["st. petersburg"]).iloc[0]
+    outside = score_foundations([fdn(_corp=corp)], PROFILE, "FL", ["bradenton"]).iloc[0]
+    assert inside["score"] == plain
+    assert "Funds work in the 1 counties Sample Power serves in Florida, where you work" in inside["reasons"]
+    plain_there = score_foundations([fdn()], PROFILE, "FL", ["bradenton"]).iloc[0]["score"]
+    assert outside["score"] == max(0, plain_there - 40)
+    assert "Only for work in the 1 counties Sample Power serves in Florida" in outside["cautions"]

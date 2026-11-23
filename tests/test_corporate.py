@@ -57,3 +57,17 @@ def test_a_national_copy_drops_its_home_states_places():
     records, ids, vecs = [], [], []
     corporate.add_national("FL", records, ids, vecs, {"111111111": (rec, np.ones(4, dtype=np.float16))}, entries)
     assert records[0]["hist"] == {"y": [2023, 2024], "n": [1, 2]} and "pl" in rec["hist"]
+
+
+def test_counties_become_places_for_their_state_only():
+    entry = {"company": "Duke Energy", "counties": {"FL": ["Pinellas", "Pasco"]}}
+    fl = corporate.overlay(entry, "FL")
+    assert fl["area"] == "the 2 counties Duke Energy serves in Florida"
+    assert {"pinellas", "pinellas county", "pasco"} <= set(fl["places"])
+    assert "st. petersburg" in fl["places"]  # a Pinellas city, from data/counties.json.gz
+    assert "places" not in corporate.overlay(entry, "NC") and "places" not in corporate.overlay(entry)
+
+
+def test_unknown_county_names_are_rejected():
+    bad = {"ein": "123456789", "company": "X", "home": "FL", "serves": None, "counties": {"FL": ["Pinelas"]}}
+    assert any("no county named 'Pinelas'" in p for p in corporate.check(bad))

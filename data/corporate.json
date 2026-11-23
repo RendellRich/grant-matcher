@@ -102,6 +102,7 @@
       "company": "Duke Energy",
       "home": "NC",
       "serves": null,
+      "counties": {"FL": ["Alachua", "Bay", "Citrus", "Columbia", "Dixie", "Franklin", "Gadsden", "Gilchrist", "Gulf", "Hamilton", "Hardee", "Hernando", "Highlands", "Jefferson", "Lafayette", "Lake", "Leon", "Levy", "Liberty", "Madison", "Marion", "Orange", "Osceola", "Pasco", "Pinellas", "Polk", "Seminole", "Sumter", "Suwannee", "Taylor", "Volusia", "Wakulla"]},
       "program": {
         "name": "Duke Energy Foundation grants",
         "who": "Nonprofits serving communities where Duke Energy customers live and work, in the states Duke Energy serves. In Florida that means these counties: Alachua, Bay, Citrus, Columbia, Dixie, Franklin, Gadsden, Gilchrist, Gulf, Hamilton, Hardee, Hernando, Highlands, Jefferson, Lafayette, Lake, Leon, Levy, Liberty, Madison, Marion, Orange, Osceola, Pasco, Pinellas, Polk, Seminole, Sumter, Suwannee, Taylor, Volusia and Wakulla. Check the foundation's qualifications and restrictions first.",

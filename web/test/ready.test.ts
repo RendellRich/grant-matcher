@@ -141,3 +141,19 @@ describe("summary", () => {
     expect(readySummary([c("no"), c("check"), c("check")])).toBe("1 thing stops you, 2 to check");
   });
 });
+
+describe("company foundations limited to named counties", () => {
+  it("rank like a county program", () => {
+    const corp = { company: "Sample Power", places: ["pinellas", "pinellas county", "st. petersburg"], area: "the 1 counties Sample Power serves in Florida" };
+    const p = profile();
+    const plain = scoreFoundations([fdn()], p, "FL", ["st. petersburg"], null)[0].score;
+    const inside = scoreFoundations([fdn({ _corp: corp })], p, "FL", ["st. petersburg"], null)[0];
+    const outside = scoreFoundations([fdn({ _corp: corp })], p, "FL", ["bradenton"], null)[0];
+    const noCities = scoreFoundations([fdn({ _corp: corp })], p, "FL", [], null)[0];
+    expect(inside.score).toBe(plain);
+    expect(inside.reasons).toContain("Funds work in the 1 counties Sample Power serves in Florida, where you work");
+    expect(outside.score).toBe(Math.max(0, plain - 40));
+    expect(outside.cautions).toContain("Only for work in the 1 counties Sample Power serves in Florida");
+    expect(noCities.cautions.at(-1)).toMatch(/add your cities to check$/);
+  });
+});

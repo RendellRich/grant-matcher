@@ -173,6 +173,14 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
             points -= SCHOLARSHIP_PENALTY
             cautions.append("Mostly scholarships paid to students, not grants to organizations")
 
+        # A company whose own page limits its grants to named counties (grantmatch/corporate.py)
+        corp = r.get("_corp")
+        if isinstance(corp, dict) and corp.get("places"):
+            pts, more_reasons, more_cautions = place_checks(corp["places"], corp.get("area") or "its counties", city_set)
+            points += pts
+            reasons += more_reasons
+            cautions += more_cautions
+
         if n < 3:
             points = min(points, 55)  # too little history to call it a strong match
         final = max(0.0, min(100.0, points))
@@ -199,6 +207,15 @@ REQUIRES_501C3_CAUTION = {
     "No": "Requires 501(c)(3) status",
 }
 REQUIRES_501C3_SPONSOR = "Requires 501(c)(3) status; ask whether you can apply through your fiscal sponsor"
+
+
+def place_checks(places: list[str], area: str, city_set: set[str]) -> tuple[int, list[str], list[str]]:
+    """Money limited to named places: a reason when the profile works there, a caution and fewer points when not."""
+    if city_set & set(places):
+        return 0, [f"Funds work in {area}, where you work"], []
+    if city_set:
+        return -40, [], [f"Only for work in {area}"]
+    return -10, [], [f"Only for work in {area}; add your cities to check"]
 
 
 def local_checks(r: dict, p: Profile, city_set: set[str]) -> tuple[int, list[str], list[str]]:
