@@ -15,9 +15,17 @@ on:
       - "grantmatch/embed.py"
       - "grantmatch/changes.py"
       - "grantmatch/server_data.py"
+      - "grantmatch/corporate.py"
+      - "grantmatch/local.py"
+      - "grantmatch/skipped.py"
+      # Hand-kept lists the build reads: company programs, Florida local entries, review decisions
+      - "data/corporate.json"
+      - "data/local-FL.json"
+      - "data/skip-review.csv"
       - ".github/workflows/deploy-site.yml"
   workflow_run:
-    workflows: ["Refresh grant data", "Refresh Florida programs", "Refresh foundations", "Refresh funder websites"]
+    workflows: ["Refresh grant data", "Refresh Florida programs", "Refresh California grants", "Refresh Illinois grants",
+                "Refresh foundations", "Refresh funder websites"]
     types: [completed]
   workflow_dispatch:
 
