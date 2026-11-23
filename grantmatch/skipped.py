@@ -65,6 +65,10 @@ REASONS = {
         "Never shown", "The state says nonprofits can't apply",
         "The state's own listing names who may apply, and nonprofits are not among them.",
         "Does the program text say otherwise, or could a nonprofit partner with a city or county?"),
+    "invitation_only": (
+        "Left out", "By invitation only",
+        "The state's notice says the agency invites who applies, so an organization can't apply on its own.",
+        "Does the program also run an open round, or would the agency take an inquiry?"),
     "earmark": (
         "Hidden unless asked", "Set aside for a named organization",
         "The Legislature directed this money to a specific organization, so others can't apply.",

@@ -35,6 +35,10 @@ session = requests.Session()
 session.headers.update({"User-Agent": "grant-matcher (github.com/RendellRich/grant-matcher)"})
 
 NONPROFIT = re.compile(r"non-?\s?profit|not-for-profit|community[- ]based organi[sz]ation|community action agenc|501\s*\(c\)", re.I)
+# Notices the agency hands out by invitation; nobody can apply on their own
+INVITATION = re.compile(r"\bby invitation only\b|\binvitation[- ]only\b", re.I)
+INVITE_FIELDS = ("Funding Restrictions", "Applicant Eligibility Information", "Applicant Eligibility",
+                 "Credentials Documentation Eligibility Information")
 # Filler the state puts in an eligibility box when it says nothing there
 PLACEHOLDER = re.compile(r"^\W*(?:n/?a|none|see (?:the )?(?:nofo|notice|application manual)\b[^.]*)?\W*$", re.I)
 NO_NONPROFIT = re.compile(r"\b(?:no|not|nor|ineligible|cannot)\b[^.]{0,50}(?:non-?\s?profit|not-for-profit)"
@@ -247,6 +251,13 @@ def build_records(rows: list[dict], today: str | None = None, skips: list[dict] 
                               "detail": f"The notice's page couldn't be read ({exc})"[:300]})
             continue
         rec = normalize(row, f)
+        if any(INVITATION.search(f.get(k) or "") for k in INVITE_FIELDS):
+            if skips is not None:
+                skips.append({"source": "illinois", "id": rec["id"], "name": row["title"], "state": "IL",
+                              "funder": row["agency"], "reason": "invitation_only", "url": row["detail"],
+                              "detail": "The notice says: by invitation only"})
+            time.sleep(PAUSE)
+            continue
         out[rec["id"]] = rec
         time.sleep(PAUSE)
     return sorted(out.values(), key=lambda r: r["id"])
