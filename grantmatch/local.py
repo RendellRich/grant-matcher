@@ -20,7 +20,7 @@ from pathlib import Path
 LOCAL = Path(__file__).resolve().parent.parent / "data"
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{2,50}$")
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-LEVELS = ("State", "County", "City", "Community foundation")
+LEVELS = ("State", "County", "City", "Children's services council", "Community foundation", "United Way")
 STATEWIDE = "Statewide"  # counties: ["Statewide"] for a program open across Florida
 REQUIRED = ("slug", "title", "agency", "level", "counties", "objectives", "who", "application", "award", "url", "checked")
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
