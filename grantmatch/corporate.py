@@ -3,8 +3,10 @@
 The IRS data can't tell a company's foundation from a family's, and it doesn't describe the local
 grant programs companies run through their foundations. This file names company foundations by EIN,
 the company behind each, and, where the company's own giving page says so, the program a small
-nonprofit can apply to. export_web adds it to each matching foundation record as "_corp". It never
-changes a score; the page shows it and can narrow the list to company foundations.
+nonprofit can apply to. export_web adds it to each matching foundation record as "_corp", which the page
+shows and can narrow the list to. When the company's own page limits its grants to named counties
+("counties": {"FL": [...]}), "_corp" also carries those places, and the scorers treat the foundation like a
+county program: it ranks lower for work outside those counties.
 
 A national program (Walmart's Spark Good grants, given through every store) is shown in each state
 it serves, even when the foundation's IRS return lists other states among its top 12.
@@ -17,6 +19,8 @@ import json
 import re
 import sys
 from pathlib import Path
+
+from .display import STATE_NAMES
 
 LOCAL = Path(__file__).resolve().parent.parent / "data"
 EIN = re.compile(r"^\d{9}$")
@@ -36,6 +40,17 @@ def check(entry: dict) -> list[str]:
     serves = entry.get("serves")
     if serves not in (None, "*") and not (isinstance(serves, list) and serves and all(STATE.match(str(s)) for s in serves)):
         problems.append('serves must be null, "*" or a list of two-letter states')
+    counties = entry.get("counties")
+    if counties is not None:
+        if not isinstance(counties, dict) or not counties:
+            problems.append('counties must be an object of state: [county names]')
+        else:
+            for st, names in counties.items():
+                known = county_names(st)
+                if not STATE.match(str(st)) or not isinstance(names, list) or not names:
+                    problems.append(f"counties for {st} must be a two-letter state and a list of county names")
+                elif known:
+                    problems += [f"{st} has no county named {n!r}" for n in names if n not in known]
     prog = entry.get("program")
     if prog is not None:
         if not isinstance(prog, dict):
@@ -71,11 +86,27 @@ def serves(entry: dict, state: str) -> bool:
     return s == "*" or (isinstance(s, list) and state in s)
 
 
-def overlay(entry: dict) -> dict:
-    """What the page shows: the company, and its program when there is one."""
+def county_names(state: str) -> dict[str, list[str]]:
+    """County name -> its cities and towns, from data/counties.json.gz (empty when the file is missing)."""
+    from .local import county_places
+    return county_places(state)
+
+
+def overlay(entry: dict, state: str | None = None) -> dict:
+    """What the page shows: the company, and its program when there is one. With the state being built,
+    a company whose grants are limited to named counties there also gets the places the scorers check."""
     out = {"company": entry["company"]}
     if entry.get("program"):
         out["program"] = {k: v for k, v in entry["program"].items() if isinstance(v, str) and v}
+    names = (entry.get("counties") or {}).get(state or "")
+    if names:
+        cities = county_names(state)
+        places = set()
+        for c in names:
+            places |= {c.lower(), f"{c.lower()} county"}
+            places |= {x.lower() for x in cities.get(c, [])}
+        out["places"] = sorted(places)
+        out["area"] = f"the {len(names)} counties {entry['company']} serves in {STATE_NAMES.get(state, state)}"
     return out
 
 
@@ -89,6 +120,7 @@ def add_national(state: str, records: list[dict], ids: list[str], vecs: list, ex
         if ein in have or not serves(entries[ein], state):
             continue
         copy = dict(rec)
+        copy["_corp"] = overlay(entries[ein], state)
         if isinstance(copy.get("hist"), dict):  # its places are for its home state, not this one
             copy["hist"] = {k: v for k, v in copy["hist"].items() if k != "pl"}
         records.append(copy)

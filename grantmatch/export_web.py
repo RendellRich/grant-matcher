@@ -300,7 +300,7 @@ def main() -> None:
                 if found:
                     rec["_cycle"] = found
                 if str(rec.get("ein")) in corp:
-                    rec["_corp"] = corporate.overlay(corp[str(rec.get("ein"))])
+                    rec["_corp"] = corporate.overlay(corp[str(rec.get("ein"))], state)
             records += payload["foundations"]
             stamp = stamp or payload.get("fetched_at", "")
             ids, vecs = vectors(fetch(f"{prefix}-{state}.npz", f"{prefix}/{state}.npz"))

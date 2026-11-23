@@ -438,7 +438,7 @@ export interface FoundationRec {
   _apply?: Record<string, string>;
   /** What its website said at the last weekly check (grantmatch.cycles); display only, never scored. */
   _cycle?: WebsiteCycle;
-  /** A company foundation and its local program (grantmatch/corporate.py); display only, never scored. */
+  /** A company foundation and its local program (grantmatch/corporate.py); scored only through its places. */
   _corp?: CompanyGiving;
   /** Its giving over several years (grantmatch/history.py); display only, never scored. */
   hist?: GivingHistory;
@@ -454,6 +454,8 @@ export interface GivingHistory {
 
 export interface CompanyGiving {
   company: string;
+  places?: string[]; // lowercase counties and their cities, when the company's page limits grants to them
+  area?: string; // how the card names those places
   program?: { name: string; who: string; amount: string; when: string; how: string; focus?: string; url: string; checked: string };
 }
 
@@ -563,6 +565,12 @@ export function scoreFoundations(records: FoundationRec[], p: Profile, state: st
       points -= SCHOLARSHIP_PENALTY; cautions.push("Mostly scholarships paid to students, not grants to organizations");
     }
 
+    // A company whose own page limits its grants to named counties (grantmatch/corporate.py)
+    if (r._corp?.places?.length) {
+      const [pts, more, warn] = placeChecks(r._corp.places, r._corp.area || "its counties", citySet);
+      points += pts; reasons.push(...more); cautions.push(...warn);
+    }
+
     if (n < 3) points = Math.min(points, 55); // too little history to call it a strong match
     const shown = pyRound(Math.max(0, Math.min(100, points)));
     out.push({ rec: { ...r, in_state: inState }, score: shown, tier: tierOf(shown), reasons, cautions, matched });
@@ -593,6 +601,14 @@ const REQUIRES_501C3_CAUTION = {
   No: "Requires 501(c)(3) status",
 } as const;
 const REQUIRES_501C3_SPONSOR = "Requires 501(c)(3) status; ask whether you can apply through your fiscal sponsor";
+
+/** Money limited to named places: a reason when the profile works there, a caution and fewer points when not.
+ * Same as place_checks in rank_more.py. */
+export function placeChecks(places: string[], area: string, citySet: Set<string>): [number, string[], string[]] {
+  if (places.some((x) => citySet.has(x))) return [0, [`Funds work in ${area}, where you work`], []];
+  if (citySet.size) return [-40, [], [`Only for work in ${area}`]];
+  return [-10, [], [`Only for work in ${area}; add your cities to check`]];
+}
 
 export function localChecks(r: FloridaRec, p: Profile, citySet: Set<string>): [number, string[], string[]] {
   if (!Array.isArray(r.places) || !r.places.length) return [0, [], []];
