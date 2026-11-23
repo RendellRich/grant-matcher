@@ -73,3 +73,13 @@ def test_filler_text_counts_as_nothing_said_and_community_action_agencies_count(
     assert caa["nonprofit_eligible"] is True
     gov = il.normalize(row, {"Eligible Applicants": "Government Organizations", "Applicant Eligibility": "N/A"})
     assert gov["nonprofit_eligible"] is False
+
+
+def test_invitation_only_notices_are_left_out_and_listed():
+    rows = il.list_rows(LIST)
+    pages = {rows[0]["detail"]: {"Funding Restrictions": "By invitation only", "Eligible Applicants": "Nonprofit Organizations"},
+             rows[1]["detail"]: {"Eligible Applicants": "Nonprofit Organizations"}}
+    skips = []
+    recs = il.build_records(rows[:2], today="2000-01-01", skips=skips, fetch=lambda r: pages[r["detail"]])
+    assert len(recs) == 1 and recs[0]["title"] == rows[1]["title"]
+    assert [s["reason"] for s in skips] == ["invitation_only"] and skips[0]["id"].startswith("il-")
