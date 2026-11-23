@@ -979,6 +979,44 @@
       "web": "https://agency.e-cimpact.com/login.aspx?org=11435F",
       "checked": "2026-11-23",
       "contact": "datateam@uwsuncoast.org"
+    },
+    {
+      "slug": "uwcf-george-jenkins-youth-opportunity",
+      "title": "George Jenkins Foundation Youth Opportunity Grant",
+      "agency": "United Way of Central Florida",
+      "level": "United Way",
+      "counties": ["Polk"],
+      "objectives": "Educational programs for Polk County Public Schools students in Title I schools, on or off campus. Preference goes to programs for kindergarten through 8th grade, and priority to proposals with measurable effects on absenteeism, suspensions, behavior or academic results. Funded by the George Jenkins Foundation and run by United Way of Central Florida.",
+      "who": "Organizations that partner with Polk County Title I schools; a letter of support from each participating school is required.",
+      "requires_501c3": false,
+      "application": "Submit the online application form linked from United Way of Central Florida's announcement. Awards are announced by email.",
+      "award": "Up to $20,000 per organization, spent within the school year.",
+      "opens": null,
+      "closes": null,
+      "deadlines": "The 2025 round was announced May 8, 2025, closed May 16, 2025, and notified awardees July 7, 2025, with funds spent by May 28, 2026. Watch United Way of Central Florida for the next round.",
+      "subjects": "Education; Youth; Schools; Attendance; Behavior; Academic achievement",
+      "url": "https://uwcf.org/?p=19916",
+      "checked": "2026-11-23",
+      "contact": "Rod Crowley, Rod.Crowley@uwcf.org"
+    },
+    {
+      "slug": "hfuw-partner-inquiry",
+      "title": "Partner Agency Inquiry",
+      "agency": "Heart of Florida United Way",
+      "level": "United Way",
+      "counties": ["Orange", "Osceola", "Seminole"],
+      "objectives": "Heart of Florida United Way funds partner nonprofits in Orange, Osceola and Seminole counties. It posts no open call or application window; nonprofits that want to be considered as partners submit an interest form.",
+      "who": "Nonprofits serving Orange, Osceola or Seminole County.",
+      "requires_501c3": false,
+      "application": "Fill out the partnership inquiry form linked from the Investments page under Partner with Us. Heart of Florida United Way follows up on fit.",
+      "award": "Not stated.",
+      "opens": null,
+      "closes": null,
+      "deadlines": "No open call as of November 2026. Interest forms are taken any time.",
+      "subjects": "Human services; Basic needs; Education; Financial stability; Health",
+      "url": "https://www.hfuw.org/our-impact/investments/",
+      "checked": "2026-11-23",
+      "contact": "Heart of Florida United Way, 407-839-4357"
     }
   ]
 }
