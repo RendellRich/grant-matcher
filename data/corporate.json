@@ -149,7 +149,22 @@
         "checked": "2026-11-21"
       }
     },
-    {"ein": "200721133", "company": "Bank of America", "home": "NC", "serves": null},
+    {
+      "ein": "200721133",
+      "company": "Bank of America",
+      "home": "NC",
+      "serves": ["AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "NC", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "TN", "TX", "UT", "VA", "WA", "WI"],
+      "program": {
+        "name": "Bank of America Charitable Foundation local grants",
+        "who": "501(c)(3) public charities based in and serving one of the bank's local markets (whole states in some places, single metro areas in others; in Florida these include Tampa Bay, Sarasota/Manatee, Central Florida, Jacksonville, Miami and more). Not eligible: private foundations, groups using a fiscal sponsor, government agencies, individual K-12 schools and their PTAs or foundations, endowments, memorial campaigns, and political, labor, fraternal or civic clubs. Applicants must register in NPO Hub and accept ACH payments.",
+        "amount": "Varies by market and organization size; a past grant amount is a good starting point. Multi-year grants are generally not made through this process.",
+        "when": "Two cycles a year; applications are not accepted outside them. In 2026: basic needs and income creation, February 2 to March 2 (decided in June); stable housing and empowering communities, May 18 to June 29 (decided in September). Watch the page for 2027 dates.",
+        "how": "Check eligibility on the foundation's page; the eligibility quiz leads to the online application (CyberGrants). Apply to the one cycle that best fits your work. Questions go to foundation@bofa.com.",
+        "focus": "Basic needs, income creation (jobs and workforce), stable housing, and empowering communities. Arts and environmental groups can apply when their work ties to these.",
+        "url": "https://about.bankofamerica.com/en/making-an-impact/grant-funding-for-nonprofits-sponsorship-programs",
+        "checked": "2026-11-22"
+      }
+    },
     {"ein": "366110423", "company": "State Farm", "home": "IL", "serves": null},
     {"ein": "030300865", "company": "Ben & Jerry's", "home": "VT", "serves": null},
     {"ein": "436044736", "company": "Bayer", "home": "MO", "serves": null},
