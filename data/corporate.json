@@ -104,13 +104,13 @@
       "serves": null,
       "program": {
         "name": "Duke Energy Foundation grants",
-        "who": "Nonprofits serving communities where Duke Energy customers live and work, in the states Duke Energy serves. Check the foundation's eligibility guidelines first.",
+        "who": "Nonprofits serving communities where Duke Energy customers live and work, in the states Duke Energy serves. In Florida that means these counties: Alachua, Bay, Citrus, Columbia, Dixie, Franklin, Gadsden, Gilchrist, Gulf, Hamilton, Hardee, Hernando, Highlands, Jefferson, Lafayette, Lake, Leon, Levy, Liberty, Madison, Marion, Orange, Osceola, Pasco, Pinellas, Polk, Seminole, Sumter, Suwannee, Taylor, Volusia and Wakulla. Check the foundation's qualifications and restrictions first.",
         "amount": "Up to $20,000 for rolling grants; larger themed calls are announced from time to time.",
         "when": "Requests of $20,000 or less are taken year-round. Review can take three months or more.",
-        "how": "Read the eligibility guidelines and focus areas, contact the regional grant representative for your state with your idea, then apply through the foundation's online application once eligibility is confirmed.",
-        "focus": "Vibrant economies (workforce development, community revitalization, energy and engineering education), climate resiliency (environment, disaster preparedness, green space in underserved communities), and opportunity and inclusion",
+        "how": "Contact the foundation's grant representative for your state with your proposal before applying (in Florida, Loretta Murray; the contact link is on the foundation's Florida page). Then register and apply in the foundation's online grant system.",
+        "focus": "Vibrant economies (energy workforce training, community revitalization, economic recovery), local resiliency (disaster preparedness and response, extreme weather resiliency, conservation and clean water), and community opportunity (upward economic mobility and access to opportunity for families in financial need)",
         "url": "https://foundation.duke-energy.com/grants",
-        "checked": "2026-11-21"
+        "checked": "2026-11-22"
       }
     },
     {"ein": "650031452", "company": "NextEra Energy and FPL", "home": "FL", "serves": null},
