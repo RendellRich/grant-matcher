@@ -154,7 +154,7 @@ Foundations that check the box saying they only fund preselected organizations a
 
 ## Florida state programs
 
-Florida's Department of Financial Services keeps the Catalog of State Financial Assistance, a list of every state program that pays money to local governments, nonprofits, and businesses. Many entries are money the Legislature set aside for a named organization; those are flagged and hidden by default. The catalog lists programs rather than open calls, so each result links to the agency for its next application window.
+Florida's Department of Financial Services keeps the Catalog of State Financial Assistance, a list of every state program that pays money to local governments, nonprofits, and businesses. Many entries are money the Legislature set aside for a named organization; those are flagged and hidden by default. An entry counts as set aside when its award or application steps say so: a proviso or line item, a named recipient, "direct appropriation" or "sole source award", and similar wording. The catalog lists programs rather than open calls, so each result links to the agency for its next application window.
 
 ## California state grants
 

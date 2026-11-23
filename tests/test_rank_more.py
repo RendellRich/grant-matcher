@@ -195,3 +195,13 @@ def test_asks_for_501c3_proof_is_flagged_unless_the_group_has_it():
         out = score_foundations([asks], p, "FL", []).iloc[0]
         assert any("Asks for proof of 501(c)(3)" in c for c in out["cautions"]) == flagged
         assert plain["score"] - out["score"] == {"Yes": 0, "Pending": 10, "No": 20}[status]
+
+
+def test_direct_appropriations_and_sole_source_awards_are_earmarks():
+    from grantmatch.florida import is_earmark
+    assert is_earmark("Transitional Services", "", "Grants", "Direct appropriation from the Legislature", "")
+    assert is_earmark("Oyster Seeding", "", "Grants", "N/A - direct appropriation", "", "N/A - direct appropriation")
+    assert is_earmark("Wing Patrol", "", "Grants", "Direct Line Appropriation in Chapter 2026-232", "")
+    assert is_earmark("Database", "", "Grants", "Sole Source Award as directed in LOF 2022-218", "")
+    assert not is_earmark("Arts Grants", "", "Grants", "Applications are scored by a panel.", "",
+                          "Apply online; see the direct appropriation section of the guidelines.")

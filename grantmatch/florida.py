@@ -34,6 +34,9 @@ REVENUE_FOR = re.compile(r"\bto generate revenue for\b|\bvoluntary contributions
 NAMED_AWARD = re.compile(r"named sub-?recipient|budget proposal|non-?competitive|appropriated to", re.I)
 NAMED_TITLE = re.compile(r"\b(inc|incorporated|foundation|association|university|college|society|corporation|ministries|league|"
                          r"club|fund|alliance|bar association|lodge)\b|^the ", re.I)
+# Money the Legislature sent straight to a recipient, said in the award or application steps
+DIRECT = re.compile(r"^\W*(?:n/?a\W*)?direct(?:ly)?\s+(?:line\s+)?appropriation|\bdirect line appropriation\b|"
+                    r"\bsole[- ]source award\b", re.I)
 PLATE = re.compile(r"\b(license|specialty) plates?\b|\bplate (fees|revenues?|proceeds)\b", re.I)
 
 
@@ -47,10 +50,11 @@ session = requests.Session()
 session.headers.update({"User-Agent": "grant-matcher (github.com/RendellRich/grant-matcher)"})
 
 
-def is_earmark(title: str, objectives: str, assistance: str, award: str, restrictions: str) -> bool:
+def is_earmark(title: str, objectives: str, assistance: str, award: str, restrictions: str, application: str = "") -> bool:
     """True when the money is set aside for a specific, named recipient rather than open to applicants."""
     return (
         bool(EARMARK.search(award) or EARMARK.search(restrictions) or NAMED_RECIPIENT.search(award) or NAMED_AWARD.search(award))
+        or bool(DIRECT.search(award) or DIRECT.search(application))
         or assistance.lower().startswith("direct appropriation")
         or bool(PLATE.search(title) or PLATE.search(objectives) or REVENUE_FOR.search(objectives))
         or bool(NAMED_TITLE.search(title))
@@ -101,7 +105,8 @@ def normalize(pid: str, f: dict, year_label: str) -> dict:
     award = f.get("Award Procedures", "")
     assistance = f.get("Types Of Assistance", "")
     title = f.get("State Project Title", "")
-    earmark = is_earmark(title, f.get("Objectives", ""), assistance, award, f.get("Restrictions", ""))
+    earmark = is_earmark(title, f.get("Objectives", ""), assistance, award, f.get("Restrictions", ""),
+                         f.get("Application Procedures", ""))
     web = f.get("Web Address", "")
     return {
         "id": f"fl-{pid}",
