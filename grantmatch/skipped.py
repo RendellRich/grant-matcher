@@ -34,6 +34,8 @@ SOURCES = {
     "federal": "Federal (Grants.gov)",
     "california": "California Grants Portal",
     "illinois": "Illinois state notices (GATA)",
+    "ohio": "Ohio Grants Partnership",
+    "washington": "FundHubWA (Washington)",
     "florida": "Florida state catalog",
     "foundation": "Private foundation (IRS 990-PF)",
     "community": "Community foundation or United Way (IRS 990)",
@@ -230,7 +232,7 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
         new.sort(key=lambda r: (r["source"] in ("foundation", "community"), -(r.get("assets") or 0)))
         lines += table(new, 40, with_assets=any(r.get("assets") for r in new))
     rank = {code: i for i, code in enumerate(REASONS)}
-    for src in ("federal", "california", "illinois", "florida"):
+    for src in ("federal", "california", "illinois", "ohio", "washington", "florida"):
         # Earmarks are only counted above: by law nobody else can apply, and the CSV lists them all.
         items = [r for r in rows if r["source"] == src and r["reason"] != "earmark"]
         if items:
@@ -256,6 +258,8 @@ def main() -> None:
     ap.add_argument("--florida", type=Path)
     ap.add_argument("--california", type=Path)
     ap.add_argument("--illinois", type=Path)
+    ap.add_argument("--ohio", type=Path)
+    ap.add_argument("--washington", type=Path)
     ap.add_argument("--previous", type=Path, help="last report's CSV, for first-seen dates and what is new")
     ap.add_argument("--decisions", type=Path, help="review decisions (default data/skip-review.csv)")
     ap.add_argument("--csv", type=Path, required=True)
@@ -267,6 +271,8 @@ def main() -> None:
     expected = {"skipped-federal.json.gz": "federal (after the next twice-daily refresh)",
                 "skipped-california.json.gz": "California (after the next daily refresh)",
                 "skipped-illinois.json.gz": "Illinois (after the next daily refresh)",
+                "skipped-ohio.json.gz": "Ohio (after the next daily refresh)",
+                "skipped-washington.json.gz": "Washington (after the next daily refresh)",
                 "skipped-foundations.jsonl.gz": "private foundations (after the next monthly foundation refresh)",
                 "skipped-community.jsonl.gz": "community foundations (after the next monthly foundation refresh)"}
     for name, label in expected.items():
@@ -283,7 +289,8 @@ def main() -> None:
         rows += hidden_programs(args.florida, "florida", decisions)
     else:
         missing.append("Florida catalog")
-    for path, source in ((args.california, "california"), (args.illinois, "illinois")):
+    for path, source in ((args.california, "california"), (args.illinois, "illinois"),
+                         (args.ohio, "ohio"), (args.washington, "washington")):
         if path and path.exists():
             rows += hidden_programs(path, source, decisions)
     today = datetime.now(timezone.utc).date().isoformat()

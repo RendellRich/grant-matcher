@@ -160,7 +160,7 @@ Florida's Department of Financial Services keeps the Catalog of State Financial 
 
 California's agencies post every grant and loan opportunity to the [California Grants Portal](https://www.grants.ca.gov/), which the State Library publishes as public-domain open data, updated daily. `grantmatch/california.py` reads that file and keeps the open and forecasted calls, in the same fields as Florida's programs so the same scorer reads them. Unlike Florida's catalog these are open calls, so each record also carries its open date, deadline, required match, whether it is a loan, and how the money is paid (most pay by reimbursement).
 
-The data is refreshed daily and published with the release. On the site, the state tab follows the profile's state: a Florida profile sees Florida programs, a California or Illinois profile sees that state's grants, and other states have no state tab yet.
+The data is refreshed daily and published with the release. On the site, the state tab follows the profile's state: a Florida profile sees Florida programs, a California, Illinois, Ohio or Washington profile sees that state's grants, and other states have no state tab yet.
 
 When the portal's applicant categories leave nonprofits out but the agency's own notes name them ("non-profit corporations", "all public and private entities"), the call is shown with a note to check the notice first.
 
@@ -176,6 +176,14 @@ Open calls are scored like Florida's programs, with three checks of their own:
 | A loan, not a grant | minus 25 |
 | Pays by reimbursement only | a caution, no points off |
 
+## Ohio state grants
+
+Ohio's grants policy (Office of Budget and Management, under ORC 126.22) requires every state agency that offers a state or federal funding opportunity to post it on the Ohio Grants Partnership site. Its [current opportunities](https://grants.ohio.gov/funding-opportunities/find-current-opportunities) table is filled from a public JSON list (`api.obm.ohio.gov/grants/getfundingopportunities`), and `grantmatch/ohio.py` reads that list daily: title, number, agency, application window, award floor and ceiling, total funding, match, the description, and the state's own eligible applicant types. Who may apply comes from those types: "Non-Profit" and "Faith-based Associations/Organizations" count; "Houses of Worship" alone does not. A listing with no types is kept with a note on its card. Each record links to the opportunity's public page on the Ohio Grants Portal. The list is short (about 15 open at a time), since many Ohio agencies also run calls on their own sites.
+
+## Washington state grants
+
+[FundHubWA](https://fundhub.wa.gov/funding/), run by the Washington Department of Commerce, lists state and federal grants, loans, rebates and incentives, mostly for climate, clean energy, resilience and land and water work. Each listing has structured fields in the site's public WordPress JSON API (`/wp-json/wp/v2/funding`), and `grantmatch/washington.py` reads them daily. Only state money is kept; the federal listings are federal notices Grants.gov already carries. Closed and expired listings are history, not skips. Who may apply comes from the portal's audience tags ("Nonprofits"); only an untagged listing has its eligibility text read. About a dozen state listings are open at a time, so this is a narrow source: other Washington agencies post their calls on their own pages.
+
 To add a state, write an adapter that produces the same record fields, add it to `STATE_PROGRAMS` in `grantmatch/export_web.py`, and give it a refresh workflow. The site needs no change.
 
 
@@ -190,7 +198,7 @@ Every refresh leaves some grants and funders out on purpose, and each one now sa
 | Source | Left out or hidden | Written by |
 |---|---|---|
 | Grants.gov | Open and forecasted opportunities nonprofits can't apply for, with who can (flagged when the eligibility notes mention nonprofits after all), and any whose details couldn't be read | `grantmatch/fetch.py --skipped` |
-| California portal, Illinois notices | Rows dropped (deadline passed, no title), and calls the state says nonprofits can't apply for | `california.py`, `illinois.py` |
+| California portal, Illinois notices, Ohio list, FundHubWA | Rows dropped (deadline passed, no title), and calls the state says nonprofits can't apply for | `california.py`, `illinois.py`, `ohio.py`, `washington.py` |
 | Florida catalog | Programs not open to nonprofits, and money set aside for a named organization | read from `florida.json.gz` |
 | Private foundations, community foundations | Every return read but not listed: no grants to organizations, funds only charities it picks with no way to apply, or no return in the two newest filing years | `foundations.py`, `community.py` (`skipped.jsonl.gz`) |
 
@@ -199,7 +207,7 @@ Each Friday `grantmatch/skipped.py` (workflow `skipped-report.yml`) joins them i
 ## Sources researched and not added yet
 
 - **New York.** The Grants Gateway and the SFS Vendor Portal list state opportunities but offer no public export. A third-party site (OpenGrants) publishes a daily CSV of New York state programs, but states no license for reuse, so it isn't used.
-- **Other states with one public list.** Worth checking next: Texas eGrants (the Governor's criminal justice grants), Washington, Colorado and Maryland, each of which posts calls on agency pages rather than one feed.
+- **Other states, surveyed November 2026.** Most states have no single list; their "find a grant" page links to each agency. Checked and not added: **Iowa** (iowagrants.gov has a public table of about 18 open opportunities with dates and award ranges, but no field for who may apply; the best next candidate, with a "read the notice" note on every card), **Texas** (the Comptroller's Electronic State Business Daily is now the statewide grant list, but its robots.txt disallows all crawling; the older eGrants list stopped taking new grants in November 2024), **Minnesota** (mn.gov/grants is a directory of agency grant pages, not opportunities), **Utah** (the Funding Opportunities Portal is a Looker Studio report with no data feed), **Nevada** (all notices go through the NEVADAePro bid system), **New Jersey** (agency links only, and it says so), **Connecticut** (calls go through the CTsource bid board), **Pennsylvania** (pa.gov's search runs on a hosted index whose key is only meant for the page; grant pages carry tags, but no deadline field), and North Carolina, Maryland and West Virginia (link lists, or a login).
 - **Florida's state ad portal (MyFloridaMarketPlace).** Since March 2022 state agencies post solicitations in the Vendor Information Portal, which has a public search and an Excel export button but no published data feed. Its "Grant Opportunities" ad type had 71 ads from 2022 to November 2026 (mostly Children and Families and Health). The portal stopped answering scripted requests after a few searches, and an ad marked OPEN can be past its application deadline (the deadline is inside the RFA), so it isn't read automatically. Agencies' own funding pages are better sources: the Department of Health posts every RFA with its deadline on its Grant Funding Opportunities page.
 - **Company programs.** `data/corporate.json` names 35 company foundations; 10 have a program written up from the company's own page (Walmart, Publix, Truist, TD Bank, Albertsons, Kroger, Mosaic, Duke Energy, Target, Bank of America). The rest are labels only until someone reads each company's giving page. Bank of America's pages build their text with scripts, so a plain fetch sees only the page shell; read them in a browser.
 
@@ -277,6 +285,8 @@ A GitHub Action runs twice a day and pulls every posted and forecasted opportuni
 | IRS Form 990 Schedule I for organizations the [Exempt Organizations Business Master File](https://www.irs.gov/charities-non-profits/exempt-organizations-business-master-file-extract-eo-bmf) codes T31 (community foundations), T30 (public foundations), and T70 (United Ways and federated funds) | monthly | `refresh-foundations.yml` |
 | [California Grants Portal](https://data.ca.gov/dataset/california-grants-portal) open data, open and forecasted calls | daily | `refresh-california.yml` |
 | Illinois [CSFA list of open funding notices](https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx) and each notice's page | daily | `refresh-illinois.yml` |
+| [Ohio Grants Partnership](https://grants.ohio.gov/funding-opportunities/find-current-opportunities) current opportunities (JSON) | daily | `refresh-ohio.yml` |
+| [FundHubWA](https://fundhub.wa.gov/funding/) state-funded listings (WordPress JSON API) | daily | `refresh-washington.yml` |
 | Pages behind the hand-kept lists (`local-FL.json`, `corporate.json`) | weekly | `watch-pages.yml` |
 | Skipped grants review (`skipped-grants.csv` and the `skip-review` issue) | weekly | `skipped-report.yml` |
 | Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
@@ -329,6 +339,8 @@ grantmatch/community.py IRS 990 Schedule I for community foundations and United 
 grantmatch/florida.py   Florida Catalog of State Financial Assistance
 grantmatch/california.py  California Grants Portal open calls
 grantmatch/illinois.py  Illinois open funding notices (GATA/CSFA)
+grantmatch/ohio.py     Ohio Grants Partnership current opportunities
+grantmatch/washington.py  FundHubWA open state-funded listings
 grantmatch/local.py     Florida programs entered by hand: state calls, county and city grants, community foundation cycles
 grantmatch/skipped.py   the weekly list of grants left out, and why
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)

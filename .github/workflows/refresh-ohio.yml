@@ -1,0 +1,39 @@
+name: Refresh Ohio grants
+
+# Current funding opportunities from the Ohio Grants Partnership (grantmatch/ohio.py): Ohio's grants policy
+# has every state agency post its opportunities there, with the state's own list of who may apply.
+
+on:
+  schedule:
+    - cron: "53 14 * * *"   # daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Read the Ohio list of current opportunities
+        run: python -m grantmatch.ohio --out build/ohio.json.gz --skipped build/skipped-ohio.json.gz
+      - name: Build semantic embeddings
+        run: python -m grantmatch.embed programs build/ohio.json.gz build/ohio.npz
+      - name: Publish as data-latest release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
+          gh release upload data-latest build/ohio.json.gz build/ohio.npz build/skipped-ohio.json.gz --clobber
+      - name: Keep this schedule from expiring
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/refresh-ohio.yml/enable"
