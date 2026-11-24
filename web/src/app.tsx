@@ -1079,7 +1079,8 @@ function pickRest(f: ProfileForm): Partial<ProfileForm> {
 
 function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
   const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
-    : e.key.startsWith("fl:ca-") ? "California grant" : e.key.startsWith("fl:il-") ? "Illinois grant" : "Florida program");
+    : e.key.startsWith("fl:ca-") ? "California grant" : e.key.startsWith("fl:il-") ? "Illinois grant" : e.key.startsWith("fl:oh-") ? "Ohio grant"
+    : e.key.startsWith("fl:wa-") ? "Washington grant" : "Florida program");
   const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
   return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
     items.map((e) => {
@@ -1270,6 +1271,24 @@ function Checklist({ state }: { state: string }) {
           </ul>
         </>
       ) : null}
+      {state === "OH" ? (
+        <>
+          <h3>For Ohio state grants</h3>
+          <ul>
+            <li>Most Ohio state grants are applied for through the Ohio Grants Portal with an OH|ID account. Create one at <a href="https://ohid.ohio.gov" target="_blank" rel="noopener">ohid.ohio.gov</a> before the deadline week.</li>
+            <li>Each opportunity has its own window and rules. Open the opportunity from each grant for the current version.</li>
+          </ul>
+        </>
+      ) : null}
+      {state === "WA" ? (
+        <>
+          <h3>For Washington state grants</h3>
+          <ul>
+            <li>These come from FundHubWA, which lists mostly climate, clean energy, resilience and land and water funding. Other Washington agencies post calls on their own pages.</li>
+            <li>Many pay by reimbursement, and some are rebates or incentives rather than grants. Open each listing for its current rules.</li>
+          </ul>
+        </>
+      ) : null}
       {state === "FL" ? <h3>For Florida state programs</h3> : null}
       {state === "FL" ? <ul>
         <li>The state pays grants and contracts to registered vendors. Register at <a href="https://www.myfloridamarketplace.com" target="_blank" rel="noopener">MyFloridaMarketPlace</a> and keep a Florida Substitute W-9 on file with the Department of Financial Services.</li>
@@ -1285,7 +1304,7 @@ function Footer({ coverage }: { coverage: boolean }) {
     <footer class="footer">
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page and rechecked every week. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget.</p>
+      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page and rechecked every week. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal.</p>
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there. Your shortlist stays in this browser, unless you have Pro and save your profile and shortlist to your account.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>

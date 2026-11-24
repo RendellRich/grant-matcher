@@ -194,6 +194,8 @@ def apply_reviews(records: list[dict], source: str, decisions: dict) -> int:
 STATE_PROGRAMS = {
     "CA": {"file": "california", "source": "California Grants Portal", "catalog": "Grants Portal"},
     "IL": {"file": "illinois", "source": "Illinois Catalog of State Financial Assistance", "catalog": "Illinois NOFO"},
+    "OH": {"file": "ohio", "source": "Ohio Grants Partnership", "catalog": "Ohio"},
+    "WA": {"file": "washington", "source": "FundHubWA (Washington Department of Commerce)", "catalog": "FundHubWA"},
 }
 
 
