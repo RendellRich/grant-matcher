@@ -173,7 +173,8 @@ def tidy_program(rec: dict) -> dict:
 def apply_reviews(records: list[dict], source: str, decisions: dict) -> int:
     """Review decisions in data/skip-review.csv for state programs. `show` puts back a program the filter hid
     as not open to nonprofits, with the reviewer's note at the front of who can apply; `hide` takes off one
-    the state lists as open to nonprofits that they can't really use. Returns how many changed."""
+    the state lists as open to nonprofits that they can't really use; `confirmed` replaces a guess on a shown
+    program ("read the notice") with what a reviewer found in the notice. Returns how many changed."""
     changed = 0
     for r in records:
         d = decisions.get((source, r.get("id", "")))
@@ -185,6 +186,9 @@ def apply_reviews(records: list[dict], source: str, decisions: dict) -> int:
             changed += 1
         elif decision == "hide" and r.get("nonprofit_eligible") is not False:
             r["nonprofit_eligible"] = False
+            changed += 1
+        elif decision == "confirmed" and r.get("nonprofit_eligible") is not False and (d.get("note") or "").strip():
+            r["applicant_types"] = f"Checked against the notice: {d['note'].strip()}"
             changed += 1
     return changed
 
