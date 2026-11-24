@@ -161,8 +161,57 @@ def build_records(items: list[dict], today: str | None = None, skips: list[dict]
     return sorted(out.values(), key=lambda r: r["id"])
 
 
+def issuer_bundle(host: str) -> str:
+    """A CA file of the usual trusted roots plus the certificate that issued host's certificate.
+
+    Ohio's API server sends its own certificate without the intermediate one between it and a trusted root.
+    Browsers fetch that intermediate from the address the certificate names (its "CA Issuers" field) and so
+    does this. The connection is still verified in full: the intermediate only fills the gap, and the chain
+    must end at a root certifi already trusts.
+    """
+    import socket
+    import ssl
+    import tempfile
+
+    import certifi
+    from cryptography import x509
+    from cryptography.hazmat.primitives.serialization import Encoding
+    from cryptography.x509.oid import AuthorityInformationAccessOID, ExtensionOID
+
+    peek = ssl.create_default_context()
+    peek.check_hostname = False
+    peek.verify_mode = ssl.CERT_NONE  # only to read which CA issued the certificate; nothing is sent or trusted
+    with socket.create_connection((host, 443), timeout=30) as raw, peek.wrap_socket(raw, server_hostname=host) as tls:
+        der = tls.getpeercert(binary_form=True)
+    leaf = x509.load_der_x509_certificate(der)
+    aia = leaf.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_INFORMATION_ACCESS).value
+    pems = []
+    for desc in aia:
+        if desc.access_method != AuthorityInformationAccessOID.CA_ISSUERS:
+            continue
+        r = session.get(desc.access_location.value, timeout=30)
+        r.raise_for_status()
+        try:
+            cert = x509.load_der_x509_certificate(r.content)
+        except ValueError:
+            cert = x509.load_pem_x509_certificate(r.content)
+        pems.append(cert.public_bytes(Encoding.PEM).decode())
+    if not pems:
+        raise RuntimeError(f"{host}'s certificate names no issuer to fetch")
+    with open(certifi.where(), encoding="utf-8") as fh:
+        roots = fh.read()
+    out = tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False, encoding="utf-8")
+    out.write(roots + "\n" + "\n".join(pems))
+    out.close()
+    return out.name
+
+
 def fetch_list() -> list[dict]:
-    r = session.get(LIST, timeout=60)
+    try:
+        r = session.get(LIST, timeout=60)
+    except requests.exceptions.SSLError:
+        # The server leaves out its intermediate certificate; fetch it the way a browser would, then verify.
+        r = session.get(LIST, timeout=60, verify=issuer_bundle(re.sub(r"^https://([^/]+).*$", r"\1", LIST)))
     r.raise_for_status()
     data = r.json()
     if data.get("IsFailure"):
