@@ -120,3 +120,14 @@ def test_a_hide_decision_takes_a_state_program_off_and_the_report_lists_it(tmp_p
                                 {"id": "fl-2", "title": "Open grant", "nonprofit_eligible": True, "earmark": False}]}, fh)
     rows = skipped.hidden_programs(path, "florida", decisions)
     assert [(r["id"], r["reason"]) for r in rows] == [("fl-1", "review_hidden")]
+
+
+def test_a_confirmed_decision_replaces_the_read_the_notice_guess():
+    from grantmatch.export_web import apply_reviews
+    recs = [{"id": "ia-1", "nonprofit_eligible": True, "applicant_types": "Who may apply isn't stated on the listing; read the notice"},
+            {"id": "ia-2", "nonprofit_eligible": False, "applicant_types": "City must be the applicant."}]
+    decisions = {("iowa", "ia-1"): {"decision": "confirmed", "note": "Iowa law requires a 501(c)(3) provider."},
+                 ("iowa", "ia-2"): {"decision": "confirmed", "note": "x"}}
+    assert apply_reviews(recs, "iowa", decisions) == 1
+    assert recs[0]["applicant_types"] == "Checked against the notice: Iowa law requires a 501(c)(3) provider."
+    assert recs[1]["nonprofit_eligible"] is False   # confirmed never puts back a hidden one; that's show
