@@ -6,7 +6,6 @@ california,ca-5302,justified,Public airports only.
 california,ca-1848,justified,Bond financing for businesses.
 california,ca-192603,justified,Cities and counties only.
 california,ca-1614,show,"DTSC says CLEAN loans are for property owners, developers, community groups and local governments, so a nonprofit that owns a brownfield site can apply. It is a loan."
-california,ca-81941,fixed,The notes say all public and private entities can apply. Now shown.
 california,ca-25793,justified,Tribal governments only.
 california,ca-29966,justified,Read the notice: cost share only for winners of specific federal clean hydrogen awards. Not a fit for small nonprofits.
 california,ca-27053,justified,Only government agencies can apply. Tribes too.
@@ -21,7 +20,6 @@ california,ca-192465,justified,Streaming companies only.
 california,ca-194244,justified,District attorneys only.
 california,ca-163104,justified,"Cities, counties, conservation districts and tribes only."
 california,ca-191055,justified,Public dam owners only.
-california,ca-2001,fixed,The notes say nonprofit corporations can apply. Now shown. It is a loan program.
 california,ca-1626,justified,Loans for site cleanup by property owners; not a nonprofit grant.
 california,ca-194175,justified,"Cities, counties, tribes and public park districts only."
 california,ca-5299,justified,Public airports only.
@@ -43,7 +41,6 @@ illinois,il-19fe33de-352d-4076-af69-f5e488aadcc4,justified,"Read the notice: for
 illinois,il-4300,justified,"Cities, villages, townships and counties only."
 illinois,il-2010,justified,"Cities, villages, townships and counties only."
 illinois,il-2890,justified,"Cities, villages, townships and counties only."
-illinois,il-3159,fixed,"The box said only SEE NOFO, which the filter read as a real answer. Now shown with a read-the-notice note."
 illinois,il-3186,justified,Companies with state tax incentive agreements only.
 illinois,il-2004,justified,State emergency management agencies only.
 illinois,il-4353,justified,Local governments near closed plants. Nonprofits can join a local government's application.
@@ -62,7 +59,6 @@ illinois,il-4362,justified,"For four-year colleges, including nonprofit ones; no
 illinois,il-080262b1-a942-40bc-b2f8-df74ac6eae7a,justified,Only government agencies can apply.
 illinois,il-4319,show,Only for public radio and TV stations that qualify for Corporation for Public Broadcasting grants; most of those stations are nonprofits.
 illinois,il-96cfaf33-1937-4ed7-aae7-292274008de5,justified,Only government agencies can apply.
-illinois,il-98bfb672-ecd6-484a-8245-8d3aa1483d51,fixed,Both eligibility boxes were blank or N/A. Now shown with a read-the-notice note.
 illinois,il-0baf2c5b-9e47-44d2-be5f-19d3c9af4583,justified,Only government agencies can apply.
 illinois,il-4336,justified,Read the notice: only for certified local tourism and convention bureaus with international products. Those bureaus know about this grant already.
 illinois,il-2725,justified,Water systems run by local governments.
@@ -76,7 +72,6 @@ illinois,il-8efd6920-1ed7-4901-924e-3b212e7e13dd,justified,Only government agenc
 illinois,il-1998,justified,Only government agencies can apply.
 illinois,il-e0cddd3a-f2eb-4a4e-9d96-4cddad2e957d,fixed,"For community action agencies, which are usually nonprofits. Now shown."
 illinois,il-2419,justified,Small businesses with federal research awards only.
-illinois,il-f5c960eb-52f0-43c8-8321-8d5771bb968f,fixed,Categories said Others with no detail. Now shown with a read-the-notice note.
 illinois,il-2693bec0-c29d-4a66-9bc9-67a89013f97d,justified,Local governments near nuclear plants only.
 illinois,il-4354,justified,Public schools only.
 illinois,il-4347,justified,Companies only.
@@ -102,3 +97,8 @@ iowa,ia-695886,confirmed,"A statewide contract to coach child care programs. It'
 iowa,ia-426239,confirmed,"Iowa's rules list nonprofit organizations among eligible borrowers. It's a loan, not a grant."
 iowa,ia-371353,confirmed,"A nonprofit that owns or holds a long lease on a historic building can claim it, and most of the credit is refundable."
 iowa,ia-621079,confirmed,"Loans to owners of commercial buildings, or of affordable buildings with 20 or more units in Iowa Finance Authority programs."
+illinois,il-f5c960eb-52f0-43c8-8321-8d5771bb968f,hide,"Non-competitive homeland security money for local governments, state agencies, public universities and mutual aid groups named in the state's homeland security strategy."
+illinois,il-98bfb672-ecd6-484a-8245-8d3aa1483d51,hide,"Forest health data collection under a program the state catalog lists as state agency use only. Not an open grant for nonprofits."
+illinois,il-3159,confirmed,"Limited to businesses and government agencies that own the diesel trucks being replaced, in one of three priority areas. Nonprofits aren't named; ask Illinois EPA (epa.vwgrants@illinois.gov) before applying."
+california,ca-2001,confirmed,"Loans, not grants, from $1 million up. Nonprofit corporations qualify only when a public agency sponsors them."
+california,ca-81941,confirmed,"Open to all public and private entities except publicly owned electric utilities, but only as cost share for a federal clean energy award you've already won."
