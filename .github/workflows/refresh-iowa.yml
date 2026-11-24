@@ -1,0 +1,39 @@
+name: Refresh Iowa grants
+
+# Posted funding opportunities from IowaGrants.gov (grantmatch/iowa.py): the state grants system's public
+# storefront list, and each opportunity's page for the description, award range and dates.
+
+on:
+  schedule:
+    - cron: "41 14 * * *"   # daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Read the IowaGrants list of posted opportunities
+        run: python -m grantmatch.iowa --out build/iowa.json.gz --skipped build/skipped-iowa.json.gz
+      - name: Build semantic embeddings
+        run: python -m grantmatch.embed programs build/iowa.json.gz build/iowa.npz
+      - name: Publish as data-latest release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
+          gh release upload data-latest build/iowa.json.gz build/iowa.npz build/skipped-iowa.json.gz --clobber
+      - name: Keep this schedule from expiring
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/refresh-iowa.yml/enable"

@@ -61,7 +61,7 @@ export function CoverageNote() {
     <details class="filters coverage" onToggle={open}>
       <summary>What the data covers</summary>
       <div class="coverage-body" aria-live="polite">
-        <p>Federal grants cover the whole country. Foundations cover every state. State grants cover Florida, California, Illinois, Ohio and Washington (Washington's are mostly climate and energy); county, city and community foundation programs cover Florida.</p>
+        <p>Federal grants cover the whole country. Foundations cover every state. State grants cover Florida, California, Illinois, Iowa, Ohio and Washington (Washington's are mostly climate and energy); county, city and community foundation programs cover Florida.</p>
         {data === "loading" ? <p>Loading the state-by-state counts.</p> : null}
         {data === "error" ? <p class="error">The state-by-state counts could not be loaded right now.</p> : null}
         {data && typeof data === "object" ? (
