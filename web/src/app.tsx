@@ -1081,7 +1081,8 @@ function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[],
   const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
     : e.key.startsWith("fl:ca-") ? "California grant" : e.key.startsWith("fl:il-") ? "Illinois grant" : e.key.startsWith("fl:ia-") ? "Iowa grant" : e.key.startsWith("fl:oh-") ? "Ohio grant"
     : e.key.startsWith("fl:wa-") ? "Washington grant" : e.key.startsWith("fl:local-wa-") ? "Washington program"
-    : e.key.startsWith("fl:local-oh-") ? "Ohio program" : "Florida program");
+    : e.key.startsWith("fl:local-oh-") ? "Ohio program" : e.key.startsWith("fl:local-ia-") ? "Iowa program"
+    : e.key.startsWith("fl:local-il-") ? "Illinois program" : "Florida program");
   const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
   return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
     items.map((e) => {
@@ -1269,6 +1270,7 @@ function Checklist({ state }: { state: string }) {
           <ul>
             <li>Illinois requires every applicant to register and pre-qualify in the GATA Grantee Portal before applying. Start at <a href="https://gata.illinois.gov" target="_blank" rel="noopener">gata.illinois.gov</a>; it can take a few weeks.</li>
             <li>Each notice has its own window and rules. Open the notice from each grant for the current version.</li>
+            <li>Programs that don't post a notice to the state's list, such as the Illinois Arts Council's and Illinois Humanities' grants, are entered by hand from each program's page, with the date they were checked.</li>
           </ul>
         </>
       ) : null}
@@ -1278,6 +1280,7 @@ function Checklist({ state }: { state: string }) {
           <ul>
             <li>Iowa applications go through <a href="https://www.iowagrants.gov" target="_blank" rel="noopener">IowaGrants.gov</a>. Register for an account well before the deadline.</li>
             <li>Iowa's listing doesn't say who may apply, so it is read from each description. When a grant says "read the notice", check the RFP before you start.</li>
+            <li>Programs that apply outside IowaGrants, such as Humanities Iowa's Mini Grants, the Iowa Arts Council's grants and the Historical Resource Development Program, are entered by hand from each program's page, with the date they were checked.</li>
           </ul>
         </>
       ) : null}

@@ -1,0 +1,159 @@
+{
+ "about": "Illinois grant programs with their own application windows that aren't posted to the state's GATA list of funding notices, entered by hand from each program's own page: the Illinois Arts Council's Salesforce grants, Illinois Humanities' grants, and the Illinois State Library's adult literacy grants. grantmatch/local.py checks this file and turns each entry into an Illinois program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
+ "programs": [
+  {
+   "slug": "iac-general-operating-support",
+   "title": "General Operating Support (GOS) and Youth Employment in the Arts (YEA)",
+   "agency": "Illinois Arts Council",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Unrestricted operating support for Illinois nonprofits that provide ongoing arts programming to their communities, with an optional Youth Employment in the Arts grant for paying youth ages 14 to 22.",
+   "who": "501(c)(3) nonprofits in good standing with the Illinois Secretary of State, or branches of government (municipalities, counties, libraries, park districts), that have provided public arts programming for at least the past 12 months. A FEIN, UEI and GATA pre-qualification are required. Every organization must apply each year, returning grantees included.",
+   "requires_501c3": true,
+   "application": "Apply in the Illinois Arts Council's Salesforce grant portal (arts-illinois.my.site.com) with an account registered to the organization. Pre-qualify in the GATA Grantee Portal first.",
+   "award": "GOS amounts are set by a funding formula; you don't request an amount. YEA: up to $4,500 for up to 4 youth employees, paid at least Illinois minimum wage.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Once a year. The FY27 application ran February 3 to March 18, 2026 at 11:59 p.m. Central, for September 1, 2026 to August 31, 2027. Watch the page for the FY28 round, usually released in late January.",
+   "contact": "Illinois Arts Council, iac.info@illinois.gov, 312-814-6750",
+   "subjects": "Arts; General operating support; Youth employment; Culture",
+   "url": "https://arts.illinois.gov/granting-opportunities/grants-programs/general-operating-support.html",
+   "web": "https://arts.illinois.gov/organizations.html",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "iac-creative-projects-grant",
+   "title": "Creative Projects Grant (CPG)",
+   "agency": "Illinois Arts Council",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Support for arts projects with a public release or presentation in Illinois. GOS grantees must show the project is outside their daily operations and programming.",
+   "who": "501(c)(3) nonprofits in good standing with the Illinois Secretary of State, branches of government, and individual Illinois artists and arts educators 21 or older. Public K-12 schools, charter schools and most state agencies can't apply, nor can FY26 CPG recipients.",
+   "requires_501c3": true,
+   "application": "Apply in the Illinois Arts Council's Salesforce grant portal with proof of eligibility, at least 8 weeks before the project starts.",
+   "award": "Up to $12,000.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Opens each July and runs until the money is spent. FY27 opened July 1, 2026 and its funds were fully spent in every region by August 7, 2026. Watch the page for the FY28 round.",
+   "contact": "Illinois Arts Council, iac.info@illinois.gov, 312-814-6750",
+   "subjects": "Arts; Arts projects; Performing arts; Visual arts; Culture",
+   "url": "https://arts.illinois.gov/granting-opportunities/grants-programs/creative-projects-grant.html",
+   "web": "https://arts.illinois.gov/organizations.html",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "ih-project-grants",
+   "title": "Illinois Humanities Project Grants",
+   "agency": "Illinois Humanities",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Public humanities projects that engage Illinois communities: local history and archives, oral history, documentary film, community journalism, humanities workshops and podcasts.",
+   "who": "Illinois-based organizations with community experience and an annual budget of $1 million or less, with 501(c)(3) status in good standing or a 501(c)(3) fiscal sponsor. Individuals working in Illinois can apply for a solo grant. One proposal per organization per cycle.",
+   "requires_501c3": false,
+   "application": "Submit a letter of intent on the Illinois Humanities online grant platform (a PDF of the questions is on the page). Up to 30 applicants are invited to send a full proposal, with five weeks to finish it.",
+   "award": "Up to $4,000.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Once a year, letter of intent first. The 2026 letter of intent window ran January 16 to February 13, 2026 at 5 p.m. Central, for projects June 1, 2026 to May 31, 2027. Watch the page for the 2027 window.",
+   "contact": "B.B. Cooper Browne, Grants Program Officer, communitygrants@ilhumanities.org, 312-374-1555",
+   "subjects": "Humanities; History; Oral history; Archives; Journalism; Film; Public programs",
+   "url": "https://ilhumanities.org/grants/project-grants",
+   "web": "https://ilhumanities.org/grants",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "ih-collaborative-project-grants",
+   "title": "Illinois Humanities Collaborative Project Grants",
+   "agency": "Illinois Humanities",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Public humanities projects carried out by two or more partner organizations, including coalition and network building, that tell under-told histories and connect humanities practitioners across Illinois.",
+   "who": "Illinois-based organizations only, not individuals, with an annual budget of $1 million or less. The lead organization needs 501(c)(3) status or a 501(c)(3) fiscal sponsor; partners don't. At least two organizations. Grantees with an open Project or General Operating grant can't apply.",
+   "requires_501c3": false,
+   "application": "Submit a letter of intent on the Illinois Humanities online grant platform. Invited applicants send a full proposal with a letter of agreement from each partner.",
+   "award": "Up to $10,000, plus an optional $250 accessibility and media stipend.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Once a year, letter of intent first. The 2026 letter of intent window ran January 16 to February 13, 2026 at 5 p.m. Central, for projects June 1, 2026 to May 31, 2027. Watch the page for the 2027 window.",
+   "contact": "B.B. Cooper Browne, Grants Program Officer, communitygrants@ilhumanities.org, 312-374-1555",
+   "subjects": "Humanities; History; Collaboration; Public programs; Culture",
+   "url": "https://ilhumanities.org/grants/multiplier-grants",
+   "web": "https://ilhumanities.org/grants",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "ih-general-operating-grants",
+   "title": "Illinois Humanities General Operating Grants",
+   "agency": "Illinois Humanities",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Unrestricted support for small humanities-based organizations rooted in Illinois.",
+   "who": "Humanities-based nonprofit, tax-exempt organizations in Illinois (or with a fiscal sponsor) with an annual budget of $250,000 or less, based in Illinois in mission, history and audience.",
+   "requires_501c3": false,
+   "application": "Apply on the Illinois Humanities online portal. Applications by mail or email aren't accepted.",
+   "award": "Up to $10,000; up to 14 awards.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "The last round listed ran May 30 to August 15, 2025 at 5 p.m. Central. Watch the page for the next round.",
+   "contact": "B.B. Cooper Browne, Grants Program Officer, communitygrants@ilhumanities.org, 312-374-1555",
+   "subjects": "Humanities; General operating support; Small organizations; Culture",
+   "url": "https://ilhumanities.org/grants/general-operating-grants",
+   "web": "https://ilhumanities.org/grants",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "ih-envisioning-justice-organizations",
+   "title": "Envisioning Justice Grants for Organizations",
+   "agency": "Illinois Humanities",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Arts and humanities projects that build understanding of mass incarceration and its effects on Illinois communities, such as prison education programs, independent media, community dialogues and conferences.",
+   "who": "Illinois-based nonprofit, tax-exempt organizations in good standing, or groups with a fiscal sponsor. Regional or statewide projects built on partnerships get priority. One application per cycle.",
+   "requires_501c3": false,
+   "application": "Apply on the Illinois Humanities online portal. First-time proposal writers can ask for a staff interview at least three weeks before the deadline.",
+   "award": "Up to $10,000; no match required.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Once a year. The 2026 round ran May 1 to June 12, 2026 at 5 p.m. Central, for October 1, 2026 to September 30, 2027. Watch the page for the next round.",
+   "contact": "Tony Pizarro, Program Manager, ejustice@ilhumanities.org, 312-374-1565",
+   "subjects": "Humanities; Arts; Criminal justice; Reentry; Media; Community dialogue",
+   "url": "https://ilhumanities.org/grants/envisioning-justice-grants-organizations",
+   "web": "https://ilhumanities.org/grants",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "isl-adult-volunteer-literacy",
+   "title": "Adult Volunteer Literacy Grant Program",
+   "agency": "Illinois State Library (Illinois Secretary of State)",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Projects that use trained volunteer tutors to help adults who read below a ninth grade level, or speak English at a beginning level, improve their reading, writing, math and English.",
+   "who": "Agencies running volunteer tutor literacy programs in Illinois, including nonprofits (attach the IRS determination letter). One project per applicant. See the page for the full eligibility rules.",
+   "requires_501c3": false,
+   "application": "Download the application and forms from the program page. At least three letters of support and signed statements from participating agencies are required.",
+   "award": "Up to $100,000; first-year grants are capped at $25,000.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Once a year; applications are offered before the state budget passes. The program page gives no date when checked, so call before planning around it.",
+   "contact": "Illinois State Library literacy grants, 217-785-6921",
+   "subjects": "Adult literacy; Adult education; English language learning; Volunteers",
+   "url": "https://www.ilsos.gov/departments/library/literacy/adultvolunteer.html",
+   "web": "https://www.ilsos.gov/departments/library/literacy/adultlit-grants-overview.html",
+   "checked": "2026-11-24"
+  }
+ ]
+}
