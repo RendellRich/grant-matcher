@@ -1,6 +1,6 @@
 name: Watch hand-kept program pages
 
-# Reads every page that data/local-FL.json and data/corporate.json point to, compares it with last
+# Reads every page that data/local-<ST>.json and data/corporate.json point to, compares it with last
 # week's reading, and opens (or adds to) a "page-watch" issue listing the entries a person should check:
 # new status wording such as "on hold", changed text, blank pages, unreachable pages and old entries.
 # It never edits the data. Weekly, the day after the funder website check; a few minutes.

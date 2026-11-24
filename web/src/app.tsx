@@ -1080,7 +1080,7 @@ function pickRest(f: ProfileForm): Partial<ProfileForm> {
 function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
   const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
     : e.key.startsWith("fl:ca-") ? "California grant" : e.key.startsWith("fl:il-") ? "Illinois grant" : e.key.startsWith("fl:ia-") ? "Iowa grant" : e.key.startsWith("fl:oh-") ? "Ohio grant"
-    : e.key.startsWith("fl:wa-") ? "Washington grant" : "Florida program");
+    : e.key.startsWith("fl:wa-") ? "Washington grant" : e.key.startsWith("fl:local-wa-") ? "Washington program" : "Florida program");
   const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
   return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
     items.map((e) => {
@@ -1293,7 +1293,7 @@ function Checklist({ state }: { state: string }) {
         <>
           <h3>For Washington state grants</h3>
           <ul>
-            <li>These come from FundHubWA, which lists mostly climate, clean energy, resilience and land and water funding. Other Washington agencies post calls on their own pages.</li>
+            <li>Most come from FundHubWA, which lists mostly climate, clean energy, resilience and land and water funding. Calls it leaves out, such as Commerce's social service and capital grants and ArtsWA's, are entered by hand from each program's page, with the date they were checked.</li>
             <li>Many pay by reimbursement, and some are rebates or incentives rather than grants. Open each listing for its current rules.</li>
           </ul>
         </>

@@ -20,7 +20,7 @@ on:
       - "grantmatch/skipped.py"
       # Hand-kept lists the build reads: company programs, Florida local entries, review decisions
       - "data/corporate.json"
-      - "data/local-FL.json"
+      - "data/local-*.json"
       - "data/skip-review.csv"
       - ".github/workflows/deploy-site.yml"
   workflow_run:

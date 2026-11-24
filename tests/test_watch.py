@@ -22,7 +22,7 @@ def kinds(found):
 def test_the_real_lists_give_one_row_per_page():
     rows = watch.targets()
     assert rows and len({(r["list"], r["key"], r["url"]) for r in rows}) == len(rows)
-    assert {r["list"] for r in rows} == {"local-FL", "corporate"}
+    assert {"local-FL", "local-WA", "corporate"} <= {r["list"] for r in rows}
     assert all(r["url"].startswith("https://") for r in rows)
 
 

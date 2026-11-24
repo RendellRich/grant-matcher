@@ -283,6 +283,15 @@ def main() -> None:
         for r in records:
             r["_catalog"] = f"{spec['catalog']} {r.get('number', '')}".strip()
             r["_assist"] = (r.get("assistance") or "").replace("; ", " or ")
+        # State calls the adapter can't see, entered by hand (data/local-<ST>.json, grantmatch/local.py)
+        extra = local_programs.load(state=state)
+        if extra:
+            sites = website_cycles()
+            for r in extra:
+                tidy_program(r)
+                if sites.get(r["id"]):
+                    r["_cycle"] = sites[r["id"]]
+            records += extra
         ids, vecs = program_vectors(records, fetch(f"{spec['file']}.npz"))
         write(out, f"programs-{state}", {"fetched_at": payload.get("fetched_at", ""), "state": state, "records": records}, ids, vecs)
         meta.setdefault("programs", {})[state] = {"file": f"programs-{state}", "source": spec["source"],
