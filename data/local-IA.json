@@ -1,0 +1,93 @@
+{
+ "about": "Iowa grant programs with their own application windows that aren't posted on IowaGrants.gov, entered by hand from each program's own page: Humanities Iowa's Mini Grants, the Iowa Arts Council's SlideRoom grants, and the State Historical Society of Iowa's Historical Resource Development Program. grantmatch/local.py checks this file and turns each entry into an Iowa program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
+ "programs": [
+  {
+   "slug": "humanities-iowa-mini-grants",
+   "title": "Humanities Iowa Mini Grants",
+   "agency": "Humanities Iowa",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Small grants for public humanities projects in Iowa that don't fit Humanities Iowa's other programs, such as talks, discussions, exhibits and local history events for out-of-school adults.",
+   "who": "Iowa nonprofit organizations serving the out-of-school adult public. The project must engage the humanities and fit Humanities Iowa's mission.",
+   "requires_501c3": false,
+   "application": "Apply on Humanities Iowa's Submittable page (humanitiesiowa.submittable.com). Staff encourage a call or email before you apply. No application fee.",
+   "award": "Up to $3,000. A 1:1 cash or in-kind match is required.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Rolling. Decisions take about 6 to 8 weeks, so apply at least six weeks before the project starts.",
+   "contact": "Humanities Iowa, info@humanitiesiowa.org, PO Box 881, Ames, IA 50010",
+   "subjects": "Humanities; History; Public programs; Adult education; Culture",
+   "url": "https://humanitiesiowa.submittable.com/",
+   "web": "https://www.humanitiesiowa.org/grants/",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "iac-art-project-organizations",
+   "title": "Art Project Grant for Organizations",
+   "agency": "Iowa Arts Council (Iowa Economic Development Authority)",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "One-time arts projects that give Iowans an arts experience or arts learning opportunity: events, performances, exhibitions, festivals, workshops and public art with community engagement.",
+   "who": "Active Iowa nonprofits registered with the Iowa Secretary of State, with 501(c)(3) status and a staffed office in Iowa; border-city nonprofits serving Iowa audiences; schools and educational institutions; and local, county, state or tribal governments in Iowa. Individuals and businesses can't apply.",
+   "requires_501c3": true,
+   "application": "Apply through the Iowa Arts Council's SlideRoom portal (iowaartscouncil.slideroom.com), not IowaGrants. Read that year's guidelines first.",
+   "award": "FY27: $5,000 to $25,000, with a 1:1 match of the amount requested.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Once a year. The FY27 deadline was April 1, 2026 at 11:59 p.m. for projects July 1, 2026 to June 30, 2027. Watch the page for the FY28 round.",
+   "contact": "Laura Hayes, Arts Grant Manager, Iowa Arts Council, 515-348-6327",
+   "subjects": "Arts; Culture; Performing arts; Visual arts; Public art; Arts education",
+   "url": "https://opportunityiowa.gov/community/arts-culture/grants-programs/art-project-grant",
+   "web": "https://opportunityiowa.gov/grants/",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "iac-cultural-capacity-building",
+   "title": "Cultural Capacity Building Grant",
+   "agency": "Iowa Arts Council (Iowa Economic Development Authority)",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "General operating support over three years for Iowa arts, cultural and humanities organizations working on their cultural and managerial excellence and community service.",
+   "who": "Iowa arts, cultural and humanities nonprofits with annual cash operating expenses above $10,000. Organizations already holding another Iowa Arts Council grant for the same year may be ineligible; see the guidelines.",
+   "requires_501c3": true,
+   "application": "Read the guidelines and schedule a meeting with the program manager through the program page; applications go through the Iowa Arts Council's SlideRoom portal when a round opens.",
+   "award": "Multi-year general operating support; the amount is set in each round's guidelines.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Opens once every three years. Not accepting applications when checked. Watch the page for the next three-year round.",
+   "contact": "Jennie Knoebel, Director, Iowa Arts Council, 515-348-6324",
+   "subjects": "Arts; Culture; Humanities; General operating support; Capacity building",
+   "url": "https://opportunityiowa.gov/community/arts-culture/grants-programs/cultural-capacity-building-grant",
+   "web": "https://opportunityiowa.gov/grants/",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "shsi-historical-resource-development",
+   "title": "Historical Resource Development Program (HRDP)",
+   "agency": "State Historical Society of Iowa (Iowa Department of Administrative Services)",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Grants to preserve, conserve, interpret, enhance and teach the public about Iowa's historical resources, in three categories: documentary collections, historic preservation and museums. Funded by REAP.",
+   "who": "Nonprofits, governments, tribes, individuals and for-profits, for a historical resource located in Iowa.",
+   "requires_501c3": false,
+   "application": "Read the general guidelines, your category's instructions and its scoring rubric, then apply through the program's SlideRoom link. Emergency HRDP has its own guidelines and application.",
+   "award": "Up to $50,000, with a required match; match ratios vary by category and applicant.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Once a year. The 2026 deadline was May 1, 2026, for projects July 1, 2026 to November 30, 2028. Emergency HRDP (documentary collections only) opens each July 1 and is first come, first served while funds last. Watch the page for the 2027 round.",
+   "contact": "State Historical Society of Iowa grants staff, history.iowa.gov/contact",
+   "subjects": "History; Historic preservation; Museums; Archives; Collections",
+   "url": "https://history.iowa.gov/resources/grants/historical-resource-development-program",
+   "web": "https://history.iowa.gov/about-us/about/grants",
+   "checked": "2026-11-24"
+  }
+ ]
+}
