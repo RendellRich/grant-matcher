@@ -57,6 +57,12 @@ def test_who_can_apply_is_read_from_the_description():
                                "The request must be made by a State of Iowa, county, or local government agency. "
                                "The agency can outsource the website to a non-profit organization.")
     assert not no   # a nonprofit named only as a vendor doesn't make it a nonprofit grant
+    yes, _ = iowa.who_can_apply("Economic Development Authority",
+                                "Eligible Borrowers Businesses incorporated or organized in Iowa, including sole proprietorships.")
+    assert yes   # the start of a list, not a limit
+    yes, _ = iowa.who_can_apply("Economic Development Authority",
+                                "Only an eligible taxpayer may apply. Units of government (cities, counties) are not eligible.")
+    assert yes   # a nonprofit that owns the building is an eligible taxpayer
     no, _ = iowa.who_can_apply("Health", "Nonprofits are not eligible for this funding.")
     assert not no
     no, said = iowa.who_can_apply("Education", "Districts will submit a claim through IowaGrants.")
@@ -72,5 +78,5 @@ def test_closed_and_invitation_only_rows_are_skipped_and_tax_credits_named():
     skips = []
     recs = iowa.build_records(rows, today="2026-11-23", skips=skips, fetch=lambda r: pages[r["id"]])
     assert [r["id"] for r in recs] == ["ia-371353"]
-    assert recs[0]["assistance"] == "Tax credit" and recs[0]["nonprofit_eligible"] is False and recs[0]["deadlines"] == "Ongoing"
+    assert recs[0]["assistance"] == "Tax credit" and recs[0]["nonprofit_eligible"] is True and recs[0]["deadlines"] == "Ongoing"
     assert [(s["id"], s["reason"]) for s in skips] == [("ia-686491", "invitation_only"), ("ia-100", "deadline_passed")]
