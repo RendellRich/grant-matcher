@@ -1080,7 +1080,8 @@ function pickRest(f: ProfileForm): Partial<ProfileForm> {
 function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
   const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
     : e.key.startsWith("fl:ca-") ? "California grant" : e.key.startsWith("fl:il-") ? "Illinois grant" : e.key.startsWith("fl:ia-") ? "Iowa grant" : e.key.startsWith("fl:oh-") ? "Ohio grant"
-    : e.key.startsWith("fl:wa-") ? "Washington grant" : e.key.startsWith("fl:local-wa-") ? "Washington program" : "Florida program");
+    : e.key.startsWith("fl:wa-") ? "Washington grant" : e.key.startsWith("fl:local-wa-") ? "Washington program"
+    : e.key.startsWith("fl:local-oh-") ? "Ohio program" : "Florida program");
   const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
   return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
     items.map((e) => {
@@ -1286,6 +1287,7 @@ function Checklist({ state }: { state: string }) {
           <ul>
             <li>Most Ohio state grants are applied for through the Ohio Grants Portal with an OH|ID account. Create one at <a href="https://ohid.ohio.gov" target="_blank" rel="noopener">ohid.ohio.gov</a> before the deadline week.</li>
             <li>Each opportunity has its own window and rules. Open the opportunity from each grant for the current version.</li>
+            <li>Programs that don't post to the state's list, such as the Commission on Minority Health's grants, the Attorney General's crime victim funds and the Ohio History Fund, are entered by hand from each program's page, with the date they were checked.</li>
           </ul>
         </>
       ) : null}

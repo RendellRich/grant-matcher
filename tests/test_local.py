@@ -139,7 +139,8 @@ def test_statewide_and_community_foundation_entries():
 
 
 def test_every_state_file_loads_with_its_own_keys():
-    assert {"FL", "WA"} <= set(local.states())
+    assert {"FL", "WA", "OH"} <= set(local.states())
+    assert all(r["id"].startswith("local-oh-") for r in local.load(state="OH"))
     wa = local.load(state="WA")
     assert wa and all(r["id"].startswith("local-wa-") and len(f"fl:{r['id']}") <= 63 for r in wa)
     assert all(r["places"] or r["area"] == "all of Washington" for r in wa)
