@@ -7,7 +7,7 @@ recurs, the program officer and a description.
 
 Iowa's listing has no field for who may apply; that is in the description, or only in the attached RFP. So
 who may apply is read from the description: a description that names nonprofits keeps the grant; one that
-limits it to cities, counties, school districts, employers or taxpayers leaves nonprofits out; and one that says
+limits it to cities, counties, school districts or employers leaves nonprofits out; and one that says
 neither is kept, with a note on its card to read the notice. Department of Education grants that don't name
 nonprofits are taken as school and district grants.
 
@@ -43,11 +43,13 @@ NONPROFIT = re.compile(r"non-?\s?profit|not-for-profit|community[- ]based organi
 NO_NONPROFIT = re.compile(r"\b(?:no|not|nor|ineligible|cannot)\b[^.]{0,50}(?:non-?\s?profit|not-for-profit)"
                           r"|(?:non-?\s?profit|not-for-profit)s?\b[^.;]{0,25}\b(?:not|ineligible|cannot)\b", re.I)
 _WHO = r"(?:cit(?:y|ies)|count(?:y|ies)|school districts?|districts|local government|government agenc|state of iowa|" \
-       r"community colleges?|school food authorit|SFAs?|taxpayers?|employers?|businesses|manufactur)"
+       r"community colleges?|school food authorit|SFAs?|employers?|manufactur)"
 ONLY_OTHERS = re.compile(
     rf"\b(?:must be|only|limited to|restricted to|must include|is open to)\b[^.]{{0,60}}\b{_WHO}"
-    rf"|\b{_WHO}\w*\s+(?:must be the applicant|may apply|are eligible)"
-    rf"|\beligible (?:applicants?|borrowers?)\W+(?:are\s+)?{_WHO}", re.I)
+    rf"|\b{_WHO}\w*\s+(?:must be the applicant|may apply|are eligible)", re.I)
+# Left out on purpose: "Eligible borrowers: businesses ..." starts a list that often goes on to name nonprofits
+# (the Energy Infrastructure Revolving Loan Program's does), and "only an eligible taxpayer" includes nonprofits
+# that own the building (Iowa's historic tax credit is refundable to them).
 INVITATION = re.compile(r"\bby invitation only\b|\binvitation[- ]only\b", re.I)
 
 
