@@ -1,5 +1,5 @@
 {
- "about": "Iowa grant programs with their own application windows that aren't posted on IowaGrants.gov, entered by hand from each program's own page: Humanities Iowa's Mini Grants, the Iowa Arts Council's SlideRoom grants, and the State Historical Society of Iowa's Historical Resource Development Program. grantmatch/local.py checks this file and turns each entry into an Iowa program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
+ "about": "Iowa grant programs with their own application windows that aren't posted on IowaGrants.gov, entered by hand from each program's own page: Humanities Iowa's Mini Grants, the Iowa Arts Council's SlideRoom grants, the State Historical Society of Iowa's Historical Resource Development Program, and the Attorney General's opioid settlement and victim services grants. grantmatch/local.py checks this file and turns each entry into an Iowa program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
  "programs": [
   {
    "slug": "humanities-iowa-mini-grants",
@@ -87,6 +87,50 @@
    "subjects": "History; Historic preservation; Museums; Archives; Collections",
    "url": "https://history.iowa.gov/resources/grants/historical-resource-development-program",
    "web": "https://history.iowa.gov/about-us/about/grants",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "ag-opioid-settlement-grants",
+   "title": "Opioid Settlement Grants",
+   "agency": "Iowa Attorney General (Iowa Department of Justice)",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Programs, services and initiatives that respond to the opioid crisis in Iowa, paid from the Attorney General's 25% share of Iowa's opioid settlement money. Projects must fit the national opioid settlements' core strategies and approved uses and the Iowa Opioid Allocation Memorandum of Understanding.",
+   "who": "Organizations with an eligible opioid abatement project. The office encourages projects of all sizes and scopes.",
+   "requires_501c3": false,
+   "application": "Apply in the Iowa Department of Justice grants system (iowadoj.intelligrants.com). The funding page links the application and instructions for creating a new user for the opioid grant.",
+   "award": "About $20 million is expected to be available through June 30, 2030. No per-award limit is stated.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Open; applications are reviewed on a rolling basis.",
+   "contact": "Jen Green, jen.green@ag.iowa.gov; opioid.funding@ag.iowa.gov",
+   "subjects": "Opioids; Substance use; Prevention; Harm reduction; Treatment; Recovery",
+   "url": "https://www.iowaattorneygeneral.gov/for-crime-victims/grants/victimservices-funding-opportunities",
+   "web": "https://www.iowaattorneygeneral.gov/newsroom/attorney-general-brenna-bird-announces-competitive-grants-for-fighting-opioid-crisis",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "ag-victim-services-competitive",
+   "title": "Victim Services Competitive Grants",
+   "agency": "Iowa Attorney General, Victim Assistance Section",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Multi-year funding for victim services in Iowa, awarded by region: sexual abuse and rape crisis centers, domestic abuse programs and shelters, services for survivors of homicide and other violent crime, culturally specific programs and statewide hotlines. Separate competitive rounds cover training and technical assistance and criminal justice projects.",
+   "who": "Agencies that provide victim services, justice support to crime victims, training, community education, crime prevention, or technical assistance to victim service providers. See Iowa Administrative Code 61-9 for the full rules.",
+   "requires_501c3": false,
+   "application": "Watch for the notice of funding opportunity and application webinar on the funding page. Applications go through the Iowa Department of Justice grants system.",
+   "award": "Set in each round's notice of funding opportunity.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Awarded on a multi-year cycle. The current round is closed; the office expects the next victim services round to start around January 2029, with an application webinar.",
+   "contact": "Iowa Attorney General, Victim Assistance Section, Hoover Building, 1305 E Walnut St, Des Moines, IA 50319",
+   "subjects": "Crime victims; Victim services; Domestic violence; Sexual assault; Homicide survivors",
+   "url": "https://www.iowaattorneygeneral.gov/for-crime-victims/grants/victimservices-funding-opportunities",
+   "web": "https://www.iowaattorneygeneral.gov/for-crime-victims/grants",
    "checked": "2026-11-24"
   }
  ]
