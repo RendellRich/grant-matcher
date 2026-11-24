@@ -6,7 +6,9 @@
       "title": "WorkFirst Service Providers",
       "agency": "Washington State Department of Commerce, Community Jobs program",
       "level": "State",
-      "counties": ["Statewide"],
+      "counties": [
+        "Statewide"
+      ],
       "objectives": "Contracts to run transitional and community-based work experience programs for WorkFirst (TANF) recipients: intensive case management, career development, subsidized employment and related supports. Commerce will award 27 contracts statewide, one for each WorkFirst service area, for July 1, 2027 to June 30, 2029.",
       "who": "Community-based organizations, one per WorkFirst service area. The request for proposals and its application materials on the page give the full eligibility rules.",
       "requires_501c3": false,
@@ -26,7 +28,9 @@
       "title": "Behavioral Health Facilities Closure Prevention",
       "agency": "Washington State Department of Commerce, Behavioral Health Facilities program",
       "level": "State",
-      "counties": ["Statewide"],
+      "counties": [
+        "Statewide"
+      ],
       "objectives": "Capital grants to keep licensed, operating behavioral health facilities open: physical repairs and upgrades, capital maintenance needed for licensing, and capital improvements that free up cash for operations. Funds may not be used for expansion. The facility must be at significant risk of closing within two years without the state's help.",
       "who": "Nonprofits, for-profit businesses, public entities, tribes and Indian health care providers, community hospitals and community-based behavioral health providers, for licensed, operating facilities. Some enhanced services facilities and assisted living facilities with DSHS licenses and contracts also qualify.",
       "requires_501c3": false,
@@ -46,7 +50,9 @@
       "title": "Building Communities Fund",
       "agency": "Washington State Department of Commerce, Community Capital Facilities",
       "level": "State",
-      "counties": ["Statewide"],
+      "counties": [
+        "Statewide"
+      ],
       "objectives": "Capital grants to buy, build or renovate non-residential community and social service centers, to expand access to services in communities with the greatest need. Reimburses 25% of eligible project costs. Operating costs aren't eligible.",
       "who": "Nonprofit organizations and tribes registered in Washington, for projects that serve a distressed community or a substantial number of low-income or disadvantaged people.",
       "requires_501c3": false,
@@ -66,7 +72,9 @@
       "title": "Youth Recreational Facilities",
       "agency": "Washington State Department of Commerce, Community Capital Facilities",
       "level": "State",
-      "counties": ["Statewide"],
+      "counties": [
+        "Statewide"
+      ],
       "objectives": "Capital grants for buying, building or substantially renovating non-residential youth recreational facilities, paying up to 25% of eligible capital costs. Operating costs aren't eligible.",
       "who": "Nonprofit organizations and tribes registered in Washington, with a legally constituted board, dedicated to youth activities. Facilities offer supervised recreation for youth with an educational or social service part.",
       "requires_501c3": false,
@@ -86,7 +94,9 @@
       "title": "Building for the Arts",
       "agency": "Washington State Department of Commerce, Community Capital Facilities",
       "level": "State",
-      "counties": ["Statewide"],
+      "counties": [
+        "Statewide"
+      ],
       "objectives": "Capital grants for buying, building or substantially renovating facilities for performing arts, art museum and cultural organizations, paying as much as 33% of eligible project costs. Operating costs aren't eligible.",
       "who": "Nonprofit performing arts, art museum and cultural organizations, and tribes, registered in Washington with a legally constituted board.",
       "requires_501c3": false,
@@ -106,7 +116,9 @@
       "title": "Crime Victim Services Grants",
       "agency": "Washington State Department of Commerce, Office of Crime Victims Advocacy (OCVA)",
       "level": "State",
-      "counties": ["Statewide"],
+      "counties": [
+        "Statewide"
+      ],
       "objectives": "Direct and competitive grants to organizations across Washington that serve survivors and victims of crime, including federal Victims of Crime Act (VOCA) and STOP funds. OCVA releases requests for proposals throughout the year, many in spring for July 1 starts and in fall for January 1 starts.",
       "who": "Each request for proposals names its eligible applicants. Organizations that serve victims apply; the money isn't available to individual victims.",
       "requires_501c3": false,
@@ -126,7 +138,9 @@
       "title": "Arts in Education Project Grant",
       "agency": "Washington State Arts Commission (ArtsWA)",
       "level": "State",
-      "counties": ["Statewide"],
+      "counties": [
+        "Statewide"
+      ],
       "objectives": "Projects that expand arts learning for preschool and K-12 students in Washington, free of charge for every participating student, with arts learning goals and sequential learning. Covers project staff, educator professional learning, in-state travel, materials (up to 25% of the award) and indirect costs (up to 15%).",
       "who": "Washington 501(c)(3) nonprofits with current state nonprofit status and a federal tax-exempt letter, public schools and districts, Educational Service Districts, Head Start and ECEAP programs, and tribal, state or city government agencies, serving Washington students. Fiscally sponsored, for-profit, political or advocacy organizations and individuals can't apply.",
       "requires_501c3": true,
@@ -146,7 +160,9 @@
       "title": "Art Project Grant (Grants to Organizations)",
       "agency": "Washington State Arts Commission (ArtsWA)",
       "level": "State",
-      "counties": ["Statewide"],
+      "counties": [
+        "Statewide"
+      ],
       "objectives": "Reimbursement grants for public arts, heritage and culture projects in Washington with a clear start and end inside ArtsWA's fiscal year (July 1 to June 30). Ongoing programs aren't funded.",
       "who": "Washington nonprofit organizations registered with the Secretary of State, among the other types the year's guidelines list. Projects must be open to the public and happen in Washington.",
       "requires_501c3": false,
@@ -159,6 +175,50 @@
       "subjects": "Arts; Culture; Heritage; Community events",
       "url": "https://www.arts.wa.gov/grants-to-organizations/",
       "web": "https://www.arts.wa.gov/grants/",
+      "checked": "2026-11-24"
+    },
+    {
+      "slug": "doh-youth-cannabis-tobacco-prevention",
+      "title": "Youth Cannabis and Commercial Tobacco Prevention: Community and Priority Populations Grant",
+      "agency": "Washington State Department of Health, Youth Cannabis and Commercial Tobacco Prevention Program (YCCTPP)",
+      "level": "State",
+      "counties": [
+        "Statewide"
+      ],
+      "objectives": "Five-year grants for policy, systems and environmental change that prevents youth cannabis and commercial tobacco use and addresses its root causes. A Community Track funds partners working in a geographic region; a Priority Population Track funds partners with culturally specific expertise, trusted relationships and lived experience in the communities most affected.",
+      "who": "Washington 501(c)(3) nonprofits, community-based organizations, federally recognized tribes and tribal organizations, city governments, local health jurisdictions, other government entities, schools and districts, educational organizations, and coalitions. Groups without 501(c)(3) status can apply with a fiscal sponsor and a signed sponsorship agreement.",
+      "requires_501c3": false,
+      "application": "Apply by the request for applications the Department of Health released September 17, 2026; the announcement page links its Q&A sessions and newsletter.",
+      "award": "$50,000 to $611,325 a year. Funding runs July 1, 2027 to June 30, 2032. Awards are expected by January 28, 2027.",
+      "opens": "2026-09-17",
+      "closes": "2026-12-12",
+      "deadlines": "Applications due December 12, 2026 at 11:59 p.m. Pacific.",
+      "contact": "DBHRAthenaTeam@hca.wa.gov",
+      "subjects": "Youth; Prevention; Substance use; Cannabis; Tobacco; Public health; Community coalitions",
+      "url": "https://theathenaforum.org/node/12668",
+      "web": "https://theathenaforum.org/",
+      "checked": "2026-11-24"
+    },
+    {
+      "slug": "commerce-capital-project-capacity",
+      "title": "Capital Project Capacity-Building Grants",
+      "agency": "Washington State Department of Commerce, Community Capacity Initiative",
+      "level": "State",
+      "counties": [
+        "Statewide"
+      ],
+      "objectives": "Small grants for the critical next step in an early-stage capital project, such as targeted technical assistance and predevelopment work, so organizations are ready to seek capital funding. Priority goes to projects in overburdened communities that address housing, energy or infrastructure needs. Not for construction or land purchase.",
+      "who": "Washington nonprofits, local governments and federally recognized tribes; each round's request for applications sets the exact rules.",
+      "requires_501c3": false,
+      "application": "Apply with the online form in each round's request for applications. The Community Capacity Initiative also offers free training on capital project readiness.",
+      "award": "An earlier nonprofit round gave awards of up to $50,000 each.",
+      "opens": null,
+      "closes": null,
+      "deadlines": "The FY2027 round closed October 30, 2026. Commerce says more opportunities will be posted; watch the page.",
+      "contact": "CapacityBuilding@Commerce.wa.gov",
+      "subjects": "Capital; Capacity building; Predevelopment; Housing; Facilities; Technical assistance",
+      "url": "https://www.commerce.wa.gov/cci/",
+      "web": "https://www.commerce.wa.gov/contracting/",
       "checked": "2026-11-24"
     }
   ]
