@@ -136,3 +136,19 @@ def test_statewide_and_community_foundation_entries():
     assert "not both" in " ".join(local.check(entry(counties=["Statewide", "Manatee"]), COUNTIES))
     cf = local.to_record(entry(level="Community foundation", counties=["Manatee"]), COUNTIES)
     assert cf["level"] == "Community foundation" and "manatee" in cf["places"]
+
+
+def test_every_state_file_loads_with_its_own_keys():
+    assert {"FL", "WA"} <= set(local.states())
+    wa = local.load(state="WA")
+    assert wa and all(r["id"].startswith("local-wa-") and len(f"fl:{r['id']}") <= 63 for r in wa)
+    assert all(r["places"] or r["area"] == "all of Washington" for r in wa)
+    fl_ids = {r["id"] for r in local.load()}
+    assert not fl_ids & {r["id"] for r in wa}
+
+
+def test_florida_keeps_its_keys_and_other_states_add_theirs():
+    assert local.record_id("kids", "FL") == "local-kids"
+    assert local.record_id("kids", "wa") == "local-wa-kids"
+    r = local.to_record(entry(counties=["Statewide"]), COUNTIES, state="WA")
+    assert r["id"] == "local-wa-sample-county-kids" and r["area"] == "all of Washington" and r["places"] == []

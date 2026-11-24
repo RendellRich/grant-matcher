@@ -1,6 +1,6 @@
 """Watch the pages behind the hand-kept lists and say which entries need a person to look again.
 
-data/local-FL.json and data/corporate.json are typed in by hand from each program's own page. Pages
+data/local-<ST>.json (one per state) and data/corporate.json are typed in by hand from each program's own page. Pages
 change after that: a program goes on hold, a new cycle opens, an amount changes. This reads every page
 those lists point to (HTML, PDF or Word), compares it with last week's reading, and writes a short
 report of what needs review:
@@ -60,10 +60,11 @@ DIGITS = re.compile(r"\d+")
 def targets(data_dir: Path = DATA) -> list[dict]:
     """One row per page: the list it came from, the entry, its checked date and the URL."""
     rows = []
-    local = json.loads((data_dir / "local-FL.json").read_text(encoding="utf-8"))
-    for p in local["programs"]:
-        for url in dict.fromkeys(u for u in (p.get("url"), p.get("web")) if u):
-            rows.append({"list": "local-FL", "key": p["slug"], "name": p["title"], "checked": p.get("checked"), "url": url})
+    for path in sorted(data_dir.glob("local-??.json")):
+        local = json.loads(path.read_text(encoding="utf-8"))
+        for p in local["programs"]:
+            for url in dict.fromkeys(u for u in (p.get("url"), p.get("web")) if u):
+                rows.append({"list": path.stem, "key": p["slug"], "name": p["title"], "checked": p.get("checked"), "url": url})
     corp = json.loads((data_dir / "corporate.json").read_text(encoding="utf-8"))
     for f in corp["foundations"]:
         prog = f.get("program") or {}
@@ -228,7 +229,7 @@ def report(results: list[tuple[dict, list[dict]]], today: date, first_run: bool)
                  + (" This is the first run, so there is nothing to compare yet: it lists current status wording only."
                     if first_run else ""))
     lines.append("")
-    lines.append("Read each page, update the entry in `data/local-FL.json` or `data/corporate.json` from the "
+    lines.append("Read each page, update the entry in its `data/local-<ST>.json` or `data/corporate.json` from the "
                  "official page, and set its `checked` date. Nothing here was changed automatically.")
     flagged.sort(key=lambda rf: (min(ORDER.index(x["t"]) for x in rf[1]), rf[0]["list"], rf[0]["key"]))
     for row, found in flagged:
