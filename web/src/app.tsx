@@ -1270,7 +1270,7 @@ function Checklist({ state }: { state: string }) {
           <ul>
             <li>Illinois requires every applicant to register and pre-qualify in the GATA Grantee Portal before applying. Start at <a href="https://gata.illinois.gov" target="_blank" rel="noopener">gata.illinois.gov</a>; it can take a few weeks.</li>
             <li>Each notice has its own window and rules. Open the notice from each grant for the current version.</li>
-            <li>Programs that don't post a notice to the state's list, such as the Illinois Arts Council's and Illinois Humanities' grants, are entered by hand from each program's page, with the date they were checked.</li>
+            <li>Programs that don't post a notice to the state's list, such as the Illinois Arts Council's, Illinois Humanities' and the Attorney General's crime victim grants, are entered by hand from each program's page, with the date they were checked.</li>
           </ul>
         </>
       ) : null}
@@ -1280,7 +1280,7 @@ function Checklist({ state }: { state: string }) {
           <ul>
             <li>Iowa applications go through <a href="https://www.iowagrants.gov" target="_blank" rel="noopener">IowaGrants.gov</a>. Register for an account well before the deadline.</li>
             <li>Iowa's listing doesn't say who may apply, so it is read from each description. When a grant says "read the notice", check the RFP before you start.</li>
-            <li>Programs that apply outside IowaGrants, such as Humanities Iowa's Mini Grants, the Iowa Arts Council's grants and the Historical Resource Development Program, are entered by hand from each program's page, with the date they were checked.</li>
+            <li>Programs that apply outside IowaGrants, such as Humanities Iowa's Mini Grants, the Iowa Arts Council's grants and the Attorney General's opioid settlement grants, are entered by hand from each program's page, with the date they were checked.</li>
           </ul>
         </>
       ) : null}

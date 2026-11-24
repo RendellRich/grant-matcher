@@ -1,5 +1,5 @@
 {
- "about": "Illinois grant programs with their own application windows that aren't posted to the state's GATA list of funding notices, entered by hand from each program's own page: the Illinois Arts Council's Salesforce grants, Illinois Humanities' grants, and the Illinois State Library's adult literacy grants. grantmatch/local.py checks this file and turns each entry into an Illinois program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
+ "about": "Illinois grant programs with their own application windows that aren't posted to the state's GATA list of funding notices, entered by hand from each program's own page: the Illinois Arts Council's Salesforce grants, Illinois Humanities' grants, the Illinois State Library's adult literacy grants, and the Attorney General's crime victim grants. grantmatch/local.py checks this file and turns each entry into an Illinois program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
  "programs": [
   {
    "slug": "iac-general-operating-support",
@@ -153,6 +153,72 @@
    "subjects": "Adult literacy; Adult education; English language learning; Volunteers",
    "url": "https://www.ilsos.gov/departments/library/literacy/adultvolunteer.html",
    "web": "https://www.ilsos.gov/departments/library/literacy/adultlit-grants-overview.html",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "ag-violent-crime-victims-assistance",
+   "title": "Violent Crime Victims Assistance (VCVA) Grant",
+   "agency": "Illinois Attorney General, Crime Victim Services Division",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Funding for agencies that deliver victim and witness services to survivors of violent crime, including comprehensive victim advocacy. Recent grantees include domestic violence and sexual assault programs, children's advocacy centers, elder abuse, legal services and violence prevention programs. Paid from fines on people convicted of violent crimes, plus state general revenue.",
+   "who": "Counties, cities and townships, public and private colleges and universities, tribal governments and organizations, public and Indian housing authorities, and 501(c)(3) nonprofits. Nonprofits must be registered and in good standing with the Attorney General's Charitable Trust Division.",
+   "requires_501c3": true,
+   "application": "Apply in the online application portal linked from the VCVA page while the window is open. The Attorney General's office holds an application webinar before each window.",
+   "award": "Amounts vary; the office posts each year's award list on the page. Grants run July 1 to June 30.",
+   "opens": "2027-01-01",
+   "closes": "2027-02-05",
+   "deadlines": "The FY28 application opens January 1, 2027 and closes February 5, 2027. No applications are accepted after the portal closes.",
+   "contact": "Illinois Attorney General, Crime Victim Services Division, 1-800-228-3368; webinar registration special.events@ilag.gov",
+   "subjects": "Crime victims; Victim services; Domestic violence; Sexual assault; Child advocacy; Elder abuse; Legal services",
+   "url": "https://illinoisattorneygeneral.gov/safer-communities/supporting-victims-of-crime/violent-crime-vcva",
+   "web": "https://illinoisattorneygeneral.gov/Safer-Communities/Grants",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "ag-domestic-violence-fund",
+   "title": "Domestic Violence (DV) Grant",
+   "agency": "Illinois Attorney General, Crime Victim Services Division",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Legal advocacy, legal assistance and legal services for victims of domestic violence who are or have been married or in a civil union. Paid from marriage and civil union license fees.",
+   "who": "Any public or private not-for-profit agency that provides these services to domestic violence victims: counties, cities and townships, public and private colleges and universities, tribal governments and organizations, public and Indian housing authorities, and 501(c)(3) nonprofits. Nonprofits must be registered and in good standing with the Attorney General's Charitable Trust Division.",
+   "requires_501c3": true,
+   "application": "Apply in the online application portal linked from the Attorney General's grants page while the window is open.",
+   "award": "Amounts vary; the office posts each year's award list. Grants run July 1 to June 30.",
+   "opens": "2027-02-01",
+   "closes": "2027-03-05",
+   "deadlines": "The FY28 application opens February 1, 2027 and closes March 5, 2027.",
+   "contact": "Illinois Attorney General, Crime Victim Services Division, 1-800-228-3368",
+   "subjects": "Domestic violence; Legal services; Legal aid; Crime victims",
+   "url": "https://illinoisattorneygeneral.gov/Safer-Communities/Grants",
+   "web": "https://illinoisattorneygeneral.gov/safer-communities/supporting-victims-of-crime/domestic-violence-prevention-resources/domestic-violence-fund",
+   "checked": "2026-11-24"
+  },
+  {
+   "slug": "ag-violence-prevention-special-project",
+   "title": "Violence Prevention Special Project (VPSP) Grant",
+   "agency": "Illinois Attorney General, Crime Victim Services Division",
+   "level": "State",
+   "counties": [
+    "Statewide"
+   ],
+   "objectives": "Services for people who are victims or witnesses of violent crime and involved in the criminal justice system.",
+   "who": "Counties, cities and townships, public and private colleges and universities, tribal governments and organizations, public and Indian housing authorities, and 501(c)(3) nonprofits. Nonprofits must be registered and in good standing with the Attorney General's Charitable Trust Division.",
+   "requires_501c3": true,
+   "application": "Apply in the online application portal linked from the VCVA page when a round is announced.",
+   "award": "Amounts vary. The FY27 grants run July 1, 2026 to June 30, 2027.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "The FY27 application ran January 1 to February 6, 2026. No next round was announced when checked; the office says to check back.",
+   "contact": "Illinois Attorney General, Crime Victim Services Division, 1-800-228-3368",
+   "subjects": "Crime victims; Witnesses; Violence prevention; Criminal justice",
+   "url": "https://illinoisattorneygeneral.gov/safer-communities/supporting-victims-of-crime/violent-crime-vcva",
+   "web": "https://illinoisattorneygeneral.gov/Safer-Communities/Grants",
    "checked": "2026-11-24"
   }
  ]
