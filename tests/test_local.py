@@ -155,3 +155,32 @@ def test_florida_keeps_its_keys_and_other_states_add_theirs():
     assert local.record_id("kids", "wa") == "local-wa-kids"
     r = local.to_record(entry(counties=["Statewide"]), COUNTIES, state="WA")
     assert r["id"] == "local-wa-sample-county-kids" and r["area"] == "all of Washington" and r["places"] == []
+
+
+def test_rolling_must_be_true_or_false_and_has_no_closing_date():
+    assert "rolling must be true or false" in " ".join(local.check(entry(rolling="yes"), COUNTIES))
+    assert "rolling programs have no closes date" in " ".join(local.check(entry(rolling=True), COUNTIES))
+    r = local.to_record(entry(rolling=True, opens=None, closes=None), COUNTIES)
+    assert r["rolling"] is True
+    assert local.to_record(entry(), COUNTIES)["rolling"] is False
+
+
+def test_programs_between_rounds_rank_below_open_ones():
+    from datetime import date
+    from grantmatch import rank_more
+    from grantmatch.match import Profile
+    day = date(2026, 11, 18)
+    base = local.to_record(entry(counties=["Statewide"], opens=None, closes=None), COUNTIES, state="IA")
+    assert rank_more.between_rounds(base, day)
+    assert not rank_more.between_rounds({**base, "rolling": True}, day)
+    assert not rank_more.between_rounds({**base, "opens": "2027-01-01", "closes": "2027-02-05"}, day)
+    assert rank_more.between_rounds({**base, "opens": "2026-01-01", "closes": "2026-02-06"}, day)
+    assert not rank_more.between_rounds({**base, "_cycle": {"s": "deadline", "at": "2026-11-12"}}, day)
+    assert not rank_more.between_rounds({**base, "id": "il-4319"}, day)
+    open_ = {**base, "id": "local-ia-open", "rolling": True}
+    closed = {**base, "id": "local-ia-closed"}
+    p = Profile(mission="Free literacy tutoring for children.", keywords=["literacy", "children"], today=day)
+    out = rank_more.score_florida([closed, open_], p)
+    assert list(out["id"]) == ["local-ia-open", "local-ia-closed"]
+    assert out.iloc[0]["score"] - out.iloc[1]["score"] == 15
+    assert rank_more.BETWEEN_ROUNDS in out.iloc[1]["cautions"]

@@ -75,6 +75,10 @@ def check(entry: dict, counties: dict[str, list[str]]) -> list[str]:
         problems.append("opens is after closes")
     if not isinstance(entry.get("requires_501c3"), bool):
         problems.append("requires_501c3 must be true or false")
+    if "rolling" in entry and not isinstance(entry["rolling"], bool):
+        problems.append("rolling must be true or false")
+    if entry.get("rolling") and entry.get("closes"):
+        problems.append("rolling programs have no closes date")
     for k in ("url", "web"):
         v = entry.get(k)
         if v and not str(v).startswith("https://"):
@@ -130,6 +134,7 @@ def to_record(entry: dict, counties: dict[str, list[str]], fiscal_year: str = ""
         "requires_501c3": entry["requires_501c3"],
         "opens": entry.get("opens"),
         "closes": entry.get("closes"),
+        "rolling": bool(entry.get("rolling", False)),
         "checked": entry["checked"],
     }
 

@@ -282,7 +282,7 @@ export function localWindow(r: FloridaRec, today: Date = new Date()): { due: num
   const opens = day(r.opens), closes = day(r.closes);
   const due = closes && closes.getTime() >= t0 ? closes.getTime() : null;
   if (opens && opens.getTime() > t0) return { due, line: `Applications open ${fmtDate(opens)}` };
-  if (!due && r.status && r.deadlines === "Ongoing") return { due, line: "Taking applications with no set deadline" };
+  if (!due && ((r.status && r.deadlines === "Ongoing") || r.rolling === true)) return { due, line: "Taking applications with no set deadline" };
   return { due, line: due ? "Taking applications now" : undefined };
 }
 

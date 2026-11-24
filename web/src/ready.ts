@@ -139,7 +139,7 @@ export function floridaReadiness(r: FloridaRec, p: ReadyProfile, lines: string[]
     checks.push(...fromText(text, p));
   }
   checks.push(windowCheck(r, local, call, p.today ?? new Date()));
-  const status = ["Taking applications now", "Taking applications with no set deadline", "Applications open "];
+  const status = ["Taking applications now", "Taking applications with no set deadline", "Applications open ", "Between rounds:"];
   return { checks, covered: [...coveredBy(checks, lines), ...lines.filter((x) => startsAny(x, status))] };
 }
 
@@ -150,7 +150,7 @@ function windowCheck(r: FloridaRec, local: boolean, call: boolean, today: Date):
     return { key: "open", state: "check", label: `Opens ${shortDate(opens)}`, note: `Applications open ${shortDate(opens)}${closes ? ` and close ${shortDate(closes)}` : ""}.` };
   }
   if (closes && closes.getTime() >= t0) return { key: "open", state: "ok", label: "Open now", note: `Taking applications now; due ${shortDate(closes)}.` };
-  if (call && r.deadlines === "Ongoing") return { key: "open", state: "ok", label: "Open, no deadline", note: "Taking applications with no set deadline." };
+  if ((call && r.deadlines === "Ongoing") || (local && r.rolling === true)) return { key: "open", state: "ok", label: "Open, no deadline", note: "Taking applications with no set deadline." };
   if (local) {
     return { key: "open", state: "check", label: "Between rounds", note: "No application window is open now; the Deadlines line says when the next round is expected." };
   }

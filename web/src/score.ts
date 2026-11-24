@@ -589,7 +589,7 @@ export interface FloridaRec {
   url: string; _title?: string; _assist?: string;
   // County and city programs only (grantmatch/local.py)
   level?: string; area?: string; places?: string[]; requires_501c3?: boolean;
-  opens?: string | null; closes?: string | null; checked?: string; _cycle?: WebsiteCycle;
+  opens?: string | null; closes?: string | null; rolling?: boolean; checked?: string; _cycle?: WebsiteCycle;
   // Open calls only (grantmatch/california.py)
   state?: string; number?: string; status?: string; match?: string; loan?: boolean; funding_method?: string;
   loi?: boolean; updated?: string | null; _catalog?: string;
@@ -640,6 +640,21 @@ export function callChecks(r: FloridaRec, p: Profile): [number, string[]] {
   return [points, cautions];
 }
 
+// A hand-kept program with no window open or announced, and nothing on its website saying it is taking
+// applications, ranks below the ones a nonprofit can apply to now or soon. Same as rank_more.py.
+export const BETWEEN_ROUNDS = "Between rounds: no application window is open or announced";
+const BETWEEN_ROUNDS_PENALTY = 15;
+
+const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+export function betweenRounds(r: FloridaRec, today: Date): boolean {
+  if (!r.id.startsWith("local-") || r.rolling === true) return false;
+  const day = isoDay(today);
+  if (typeof r.closes === "string" && r.closes >= day) return false;
+  if (typeof r.opens === "string" && r.opens > day) return false;
+  return !(r._cycle && (r._cycle.s === "open" || r._cycle.s === "deadline"));
+}
+
 export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<string, number> | null,
                              showEarmarks = false, cities: string[] = []): Scored<FloridaRec>[] {
   let recs = records.filter((r) => r.nonprofit_eligible);
@@ -667,6 +682,7 @@ export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<st
     points += extra; reasons.push(...moreReasons); cautions.push(...moreCautions);
     const [callPoints, callCautions] = callChecks(r, p);
     points += callPoints; cautions.push(...callCautions);
+    if (betweenRounds(r, p.today)) { points -= BETWEEN_ROUNDS_PENALTY; cautions.push(BETWEEN_ROUNDS); }
     const shown = pyRound(Math.max(0, Math.min(100, points)));
     return { rec: r, score: shown, tier: tierOf(shown), reasons, cautions, matched };
   });

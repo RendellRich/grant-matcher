@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from statistics import median
 
 import pandas as pd
@@ -242,6 +243,26 @@ def local_checks(r: dict, p: Profile, city_set: set[str]) -> tuple[int, list[str
     return points, reasons, cautions
 
 
+# A hand-kept program (grantmatch/local.py) with no window open or announced, and nothing on its website saying
+# it is taking applications, ranks below the ones a nonprofit can apply to now or soon.
+BETWEEN_ROUNDS = "Between rounds: no application window is open or announced"
+BETWEEN_ROUNDS_PENALTY = 15
+
+
+def between_rounds(r: dict, today: date) -> bool:
+    """True for a hand-kept program that is neither open, opening on a set date, nor taking applications any time."""
+    if not str(r.get("id", "")).startswith("local-") or r.get("rolling") is True:
+        return False
+    day = today.isoformat()
+    opens, closes = r.get("opens"), r.get("closes")
+    if isinstance(closes, str) and closes >= day:
+        return False
+    if isinstance(opens, str) and opens > day:
+        return False
+    cycle = r.get("_cycle")
+    return not (isinstance(cycle, dict) and cycle.get("s") in ("open", "deadline"))
+
+
 # Open calls (grantmatch/california.py) say what a catalog of programs doesn't: a required match, loans, and
 # how the money is paid.
 LOAN_CAUTION = "A loan, not a grant"
@@ -283,6 +304,7 @@ def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | 
     yardstick = {k: v for k, v in semantic.items() if not str(k).startswith("local-")} if semantic else None
     fit = _scale(semantic, df["id"], yardstick or None)
     city_set = {c.strip().lower() for c in cities if c.strip()}
+    today = p.today or date.today()
     rows = []
     for i, r in df.iterrows():
         matched = _keyword_hits(p.keywords, text.loc[i])
@@ -307,6 +329,9 @@ def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | 
         extra, more_cautions = call_checks(r.to_dict(), p)
         points += extra
         cautions += more_cautions
+        if between_rounds(r.to_dict(), today):
+            points -= BETWEEN_ROUNDS_PENALTY
+            cautions.append(BETWEEN_ROUNDS)
         final = max(0.0, min(100.0, points))
         rows.append({**r.to_dict(), "score": round(final), "tier": _tier(round(final)),
                      "reasons": reasons, "cautions": cautions, "matched": matched})
