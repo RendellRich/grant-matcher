@@ -64,3 +64,25 @@ def test_no_amounts_and_a_missing_guid_still_give_a_usable_record():
                                    "FinancialDetails": "", "GUID": "", "MatchingRequired": False}))
     assert rec["award"] == "" and rec["match"] == ""
     assert rec["url"] == ohio.SITE
+
+
+def test_a_missing_intermediate_certificate_is_fetched_and_the_call_still_verified(monkeypatch):
+    calls = []
+
+    class Resp:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"IsFailure": False, "Result": [item()]}
+
+    def get(url, timeout=None, verify=True):
+        calls.append(verify)
+        if verify is True:
+            raise ohio.requests.exceptions.SSLError("unable to get local issuer certificate")
+        return Resp()
+
+    monkeypatch.setattr(ohio.session, "get", get)
+    monkeypatch.setattr(ohio, "issuer_bundle", lambda host: f"/tmp/{host}.pem")
+    assert len(ohio.fetch_list()) == 1
+    assert calls == [True, "/tmp/api.obm.ohio.gov.pem"]   # never verify=False
