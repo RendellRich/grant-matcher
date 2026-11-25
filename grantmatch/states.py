@@ -4,10 +4,12 @@ Each of the 50 states and the District of Columbia has an entry with its status:
 
   built      an adapter reads the state's own list (file, catalog and module are set)
   next       a machine-readable source exists and is worth an adapter next (none at the moment)
-  decide     a machine-readable source works, but whether to use it is Ren's call (docs/state-coverage.md says why)
+  decide     a machine-readable source works, but Ren decided to leave it out (2026-11-25; docs/state-coverage.md
+             section (c) gives the reasons)
   html       the grant pages checked are web pages, a dashboard or a bid system, not a data file
-  none       what was checked has no current list of grant calls: past awards only, a login, or a list that is
-             empty or abandoned
+  none       nowhere the research looked has a current public list of state grant calls: past awards only, a
+             login wall, or a list that is empty or abandoned. If any page it looked at posts current calls, the
+             state is html instead
   unchecked  the research couldn't establish the answer: the site turned scripts away, showed a captcha, wasn't
              tested, or a check couldn't be completed (Texas: the research session's own permission check blocked
              the probe). Nothing is claimed about these states; they need a look in a browser
@@ -19,8 +21,8 @@ catalog. Sources and checks: docs/state-coverage.md (researched November 2026).
 
 To add a state: write an adapter that produces the same record fields as ohio.py, set its entry here to
 "built" with file, source, catalog, module, report (its heading in the skipped grants review) and refresh (how
-often its refresh job runs; None until one is approved, and the proposal for new states is weekly), and propose
-a refresh job. The site and the skipped report need no change.
+often its refresh job runs; None until a refresh job exists, and the proposal for new states is weekly), and
+propose a refresh job. The site and the skipped report need no change.
 """
 from __future__ import annotations
 
@@ -36,7 +38,7 @@ STATES: dict[str, dict] = {
     "CA": {"status": "built", "source": "California Grants Portal", "file": "california", "catalog": "Grants Portal",
            "module": "california", "report": "California Grants Portal", "refresh": "daily"},
     "CO": {"status": "unchecked", "source": "OEDIT Programs and Funding, SIPA govgrants (blocked to scripts)"},
-    "CT": {"status": "none", "source": "Past awards on data.ct.gov; calls on the CTsource bid board"},
+    "CT": {"status": "html", "source": "CTsource Bid Board (Nonprofit Grant Program rounds); past awards on data.ct.gov"},
     "DE": {"status": "none", "source": "Past awards on data.delaware.gov; no open-call dataset"},
     "DC": {"status": "html", "source": "District Grants Clearinghouse (Serve DC)"},
     "FL": {"status": "built", "source": "Florida Catalog of State Financial Assistance", "file": "florida",
@@ -51,7 +53,7 @@ STATES: dict[str, dict] = {
            "report": "IowaGrants.gov", "refresh": "daily"},
     "KS": {"status": "unchecked", "source": "grants.ks.gov and the KS Infrastructure Hub (blocked to scripts)"},
     "KY": {"status": "unchecked", "source": "CHFS, KDE and eMARS pages (found by search, not tested)"},
-    "LA": {"status": "none", "source": "LaPAC (procurement bids); no grant catalog in what was checked"},
+    "LA": {"status": "unchecked", "source": "LaPAC (procurement bids); LED's monthly Opportunity Roadmap PDF not opened"},
     "ME": {"status": "html", "source": "Maine Community Funding Finder"},
     "MD": {"status": "none", "source": "grants.maryland.gov list, abandoned since September 2023"},
     "MA": {"status": "html", "source": "COMMBUYS bid search"},
@@ -71,7 +73,7 @@ STATES: dict[str, dict] = {
     "ND": {"status": "html", "source": "North Dakota WebGrants storefront"},
     "OH": {"status": "built", "source": "Ohio Grants Partnership", "file": "ohio", "catalog": "Ohio", "module": "ohio",
            "report": "Ohio Grants Partnership", "refresh": "daily"},
-    "OK": {"status": "none", "source": "OK Grants redirects to a login page"},
+    "OK": {"status": "unchecked", "source": "OK Grants needs registration; what agency pages list isn't recorded"},
     "OR": {"status": "none", "source": "Two housing datasets on data.oregon.gov, both empty"},
     "PA": {"status": "decide", "source": "pa.gov Discover State Grants (the site's own search proxy)"},
     "RI": {"status": "html", "source": "Grants Management Office funding opportunities (Euna Grants list)"},
@@ -80,7 +82,7 @@ STATES: dict[str, dict] = {
     "TN": {"status": "unchecked", "source": "Central Procurement Office grant page (blocked to scripts)"},
     "TX": {"status": "unchecked", "source": "Electronic State Business Daily, Grants (data endpoint not verified)"},
     "UT": {"status": "html", "source": "Utah Funding Opportunities Portal (Looker Studio report)"},
-    "VT": {"status": "none", "source": "Past awards on data.vermont.gov; calls on agency pages"},
+    "VT": {"status": "html", "source": "Agency grant pages such as the Agriculture grants calendar; past awards on data.vermont.gov"},
     "VA": {"status": "html", "source": "Governor's Office Grants directory"},
     "WA": {"status": "built", "source": "FundHubWA (Washington Department of Commerce)", "file": "washington",
            "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily"},

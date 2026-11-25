@@ -126,6 +126,10 @@ def test_the_export_drops_closed_snapshot_calls_but_not_florida_or_hand_kept_pro
 
 def test_states_the_research_couldnt_check_claim_nothing():
     unchecked = {c for c, s in states.STATES.items() if s["status"] == "unchecked"}
-    assert unchecked == {"AR", "CO", "ID", "KS", "KY", "MN", "MS", "MO", "NE", "NH", "NM", "SC", "SD", "TN", "TX", "WI"}
+    assert unchecked == {"AR", "CO", "ID", "KS", "KY", "LA", "MN", "MS", "MO", "NE", "NH", "NM", "OK", "SC", "SD", "TN",
+                         "TX", "WI"}
+    # "none" only where nowhere the research looked posts current state calls
+    assert {c for c, s in states.STATES.items() if s["status"] == "none"} == {"AZ", "DE", "MD", "OR"}
+    assert states.STATES["CT"]["status"] == states.STATES["VT"]["status"] == "html"
     for code in unchecked | {c for c, s in states.STATES.items() if s["status"] == "none"}:
         assert "only" not in states.STATES[code]["source"].lower(), code   # no "agency pages only" without a check
