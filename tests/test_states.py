@@ -65,3 +65,59 @@ def test_the_committed_snapshots_have_the_same_record_fields_as_ohio():
         assert payload["programs"], name
         for rec in payload["programs"]:
             assert set(rec) == want, (name, rec["id"])
+
+
+def test_the_skipped_report_takes_every_built_state_from_the_registry():
+    from grantmatch import skipped
+    built = {s["file"] for c, s in states.STATES.items() if s["status"] == "built" and c != "FL"}
+    assert set(skipped.STATE_SOURCES) == built
+    assert all(src in skipped.SOURCES for src in built | {"florida"})
+    expected, optional = skipped.expected_parts()
+    for code, r in states.REPORT.items():
+        if code == "FL":
+            continue
+        name = f"skipped-{r['source']}.json.gz"
+        assert (name in expected) == bool(r["refresh"]) and (name in optional) == (not r["refresh"]), code
+    # the labels the Friday issue already used for the refreshed states are unchanged
+    assert expected["skipped-ohio.json.gz"] == "Ohio (after the next daily refresh)"
+    assert skipped.SOURCES["washington"] == "FundHubWA (Washington)"
+    assert set(optional) == {"skipped-westvirginia.json.gz", "skipped-newjersey.json.gz"}
+
+
+def test_the_skipped_report_accepts_a_programs_file_for_every_built_state(tmp_path, monkeypatch):
+    import gzip
+    import json
+    import sys
+
+    from grantmatch import skipped
+    parts = tmp_path / "parts"
+    parts.mkdir()
+    args = ["skipped", "--parts", str(parts), "--csv", str(tmp_path / "out.csv"), "--md", str(tmp_path / "out.md")]
+    for src in skipped.STATE_SOURCES:
+        f = tmp_path / f"{src}.json.gz"
+        f.write_bytes(gzip.compress(json.dumps({"programs": [{"id": f"{src}-1", "title": "A", "nonprofit_eligible": False,
+                                                              "earmark": False, "agency": "X", "url": ""}]}).encode()))
+        args += [f"--{src}", str(f)]
+    monkeypatch.setattr(sys, "argv", args)
+    skipped.main()
+    report = (tmp_path / "out.md").read_text(encoding="utf-8")
+    for src in skipped.STATE_SOURCES:
+        assert f"## {skipped.SOURCES[src]} (1)" in report, src
+
+
+def test_closed_calls_are_left_out_at_export_and_open_ones_kept():
+    from datetime import date
+    recs = [{"id": "a", "closes": "2026-11-24"}, {"id": "b", "closes": "2026-11-25"}, {"id": "c", "closes": None},
+            {"id": "d"}, {"id": "e", "closes": ""}]
+    kept, closed = export_web.still_open(recs, date(2026, 11, 25))
+    assert [r["id"] for r in kept] == ["b", "c", "d", "e"] and closed == 1
+
+
+def test_the_export_drops_closed_snapshot_calls_but_not_florida_or_hand_kept_programs():
+    import inspect
+    src = inspect.getsource(export_web.main)
+    loop = src[src.index("for state, spec in STATE_PROGRAMS.items()"):]
+    # still_open runs on the adapter's records before the hand-kept ones join, and never on Florida's
+    assert loop.index("still_open(payload[\"programs\"]") < loop.index("local_programs.load(state=state)")
+    assert "still_open" not in inspect.getsource(export_web.florida_records)
+    assert "still_open" not in src[:src.index("for state, spec in STATE_PROGRAMS.items()")]

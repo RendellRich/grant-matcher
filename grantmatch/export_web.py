@@ -221,6 +221,15 @@ def write(out: Path, name: str, payload: dict, ids: list[str], vecs: np.ndarray)
     print(f"{name}: {len(payload.get('records', []))} records, {len(ids)} vectors")
 
 
+def still_open(records: list[dict], today: date) -> tuple[list[dict], int]:
+    """An adapter's open calls without those whose closing date is before today, and how many were left out.
+    Only for the open-call states: Florida's catalog lists programs, not calls, and the hand-kept lists
+    (grantmatch/local.py) keep a past window on purpose, scored as "Between rounds" until the next one opens."""
+    day = today.isoformat()
+    kept = [r for r in records if not (isinstance(r.get("closes"), str) and r["closes"] and r["closes"] < day)]
+    return kept, len(records) - len(kept)
+
+
 def florida_records(payload: dict) -> tuple[list[dict], list[dict]]:
     """Florida's records for the site: the catalog's programs with review decisions applied, then the county and
     city programs entered by hand (grantmatch/local.py). Returns (all records, the hand-kept ones), so the caller
@@ -278,7 +287,12 @@ def main() -> None:
         if not raw:
             continue
         payload = json.loads(gzip.decompress(raw))
-        records = [tidy_program(r) for r in payload["programs"]]
+        # A call whose deadline passed since the adapter ran is history. This matters most for a state that ships
+        # from a snapshot in data/ (no refresh job yet), where calls would otherwise linger after they close.
+        records, closed = still_open(payload["programs"], date.today())
+        if closed:
+            print(f"programs-{state}: left out {closed} calls whose deadline has passed since {payload.get('fetched_at', '')[:10]}")
+        records = [tidy_program(r) for r in records]
         apply_reviews(records, spec["file"], load_decisions(None))
         for r in records:
             r["_catalog"] = f"{spec['catalog']} {r.get('number', '')}".strip()

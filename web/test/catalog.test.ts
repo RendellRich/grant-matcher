@@ -2,7 +2,7 @@
 // publishes each state's status in meta.json), and a state with a catalog sees its tab and no note.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { noCatalogNote, programsFile, type Meta } from "../src/data";
+import { noCatalogNote, programsFile, shownSources, type Meta } from "../src/data";
 import { STATE_NAMES } from "../src/profile";
 
 const meta: Meta = {
@@ -32,13 +32,16 @@ describe("a state with no catalog", () => {
   });
 
   it("doesn't call the District of Columbia a state", () => {
-    expect(note("DC")).toBe("No District of Columbia catalog yet. District of Columbia posts its grants only as web pages, so they aren't read in yet. Federal grants and foundations cover District of Columbia.");
+    expect(note("DC")).toBe("No District of Columbia catalog yet. The District of Columbia posts its grants only as web pages, so they aren't read in yet. Federal grants and foundations cover the District of Columbia.");
+    const none: Meta = { ...meta, catalogs: { DC: { status: "none", source: "x" } } };
+    expect(note("DC", none)).toBe("No District of Columbia catalog yet. No single public list of grants from the District of Columbia was found. Federal grants and foundations cover the District of Columbia.");
   });
 
   it("still reads when the data predates the registry or a built state's file is missing", () => {
     const old: Meta = { states: ["KS"], programs: { CA: { file: "programs-CA", source: "California Grants Portal" } } };
     expect(note("KS", old)).toBe("No Kansas state catalog yet. Federal grants and foundations cover Kansas.");
-    expect(note("CA")).toBe("No California state catalog yet. California state grants aren't available right now. Federal grants cover California.");
+    // a built state whose file didn't come through doesn't claim there is no catalog
+    expect(note("CA")).toBe("California state grants aren't available right now. Federal grants cover California.");
     expect(note("PR")).toBe("No Puerto Rico catalog yet. Federal grants cover Puerto Rico.");
   });
 });
@@ -57,6 +60,13 @@ describe("a state with a catalog", () => {
   });
 });
 
+describe("the result tabs", () => {
+  it("drop the state tab for a state without programs, even while a preview from the last state is showing", () => {
+    expect(shownSources(["fed", "fdn", "fl"], false)).toEqual(["fed", "fdn"]);
+    expect(shownSources(["fl", "fdn", "fed"], true)).toEqual(["fl", "fdn", "fed"]);
+  });
+});
+
 describe("the page", () => {
   const app = readFileSync(new URL("../src/app.tsx", import.meta.url), "utf8");
 
@@ -66,6 +76,7 @@ describe("the page", () => {
     expect(app.indexOf('role="tablist"', at)).toBeGreaterThan(at);
     // the state tab exists only when the state has a programs file
     expect(app).toContain('if (hasProgs && applied.funder_types.includes("florida")) lists.fl = flEntries;');
+    expect(app).toContain("const keys = shownSources(pv ? (Object.keys(pv.counts) as SourceKey[]) : (Object.keys(lists) as SourceKey[]), hasProgs);");
   });
 
   it("names the state's source in the lede when there is one", () => {

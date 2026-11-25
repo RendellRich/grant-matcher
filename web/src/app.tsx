@@ -5,7 +5,7 @@ import { ClientBar } from "./clients";
 import { parseWorkspace, readOwnProfile, writeOwnProfile } from "./sync";
 import { billing, clearUpgrade, isPaid, myWorkspace, PLANS_URL, takeSignInReturn, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
-  loadCounties, loadExamples, loadLinked, loadMeta, noCatalogNote, programsFile,
+  loadCounties, loadExamples, loadLinked, loadMeta, noCatalogNote, programsFile, shownSources,
   type Example, type Meta, type Source,
 } from "./data";
 import { embedMission } from "./embed";
@@ -313,7 +313,7 @@ export function App() {
   if (applied.funder_types.some((t) => !["federal", "florida"].includes(t))) lists.fdn = fdnEntries;
   if (hasProgs && applied.funder_types.includes("florida")) lists.fl = flEntries;
   // A preview brings its own counts; with the data here they come from the lists.
-  const keys = pv ? (Object.keys(pv.counts) as SourceKey[]) : (Object.keys(lists) as SourceKey[]);
+  const keys = shownSources(pv ? (Object.keys(pv.counts) as SourceKey[]) : (Object.keys(lists) as SourceKey[]), hasProgs);
   const count = (k: SourceKey, tier: string) => (lists[k] ?? []).filter((e) => e.tier === tier).length;
   const strong = Object.fromEntries(keys.map((k) => [k, pv ? pv.counts[k]!.strong : count(k, "Strong")])) as Record<SourceKey, number>;
   const possible = Object.fromEntries(keys.map((k) => [k, pv ? pv.counts[k]!.possible : count(k, "Possible")])) as Record<SourceKey, number>;

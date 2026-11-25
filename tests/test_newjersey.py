@@ -58,3 +58,38 @@ def test_a_saved_copy_with_a_byte_order_mark_is_read_without_the_network(tmp_pat
     payload = json.loads(gzip.decompress(out.read_bytes()))
     assert payload["state"] == "NJ" and payload["programs"][0]["id"] == "nj-retrofit-nj-program"
     assert payload["programs"][0]["subjects"] == "Economic"   # the byte order mark isn't part of the first category
+
+
+def test_titles_that_differ_only_at_the_end_stay_two_records():
+    long = "Growing Apprenticeship in Nontraditional Sectors (GAINS) Round"
+    rows = [{"category": "Labor", "title": f"{long} {n}", "url": f"https://www.nj.gov/labor/gains-r{n}.pdf",
+             "agency": "NJ Department of Labor & Workforce Development", "deadline": "12/4/2026"} for n in (1, 2)]
+    skips = []
+    recs = nj.build_records(rows, today="2026-11-25", skips=skips)
+    assert [r["id"] for r in recs] == ["nj-growing-apprenticeship-in-nontraditional-sectors-gains-round-1",
+                                       "nj-growing-apprenticeship-in-nontraditional-sectors-gains-round-2"]
+    assert skips == []
+
+
+def test_the_same_title_twice_keeps_both_keyed_by_its_link_and_a_true_repeat_is_skipped():
+    row = {"category": "Health", "title": "Healthcare Preparedness Program", "url": "https://example.nj.gov/a.pdf",
+           "agency": "NJ Department of Health", "deadline": "12/4/2026"}
+    skips = []
+    recs = nj.build_records([row, {**row, "url": "https://example.nj.gov/b.pdf"}, row], today="2026-11-25", skips=skips)
+    ids = [r["id"] for r in recs]
+    assert len(ids) == 2 and ids[0] == "nj-healthcare-preparedness-program"
+    assert ids[1].startswith("nj-healthcare-preparedness-program-") and len(ids[1]) == len(ids[0]) + 7
+    assert [s["reason"] for s in skips] == ["duplicate"]
+    again = nj.build_records([row, {**row, "url": "https://example.nj.gov/b.pdf"}], today="2026-11-25")
+    assert [r["id"] for r in again] == ids   # the same keys on the next refresh
+
+
+def test_titles_that_say_municipal_or_county_grants_are_not_open_to_nonprofits():
+    for title in ("NJ Water Bank Sewer Overflow and Stormwater Reuse Municipal Grants",
+                  "County Environmental Health Act Grants (CEHA)"):
+        rec = nj.normalize({"category": "Environment", "title": title, "url": "https://dep.nj.gov/x/",
+                            "agency": "NJ Department of Environmental Protection", "deadline": "Rolling"})
+        assert rec["nonprofit_eligible"] is False and rec["applicant_types"] == nj.GOVERNMENT_SAYS, title
+    rec = nj.normalize({"category": "Environment", "title": "Urban & Community Forestry Program", "url": "",
+                        "agency": "NJ DEP", "deadline": "Rolling"})
+    assert rec["nonprofit_eligible"] is True and rec["applicant_types"] == nj.WHO

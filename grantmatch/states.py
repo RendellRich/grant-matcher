@@ -14,7 +14,8 @@ reads; export_web also publishes each state's status in meta.json, so the site c
 catalog. Sources and checks: docs/state-coverage.md (researched November 2026).
 
 To add a state: write an adapter that produces the same record fields as ohio.py, set its entry here to
-"built" with file, source, catalog and module, and propose a refresh job. The site needs no change.
+"built" with file, source, catalog, module, report (its heading in the skipped grants review) and refresh (None
+until a refresh job is approved), and propose a refresh job. The site and the skipped report need no change.
 """
 from __future__ import annotations
 
@@ -28,20 +29,21 @@ STATES: dict[str, dict] = {
     "AZ": {"status": "none", "source": "grants.az.gov points to Euna Grants (eCivis), which needs an account"},
     "AR": {"status": "none", "source": "Agency pages only"},
     "CA": {"status": "built", "source": "California Grants Portal", "file": "california", "catalog": "Grants Portal",
-           "module": "california"},
+           "module": "california", "report": "California Grants Portal", "refresh": "daily"},
     "CO": {"status": "none", "source": "Agency pages only (blocked to scripts)"},
     "CT": {"status": "none", "source": "Past awards on data.ct.gov; calls on the CTsource bid board"},
     "DE": {"status": "none", "source": "Past awards on data.delaware.gov only"},
     "DC": {"status": "html", "source": "District Grants Clearinghouse (Serve DC)"},
     "FL": {"status": "built", "source": "Florida Catalog of State Financial Assistance", "file": "florida",
-           "catalog": "CSFA", "module": "florida"},
+           "catalog": "CSFA", "module": "florida", "report": "Florida state catalog", "refresh": "weekly"},
     "GA": {"status": "html", "source": "Georgia Grants Portal (OPB only, empty when checked)"},
     "HI": {"status": "next", "source": "HANDS, Hawaii Awards and Notices Data System (JSON)"},
     "ID": {"status": "none", "source": "Agency pages only (blocked to scripts)"},
     "IL": {"status": "built", "source": "Illinois Catalog of State Financial Assistance", "file": "illinois",
-           "catalog": "Illinois NOFO", "module": "illinois"},
+           "catalog": "Illinois NOFO", "module": "illinois", "report": "Illinois state notices (GATA)", "refresh": "daily"},
     "IN": {"status": "html", "source": "State Agency Grant Opportunities (Euna Grants list)"},
-    "IA": {"status": "built", "source": "IowaGrants.gov", "file": "iowa", "catalog": "IowaGrants", "module": "iowa"},
+    "IA": {"status": "built", "source": "IowaGrants.gov", "file": "iowa", "catalog": "IowaGrants", "module": "iowa",
+           "report": "IowaGrants.gov", "refresh": "daily"},
     "KS": {"status": "none", "source": "grants.ks.gov needs a login (blocked to scripts)"},
     "KY": {"status": "none", "source": "Agency pages only"},
     "LA": {"status": "none", "source": "Agency pages only"},
@@ -57,12 +59,13 @@ STATES: dict[str, dict] = {
     "NV": {"status": "html", "source": "Office of Federal Assistance grant opportunities (Airtable view)"},
     "NH": {"status": "none", "source": "Agency pages only"},
     "NJ": {"status": "built", "source": "New Jersey Treasury list of state grant opportunities", "file": "newjersey",
-           "catalog": "New Jersey", "module": "newjersey"},
+           "catalog": "New Jersey", "module": "newjersey", "report": "New Jersey Treasury list", "refresh": None},
     "NM": {"status": "none", "source": "Agency pages only"},
     "NY": {"status": "html", "source": "Statewide Financial System, Search for Grant Opportunities"},
     "NC": {"status": "html", "source": "NC.gov Grant Opportunities table"},
     "ND": {"status": "html", "source": "North Dakota WebGrants storefront"},
-    "OH": {"status": "built", "source": "Ohio Grants Partnership", "file": "ohio", "catalog": "Ohio", "module": "ohio"},
+    "OH": {"status": "built", "source": "Ohio Grants Partnership", "file": "ohio", "catalog": "Ohio", "module": "ohio",
+           "report": "Ohio Grants Partnership", "refresh": "daily"},
     "OK": {"status": "none", "source": "OK Grants needs an account"},
     "OR": {"status": "none", "source": "Two housing datasets on data.oregon.gov, both empty"},
     "PA": {"status": "decide", "source": "pa.gov Discover State Grants (the site's own search proxy)"},
@@ -75,9 +78,9 @@ STATES: dict[str, dict] = {
     "VT": {"status": "none", "source": "Past awards on data.vermont.gov only"},
     "VA": {"status": "html", "source": "Governor's Office Grants directory"},
     "WA": {"status": "built", "source": "FundHubWA (Washington Department of Commerce)", "file": "washington",
-           "catalog": "FundHubWA", "module": "washington"},
+           "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily"},
     "WV": {"status": "built", "source": "West Virginia grants.wv.gov list of available grants", "file": "westvirginia",
-           "catalog": "grants.wv.gov", "module": "westvirginia"},
+           "catalog": "grants.wv.gov", "module": "westvirginia", "report": "grants.wv.gov (West Virginia)", "refresh": None},
     "WI": {"status": "none", "source": "Agency pages only"},
     "WY": {"status": "html", "source": "Wyoming Grants Connect Hub (Power BI report)"},
 }
@@ -87,6 +90,14 @@ STATES: dict[str, dict] = {
 STATE_PROGRAMS: dict[str, dict] = {
     code: {"file": s["file"], "source": s["source"], "catalog": s["catalog"]}
     for code, s in STATES.items() if s["status"] == "built" and code != "FL"
+}
+
+# For the weekly skipped grants review (grantmatch/skipped.py): each built state's source key (its file name),
+# its heading in the report, and how often its refresh job runs. None means no refresh job yet: the state ships
+# from a snapshot in data/, so its skipped list isn't expected in the report.
+REPORT: dict[str, dict] = {
+    code: {"source": s["file"], "label": s["report"], "refresh": s["refresh"], "name": STATE_NAMES[code]}
+    for code, s in STATES.items() if s["status"] == "built"
 }
 
 
@@ -107,7 +118,9 @@ def check() -> list[str]:
         if not s.get("source"):
             problems.append(f"{code}: no source")
         built = s.get("status") == "built"
-        for k in ("file", "catalog", "module"):
+        for k in ("file", "catalog", "module", "report"):
             if built != bool(s.get(k)):
                 problems.append(f"{code}: {k} is {'needed' if built else 'only for built states'}")
+        if built != ("refresh" in s) or s.get("refresh") not in (None, "daily", "weekly"):
+            problems.append(f"{code}: refresh is daily, weekly or None, for built states only")
     return problems

@@ -94,3 +94,14 @@ def test_a_saved_copy_is_read_without_the_network(tmp_path, monkeypatch):
     assert wv.build(out, tmp_path / "skipped.json.gz", saved) == 1
     payload = json.loads(gzip.decompress(out.read_bytes()))
     assert payload["state"] == "WV" and payload["programs"][0]["id"] == "wv-72"
+
+
+def test_a_bare_not_or_no_near_nonprofits_is_not_an_exclusion():
+    for text in ("Not-for-profit and nonprofit organizations",
+                 "No match is required for non-profit organizations",
+                 "Local governments and not-for-profit or non-profit agencies",
+                 "For-profit entities are not eligible; non-profits may apply"):
+        assert wv.who_can_apply(text)[0] is True, text
+    for text in ("Nonprofits are not eligible.", "Non-profit organizations may not apply.",
+                 "Open to all entities except nonprofits."):
+        assert wv.who_can_apply(text)[0] is False, text

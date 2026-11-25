@@ -40,7 +40,15 @@ session.headers.update({"User-Agent": "grant-matcher (github.com/RendellRich/gra
 
 NONPROFIT = re.compile(r"non-?\s?profit|not-for-profit|501\s*\(?\s*c\s*\)?\s*\(?\s*3|community[- ]based organi[sz]ation|"
                        r"community action agenc|faith-based|any (?:legal )?entit|any (?:eligible )?organi[sz]ation", re.I)
-NO_NONPROFIT = re.compile(r"\b(?:no|not|nor|ineligible|cannot)\b[^.]{0,50}(?:non-?\s?profit|not-for-profit)", re.I)
+# Only a real exclusion leaves nonprofits out: "nonprofits are not eligible", "non-profits may not apply", "not
+# open to nonprofit organizations". A bare "not" or "no" nearby isn't one ("No match is required for non-profit
+# organizations"), and the "not" in "not-for-profit" never counts.
+_NP = r"(?:non-?\s?profits?|not-for-profits?)"
+NO_NONPROFIT = re.compile(
+    rf"\b{_NP}(?:\s+(?:organi[sz]ations?|agencies|entities|groups))?\s+(?:are|is)\s+(?:not\s+eligible|ineligible|excluded)"
+    rf"|\b{_NP}[^.;]{{0,30}}\b(?:may|can|shall)\s*not\b(?!-)"
+    rf"|\b{_NP}[^.;]{{0,30}}\bcannot\b"
+    rf"|\b(?:not open to|excluding|excludes|except(?: for)?)\s+(?:[\w-]+\s+){{0,3}}?{_NP}", re.I)
 # A sentence that names nonprofits only as reviewers ("reviewed by ... state and federal agencies as well as non
 # profits") doesn't make them applicants.
 REVIEWERS = re.compile(r"\breview(?:ed|ers?)?\b|\bmade up of\b|\bcommittee\b|\bpanel\b", re.I)

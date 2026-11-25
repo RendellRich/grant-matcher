@@ -7,7 +7,8 @@ and the deadline (a date, or "Rolling"). The file has no header row, no descript
 apply, and the page says the list is not complete; agencies also post calls on their own pages.
 
 With no eligibility field, every call is kept with a note on its card to read the notice, as Iowa's are when
-the description says neither way (grantmatch/iowa.py). A call whose deadline has passed is dropped.
+the description says neither way (grantmatch/iowa.py), except one whose title plainly says it is for
+municipalities or counties, which is read as not open to nonprofits. A call whose deadline has passed is dropped.
 
 Records use the same fields as Ohio's (grantmatch/ohio.py), so the same scorer reads them.
 
@@ -19,6 +20,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import hashlib
 import io
 import json
 import re
@@ -38,6 +40,10 @@ session.headers.update({"User-Agent": "grant-matcher (github.com/RendellRich/gra
 
 INVITATION = re.compile(r"\bby invitation only\b|\binvitation[- ]only\b", re.I)
 LOAN = re.compile(r"\bloans?\b|\brevolving (?:loan )?funds?\b", re.I)
+# A title that plainly says the money is for municipalities or counties ("... Municipal Grants", "County
+# Environmental Health Act Grants") is read as not open to nonprofits; the skipped report lists them for review.
+GOVERNMENT_ONLY = re.compile(r"\b(?:municipal|municipalities|county|counties)\b", re.I)
+GOVERNMENT_SAYS = "The title says it is for municipalities or counties; read the notice"
 
 
 def _clean(s: str | None) -> str:
@@ -62,13 +68,19 @@ def rows(text: str) -> list[dict]:
     return out
 
 
+def slug(title: str) -> str:
+    """The whole title as a key: titles that differ only at the end ("... Round 1", "... Round 2") stay apart."""
+    return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+
+
 def normalize(row: dict) -> dict:
     title = row["title"]
     closes = _day(row["deadline"])
     rolling = not closes and row["deadline"].lower().startswith("rolling")
-    key = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:48]
+    key = slug(title)
     url = row["url"] if row["url"].startswith("http") else SITE
     loan = bool(LOAN.search(title))
+    government = bool(GOVERNMENT_ONLY.search(title))
     return {
         "id": f"nj-{key}",
         "csfa": "",
@@ -78,8 +90,8 @@ def normalize(row: dict) -> dict:
         "agency": row["agency"],
         "objectives": "",
         "assistance": "Loan" if loan else "Grant",
-        "applicant_types": WHO,
-        "nonprofit_eligible": True,
+        "applicant_types": GOVERNMENT_SAYS if government else WHO,
+        "nonprofit_eligible": not government,
         "earmark": False,
         "restrictions": "",
         "application": "Apply as the notice says. The state's list gives no description or eligibility, so read the notice first.",
@@ -125,6 +137,16 @@ def build_records(items: list[dict], today: str | None = None, skips: list[dict]
             if skips is not None:
                 skips.append({**base, "reason": "invitation_only", "detail": "The listing says: by invitation only"})
             continue
+        if rec["id"] in out:
+            # The same title twice (a second round, or a second agency's call): keep both, the later one keyed
+            # by a short hash of its link so the key doesn't change from one refresh to the next. The same title
+            # with the same link is a repeated row.
+            hashed = f"{rec['id']}-{hashlib.sha1(rec['url'].encode('utf-8')).hexdigest()[:6]}"
+            if out[rec["id"]]["url"] == rec["url"] or hashed in out:
+                if skips is not None:
+                    skips.append({**base, "reason": "duplicate", "detail": "The same title and link are listed twice"})
+                continue
+            rec["id"] = hashed
         out[rec["id"]] = rec
     return sorted(out.values(), key=lambda r: r["id"])
 

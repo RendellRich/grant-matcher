@@ -111,13 +111,22 @@ export function noCatalogNote(meta: Meta | null, state: string, name: string): s
   if (!meta || (!meta.catalogs && !meta.programs) || programsFile(meta, state)) return null; // no list loaded: say nothing
   const status = meta.catalogs?.[state]?.status;
   const kind = state === "DC" || state === "PR" ? "" : "state ";
-  const why = status === "built" ? ` ${name} ${kind}grants aren't available right now.`
-    : status === "html" ? ` ${name} posts its grants only as web pages, so they aren't read in yet.`
-    : status === "next" || status === "decide" ? ` A source for ${name} ${kind}grants is being looked at.`
-    : status === "none" ? ` No single public list of ${name} ${kind}grants was found.`
+  // Mid-sentence the District takes "the"; at the start of a sentence, "The".
+  const the = state === "DC" ? `the ${name}` : name;
+  const The = state === "DC" ? `The ${name}` : name;
+  const grants = kind ? `${the} state grants` : `grants from ${the}`;
+  const cover = `${meta.states.includes(state) ? "Federal grants and foundations cover" : "Federal grants cover"} ${the}.`;
+  // A state that has a catalog whose file didn't come through: say only that, not that there's no catalog.
+  if (status === "built") return `${The} ${kind}grants aren't available right now. ${cover}`;
+  const why = status === "html" ? ` ${The} posts its grants only as web pages, so they aren't read in yet.`
+    : status === "next" || status === "decide" ? ` A source for ${grants} is being looked at.`
+    : status === "none" ? ` No single public list of ${grants} was found.`
     : "";
-  const cover = meta.states.includes(state) ? "Federal grants and foundations cover" : "Federal grants cover";
-  return `No ${name} ${kind}catalog yet.${why} ${cover} ${name}.`;
+  return `No ${name} ${kind}catalog yet.${why} ${cover}`;
 }
+/** The result tabs to show: the state tab only when the profile's state has programs, so a preview's counts from
+ *  the last state (a "Kansas programs, 0" tab) don't linger while a new search for a state without one runs. */
+export const shownSources = <K extends string>(keys: K[], hasPrograms: boolean): K[] =>
+  keys.filter((k) => k !== "fl" || hasPrograms);
 /** A state's counties and the cities, towns and Census places in each (grantmatch/counties.py). */
 export const loadCounties = (state: string) => json<Record<string, string[]>>(`counties-${state}.json`);

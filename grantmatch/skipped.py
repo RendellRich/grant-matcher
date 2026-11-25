@@ -28,18 +28,16 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .states import REPORT
+
 LOCAL = Path(__file__).resolve().parent.parent / "data"
 
+# The states come from the registry (grantmatch/states.py), so a new state's adapter joins the report with no edit here.
+STATE_SOURCES = [r["source"] for code, r in REPORT.items() if code != "FL"]
 SOURCES = {
     "federal": "Federal (Grants.gov)",
-    "california": "California Grants Portal",
-    "illinois": "Illinois state notices (GATA)",
-    "iowa": "IowaGrants.gov",
-    "ohio": "Ohio Grants Partnership",
-    "washington": "FundHubWA (Washington)",
-    "westvirginia": "grants.wv.gov (West Virginia)",
-    "newjersey": "New Jersey Treasury list",
-    "florida": "Florida state catalog",
+    **{r["source"]: r["label"] for code, r in REPORT.items() if code != "FL"},
+    "florida": REPORT["FL"]["label"],
     "foundation": "Private foundation (IRS 990-PF)",
     "community": "Community foundation or United Way (IRS 990)",
 }
@@ -66,6 +64,7 @@ REASONS = {
         "Has the agency extended the deadline without updating the date?"),
     "no_title": ("Left out", "No title", "The portal row has no title to show.", "Is it a real call with a missing field?"),
     "no_portal_id": ("Left out", "No portal ID", "The row can't be linked to the portal.", "Is it a real call with a missing field?"),
+    "duplicate": ("Left out", "Listed twice", "The state's list has the same title and link twice.", "Is one of them a different round?"),
     "no_deadline": (
         "Left out", "No due date and not rolling",
         "The state's list is never pruned, and this row has no due date and doesn't say it takes applications any time.",
@@ -239,7 +238,7 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
         new.sort(key=lambda r: (r["source"] in ("foundation", "community"), -(r.get("assets") or 0)))
         lines += table(new, 40, with_assets=any(r.get("assets") for r in new))
     rank = {code: i for i, code in enumerate(REASONS)}
-    for src in ("federal", "california", "illinois", "iowa", "ohio", "washington", "westvirginia", "newjersey", "florida"):
+    for src in ("federal", *STATE_SOURCES, "florida"):
         # Earmarks are only counted above: by law nobody else can apply, and the CSV lists them all.
         items = [r for r in rows if r["source"] == src and r["reason"] != "earmark"]
         if items:
@@ -259,17 +258,30 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
     return out, text
 
 
+def expected_parts() -> tuple[dict[str, str], list[str]]:
+    """The skipped-*.json(l).gz files the report expects, each with what to say when it is missing, and the ones it
+    reads only when present (states whose refresh job isn't approved yet)."""
+    expected = {"skipped-federal.json.gz": "federal (after the next twice-daily refresh)"}
+    optional = []
+    for code, r in REPORT.items():
+        if code == "FL":
+            continue  # Florida's left-out programs are read from its data file (--florida)
+        name = f"skipped-{r['source']}.json.gz"
+        if r["refresh"]:
+            expected[name] = f"{r['name']} (after the next {r['refresh']} refresh)"
+        else:
+            optional.append(name)
+    expected["skipped-foundations.jsonl.gz"] = "private foundations (after the next monthly foundation refresh)"
+    expected["skipped-community.jsonl.gz"] = "community foundations (after the next monthly foundation refresh)"
+    return expected, optional
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--parts", type=Path, required=True, help="folder holding the skipped-*.json(l).gz files")
     ap.add_argument("--florida", type=Path)
-    ap.add_argument("--california", type=Path)
-    ap.add_argument("--illinois", type=Path)
-    ap.add_argument("--iowa", type=Path)
-    ap.add_argument("--ohio", type=Path)
-    ap.add_argument("--washington", type=Path)
-    ap.add_argument("--westvirginia", type=Path)
-    ap.add_argument("--newjersey", type=Path)
+    for src in STATE_SOURCES:  # --california, --illinois, ...: each state's programs file
+        ap.add_argument(f"--{src}", type=Path)
     ap.add_argument("--previous", type=Path, help="last report's CSV, for first-seen dates and what is new")
     ap.add_argument("--decisions", type=Path, help="review decisions (default data/skip-review.csv)")
     ap.add_argument("--csv", type=Path, required=True)
@@ -278,16 +290,9 @@ def main() -> None:
     args = ap.parse_args()
 
     rows, missing = [], []
-    expected = {"skipped-federal.json.gz": "federal (after the next twice-daily refresh)",
-                "skipped-california.json.gz": "California (after the next daily refresh)",
-                "skipped-illinois.json.gz": "Illinois (after the next daily refresh)",
-                "skipped-iowa.json.gz": "Iowa (after the next daily refresh)",
-                "skipped-ohio.json.gz": "Ohio (after the next daily refresh)",
-                "skipped-washington.json.gz": "Washington (after the next daily refresh)",
-                "skipped-foundations.jsonl.gz": "private foundations (after the next monthly foundation refresh)",
-                "skipped-community.jsonl.gz": "community foundations (after the next monthly foundation refresh)"}
-    # West Virginia and New Jersey ship from snapshots until a refresh job publishes their lists; read them if present.
-    for name in ("skipped-westvirginia.json.gz", "skipped-newjersey.json.gz"):
+    expected, optional = expected_parts()
+    # A state with no refresh job yet ships from a snapshot in data/; its skipped list is read when it is there.
+    for name in optional:
         if (args.parts / name).exists():
             rows += _read_rows(args.parts / name)[0]
     for name, label in expected.items():
@@ -304,9 +309,8 @@ def main() -> None:
         rows += hidden_programs(args.florida, "florida", decisions)
     else:
         missing.append("Florida catalog")
-    for path, source in ((args.california, "california"), (args.illinois, "illinois"),
-                         (args.iowa, "iowa"), (args.ohio, "ohio"), (args.washington, "washington"),
-                         (args.westvirginia, "westvirginia"), (args.newjersey, "newjersey")):
+    for source in STATE_SOURCES:
+        path = getattr(args, source)
         if path and path.exists():
             rows += hidden_programs(path, source, decisions)
     today = datetime.now(timezone.utc).date().isoformat()
