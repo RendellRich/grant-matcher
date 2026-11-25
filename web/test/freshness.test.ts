@@ -1,7 +1,7 @@
 // "Last checked" and the dead-link line on cards, from the stamps grantmatch/export_web.py writes. The stamps are
 // display only: scores, reasons and cautions are the same with and without them.
 import { describe, expect, it } from "vitest";
-import { companyRows, DEAD_LINK, floridaEntry, lastChecked } from "../src/entries";
+import { checkedLabel, companyRows, DEAD_LINK, floridaEntry, lastChecked } from "../src/entries";
 import { scoreFlorida, type FloridaRec, type Profile } from "../src/score";
 import { grantSummary } from "../src/summary";
 import { EntryView } from "../src/ui";
@@ -61,6 +61,14 @@ describe("last checked", () => {
     const fine = card(entry({ _checked: "2026-11-25" }));
     expect(fine).not.toContain(DEAD_LINK);
     expect(card(entry())).not.toContain("Last checked");
+  });
+
+  it("says a foundation's date is of its IRS data, not its website", () => {
+    const fdn = { ...entry({ _checked: "2026-11-13" }), source: "fdn" as const };
+    expect(checkedLabel(fdn)).toBe("IRS data last checked");
+    expect(words(EntryView({ e: fdn, marked: false, onMark: () => {} }))).toContain("IRS data last checked Nov 13, 2026");
+    expect(grantSummary(fdn)).toContain("IRS data last checked: Nov 13, 2026");
+    expect(checkedLabel({ source: "fed" })).toBe("Last checked");
   });
 
   it("is in the one-page summary", () => {

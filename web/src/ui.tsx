@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { DEAD_LINK, type Entry } from "./entries";
+import { checkedLabel, DEAD_LINK, type Entry } from "./entries";
 import { readySummary, type ReadyCheck } from "./ready";
 import { download } from "./exports";
 import { grantSummary, summaryFileName } from "./summary";
@@ -82,7 +82,7 @@ export function EntryView(p: {
       <p class="facts">
         <span class="catalog">{e.catalog}</span>
         {e.facts.map((f) => <span class="fact" key={f}><span class="sep" aria-hidden="true"> · </span><span class="sr-only">, </span>{f}</span>)}
-        {e.checked ? <span class="fact"><span class="sep" aria-hidden="true"> · </span><span class="sr-only">, </span>Last checked {e.checked}</span> : null}
+        {e.checked ? <span class="fact"><span class="sep" aria-hidden="true"> · </span><span class="sr-only">, </span>{checkedLabel(e)} {e.checked}</span> : null}
       </p>
       <ul class="why">
         {e.fits.map((x) => <li class="good" key={x}><IconCheck /><span><span class="sr-only">Fits: </span>{x}</span></li>)}

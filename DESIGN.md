@@ -298,7 +298,7 @@ Plain and firm.
 Every entry carries the same rule: a 7.5rem by 6px pill track on the hairline color, filled in accent to the score's percent (muted for long shots), with thin ink marks at 35 and 60 that stand slightly proud of the track. The score number follows in 700 tabular figures. The scale never rescales per list. Under each tally a printed key repeats the empty rule with its marks labelled 0, 35, 60 and 100 and the sentence "Strong is 60 or more out of 100; possible is 35 to 59."
 
 ### Entry facts
-The deadline sits right-aligned on the score line in ink, 600, tabular figures. Award sizes ("Typical $N") take the same place in muted 400. The catalog number leads the run-in facts in ink 600; the rest of the facts are muted, separated by a middle dot. The last fact is "Last checked" and the date the source was read. When the weekly check found the link dead, "Link didn't open when last checked" is the first caution line, with the amber triangle.
+The deadline sits right-aligned on the score line in ink, 600, tabular figures. Award sizes ("Typical $N") take the same place in muted 400. The catalog number leads the run-in facts in ink 600; the rest of the facts are muted, separated by a middle dot. The last fact is "Last checked" and the date the source was read; on a foundation it reads "IRS data last checked", so it isn't taken for a look at its website. When the weekly check found the link dead, "Link didn't open when last checked" is the first caution line, with the amber triangle.
 
 ### Reasons list
 Each reason is one line with an 18px stroke icon: an accent check for fits, an amber triangle for cautions, a muted info or clock icon for other notes. Screen readers hear "Fits", "Caution", "Also" or "Status" before each.

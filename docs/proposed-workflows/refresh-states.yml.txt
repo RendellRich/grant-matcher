@@ -6,7 +6,7 @@ name: Refresh state lists
 # Every state adapter meant to refresh weekly (West Virginia, New Jersey, New York, the District of Columbia and
 # Minnesota), in one job, through grantmatch/refresh_states.py. The list comes from grantmatch/states.py. A state
 # that fails keeps the file already on the release; the others are still published and the run shows as failed.
-# Billed minutes: estimated 2 to 3 a run, 9 to 15 a month (docs/freshness.md).
+# Billed minutes: estimated 2 to 3 a run, 8 to 15 a month (docs/freshness.md).
 
 on:
   schedule:
