@@ -1,0 +1,45 @@
+name: Refresh state lists
+
+# West Virginia's grants.wv.gov list (grantmatch/westvirginia.py) and New Jersey's Treasury list of state grant
+# opportunities (grantmatch/newjersey.py), weekly, in one job. Later states join the same two steps. The site's
+# export reads these release assets at every deploy (grantmatch/export_web.py), and falls back to the snapshots in
+# data/ until this job has published them. Billed minutes: about 1 to 2 a run, 4 to 9 a month (docs/state-coverage.md).
+
+on:
+  schedule:
+    - cron: "17 13 * * 1"   # weekly, Mondays at 13:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Read the West Virginia and New Jersey lists
+        run: |
+          python -m grantmatch.westvirginia --out build/westvirginia.json.gz --skipped build/skipped-westvirginia.json.gz
+          python -m grantmatch.newjersey --out build/newjersey.json.gz --skipped build/skipped-newjersey.json.gz
+      - name: Build semantic embeddings
+        run: |
+          python -m grantmatch.embed programs build/westvirginia.json.gz build/westvirginia.npz
+          python -m grantmatch.embed programs build/newjersey.json.gz build/newjersey.npz
+      - name: Publish as data-latest release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
+          gh release upload data-latest build/westvirginia.json.gz build/westvirginia.npz build/skipped-westvirginia.json.gz build/newjersey.json.gz build/newjersey.npz build/skipped-newjersey.json.gz --clobber
+      - name: Keep this schedule from expiring
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/refresh-states.yml/enable"

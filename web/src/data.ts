@@ -30,6 +30,8 @@ export interface Meta {
   coverage?: boolean;
   /** States besides Florida with their own programs file: its name, its source and when it was fetched. */
   programs?: Record<string, { file: string; source: string; updated?: string }>;
+  /** Every state's catalog status from grantmatch/states.py: built, next, decide, html, none or unchecked. */
+  catalogs?: Record<string, { status: string; source: string }>;
 }
 
 /** grantmatch/coverage.py: registered foundations against what the state files hold. */
@@ -103,5 +105,32 @@ export const loadCoverage = () => json<Coverage>("coverage.json");
 export const loadExamples = () => json<Record<string, Example>>("examples.json");
 /** The file holding a state's programs, or null when the state has none. Florida's keeps its own name. */
 export const programsFile = (meta: Meta | null, state: string) => (state === "FL" ? "florida" : meta?.programs?.[state]?.file ?? null);
+/** What a profile in a state with no state catalog sees where the state tab would be, or null when the state has
+ *  one (or the data's list of states hasn't loaded). Plain words: what is missing, why, and what still covers it. */
+export function noCatalogNote(meta: Meta | null, state: string, name: string): string | null {
+  if (!meta || (!meta.catalogs && !meta.programs) || programsFile(meta, state)) return null; // no list loaded: say nothing
+  const status = meta.catalogs?.[state]?.status;
+  const kind = state === "DC" || state === "PR" ? "" : "state ";
+  // Mid-sentence the District takes "the"; at the start of a sentence, "The".
+  const the = state === "DC" ? `the ${name}` : name;
+  const The = state === "DC" ? `The ${name}` : name;
+  const grants = kind ? `${the} state grants` : `grants from ${the}`;
+  const cover = `${meta.states.includes(state) ? "Federal grants and foundations cover" : "Federal grants cover"} ${the}.`;
+  // A state that has a catalog whose file didn't come through: say only that, not that there's no catalog.
+  if (status === "built") return `${The} ${kind}grants aren't available right now. ${cover}`;
+  // Each says no more than the research showed (grantmatch/states.py): "unchecked" makes no claim at all.
+  const Grants = kind ? `${The} state grants` : `Grants from ${the}`;
+  const why = status === "html" ? ` The grant pages checked for ${the} are web pages or a dashboard, not a data file, so they aren't read in yet.`
+    : status === "decide" ? ` ${The} has a machine-readable grant list that isn't read in yet.`
+    : status === "next" ? ` A source for ${grants} is being looked at.`
+    : status === "none" ? ` No current public list of ${grants} was found.`
+    : status === "unchecked" ? ` ${Grants} aren't read in yet.`
+    : "";
+  return `No ${name} ${kind}catalog yet.${why} ${cover}`;
+}
+/** The result tabs to show: the state tab only when the profile's state has programs, so a preview's counts from
+ *  the last state (a "Kansas programs, 0" tab) don't linger while a new search for a state without one runs. */
+export const shownSources = <K extends string>(keys: K[], hasPrograms: boolean): K[] =>
+  keys.filter((k) => k !== "fl" || hasPrograms);
 /** A state's counties and the cities, towns and Census places in each (grantmatch/counties.py). */
 export const loadCounties = (state: string) => json<Record<string, string[]>>(`counties-${state}.json`);

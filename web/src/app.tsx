@@ -5,7 +5,7 @@ import { ClientBar } from "./clients";
 import { parseWorkspace, readOwnProfile, writeOwnProfile } from "./sync";
 import { billing, clearUpgrade, isPaid, myWorkspace, PLANS_URL, takeSignInReturn, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
-  loadCounties, loadExamples, loadLinked, loadMeta, programsFile,
+  loadCounties, loadExamples, loadLinked, loadMeta, noCatalogNote, programsFile, shownSources,
   type Example, type Meta, type Source,
 } from "./data";
 import { embedMission } from "./embed";
@@ -212,6 +212,8 @@ export function App() {
   // The state tab follows the profile's state: Florida's catalog and county programs, or another state's open calls.
   const progFile = programsFile(meta, st);
   const hasProgs = Boolean(progFile);
+  // A state with no catalog gets a plain line where its tab would be, not an empty tab.
+  const noCatalog = noCatalogNote(meta, st, stName);
   const fl: Loaded<Source<FloridaRec>> = progs[st] ?? { state: "loading" };
 
   // Ask the gate whenever the search could change. It counts a search once, so refining one costs nothing.
@@ -311,7 +313,7 @@ export function App() {
   if (applied.funder_types.some((t) => !["federal", "florida"].includes(t))) lists.fdn = fdnEntries;
   if (hasProgs && applied.funder_types.includes("florida")) lists.fl = flEntries;
   // A preview brings its own counts; with the data here they come from the lists.
-  const keys = pv ? (Object.keys(pv.counts) as SourceKey[]) : (Object.keys(lists) as SourceKey[]);
+  const keys = shownSources(pv ? (Object.keys(pv.counts) as SourceKey[]) : (Object.keys(lists) as SourceKey[]), hasProgs);
   const count = (k: SourceKey, tier: string) => (lists[k] ?? []).filter((e) => e.tier === tier).length;
   const strong = Object.fromEntries(keys.map((k) => [k, pv ? pv.counts[k]!.strong : count(k, "Strong")])) as Record<SourceKey, number>;
   const possible = Object.fromEntries(keys.map((k) => [k, pv ? pv.counts[k]!.possible : count(k, "Possible")])) as Record<SourceKey, number>;
@@ -640,6 +642,7 @@ export function App() {
 
           {blank ? <BlankSteps /> : (
             <>
+              {noCatalog ? <p class="note" id="no-catalog">{noCatalog}</p> : null}
               <div class="tabs" role="tablist" aria-label="Results by source">
                 {tabs.map(([k, label, c], i) => (
                   <button type="button" role="tab" key={k} id={`tab-${k}`} aria-label={c !== null ? `${label}, ${c}` : label} aria-selected={tab === k} aria-controls={`panel-${k}`}
@@ -1303,6 +1306,24 @@ function Checklist({ state }: { state: string }) {
           </ul>
         </>
       ) : null}
+      {state === "WV" ? (
+        <>
+          <h3>For West Virginia state grants</h3>
+          <ul>
+            <li>These come from the grants.wv.gov list, which each agency keeps. It is never cleared out, so listings past their due date, and old ones with no due date, are left out. Open each listing's agency page for the current round.</li>
+            <li>Who may apply is the state's own wording on each listing. When it says "read the notice", check the agency's guidelines before you start.</li>
+          </ul>
+        </>
+      ) : null}
+      {state === "NJ" ? (
+        <>
+          <h3>For New Jersey state grants</h3>
+          <ul>
+            <li>These come from the Treasury Grants Office's list of state grant opportunities. It gives each call's title, agency, link and deadline, but not who may apply, so read the notice on each one before you start.</li>
+            <li>The Treasury says its list isn't complete; agencies also post calls on their own pages.</li>
+          </ul>
+        </>
+      ) : null}
       {state === "FL" ? <h3>For Florida state programs</h3> : null}
       {state === "FL" ? <ul>
         <li>The state pays grants and contracts to registered vendors. Register at <a href="https://www.myfloridamarketplace.com" target="_blank" rel="noopener">MyFloridaMarketPlace</a> and keep a Florida Substitute W-9 on file with the Department of Financial Services.</li>
@@ -1318,7 +1339,7 @@ function Footer({ coverage }: { coverage: boolean }) {
     <footer class="footer">
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page and rechecked every week. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal.</p>
+      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page and rechecked every week. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities.</p>
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there. Your shortlist stays in this browser, unless you have Pro and save your profile and shortlist to your account.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>
