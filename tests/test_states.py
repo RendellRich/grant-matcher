@@ -18,7 +18,9 @@ def test_state_programs_come_from_the_registry_and_keep_the_existing_states_as_t
     assert progs["IA"] == {"file": "iowa", "source": "IowaGrants.gov", "catalog": "IowaGrants"}
     assert progs["OH"] == {"file": "ohio", "source": "Ohio Grants Partnership", "catalog": "Ohio"}
     assert progs["WA"] == {"file": "washington", "source": "FundHubWA (Washington Department of Commerce)", "catalog": "FundHubWA"}
-    assert set(progs) == {"CA", "IL", "IA", "NJ", "OH", "WA", "WV"}
+    assert set(progs) == {"CA", "DC", "IL", "IA", "MN", "NJ", "NY", "OH", "WA", "WV"}
+    assert [c for c, s in progs.items() if "who_listed" in s] == ["DC", "NJ"]   # lists with no eligibility field
+    assert progs["DC"]["who_listed"] is progs["NJ"]["who_listed"] is False
     assert export_web.STATE_PROGRAMS is progs
 
 
@@ -34,10 +36,10 @@ def test_each_built_state_has_an_adapter_with_the_shared_shape():
 
 def test_meta_says_which_states_have_no_catalog():
     cat = states.catalogs()
-    assert cat["KS"] == {"status": "unchecked", "source": "grants.ks.gov and the KS Infrastructure Hub (blocked to scripts)"}
+    assert cat["AL"] == {"status": "blocked", "source": "adeca.alabama.gov (its robots.txt disallows ClaudeBot)"}
     assert cat["AK"]["status"] == cat["HI"]["status"] == "decide"
     assert cat["WV"]["status"] == cat["NJ"]["status"] == cat["FL"]["status"] == "built"
-    assert cat["PA"]["status"] == "decide" and cat["DC"]["status"] == "html"
+    assert cat["PA"]["status"] == "decide" and cat["DC"]["status"] == cat["NY"]["status"] == cat["MN"]["status"] == "built"
     assert list(cat) == sorted(cat)
 
 
@@ -47,7 +49,7 @@ def test_a_state_not_yet_in_the_release_ships_from_its_snapshot_in_data(monkeypa
 
     monkeypatch.setattr(export_web, "LOCAL_ONLY", False)
     monkeypatch.setattr(export_web.requests, "get", lambda url, timeout=None: Missing())
-    for code in ("WV", "NJ"):
+    for code in ("WV", "NJ", "NY", "DC", "MN"):
         name = states.STATE_PROGRAMS[code]["file"]
         raw = export_web.fetch(f"{name}.json.gz")
         assert raw == (export_web.LOCAL / f"{name}.json.gz").read_bytes(), code
@@ -58,15 +60,19 @@ def test_a_state_not_yet_in_the_release_ships_from_its_snapshot_in_data(monkeypa
 def test_the_committed_snapshots_have_the_same_record_fields_as_ohio():
     import gzip
     import json
+    import re
 
     from tests.test_ohio import item
     from grantmatch import ohio
     want = set(ohio.normalize(item()))
-    for name in ("westvirginia", "newjersey"):
+    email = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+    for name in ("westvirginia", "newjersey", "newyork", "districtofcolumbia", "minnesota"):
         payload = json.loads(gzip.decompress((export_web.LOCAL / f"{name}.json.gz").read_bytes()))
-        assert payload["programs"], name
+        assert payload["programs"] and payload["count"] == len(payload["programs"]), name
+        assert len({r["id"] for r in payload["programs"]}) == len(payload["programs"]), name
         for rec in payload["programs"]:
             assert set(rec) == want, (name, rec["id"])
+            assert not [k for k, v in rec.items() if isinstance(v, str) and email.search(v)], (name, rec["id"])
 
 
 def test_the_skipped_report_takes_every_built_state_from_the_registry():
@@ -84,7 +90,8 @@ def test_the_skipped_report_takes_every_built_state_from_the_registry():
     # the labels the Friday issue already used for the refreshed states are unchanged
     assert expected["skipped-ohio.json.gz"] == "Ohio (after the next daily refresh)"
     assert skipped.SOURCES["washington"] == "FundHubWA (Washington)"
-    assert set(optional) == {"skipped-westvirginia.json.gz", "skipped-newjersey.json.gz"}
+    assert set(optional) == {f"skipped-{n}.json.gz" for n in
+                             ("westvirginia", "newjersey", "newyork", "districtofcolumbia", "minnesota")}
 
 
 def test_the_skipped_report_accepts_a_programs_file_for_every_built_state(tmp_path, monkeypatch):
@@ -126,15 +133,33 @@ def test_the_export_drops_closed_snapshot_calls_but_not_florida_or_hand_kept_pro
     assert "still_open" not in src[:src.index("for state, spec in STATE_PROGRAMS.items()")]
 
 
-def test_states_the_research_couldnt_check_claim_nothing():
-    unchecked = {c for c, s in states.STATES.items() if s["status"] == "unchecked"}
-    assert unchecked == {"AR", "CO", "ID", "KS", "KY", "LA", "MN", "MS", "MO", "NE", "NH", "NM", "OK", "SC", "SD", "TN",
-                         "TX", "WI"}
+def test_every_state_has_the_status_the_research_established():
+    by = {st: {c for c, s in states.STATES.items() if s["status"] == st} for st in states.STATUSES}
+    assert by["built"] == {"CA", "DC", "FL", "IA", "IL", "MN", "NJ", "NY", "OH", "WA", "WV"}
+    # robots.txt, terms or a refusal to scripts keep the pages out
+    assert by["blocked"] == {"AL", "CO", "IN", "LA", "ME", "NC", "NE", "NH", "NM", "NV", "RI", "TX", "VT", "WI"}
+    assert by["unchecked"] == {"MS"}   # the only one the research couldn't establish
     # "none" only where nowhere the research looked posts current state calls
-    assert {c for c, s in states.STATES.items() if s["status"] == "none"} == {"AZ", "DE", "MD", "OR"}
-    assert states.STATES["CT"]["status"] == states.STATES["VT"]["status"] == "html"
-    for code in unchecked | {c for c, s in states.STATES.items() if s["status"] == "none"}:
-        assert "only" not in states.STATES[code]["source"].lower(), code   # no "agency pages only" without a check
+    assert by["none"] == {"AZ", "DE", "OR"} and by["decide"] == {"AK", "HI", "PA"} and by["next"] == set()
+    assert len(by["html"]) == 19 and {"KS", "MD", "TN"} <= by["html"]
+
+
+def test_nothing_learned_from_a_page_we_may_not_use_is_recorded():
+    root = Path(export_web.__file__).parent.parent
+    text = "".join((root / p).read_text(encoding="utf-8") for p in
+                   ("grantmatch/states.py", "docs/state-coverage.md", "README.md"))
+    for gone in ("adeca.alabama.gov/about", "grants/calendar", "kansascommerce.gov/grantscalendar", "crt.state.la.us/",
+                 "crt.louisiana.gov/", "gn.ecivis.com/GO", "airtable.com/app", "txsmartbuy.gov/esbd", "maine.gov/moca",
+                 "gov.texas.gov/", "(gov.texas.gov)", "Governor's site policies"):
+        assert gone not in text, gone
+    # gov.texas.gov's robots.txt keeps ClaudeBot out, so Texas's reason doesn't use what its pages say
+    assert states.STATES["TX"]["source"] == ("txsmartbuy.gov robots.txt disallows all crawlers; "
+                                             "no usable terms were confirmed for the eGrants page")
+
+
+def test_the_new_states_have_no_refresh_job_yet():
+    for code in ("NY", "DC", "MN"):
+        assert states.STATES[code]["refresh"] is None and states.REPORT[code]["in_skip_report"] is False, code
 
 
 def test_west_virginia_and_new_jersey_refresh_weekly_but_the_friday_report_doesnt_expect_them_yet():
@@ -144,7 +169,7 @@ def test_west_virginia_and_new_jersey_refresh_weekly_but_the_friday_report_doesn
     expected, optional = skipped.expected_parts()
     # skipped-report.yml doesn't download these files yet, so the report must not list them as missing
     assert "skipped-westvirginia.json.gz" not in expected and "skipped-newjersey.json.gz" not in expected
-    assert set(optional) == {"skipped-westvirginia.json.gz", "skipped-newjersey.json.gz"}
+    assert {"skipped-westvirginia.json.gz", "skipped-newjersey.json.gz"} <= set(optional)
     workflow = (Path(export_web.__file__).parent.parent / ".github" / "workflows" / "skipped-report.yml").read_text(encoding="utf-8")
     assert "skipped-westvirginia" not in workflow and "skipped-newjersey" not in workflow   # flip in_skip_report when it does
 

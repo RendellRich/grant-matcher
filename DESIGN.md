@@ -250,11 +250,13 @@ Inside the results column, the order is fixed: example or warning note, the inde
 
 Inside each entry the columns are fixed: the tier chip and score rule at left with the deadline right-aligned on the same line; the entry name; the catalog number and run-in facts; the reasons list; then the shortlist mark at the right and the details disclosure at the left. On the Shortlist tab, entries are grouped under Applying, Saved and Submitted headings, and each one has a Stage select with the date it moved, above the details row; changing it keeps focus on that select in its new group and announces the move. Below it, a Your deadline date field with the days left (caution color within a week). A Coming up list (next 30 days) sits above the groups, Applying and Saved sort by deadline, and a changed or withdrawn federal deadline shows as a caution line under the date. When something is due within a week, a note at the top of the results links to the shortlist.
 
+A profile in a state with no state catalog gets no state tab. A plain note above the tabs says what is missing and what still covers the state, and gives only a reason the research established: the pages are web pages and not a data file, a machine-readable list isn't read in, no current list was found, or the key sites can't be used because their rules or terms don't allow it or they turn automated readers away. The note never says a state has no grants. The line above a state's open calls names the source, says when coverage is partial, and never says a list names nonprofits when it doesn't say who may apply. Calls with no stated eligibility are counted apart from the ones that list nonprofits ("3 of 7 ... list nonprofits as eligible; 1 more doesn't say who may apply"). A call with no stated eligibility says "Who may apply isn't listed; read the notice" as a plain note, never "Open to nonprofits".
+
 Spacing runs on a quarter-rem rhythm (4, 6, 8, 12, 16, 20, 24, 32, 48px). Entries are dense: 20px above, 12px below, 8px between parts.
 
 **Responsive behavior.**
 - At 860px and below the layout becomes one column with 1rem padding, the band lede hides, and the profile collapses behind a single full-width "Edit your organization" bar above the tabs.
-- At 560px and below the tabs become a 2x2 grid with short labels (Florida, Foundations, Federal, Shortlist), the score rule shortens to 5.5rem, details rows stack, and the shortlist mark moves below the details.
+- At 560px and below the tabs become a 2x2 grid with short labels (Florida, Foundations, Federal, Shortlist; DC for the District of Columbia), the score rule shortens to 5.5rem, details rows stack, and the shortlist mark moves below the details.
 - Every layout works at 320px wide with no horizontal scroll.
 
 ## Elevation & Depth

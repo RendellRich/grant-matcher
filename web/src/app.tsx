@@ -5,12 +5,12 @@ import { ClientBar } from "./clients";
 import { parseWorkspace, readOwnProfile, writeOwnProfile } from "./sync";
 import { billing, clearUpgrade, isPaid, myWorkspace, PLANS_URL, takeSignInReturn, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
-  loadCounties, loadExamples, loadLinked, loadMeta, noCatalogNote, programsFile, shownSources,
+  loadCounties, loadExamples, loadLinked, loadMeta, callsTally, grantsPhrase, noCatalogNote, programsFile, shownSources,
   type Example, type Meta, type Source,
 } from "./data";
 import { embedMission } from "./embed";
 import {
-  isNarrowed, narrow, NO_NARROW, profileNarrow, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
+  callState, isNarrowed, narrow, NO_NARROW, profileNarrow, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
 } from "./entries";
 import { download, toCsv, toIcs } from "./exports";
 import { summariesFile } from "./summary";
@@ -35,7 +35,8 @@ import { similarities } from "./vectors";
 
 const NOTICE = "This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.";
 // The state tab is named for the profile's state: "Florida programs", "California programs".
-const shortName = (k: string, state: string) => (k === "fl" ? state : { fdn: "Foundations", fed: "Federal", shortlist: "Shortlist" }[k] ?? k);
+// "District of Columbia" doesn't fit a phone's two-by-two tabs, so its short label is "DC".
+const shortName = (k: string, state: string) => (k === "fl" ? (state === "District of Columbia" ? "DC" : state) : { fdn: "Foundations", fed: "Federal", shortlist: "Shortlist" }[k] ?? k);
 const nouns = (state: string): Record<SourceKey, [string, string, string]> => ({
   fl: [`${state} programs`, `${state} programs`, `${state} program`],
   fdn: ["Foundations", "foundations", "foundation"],
@@ -589,7 +590,7 @@ export function App() {
               : total ? <><strong>{n(total, "strong match", "strong matches")}</strong> for this profile: {listing}.</>
               : <><strong>No strong matches yet.</strong> {shownOrder.map((k) => n(possible[k], `possible ${NOUN[k][2]}`, `possible ${NOUN[k][1]}`)).join(", ")}. More specific key words usually help.</>}
           </h1>
-          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : hasProgs ? ` and ${stName} state grants` : ""}, ranked against your mission with the reasons spelled out.</p>
+          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : hasProgs ? ` and ${grantsPhrase(st, stName)}` : ""}, ranked against your mission with the reasons spelled out.</p>
           <p class="notice">{NOTICE}</p>
         </div>
       </header>
@@ -996,14 +997,13 @@ export function App() {
     if (fl.state === "error") return <p class="error">{stName} program data could not be loaded right now. Try again in a few minutes.</p>;
     if (!flEntries || fl.state !== "ready") return loading(`${stName} programs`);
     const all = fl.data.records;
-    const open = all.filter((r) => r.nonprofit_eligible).length;
     const info = meta?.programs?.[st];
     const updated = fl.data.fetchedAt ? fmtStamp(fl.data.fetchedAt) : "";
     const shown = narrowed("fl", flEntries);
     const picks = shown.filter((e) => e.tier !== "Long shot");
     return (
       <>
-        {tally("fl", `${open.toLocaleString("en-US")} of ${all.length.toLocaleString("en-US")} open ${stName} state grant and loan calls list nonprofits as eligible${info?.source ? `, from the ${info.source}` : ""}${updated ? `, updated ${updated}` : ""}. County and city programs aren't covered for ${stName} yet.`, shown)}
+        {tally("fl", callsTally(st, stName, all, info, updated), shown)}
         {narrowBar("fl", flEntries, shown, "programs")}
         <details class="filters">
           <summary>How the score works</summary>
@@ -1082,8 +1082,7 @@ function pickRest(f: ProfileForm): Partial<ProfileForm> {
 
 function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
   const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
-    : e.key.startsWith("fl:ca-") ? "California grant" : e.key.startsWith("fl:il-") ? "Illinois grant" : e.key.startsWith("fl:ia-") ? "Iowa grant" : e.key.startsWith("fl:oh-") ? "Ohio grant"
-    : e.key.startsWith("fl:wa-") ? "Washington grant" : e.key.startsWith("fl:local-wa-") ? "Washington program"
+    : callState(e.key) ? `${callState(e.key)!.name} grant` : e.key.startsWith("fl:local-wa-") ? "Washington program"
     : e.key.startsWith("fl:local-oh-") ? "Ohio program" : e.key.startsWith("fl:local-ia-") ? "Iowa program"
     : e.key.startsWith("fl:local-il-") ? "Illinois program" : "Florida program");
   const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
@@ -1324,6 +1323,35 @@ function Checklist({ state }: { state: string }) {
           </ul>
         </>
       ) : null}
+      {state === "NY" ? (
+        <>
+          <h3>For New York state grants</h3>
+          <ul>
+            <li>These come from the Statewide Financial System's public search for grant opportunities. It has no link to a single opportunity, so each card links the search page: look up the Event ID shown on the card.</li>
+            <li>The list shows no description or award amount; open the opportunity there for details.</li>
+            <li>The state's list cuts titles at 50 characters and shows most agencies as codes.</li>
+            <li>Applying usually takes access to the Statewide Financial System. <a href="https://grantsmanagement.ny.gov" target="_blank" rel="noopener">New York's Grants Management site<span class="sr-only"> (opens in a new tab)</span></a> explains how to register.</li>
+          </ul>
+        </>
+      ) : null}
+      {state === "DC" ? (
+        <>
+          <h3>For District of Columbia grants</h3>
+          <ul>
+            <li>These come from the District Grants Clearinghouse. It gives each notice's title, agency, documents and deadline, but not who may apply, so read the notice on each one before you start.</li>
+            <li>The listings are DC.gov content, licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0<span class="sr-only"> (opens in a new tab)</span></a> and reformatted here.</li>
+          </ul>
+        </>
+      ) : null}
+      {state === "MN" ? (
+        <>
+          <h3>For Minnesota state grants</h3>
+          <ul>
+            <li>This isn't a statewide list. Only the Department of Health's open grants page and the Office of Justice Programs' funding page are read; other Minnesota agencies post calls on their own pages.</li>
+            <li>Some calls ask for a letter or notice of intent by an earlier date. "How to apply" on the card says so.</li>
+          </ul>
+        </>
+      ) : null}
       {state === "FL" ? <h3>For Florida state programs</h3> : null}
       {state === "FL" ? <ul>
         <li>The state pays grants and contracts to registered vendors. Register at <a href="https://www.myfloridamarketplace.com" target="_blank" rel="noopener">MyFloridaMarketPlace</a> and keep a Florida Substitute W-9 on file with the Department of Financial Services.</li>
@@ -1339,7 +1367,7 @@ function Footer({ coverage }: { coverage: boolean }) {
     <footer class="footer">
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page and rechecked every week. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities.</p>
+      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page and rechecked every week. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities. New York data from the Statewide Financial System's public search for grant opportunities. District of Columbia data from the District Grants Clearinghouse on DC.gov, licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0<span class="sr-only"> (opens in a new tab)</span></a> and reformatted. Minnesota data from the Department of Health's and the Office of Justice Programs' grant pages only.</p>
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there. Your shortlist stays in this browser, unless you have Pro and save your profile and shortlist to your account.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>

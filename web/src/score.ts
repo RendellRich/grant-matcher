@@ -655,6 +655,11 @@ export function betweenRounds(r: FloridaRec, today: Date): boolean {
   return !(r._cycle && (r._cycle.s === "open" || r._cycle.s === "deadline"));
 }
 
+// What an adapter writes in "who can apply" when the list or notice doesn't say. Such a call is kept, but its card
+// must not claim it is open to nonprofits. Same as rank_more.py.
+export const ELIGIBILITY_UNSTATED = /^(?:Not stated|Who may apply isn't stated)\b|\bWhether nonprofits can apply isn't stated\b/;
+const UNSTATED_REASON = "Who may apply isn't listed; read the notice";
+
 export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<string, number> | null,
                              showEarmarks = false, cities: string[] = []): Scored<FloridaRec>[] {
   let recs = records.filter((r) => r.nonprofit_eligible);
@@ -670,7 +675,7 @@ export function scoreFlorida(records: FloridaRec[], p: Profile, semantic: Map<st
   const out = recs.map((r, i): Scored<FloridaRec> => {
     const matched = keywordHits(p.keywords, text[i]);
     let points = 75 * fit(r.id) + 25 * coverageOf(matched, weights, best3);
-    const reasons = ["Open to nonprofits"];
+    const reasons = [ELIGIBILITY_UNSTATED.test(r.applicant_types ?? "") ? UNSTATED_REASON : "Open to nonprofits"];
     const cautions: string[] = [];
     if (matched.length) reasons.unshift("Mentions " + matched.slice(0, 5).join(", "));
     if (COMPETITIVE.test(r.award + " " + r.application)) reasons.push("Awarded through a competitive application");

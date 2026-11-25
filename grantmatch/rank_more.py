@@ -198,6 +198,12 @@ def score_foundations(records: list[dict], p: Profile, state: str, cities: list[
 
 # ---------------- Florida programs ----------------
 
+# What an adapter writes in "who can apply" when the list or notice doesn't say. Such a call is kept, but its card
+# must not claim it is open to nonprofits. Same as score.ts.
+ELIGIBILITY_UNSTATED = re.compile(r"^(?:Not stated|Who may apply isn't stated)\b|\bWhether nonprofits can apply isn't stated\b")
+UNSTATED_REASON = "Who may apply isn't listed; read the notice"
+
+
 def florida_doc(rec: dict) -> str:
     return f"{rec['title']}. {rec['agency']}. {rec['objectives']} {rec.get('subjects', '')}"
 
@@ -310,7 +316,7 @@ def score_florida(records: list[dict], p: Profile, semantic: dict[str, float] | 
         matched = _keyword_hits(p.keywords, text.loc[i])
         coverage = min(1.0, sum(weights.get(m, 0.15) for m in matched) / best3)
         points = 75 * fit.loc[i] + 25 * coverage
-        reasons = ["Open to nonprofits"]
+        reasons = [UNSTATED_REASON if ELIGIBILITY_UNSTATED.search(str(r["applicant_types"])) else "Open to nonprofits"]
         cautions = []
         if matched:
             reasons.insert(0, "Mentions " + ", ".join(matched[:5]))

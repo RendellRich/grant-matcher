@@ -7,12 +7,14 @@ Each of the 50 states and the District of Columbia has an entry with its status:
   decide     a machine-readable source works, but Ren decided to leave it out (2026-11-25; docs/state-coverage.md
              section (c) gives the reasons)
   html       the grant pages checked are web pages, a dashboard or a bid system, not a data file
+  blocked    robots.txt or a site's terms keep our crawler or this use out, or the site turns scripts away, for
+             the pages that would carry the state's calls. Nothing is read from them, and nothing learned from a
+             page we may not use is recorded here: only the host and the reason
   none       nowhere the research looked has a current public list of state grant calls: past awards only, a
              login wall, or a list that is empty or abandoned. If any page it looked at posts current calls, the
              state is html instead
-  unchecked  the research couldn't establish the answer: the site turned scripts away, showed a captcha, wasn't
-             tested, or a check couldn't be completed (Texas: the research session's own permission check blocked
-             the probe). Nothing is claimed about these states; they need a look in a browser
+  unchecked  the research couldn't establish the answer (Mississippi: the one table that might list current calls
+             is filled by script and wasn't read). Nothing is claimed about these states
 
 Florida is built too, but keeps its own export (florida.py writes a catalog of programs, not open calls, with
 county programs and its own vectors). Every other built state is listed in STATE_PROGRAMS, which export_web
@@ -21,84 +23,103 @@ catalog. Sources and checks: docs/state-coverage.md (researched November 2026).
 
 To add a state: write an adapter that produces the same record fields as ohio.py, set its entry here to
 "built" with file, source, catalog, module, report (its heading in the skipped grants review) and refresh (how
-often its refresh job runs; None until a refresh job exists), and add it to a refresh job: West Virginia and
+often its refresh job runs; None until a refresh job exists), add "who_listed": False when its list never says
+who may apply (the site then doesn't claim its calls list nonprofits), and add it to a refresh job: West Virginia and
 New Jersey share .github/workflows/refresh-states.yml, weekly. Set "in_skip_report": False until
-skipped-report.yml downloads the state's skipped file, so the Friday report doesn't call it missing. The site and the skipped report need no change.
+skipped-report.yml downloads the state's skipped file, so the Friday report doesn't call it missing. The state tab, the exports and the skipped report need no change; add the state's "For <state> state grants" note
+and its sentence in the footer (web/src/app.tsx).
 """
 from __future__ import annotations
 
 from .display import STATE_NAMES
 
-STATUSES = ("built", "next", "decide", "html", "none", "unchecked")
+STATUSES = ("built", "next", "decide", "html", "blocked", "none", "unchecked")
 
 STATES: dict[str, dict] = {
-    "AL": {"status": "html", "source": "ADECA Funding Opportunities and Grant Calendar (one agency)"},
+    "AL": {"status": "blocked", "source": "adeca.alabama.gov (its robots.txt disallows ClaudeBot)"},
     "AK": {"status": "decide", "source": "State of Alaska Online Public Notices (RSS of every notice; a few are grants)"},
     "AZ": {"status": "none", "source": "grants.az.gov points to Euna Grants (eCivis), behind a subscriber login"},
-    "AR": {"status": "unchecked", "source": "DFA Intergovernmental Services grant program pages (found by search, not tested)"},
+    "AR": {"status": "html", "source": "Arkansas Arts Council and Health Department grant pages"},
     "CA": {"status": "built", "source": "California Grants Portal", "file": "california", "catalog": "Grants Portal",
            "module": "california", "report": "California Grants Portal", "refresh": "daily"},
-    "CO": {"status": "unchecked", "source": "OEDIT Programs and Funding, SIPA govgrants (blocked to scripts)"},
+    "CO": {"status": "blocked",
+           "source": "colorado.gov agency sites turn scripts away; cde.state.co.us robots.txt disallows all crawlers"},
     "CT": {"status": "html", "source": "CTsource Bid Board (Nonprofit Grant Program rounds); past awards on data.ct.gov"},
     "DE": {"status": "none", "source": "Past awards on data.delaware.gov; no open-call dataset"},
-    "DC": {"status": "html", "source": "District Grants Clearinghouse (Serve DC)"},
+    "DC": {"status": "built", "source": "District Grants Clearinghouse (DC.gov, CC BY 3.0)",
+           "file": "districtofcolumbia", "catalog": "DC Clearinghouse", "module": "districtofcolumbia",
+           "report": "District Grants Clearinghouse", "refresh": None, "in_skip_report": False, "who_listed": False},
     "FL": {"status": "built", "source": "Florida Catalog of State Financial Assistance", "file": "florida",
            "catalog": "CSFA", "module": "florida", "report": "Florida state catalog", "refresh": "weekly"},
     "GA": {"status": "html", "source": "Georgia Grants Portal (OPB only, empty when checked)"},
     "HI": {"status": "decide", "source": "HANDS, Hawaii Awards and Notices Data System (undocumented JSON, mostly procurement)"},
-    "ID": {"status": "unchecked", "source": "Idaho Commerce grants page (blocked to scripts)"},
+    "ID": {"status": "html", "source": "Education, Serve Idaho and Health and Welfare grant pages"},
     "IL": {"status": "built", "source": "Illinois Catalog of State Financial Assistance", "file": "illinois",
            "catalog": "Illinois NOFO", "module": "illinois", "report": "Illinois state notices (GATA)", "refresh": "daily"},
-    "IN": {"status": "html", "source": "State Agency Grant Opportunities (Euna Grants list)"},
+    "IN": {"status": "blocked",
+           "source": "gn.ecivis.com robots.txt disallows all crawlers; in.gov terms bar storing its content in a retrieval system"},
     "IA": {"status": "built", "source": "IowaGrants.gov", "file": "iowa", "catalog": "IowaGrants", "module": "iowa",
            "report": "IowaGrants.gov", "refresh": "daily"},
-    "KS": {"status": "unchecked", "source": "grants.ks.gov and the KS Infrastructure Hub (blocked to scripts)"},
-    "KY": {"status": "unchecked", "source": "CHFS, KDE and eMARS pages (found by search, not tested)"},
-    "LA": {"status": "unchecked", "source": "LaPAC (procurement bids); LED's monthly Opportunity Roadmap PDF, no link recorded"},
-    "ME": {"status": "html", "source": "Maine Community Funding Finder"},
-    "MD": {"status": "none", "source": "grants.maryland.gov list, abandoned since September 2023"},
+    "KS": {"status": "html",
+           "source": "Kansas Children's Cabinet grants page (one agency); grants.ks.gov turns scripts away"},
+    "KY": {"status": "html", "source": "Kentucky Arts Council and Health and Family Services grant pages"},
+    "LA": {"status": "blocked",
+           "source": "The arts division's robots.txt disallows ClaudeBot; health, law enforcement, volunteer and parks sites turn scripts away"},
+    "ME": {"status": "blocked", "source": "maine.gov turns scripts away, robots.txt included"},
+    "MD": {"status": "html",
+           "source": "Department of Commerce State Grants table (the grants.maryland.gov list is abandoned)"},
     "MA": {"status": "html", "source": "COMMBUYS bid search"},
     "MI": {"status": "html", "source": "MI Funding Hub"},
-    "MN": {"status": "unchecked", "source": "Office of Grants Management, Find a Grant (served a bot captcha)"},
-    "MS": {"status": "unchecked", "source": "Agency pages such as MDHS Grant Opportunities (not tested)"},
-    "MO": {"status": "unchecked", "source": "Agency pages (not tested); data.mo.gov has no opportunity dataset"},
+    "MN": {"status": "built",
+           "source": "Minnesota Department of Health and Office of Justice Programs pages only (two agencies, not a statewide list)",
+           "file": "minnesota", "catalog": "Minnesota, 2 agencies", "module": "minnesota",
+           "report": "Minnesota (Health and Justice Programs pages)", "refresh": None, "in_skip_report": False},
+    "MS": {"status": "unchecked",
+           "source": "Agency pages; the Human Services procurement table is filled by script and wasn't read"},
+    "MO": {"status": "html", "source": "Natural Resources, Arts Council and ServMO grant pages"},
     "MT": {"status": "html", "source": "Montana WebGrants storefront (mostly expired)"},
-    "NE": {"status": "unchecked", "source": "Agency pages; DED uses AmpliFund (not tested)"},
-    "NV": {"status": "html", "source": "Office of Federal Assistance grant opportunities (Airtable view)"},
-    "NH": {"status": "unchecked", "source": "No source named; nothing tested"},
+    "NE": {"status": "blocked", "source": "nebraska.gov terms bar robots and scrapers without written permission"},
+    "NV": {"status": "blocked", "source": "airtable.com robots.txt disallows the state's shared grant view"},
+    "NH": {"status": "blocked", "source": "nh.gov agency sites turn scripts away"},
     "NJ": {"status": "built", "source": "New Jersey Treasury list of state grant opportunities", "file": "newjersey",
            "catalog": "New Jersey", "module": "newjersey", "report": "New Jersey Treasury list", "refresh": "weekly",
-           "in_skip_report": False},
-    "NM": {"status": "unchecked", "source": "SHARE NM, reportedly login-based (not tested)"},
-    "NY": {"status": "html", "source": "Statewide Financial System, Search for Grant Opportunities"},
-    "NC": {"status": "html", "source": "NC.gov Grant Opportunities table"},
+           "in_skip_report": False, "who_listed": False},
+    "NM": {"status": "blocked",
+           "source": "New Mexico Arts (Cultural Affairs terms bar reproducing its sites' content without permission)"},
+    "NY": {"status": "built", "source": "New York Statewide Financial System, Search for Grant Opportunities",
+           "file": "newyork", "catalog": "NY SFS", "module": "newyork", "report": "New York SFS grant search",
+           "refresh": None, "in_skip_report": False},
+    "NC": {"status": "blocked", "source": "nc.gov terms allow copying for non-commercial use only"},
     "ND": {"status": "html", "source": "North Dakota WebGrants storefront"},
     "OH": {"status": "built", "source": "Ohio Grants Partnership", "file": "ohio", "catalog": "Ohio", "module": "ohio",
            "report": "Ohio Grants Partnership", "refresh": "daily"},
-    "OK": {"status": "unchecked", "source": "OK Grants needs registration; what agency pages list isn't recorded"},
+    "OK": {"status": "html", "source": "Oklahoma Arts Council grants page (one agency); OK Grants needs registration"},
     "OR": {"status": "none", "source": "Two housing datasets on data.oregon.gov, both empty"},
     "PA": {"status": "decide", "source": "pa.gov Discover State Grants (the site's own search proxy)"},
-    "RI": {"status": "html", "source": "Grants Management Office funding opportunities (Euna Grants list)"},
-    "SC": {"status": "unchecked", "source": "Agency pages (not tested); data.sc.gov didn't respond"},
-    "SD": {"status": "unchecked", "source": "Agency pages and sd.gov posts (not tested); data.sd.gov didn't respond"},
-    "TN": {"status": "unchecked", "source": "Central Procurement Office grant page (blocked to scripts)"},
-    "TX": {"status": "unchecked", "source": "Electronic State Business Daily, Grants (data endpoint not verified)"},
+    "RI": {"status": "blocked", "source": "gn.ecivis.com robots.txt disallows all crawlers"},
+    "SC": {"status": "html", "source": "South Carolina Arts Commission grants page (one agency)"},
+    "SD": {"status": "html", "source": "Department of Social Services requests for proposals and other agency pages"},
+    "TN": {"status": "html",
+           "source": "Tennessee Arts Commission grants pages (one agency); tn.gov turns scripts away"},
+    "TX": {"status": "blocked",
+           "source": "txsmartbuy.gov robots.txt disallows all crawlers; no usable terms were confirmed for the eGrants page"},
     "UT": {"status": "html", "source": "Utah Funding Opportunities Portal (Looker Studio report)"},
-    "VT": {"status": "html", "source": "Agency grant pages such as the Agriculture grants calendar; past awards on data.vermont.gov"},
+    "VT": {"status": "blocked", "source": "agriculture.vermont.gov (its robots.txt disallows ClaudeBot)"},
     "VA": {"status": "html", "source": "Governor's Office Grants directory"},
     "WA": {"status": "built", "source": "FundHubWA (Washington Department of Commerce)", "file": "washington",
            "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily"},
     "WV": {"status": "built", "source": "West Virginia grants.wv.gov list of available grants", "file": "westvirginia",
            "catalog": "grants.wv.gov", "module": "westvirginia", "report": "grants.wv.gov (West Virginia)",
            "refresh": "weekly", "in_skip_report": False},
-    "WI": {"status": "unchecked", "source": "Agency pages (not tested); data.wi.gov didn't respond"},
+    "WI": {"status": "blocked", "source": "wisconsin.gov policy limits agency pages to noncommercial use"},
     "WY": {"status": "html", "source": "Wyoming Grants Connect Hub (Power BI report)"},
 }
 
 # States besides Florida with their own adapter: the data file's name, where it comes from, and the label the
 # site puts before each call's number. Read by export_web.
 STATE_PROGRAMS: dict[str, dict] = {
-    code: {"file": s["file"], "source": s["source"], "catalog": s["catalog"]}
+    code: {"file": s["file"], "source": s["source"], "catalog": s["catalog"],
+           **({"who_listed": False} if s.get("who_listed") is False else {})}
     for code, s in STATES.items() if s["status"] == "built" and code != "FL"
 }
 
@@ -137,4 +158,6 @@ def check() -> list[str]:
             problems.append(f"{code}: refresh is daily, weekly or None, for built states only")
         if "in_skip_report" in s and (not built or not isinstance(s["in_skip_report"], bool)):
             problems.append(f"{code}: in_skip_report is true or false, for built states only")
+        if "who_listed" in s and (not built or s["who_listed"] is not False):
+            problems.append(f"{code}: who_listed is only ever false, for built states only")
     return problems
