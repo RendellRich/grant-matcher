@@ -21,8 +21,9 @@ catalog. Sources and checks: docs/state-coverage.md (researched November 2026).
 
 To add a state: write an adapter that produces the same record fields as ohio.py, set its entry here to
 "built" with file, source, catalog, module, report (its heading in the skipped grants review) and refresh (how
-often its refresh job runs; None until a refresh job exists, and the proposal for new states is weekly), and
-propose a refresh job. The site and the skipped report need no change.
+often its refresh job runs; None until a refresh job exists), and add it to a refresh job: West Virginia and
+New Jersey share .github/workflows/refresh-states.yml, weekly. Set "in_skip_report": False until
+skipped-report.yml downloads the state's skipped file, so the Friday report doesn't call it missing. The site and the skipped report need no change.
 """
 from __future__ import annotations
 
@@ -66,7 +67,8 @@ STATES: dict[str, dict] = {
     "NV": {"status": "html", "source": "Office of Federal Assistance grant opportunities (Airtable view)"},
     "NH": {"status": "unchecked", "source": "No source named; nothing tested"},
     "NJ": {"status": "built", "source": "New Jersey Treasury list of state grant opportunities", "file": "newjersey",
-           "catalog": "New Jersey", "module": "newjersey", "report": "New Jersey Treasury list", "refresh": None},
+           "catalog": "New Jersey", "module": "newjersey", "report": "New Jersey Treasury list", "refresh": "weekly",
+           "in_skip_report": False},
     "NM": {"status": "unchecked", "source": "SHARE NM, reportedly login-based (not tested)"},
     "NY": {"status": "html", "source": "Statewide Financial System, Search for Grant Opportunities"},
     "NC": {"status": "html", "source": "NC.gov Grant Opportunities table"},
@@ -87,7 +89,8 @@ STATES: dict[str, dict] = {
     "WA": {"status": "built", "source": "FundHubWA (Washington Department of Commerce)", "file": "washington",
            "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily"},
     "WV": {"status": "built", "source": "West Virginia grants.wv.gov list of available grants", "file": "westvirginia",
-           "catalog": "grants.wv.gov", "module": "westvirginia", "report": "grants.wv.gov (West Virginia)", "refresh": None},
+           "catalog": "grants.wv.gov", "module": "westvirginia", "report": "grants.wv.gov (West Virginia)",
+           "refresh": "weekly", "in_skip_report": False},
     "WI": {"status": "unchecked", "source": "Agency pages (not tested); data.wi.gov didn't respond"},
     "WY": {"status": "html", "source": "Wyoming Grants Connect Hub (Power BI report)"},
 }
@@ -100,10 +103,12 @@ STATE_PROGRAMS: dict[str, dict] = {
 }
 
 # For the weekly skipped grants review (grantmatch/skipped.py): each built state's source key (its file name),
-# its heading in the report, and how often its refresh job runs. None means no refresh job yet: the state ships
-# from a snapshot in data/, so its skipped list isn't expected in the report.
+# its heading in the report, how often its refresh job runs, and whether skipped-report.yml downloads its skipped
+# file yet. A state with no refresh job, or one the report doesn't fetch yet, isn't expected in the report: its
+# skipped list is read when it is there, and never reported missing.
 REPORT: dict[str, dict] = {
-    code: {"source": s["file"], "label": s["report"], "refresh": s["refresh"], "name": STATE_NAMES[code]}
+    code: {"source": s["file"], "label": s["report"], "refresh": s["refresh"], "name": STATE_NAMES[code],
+           "in_skip_report": s.get("in_skip_report", True)}
     for code, s in STATES.items() if s["status"] == "built"
 }
 
@@ -130,4 +135,6 @@ def check() -> list[str]:
                 problems.append(f"{code}: {k} is {'needed' if built else 'only for built states'}")
         if built != ("refresh" in s) or s.get("refresh") not in (None, "daily", "weekly"):
             problems.append(f"{code}: refresh is daily, weekly or None, for built states only")
+        if "in_skip_report" in s and (not built or not isinstance(s["in_skip_report"], bool)):
+            problems.append(f"{code}: in_skip_report is true or false, for built states only")
     return problems

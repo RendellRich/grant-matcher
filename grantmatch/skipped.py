@@ -260,14 +260,15 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
 
 def expected_parts() -> tuple[dict[str, str], list[str]]:
     """The skipped-*.json(l).gz files the report expects, each with what to say when it is missing, and the ones it
-    reads only when present (states that have no refresh job yet)."""
+    reads only when present: states with no refresh job yet, or whose skipped file skipped-report.yml doesn't
+    download yet (in_skip_report in grantmatch/states.py), so the report never calls those missing."""
     expected = {"skipped-federal.json.gz": "federal (after the next twice-daily refresh)"}
     optional = []
     for code, r in REPORT.items():
         if code == "FL":
             continue  # Florida's left-out programs are read from its data file (--florida)
         name = f"skipped-{r['source']}.json.gz"
-        if r["refresh"]:
+        if r["refresh"] and r["in_skip_report"]:
             expected[name] = f"{r['name']} (after the next {r['refresh']} refresh)"
         else:
             optional.append(name)
@@ -291,7 +292,7 @@ def main() -> None:
 
     rows, missing = [], []
     expected, optional = expected_parts()
-    # A state with no refresh job yet ships from a snapshot in data/; its skipped list is read when it is there.
+    # A state whose skipped list the report doesn't fetch yet (or that has no refresh job) is read when it is there.
     for name in optional:
         if (args.parts / name).exists():
             rows += _read_rows(args.parts / name)[0]

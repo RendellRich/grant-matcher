@@ -288,7 +288,7 @@ def main() -> None:
             continue
         payload = json.loads(gzip.decompress(raw))
         # A call whose deadline passed since the adapter ran is history. This matters most for a state that ships
-        # from a snapshot in data/ (no refresh job yet), where calls would otherwise linger after they close.
+        # from a snapshot in data/ until its refresh job first runs, where calls would otherwise linger after they close.
         records, closed = still_open(payload["programs"], date.today())
         if closed:
             print(f"programs-{state}: left out {closed} calls whose deadline has passed since {payload.get('fetched_at', '')[:10]}")

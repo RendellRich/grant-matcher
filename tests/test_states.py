@@ -1,5 +1,6 @@
 """The registry of every state's catalog (grantmatch/states.py) and how export_web reads it."""
 import importlib
+from pathlib import Path
 
 from grantmatch import export_web, states
 
@@ -78,7 +79,8 @@ def test_the_skipped_report_takes_every_built_state_from_the_registry():
         if code == "FL":
             continue
         name = f"skipped-{r['source']}.json.gz"
-        assert (name in expected) == bool(r["refresh"]) and (name in optional) == (not r["refresh"]), code
+        wanted = bool(r["refresh"]) and r["in_skip_report"]
+        assert (name in expected) == wanted and (name in optional) == (not wanted), code
     # the labels the Friday issue already used for the refreshed states are unchanged
     assert expected["skipped-ohio.json.gz"] == "Ohio (after the next daily refresh)"
     assert skipped.SOURCES["washington"] == "FundHubWA (Washington)"
@@ -133,3 +135,34 @@ def test_states_the_research_couldnt_check_claim_nothing():
     assert states.STATES["CT"]["status"] == states.STATES["VT"]["status"] == "html"
     for code in unchecked | {c for c, s in states.STATES.items() if s["status"] == "none"}:
         assert "only" not in states.STATES[code]["source"].lower(), code   # no "agency pages only" without a check
+
+
+def test_west_virginia_and_new_jersey_refresh_weekly_but_the_friday_report_doesnt_expect_them_yet():
+    from grantmatch import skipped
+    for code in ("WV", "NJ"):
+        assert states.STATES[code]["refresh"] == "weekly" and states.REPORT[code]["in_skip_report"] is False, code
+    expected, optional = skipped.expected_parts()
+    # skipped-report.yml doesn't download these files yet, so the report must not list them as missing
+    assert "skipped-westvirginia.json.gz" not in expected and "skipped-newjersey.json.gz" not in expected
+    assert set(optional) == {"skipped-westvirginia.json.gz", "skipped-newjersey.json.gz"}
+    workflow = (Path(export_web.__file__).parent.parent / ".github" / "workflows" / "skipped-report.yml").read_text(encoding="utf-8")
+    assert "skipped-westvirginia" not in workflow and "skipped-newjersey" not in workflow   # flip in_skip_report when it does
+
+
+def test_the_state_refresh_workflow_runs_the_registry_states_weekly_and_publishes_what_the_export_reads():
+    import re
+    path = Path(export_web.__file__).parent.parent / ".github" / "workflows" / "refresh-states.yml"
+    text = path.read_text(encoding="utf-8")
+    assert re.search(r'^\s*- cron: "17 13 \* \* 1"', text, re.M)   # weekly, Mondays 13:17 UTC
+    refreshed = [c for c, s in states.STATES.items() if s.get("refresh") == "weekly" and c != "FL"]
+    assert sorted(refreshed) == ["NJ", "WV"]
+    uploads = re.search(r"gh release upload data-latest (.+?) --clobber", text).group(1).split()
+    want = []
+    for code in refreshed:
+        f = states.STATE_PROGRAMS[code]["file"]
+        assert f"python -m grantmatch.{states.STATES[code]['module']} --out build/{f}.json.gz --skipped build/skipped-{f}.json.gz" in text
+        assert f"python -m grantmatch.embed programs build/{f}.json.gz build/{f}.npz" in text
+        # the names export_web.fetch asks the release for, and the skipped file the report would read
+        want += [f"build/{f}.json.gz", f"build/{f}.npz", f"build/skipped-{f}.json.gz"]
+    assert sorted(uploads) == sorted(want) and len(uploads) == 6
+    assert "refresh-states.yml/enable" in text

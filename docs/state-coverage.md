@@ -12,7 +12,7 @@ What Grant Matcher covers in each of the 50 states and the District of Columbia,
 | Private foundations (IRS 990-PF) | Yes | Yes | Release assets `foundations-<ST>.json.gz` exist for 62 codes: all 50 states and DC, plus AA, AE, AP, AS, FM, GU, MH, MP, PR, PW and VI (`gh release view data-latest --json assets`). The release's `states.json` lists 59 of them (all but AE, AS and MH). `export_web.foundation_states()` exports the union of that list and the snapshot in `data/`. |
 | Community foundations, public foundations, United Ways (990 Schedule I) | Yes | Yes | Release assets `community-<ST>.json.gz` for all 50 states and DC, plus GU, PR, PW and VI. They join each state's foundation file in `export_web.main()`. `data/coverage.json` (made 2026-11-19) has 61 rows and 53 states with data. |
 | Corporate foundations (`data/corporate.json`) | Partly, by design: Walmart's and Target's programs are listed in every state, the others where they give | Yes: Walmart and Target (every state and DC) and Bank of America | 35 company foundations, based in 16 states. Four have a program listed outside their home state: Walmart and Target serve every state and DC (`"serves": "*"`), Bank of America lists 41 markets including DC, Publix 8 states in the Southeast. County limits exist only for Florida (Duke Energy). The others show in the states where their IRS return says they give. This is a hand-kept overlay on the foundation files, not a separate source, so it doesn't need to reach every state. |
-| State programs | No: 8 states | No | Florida (`florida.json.gz`), California, Illinois, Iowa, Ohio and Washington from release assets (`california.json.gz`, `illinois.json.gz`, `iowa.json.gz`, `ohio.json.gz`, `washington.json.gz`), and West Virginia and New Jersey from snapshots in `data/` (`westvirginia.json.gz`, `newjersey.json.gz`) until the refresh job is added. Listed in `grantmatch/states.py` (`STATE_PROGRAMS`); every state's status goes into `meta.json` as `catalogs`. Section (b) gives the reason for each state without one. |
+| State programs | No: 8 states | No | Florida (`florida.json.gz`), California, Illinois, Iowa, Ohio and Washington from release assets (`california.json.gz`, `illinois.json.gz`, `iowa.json.gz`, `ohio.json.gz`, `washington.json.gz`), and West Virginia and New Jersey from snapshots in `data/` (`westvirginia.json.gz`, `newjersey.json.gz`) until the weekly refresh job (`refresh-states.yml`, on this branch) first runs after merge. Listed in `grantmatch/states.py` (`STATE_PROGRAMS`); every state's status goes into `meta.json` as `catalogs`. Section (b) gives the reason for each state without one. |
 | County and city programs (`data/local-*.json`) | No: 5 states | No | `data/local-FL.json`, `local-IA.json`, `local-IL.json`, `local-OH.json`, `local-WA.json`, kept by hand (`grantmatch/local.py`). They join that state's tab. |
 | Counties list (`data/counties.json.gz`) | Yes | Yes | 56 codes: all 50 states, DC (one county, the District itself), and AS, GU, MP, PR, VI. `export_web.main()` writes `counties-<ST>.json` for each. |
 | State picker | Yes | Yes | `web/src/score.ts` line 32 (`STATE_NAMES`, used by `web/src/profile.ts` line 5 `STATES`) and `grantmatch/display.py` lines 8 and 12 list the 50 states, DC and Puerto Rico. Puerto Rico is the only territory in the picker; it has foundation files and gets the same "no catalog" note as a state without one. Other territories aren't in the picker and are out of scope. |
@@ -90,7 +90,7 @@ Three states have a machine-readable list that isn't built. Each went to Ren for
 
 **Ren's decisions, 2026-11-25:**
 
-- **Weekly refresh for West Virginia and New Jersey: approved.** The job is not on this branch yet: writing `.github/workflows/refresh-states.yml` wasn't permitted in the session that made this change, so the job in section (d) is still a proposal, and the committed snapshots in `data/` are what ship until the workflow is added.
+- **Weekly refresh for West Virginia and New Jersey: approved.** Ren added `.github/workflows/refresh-states.yml` to this branch (section (d)). It runs after merge; until its first run, the committed snapshots in `data/` are what ship.
 - **Pennsylvania: left out.**
 - **Hawaii and Alaska: left out for now.**
 
@@ -106,52 +106,17 @@ Three states have a machine-readable list that isn't built. Each went to Ren for
 
 **Unchecked, needs a look in a browser:** Arkansas, Colorado, Idaho, Kansas, Kentucky, Louisiana (check the Opportunity Roadmap PDF), Minnesota, Mississippi, Missouri, Nebraska, New Hampshire, New Mexico, Oklahoma (read the agency pages), South Carolina, South Dakota, Tennessee, Texas and Wisconsin. Texas's list is known to exist, but an earlier survey in this repo (November 2026) found that its robots.txt disallows crawling, so it would need the Comptroller's permission or a published export.
 
-## (d) Proposed refresh job
+## (d) Refresh job
 
-Not added: the weekly job was approved on 2026-11-25 (section (c)) but isn't on this branch. Until the refresh job is added, West Virginia and New Jersey ship from the snapshots `data/westvirginia.json.gz` and `data/newjersey.json.gz`, made on November 25, 2026. `export_web.fetch()` asks the release for `westvirginia.json.gz`, gets a 404, and reads the file in `data/` instead (tested in `tests/test_states.py`). There is no vectors file in either place, so `program_vectors()` embeds the records during the export, as it already does for the hand-kept lists. A snapshot ages. `export_web` leaves out any call whose closing date is before the day of the export (`still_open()`, for every open-call state; Florida's catalog and the hand-kept lists keep their own rules), so expired calls stop showing, and the state tab says when its data was last updated. Calls the state adds after the snapshot don't appear until it is remade (`python -m grantmatch.westvirginia --out data/westvirginia.json.gz` and `python -m grantmatch.newjersey --out data/newjersey.json.gz`) or the refresh job runs. On November 25 the New Jersey snapshot had 9 dated calls (the first closing December 4) and 22 rolling ones; West Virginia's 7 close between December 15, 2026 and June 30, 2027, except one ongoing. The deploy workflow's push paths don't include these two files, so a new snapshot reaches the site on the next deploy that runs for another reason (several a day).
+The weekly job approved on 2026-11-25 is on this branch: `.github/workflows/refresh-states.yml` ("Refresh state lists"). It starts running only after the branch is merged: weekly, Mondays at 13:17 UTC (cron `17 13 * * 1`), and it can also be run by hand. One job on ubuntu-latest reads both lists (`python -m grantmatch.westvirginia --out build/westvirginia.json.gz --skipped build/skipped-westvirginia.json.gz`, and the same for `grantmatch.newjersey`), embeds them (`python -m grantmatch.embed programs`), and uploads six files to the data-latest release: `westvirginia.json.gz`, `westvirginia.npz`, `skipped-westvirginia.json.gz`, `newjersey.json.gz`, `newjersey.npz` and `skipped-newjersey.json.gz`. `tests/test_states.py` reads the file and checks the cron, the commands and the uploaded names against `grantmatch/states.py`.
 
-The proposed change is one new workflow that runs **weekly**. Weekly means a call a state opens mid-week can show up to a week late. Closed calls still drop out at every site export, which runs several times a day, because `still_open()` checks each record's closing date against the export day, not the refresh day.
+Until its first run, West Virginia and New Jersey ship from the committed snapshots `data/westvirginia.json.gz` and `data/newjersey.json.gz`, made on November 25, 2026. `export_web.fetch()` asks the release for `westvirginia.json.gz`, gets a 404, and reads the file in `data/` instead (tested in `tests/test_states.py`). Until the job has published vectors, `program_vectors()` embeds the records during the export, as it already does for the hand-kept lists. A snapshot ages. `export_web` leaves out any call whose closing date is before the day of the export (`still_open()`, for every open-call state; Florida's catalog and the hand-kept lists keep their own rules), so expired calls stop showing, and the state tab says when its data was last updated. Calls the state adds after the snapshot don't appear until the job runs (or the snapshot is remade with `python -m grantmatch.westvirginia --out data/westvirginia.json.gz` and `python -m grantmatch.newjersey --out data/newjersey.json.gz`). On November 25 the New Jersey snapshot had 9 dated calls (the first closing December 4) and 22 rolling ones; West Virginia's 7 close between December 15, 2026 and June 30, 2027, except one ongoing.
 
-```yaml
-# .github/workflows/refresh-states.yml (proposed, not added)
-name: Refresh state lists
-on:
-  schedule:
-    - cron: "17 13 * * 1"   # weekly, Mondays at 13:17 UTC
-  workflow_dispatch:
-permissions:
-  contents: write
-  actions: write
-jobs:
-  refresh:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install -r requirements.txt
-      - name: Read the West Virginia and New Jersey lists
-        run: |
-          python -m grantmatch.westvirginia --out build/westvirginia.json.gz --skipped build/skipped-westvirginia.json.gz
-          python -m grantmatch.newjersey --out build/newjersey.json.gz --skipped build/skipped-newjersey.json.gz
-      - name: Build semantic embeddings
-        run: |
-          python -m grantmatch.embed programs build/westvirginia.json.gz build/westvirginia.npz
-          python -m grantmatch.embed programs build/newjersey.json.gz build/newjersey.npz
-      - name: Publish as data-latest release assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload data-latest build/westvirginia.* build/newjersey.* build/skipped-westvirginia.json.gz build/skipped-newjersey.json.gz --clobber
-      - name: Keep this schedule from expiring
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/refresh-states.yml/enable"
-```
+**How new data reaches the site.** "Refresh state lists" is not in `deploy-site.yml`'s `workflow_run` list (that list names the federal, Florida, California, Illinois, Iowa, Ohio, Washington, foundations and funder website refreshes), and `deploy-site.yml` is unchanged, so the weekly job doesn't start a deploy itself. The next deploy picks the new files up, because the export reads the release at every deploy, and the federal refresh triggers one twice a day. So new West Virginia and New Jersey data reaches the site within about 12 hours of the weekly run. The deploy workflow's push paths don't include the two snapshot files either, so a remade snapshot also reaches the site on the next deploy.
 
-Later states join the same job as more lines in the two steps, so the job count doesn't grow with each state. One small edit to `deploy-site.yml` is also worth making with it: its push paths list `grantmatch/export_web.py` but not `grantmatch/states.py`, which the export now reads, so a change to the registry alone wouldn't rebuild the site until the next refresh-triggered deploy. `skipped-report.yml` also needs a change, or West Virginia and New Jersey stay out of the Friday skipped grants report: today it neither downloads their skipped lists nor passes their data files. Proposed (not made): add `-p 'skipped-westvirginia.json.gz' -p 'skipped-newjersey.json.gz'` to the first `gh release download`, `-p westvirginia.json.gz -p newjersey.json.gz` to the second, and `--westvirginia build/westvirginia.json.gz --newjersey build/newjersey.json.gz` to the `python -m grantmatch.skipped` line. `grantmatch/skipped.py` already takes those arguments and reads the two skipped lists when they are there (both come from `grantmatch/states.py`); once their `refresh` is set in the registry, the report also says when a refresh failed to publish one. The report job's minutes don't change measurably (a few more seconds of download).
+Weekly means a call a state opens mid-week can show up to a week late. Closed calls still drop out at every site export, which runs several times a day, because `still_open()` checks each record's closing date against the export day, not the refresh day.
+
+Later states join the same job as more lines in the two steps, so the job count doesn't grow with each state. Two workflow changes are still not made. First, `deploy-site.yml`: its push paths list `grantmatch/export_web.py` but not `grantmatch/states.py`, which the export now reads, so a change to the registry alone wouldn't rebuild the site until the next refresh-triggered deploy. Second, `skipped-report.yml`: until it changes, West Virginia and New Jersey stay out of the Friday skipped grants report, because it neither downloads their skipped lists nor passes their data files. The change, not made: add `-p 'skipped-westvirginia.json.gz' -p 'skipped-newjersey.json.gz'` to the first `gh release download`, `-p westvirginia.json.gz -p newjersey.json.gz` to the second, and `--westvirginia build/westvirginia.json.gz --newjersey build/newjersey.json.gz` to the `python -m grantmatch.skipped` line. `grantmatch/skipped.py` already takes those arguments and reads the two skipped lists when they are there (both come from `grantmatch/states.py`). Their registry entries have `"in_skip_report": False`, so the report doesn't call their files missing meanwhile; once `skipped-report.yml` downloads them, setting it to true makes the report say when a refresh failed to publish one. The report job's minutes don't change measurably (a few more seconds of download).
 
 **Billed minutes.** Job times from `gh run view` for the recent successful runs of each existing state refresh, on ubuntu-latest (billed per job, rounded up to the minute):
 
@@ -163,9 +128,9 @@ Later states join the same job as more lines in the two steps, so the job count 
 | California | 64 to 81 s | 2 |
 | Illinois | 142 to 158 s | 3 |
 
-So the existing jobs take 50 to 158 seconds, 1 to 3 billed minutes a run. Illinois and Iowa are slower because they read a page per notice; California downloads a 6.6 MB file. The West Virginia and New Jersey adapters each make one small request (a 700 KB JSON list and a 7 KB CSV), like Ohio and Washington, but the job runs two of them and two embedding steps, so expect it near California's: about 60 to 90 seconds, **1 to 2 billed minutes a run**.
+So the existing jobs take 50 to 158 seconds, 1 to 3 billed minutes a run. The new job hasn't run yet, so its time is an estimate. Illinois and Iowa are slower because they read a page per notice; California downloads a 6.6 MB file. The West Virginia and New Jersey adapters each make one small request (a 700 KB JSON list and a 7 KB CSV), like Ohio and Washington, but the job runs two of them and two embedding steps, so expect it near California's: about 60 to 90 seconds, **1 to 2 billed minutes a run**.
 
-- **Proposed, weekly:** about 4.3 runs a month, so **about 4 to 9 billed minutes a month**.
+- **Weekly, as added:** about 4.3 runs a month, so **about 4 to 9 billed minutes a month**.
 - **Rejected alternative, daily:** 30 to 62 billed minutes a month (2 minutes every day of a 31-day month is the top), for calls showing up within a day instead of within a week.
 
-A deploy triggered by a refresh (`deploy-site.yml` build and deploy jobs) took 6 to 8 minutes on November 24, about 7 to 9 billed minutes. Adding "Refresh state lists" to deploy-site's `workflow_run` list would add about 30 to 40 billed minutes a month even run weekly (210 to 270 if daily). That isn't needed: the export reads the release at every deploy, and the federal refresh alone triggers a deploy twice a day, so new West Virginia and New Jersey data reaches the site within about 12 hours of the weekly refresh without it. The recommendation is the weekly refresh job alone, at about 4 to 9 minutes a month.
+A deploy triggered by a refresh (`deploy-site.yml` build and deploy jobs) took 6 to 8 minutes on November 24, about 7 to 9 billed minutes. Adding "Refresh state lists" to deploy-site's `workflow_run` list would add about 30 to 40 billed minutes a month (210 to 270 if the job ran daily). It isn't needed, for the reason above: the next deploy picks the data up within about 12 hours. The job as added costs about 4 to 9 minutes a month.
