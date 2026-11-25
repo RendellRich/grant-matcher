@@ -68,7 +68,8 @@ def main() -> None:
         records, key, doc, limit = payload["foundations"], "ein", foundation_doc, 1000
     else:
         raise SystemExit(f"unknown kind {kind}")
-    vecs = embed_texts([doc(r)[:limit] for r in records])
+    # A state with no open call is a real answer: write an empty file rather than fail the refresh job.
+    vecs = embed_texts([doc(r)[:limit] for r in records]) if records else np.zeros((0, 384), dtype=np.float32)
     save([r[key] for r in records], vecs, out)
     print(f"wrote {len(records)} embeddings to {out}")
 

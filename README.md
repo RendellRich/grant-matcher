@@ -43,6 +43,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Saves your filters with your profile:** type of support (general operating, start-up, capacity building and more), the amount you want to ask for, funder types, timing (open now, or due within 30, 60 or 90 days), words to avoid, and a hide list (scholarship funds, invitation only, no unsolicited requests, research grants, matching funds required). They never change a score, and each tab says how many they hide.
 - **Exports** your strong and possible matches to CSV and the deadlines to a calendar file (.ics).
 - **Narrows the list** without changing any score: search words across every result and its details, award size, deadline and agency for federal grants, agency for Florida programs, and for foundations their typical grant, whether they publish how to apply, whether they refuse unsolicited requests, and whether they're based in or fund your cities.
+- **Says when each result was last checked.** Cards show "Last checked <date>", the date its source was read, and "Link didn't open when last checked" when the weekly [freshness check](docs/freshness.md) found the link dead. Neither changes a score.
 - **Marks what's new.** Grants, foundations and programs that weren't in the data at your last visit carry a New tag, and "Only new since your last visit" shows just those. The record of what you've seen stays in your browser.
 - **Flags eligibility while your 501(c)(3) is pending.** Foundations whose own filing asks for 501(c)(3) status or an IRS determination letter get a caution and a lower score, with a note about a fiscal sponsor, and one checkbox hides them. Federal grants that require 501(c)(3) status say the same.
 - **Keeps a shortlist** of the results you mark, saved in your browser and, on Pro, to your account so it is the same on every device, with its own CSV. Each one has a stage: Saved, Applying or Submitted, with the date it moved. Submitted ones stop showing in the results and stay on the shortlist.
@@ -217,7 +218,7 @@ New York, DC and Minnesota have no refresh job yet: they ship from snapshots in 
 
 ## Adding a state
 
-Every state and DC has one entry in `grantmatch/states.py`: its status (built, next, decide, html, blocked, none or unchecked) and its source. `blocked` is for a state whose key grant pages we may not or cannot read (robots.txt, terms that bar automated or commercial use, or a site that turns scripts away); nothing is read from them. `unchecked` is for a state the research couldn't establish; the site's note for it claims nothing beyond "not read in yet". `STATE_PROGRAMS`, which the export reads, comes from the built entries, and the export publishes every state's status in `meta.json` so the site can say when a state has no catalog. To add a state, write an adapter that produces the same record fields as `ohio.py` (with `--out`, `--skipped` and past-deadline rows dropped), set its entry to `built` with its file, source, catalog label, module, `report` (its heading in the skipped grants review) and `refresh` (`None` until a refresh job exists), and add it to a refresh job (`refresh-states.yml` takes more states as more lines). Set `"who_listed": False` when the list never says who may apply. Set `"in_skip_report": False` until `skipped-report.yml` downloads its skipped file. The state tab, the exports and `grantmatch/skipped.py` need no change (the site's "For <state> state grants" note and footer sentence in `web/src/app.tsx` are written by hand): the report's sources, headings, arguments (`--<file>`) and expected files come from the registry, though `skipped-report.yml` still has to download the state's skipped file and pass its data file. Florida is in the registry too but keeps its own export, and `tests/test_florida_unchanged.py` checks that its records and scores stay the same.
+Every state and DC has one entry in `grantmatch/states.py`: its status (built, next, decide, html, blocked, none or unchecked) and its source. `blocked` is for a state whose key grant pages we may not or cannot read (robots.txt, terms that bar automated or commercial use, or a site that turns scripts away); nothing is read from them. `unchecked` is for a state the research couldn't establish; the site's note for it claims nothing beyond "not read in yet". `STATE_PROGRAMS`, which the export reads, comes from the built entries, and the export publishes every state's status in `meta.json` so the site can say when a state has no catalog. To add a state, write an adapter that produces the same record fields as `ohio.py` (with `--out`, `--skipped` and past-deadline rows dropped), set its entry to `built` with its file, source, catalog label, module, `pages` (the public pages the list is read from, which the freshness check opens), `report` (its heading in the skipped grants review) and `refresh` (`None` until a refresh job exists), and add it to a refresh job (`refresh-states.yml` takes more states as more lines). Set `"who_listed": False` when the list never says who may apply. Set `"in_skip_report": False` until `skipped-report.yml` downloads its skipped file. The state tab, the exports and `grantmatch/skipped.py` need no change (the site's "For <state> state grants" note and footer sentence in `web/src/app.tsx` are written by hand): the report's sources, headings, arguments (`--<file>`) and expected files come from the registry, though `skipped-report.yml` still has to download the state's skipped file and pass its data file. Florida is in the registry too but keeps its own export, and `tests/test_florida_unchanged.py` checks that its records and scores stay the same.
 
 ## County and city programs
 
@@ -293,6 +294,8 @@ The IRS data can't tell a company's foundation from a family's. `data/corporate.
 
 Both hand-kept lists go stale when a program changes after it was entered. Every Thursday `grantmatch/watch.py` (workflow `watch-pages.yml`) reads each page the two files point to, HTML, PDF or Word, and compares it with last week's reading, kept as `watch-state.json.gz` on the data-latest release. It opens or adds to a `page-watch` issue listing new status wording ("on hold", "now accepting", "applications are closed"), sentences added or removed, blank pages, pages it could not reach and entries checked more than 90 days ago. It never edits an entry: a person reads the page, updates the entry and sets its `checked` date. Some government sites turn away automated readers; those show as "could not reach" and need a look in a browser. A page that is off limits (robots.txt or terms) shows as blocked; it is not read and its entry is not deleted.
 
+The same weekly run then does the freshness check (`grantmatch/freshness.py`): it flags sources whose data is older than their refresh schedule allows, dead links, and hand-kept programs whose closing date has passed with no next round, in a second section of the same issue. [docs/freshness.md](docs/freshness.md) has what is checked, the limits, what to do with the report and the Actions minutes. A proposed single weekly job for West Virginia, New Jersey, New York, DC and Minnesota (`grantmatch/refresh_states.py`, with workflow text in `docs/proposed-workflows/`) is not in use.
+
 A national program run through local stores, such as Walmart's Spark Good grants, is listed in every state it serves, even when the foundation's IRS return names other states among the top 12 it gave to. Without that, the Walmart Foundation was missing from Florida's list.
 
 ## Giving over several years
@@ -331,7 +334,8 @@ A GitHub Action runs twice a day and pulls every posted and forecasted opportuni
 | New York [Search for Grant Opportunities](https://esupplier.sfs.ny.gov/psp/fscm/SUPPLIER/ERP/c/NY_SUPPUB_FL.AUC_RESP_INQ_AUC.GBL) (web page) | no job yet: the snapshot in `data/`, made November 25, 2026 | none |
 | [District Grants Clearinghouse](https://communityaffairs.dc.gov/node/26) (web page, CC BY 3.0) | no job yet: the snapshot in `data/`, made November 25, 2026 | none |
 | Minnesota [Health](https://www.health.state.mn.us/about/grants/index.html) and [Justice Programs](https://dps.mn.gov/divisions/ojp/ojp-grants/funding-opportunities) grant pages (two agencies) | no job yet: the snapshot in `data/`, made November 25, 2026 | none |
-| Pages behind the hand-kept lists (`local-FL.json`, `corporate.json`) | weekly | `watch-pages.yml` |
+| Pages behind the hand-kept lists (`local-<ST>.json`, `corporate.json`) | weekly | `watch-pages.yml` |
+| [Freshness check](docs/freshness.md): how old every source's data is, and whether source pages and state call links still open | weekly | `watch-pages.yml` (the same run) |
 | Skipped grants review (`skipped-grants.csv` and the `skip-review` issue) | weekly | `skipped-report.yml` |
 | Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
 | Each foundation's own website (the home page and the grants or apply page it links to), for an open cycle, a deadline ahead, an application link, or a note that it isn't taking requests | weekly | `refresh-websites.yml` |
@@ -396,6 +400,8 @@ grantmatch/local.py     programs entered by hand: state calls, county and city g
 grantmatch/skipped.py   the weekly list of grants left out, and why
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
 grantmatch/watch.py     weekly check of the pages behind both hand-kept lists
+grantmatch/freshness.py   weekly check of every source's age and links, run with the page watch
+grantmatch/refresh_states.py  one driver for the weekly state adapters (not in a job yet)
 grantmatch/history.py   each foundation's giving across five tax years
 grantmatch/coverage.py  registered foundations per state against what the state files hold
 grantmatch/rank_more.py foundation and Florida scoring
@@ -409,6 +415,7 @@ DESIGN.md               design system: colors, type, components, and accessibili
 docs/images/            README screenshots
 docs/state-coverage.md  what each source covers, state by state, and the next states to add
 docs/county-coverage.md county and city programs: entry format, coverage, what was left out and why, the plan
+docs/freshness.md       the freshness check, and proposed workflows in docs/proposed-workflows/
 .github/workflows/      data refreshes, tests, and the site deploy
 ```
 
