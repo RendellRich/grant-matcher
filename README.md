@@ -195,6 +195,8 @@ No public catalog lists county and city grants, community foundation and United 
 
 Other states can have the same kind of list: `data/local-<ST>.json` (Illinois, Iowa, Ohio and Washington have one) joins that state's tab, keyed `local-<st>-<slug>` so keys never clash with Florida's. Deploys, the website check and the page watch pick up every state's file.
 
+A program that takes applications any time gets `"rolling": true` (and no `closes`). One that is between rounds (no window open or announced, not rolling, and its website not saying applications are open at the last weekly check) loses 15 points and gets a "Between rounds" caution, so programs a nonprofit can apply to now or soon rank first; `score.ts` and `rank_more.py` apply the same rule.
+
 To add or change one, edit the file from the official page, update `checked`, and run `python -m grantmatch.local` to check every state's file.
 
 ## Skipped grants review

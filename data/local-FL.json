@@ -50,6 +50,7 @@
       "award": "$500 to $3,000. Awards are approved by the Juvenile Welfare Board's Chief Executive Officer or designee.",
       "opens": null,
       "closes": null,
+      "rolling": true,
       "deadlines": "Rolling: the request must arrive 60 to 180 days before the event.",
       "contact": "cefundingsupport@jwbpinellas.org",
       "subjects": "Children; Families; Community events; School supplies; Basic needs; Education",

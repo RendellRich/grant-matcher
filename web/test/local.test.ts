@@ -2,7 +2,7 @@
 // and the scorer applies the same county and 501(c)(3) rules as grantmatch/rank_more.py.
 import { describe, expect, it } from "vitest";
 import { floridaEntry, localWindow } from "../src/entries";
-import { scoreFlorida, type FloridaRec, type Profile } from "../src/score";
+import { BETWEEN_ROUNDS, betweenRounds, scoreFlorida, type FloridaRec, type Profile } from "../src/score";
 
 const rec = (extra: Partial<FloridaRec> = {}): FloridaRec => ({
   id: "local-sample-county-kids", csfa: "", title: "Synthetic Children's Fund", agency: "Sample County",
@@ -61,5 +61,35 @@ describe("county programs", () => {
     const e = floridaEntry(a, true);
     expect(e.catalog).toBe("CSFA 48.001");
     expect(e.side).toBe("");
+  });
+});
+
+describe("hand-kept programs between rounds", () => {
+  const day = new Date(2026, 10, 18);
+  const state = (extra: Partial<FloridaRec> = {}) =>
+    rec({ id: "local-ia-sample", level: "State", area: "all of Iowa", places: [], opens: null, closes: null, ...extra });
+
+  it("are only the ones with no window open, announced or always open", () => {
+    expect(betweenRounds(state(), day)).toBe(true);
+    expect(betweenRounds(state({ rolling: true }), day)).toBe(false);
+    expect(betweenRounds(state({ opens: "2027-01-01", closes: "2027-02-05" }), day)).toBe(false);
+    expect(betweenRounds(state({ closes: "2026-11-18" }), day)).toBe(false);
+    expect(betweenRounds(state({ opens: "2026-01-01", closes: "2026-02-06" }), day)).toBe(true);
+    expect(betweenRounds(state({ _cycle: { s: "open", at: "2026-11-12" } }), day)).toBe(false);
+    expect(betweenRounds(state({ _cycle: { s: "closed", at: "2026-11-12" } }), day)).toBe(true);
+    expect(betweenRounds(state({ id: "il-4319" }), day)).toBe(false); // a state list's own call
+  });
+
+  it("rank below an open program by 15 points, with a caution", () => {
+    const [open, closed] = [state({ id: "local-ia-open", rolling: true }), state({ id: "local-ia-closed" })];
+    const out = scoreFlorida([closed, open], profile(), null);
+    expect(out.map((s) => s.rec.id)).toEqual(["local-ia-open", "local-ia-closed"]);
+    expect(out[0].score - out[1].score).toBe(15);
+    expect(out[1].cautions).toContain(BETWEEN_ROUNDS);
+    expect(out[0].cautions).not.toContain(BETWEEN_ROUNDS);
+  });
+
+  it("say a rolling program takes applications any time", () => {
+    expect(localWindow(state({ rolling: true }), day).line).toBe("Taking applications with no set deadline");
   });
 });
