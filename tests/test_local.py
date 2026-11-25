@@ -38,7 +38,7 @@ def test_bad_entries_are_named():
     assert any("slug" in p for p in problems)
     assert "unknown county 'Atlantis'" in problems
     assert any(p.startswith("opens") for p in problems)
-    assert "requires_501c3 must be true or false" in problems
+    assert "requires_501c3 must be true, false or null" in problems
     assert "url must start with https://" in problems
     assert local.check(entry(opens="2027-02-01"), COUNTIES) == ["opens is after closes"]
 
@@ -286,7 +286,60 @@ def test_a_state_with_no_catalog_gets_a_local_only_file(tmp_path, monkeypatch):
 
 def test_a_built_states_hand_kept_programs_join_its_tab():
     from grantmatch import export_web
-    for st, n in (("IL", 2), ("WA", 4), ("CA", 6), ("NY", 3)):
+    for st, n in (("IL", 3), ("WA", 4), ("CA", 6), ("NY", 3)):
         rows = export_web.hand_kept(st)
         assert export_web.has_local(rows) and sum(r["level"] != "State" for r in rows) == n, st
     assert not export_web.has_local(export_web.hand_kept("OH"))
+
+
+def test_a_required_match_costs_points_when_you_cant_cost_share():
+    assert local.check(entry(match="25%"), COUNTIES) == []
+    assert local.check(entry(match=""), COUNTIES) == ["match must say how much, for example 25%"]
+    plain = local.to_record(entry(), COUNTIES)
+    assert "match" not in plain  # records without one are as they were
+    r = local.to_record(entry(match="25%"), COUNTIES)
+
+    def one(rec, share):
+        p = Profile(mission=PROFILE.mission, keywords=PROFILE.keywords, can_cost_share=share)
+        return score_florida([rec], p, cities=["Bradenton"]).iloc[0]
+
+    assert "Requires matching funds (25%)" in one(r, False)["cautions"]
+    assert one(plain, False)["score"] - one(r, False)["score"] == 20
+    assert one(r, True)["score"] == one(plain, True)["score"]
+
+
+def test_a_tax_status_answer_can_be_neither_yes_nor_no():
+    e = entry(requires_501c3=None)
+    assert local.check(e, COUNTIES) == []
+    missing = {k: v for k, v in e.items() if k != "requires_501c3"}
+    assert local.check(missing, COUNTIES) == ["requires_501c3 must be true, false or null"]
+    r = local.to_record(e, COUNTIES)
+    assert r["requires_501c3"] is None
+    pending = Profile(mission=PROFILE.mission, keywords=PROFILE.keywords, has_501c3="No")
+    assert not [c for c in score_florida([r], pending, cities=["Bradenton"]).iloc[0]["cautions"] if "501(c)(3)" in c]
+
+
+def test_the_match_and_tax_status_rules_found_in_the_guidelines():
+    records = {r["id"]: r for st in ("AZ", "CA", "IL", "TX", "WA") for r in local.load(state=st)}
+    matches = {i: r["match"] for i, r in records.items() if "match" in r}
+    assert matches == {
+        "local-az-maricopa-home-chdo-py27": "25%", "local-ca-lac-arts-ogp": "100% cash",
+        "local-ca-lac-arts-ciag": "100% cash", "local-il-cook-esg-2026": "100%", "local-tx-tarrant-esg-py2027": "100%",
+    }
+    required = sorted(i for i, r in records.items() if r.get("level") not in (None, "State") and r["requires_501c3"] is True)
+    assert required == ["local-az-maricopa-cdbg-py27", "local-az-maricopa-esg-cdbg-ps-py27", "local-il-cook-cdbg-2026",
+                        "local-il-cook-esg-2026", "local-tx-san-antonio-arts-operational-fy27"]
+    sb = records["local-ca-sbc-cdbg-py2027"]
+    assert len(sb["places"]) == 14 and "surrounding communities" in sb["source_note"]
+
+
+def test_words_about_a_match_agree_with_the_match_field():
+    # The card reads a program's words too (web/src/ready.ts), so they must not suggest a match that isn't required.
+    import re
+    for st in ("AZ", "CA", "IL", "NV", "NY", "PA", "TX", "WA"):
+        for r in local.load(state=st):
+            if r["level"] == "State" or "match" in r:
+                continue
+            words = " ".join((r["applicant_types"], r["application"], r["award"], r["deadlines"]))
+            if re.search(r"matching|\bmatch\b", words, re.I):
+                assert re.search(r"no match required", words, re.I), r["id"]

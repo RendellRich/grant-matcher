@@ -588,7 +588,7 @@ export interface FloridaRec {
   application: string; award: string; deadlines: string; contact: string; web: string; subjects: string;
   url: string; _title?: string; _assist?: string;
   // County and city programs only (grantmatch/local.py)
-  level?: string; area?: string; places?: string[]; requires_501c3?: boolean;
+  level?: string; area?: string; places?: string[]; requires_501c3?: boolean | null;
   opens?: string | null; closes?: string | null; rolling?: boolean; checked?: string; _cycle?: WebsiteCycle;
   source_note?: string; // something the program's page gets wrong or leaves unclear
   // Open calls only (grantmatch/california.py)

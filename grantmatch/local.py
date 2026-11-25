@@ -101,8 +101,12 @@ def check(entry: dict, counties: dict[str, list[str]], state: str = "FL") -> lis
             problems.append(f"{k} must be a yyyy-mm-dd date or null")
     if entry.get("opens") and entry.get("closes") and entry["opens"] > entry["closes"]:
         problems.append("opens is after closes")
-    if not isinstance(entry.get("requires_501c3"), bool):
-        problems.append("requires_501c3 must be true or false")
+    # null: not a yes or no (another route, such as a fiscal sponsor, or the page doesn't say), so no card claims either
+    required = entry.get("requires_501c3", "missing")
+    if not (required is None or isinstance(required, bool)):
+        problems.append("requires_501c3 must be true, false or null")
+    if "match" in entry and not (isinstance(entry["match"], str) and entry["match"].strip()):
+        problems.append("match must say how much, for example 25%")
     if "rolling" in entry and not isinstance(entry["rolling"], bool):
         problems.append("rolling must be true or false")
     if entry.get("rolling") and entry.get("closes"):
@@ -172,8 +176,9 @@ def to_record(entry: dict, counties: dict[str, list[str]], fiscal_year: str = ""
         "rolling": bool(entry.get("rolling", False)),
         "checked": entry["checked"],
     }
-    if entry.get("source_note"):  # only when there is one, so other records stay as they were
-        record["source_note"] = entry["source_note"]
+    for key in ("match", "source_note"):  # only when there is one, so other records stay as they were
+        if entry.get(key):
+            record[key] = entry[key]
     return record
 
 

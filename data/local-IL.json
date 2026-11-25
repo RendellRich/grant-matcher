@@ -230,10 +230,10 @@
     "Cook"
    ],
    "objectives": "Community violence intervention services in Chicago and suburban Cook County, including street outreach.",
-   "who": "Community-based nonprofit organizations that provide eligible violence intervention services.",
-   "requires_501c3": false,
+   "who": "Community-based nonprofits with 501(c)(3) or 501(c)(4) status and an IRS determination letter, headquartered in Cook County, that provide eligible violence intervention services.",
+   "requires_501c3": null,
    "application": "Notice of funding on the Justice Advisory Council grants page.",
-   "award": "Up to $15 million in all for 2026.",
+   "award": "Up to $15 million in all for 2026. No match required.",
    "opens": "2026-07-01",
    "closes": "2026-08-03",
    "deadlines": "The 2026 round closed August 3, 2026. The county also ran this notice in 2025; no next date is published.",
@@ -242,8 +242,8 @@
    "checked": "2026-11-25"
   },
   {
-   "slug": "cook-cdbg-esg-2026",
-   "title": "CDBG and ESG Applications (Program Year 2026)",
+   "slug": "cook-cdbg-2026",
+   "title": "CDBG Applications (Program Year 2026)",
    "agency": "Cook County Department of Planning and Development",
    "level": "County",
    "counties": [
@@ -253,15 +253,40 @@
    "exclude_places": [
     "Chicago"
    ],
-   "objectives": "Federal CDBG and ESG funds for capital improvements, social services and homelessness prevention in income-eligible suburban communities.",
-   "who": "Suburban municipalities and nonprofits serving suburban communities (capital); nonprofits serving suburban communities (public service and ESG).",
-   "requires_501c3": false,
-   "application": "See the county's application guides.",
-   "award": "Not stated on the page.",
+   "objectives": "Federal CDBG funds for capital improvements and public services in income-eligible suburban communities.",
+   "who": "Suburban municipalities (capital) and 501(c)(3) nonprofits serving suburban communities (capital and public service).",
+   "requires_501c3": true,
+   "application": "See the county's CDBG application guide.",
+   "award": "Capital requests up to $500,000; nonprofit public facility projects up to $150,000. No match required; a match earns extra points.",
    "opens": "2026-01-14",
    "closes": "2026-03-20",
    "deadlines": "The 2026 round closed March 20, 2026. The county takes applications each year; no next date is published.",
-   "subjects": "Community development; Homelessness; Social services",
+   "subjects": "Community development; Social services",
+   "url": "https://www.cookcountyil.gov/service/community-development-block-grant-cdbg-and-emergency-solutions-grants-esg-applications-2026",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "cook-esg-2026",
+   "title": "Emergency Solutions Grant Applications (Program Year 2026)",
+   "agency": "Cook County Department of Planning and Development",
+   "level": "County",
+   "counties": [
+    "Cook"
+   ],
+   "area": "suburban Cook County",
+   "exclude_places": [
+    "Chicago"
+   ],
+   "objectives": "Emergency Solutions Grant funds for homelessness prevention and related services in suburban Cook County.",
+   "who": "501(c)(3) nonprofits serving suburban communities. Local governments are not eligible.",
+   "requires_501c3": true,
+   "match": "100%",
+   "application": "See the county's ESG application guide.",
+   "award": "$25,000 to $125,000, and no more than 20% of the applicant's budget. At least a dollar-for-dollar match is required.",
+   "opens": "2026-01-14",
+   "closes": "2026-03-20",
+   "deadlines": "The 2026 round closed March 20, 2026. The county takes applications each year; no next date is published.",
+   "subjects": "Homelessness; Shelter",
    "url": "https://www.cookcountyil.gov/service/community-development-block-grant-cdbg-and-emergency-solutions-grants-esg-applications-2026",
    "checked": "2026-11-25"
   }

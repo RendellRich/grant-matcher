@@ -1016,7 +1016,8 @@ export function App() {
             <ul class="how">
               <li>Up to 75 points for how closely the {localOnly ? "program's" : "call's"} purpose matches your mission</li>
               <li>Up to 25 points for your key words in its title and purpose, with rare words worth more</li>
-              {localOnly ? null : <li>Points off for matching funds you can't provide, for loans, and for student aid paid to individuals or schools</li>}
+              {localOnly ? <li>Points off for matching funds you can't provide</li>
+                : <li>Points off for matching funds you can't provide, for loans, and for student aid paid to individuals or schools</li>}
               {localOnly ? null : <li>A call that pays by reimbursement gets a caution, not a lower score</li>}
               {info?.local ? <li>County and city programs lose points when your cities are outside the area they serve, or when they require 501(c)(3) status you don't have yet</li> : null}
               {info?.local ? <li>Programs entered by hand lose points between rounds, when no application window is open or announced</li> : null}
