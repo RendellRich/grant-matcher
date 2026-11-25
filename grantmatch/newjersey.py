@@ -30,6 +30,8 @@ from pathlib import Path
 
 import requests
 
+from .display import without_email
+
 LIST = "https://www.nj.gov/treasury/grants-management/opportunities/state/state-data.csv"
 SITE = "https://www.nj.gov/treasury/grants-management/opportunities/state"
 MIN_ROWS = 10  # the list holds a few dozen calls; fewer than this means the file changed shape
@@ -74,7 +76,7 @@ def slug(title: str) -> str:
 
 
 def normalize(row: dict) -> dict:
-    title = row["title"]
+    title = without_email(row["title"])  # before the key is made from it
     closes = _day(row["deadline"])
     rolling = not closes and row["deadline"].lower().startswith("rolling")
     key = slug(title)
@@ -83,7 +85,7 @@ def normalize(row: dict) -> dict:
     # "Cape May County Open Space Grants for Nonprofit Organizations" names nonprofits, and a county college is a
     # school, not a county government: both stay open.
     government = bool(GOVERNMENT_ONLY.search(title)) and not re.search(r"non-?\s?profit|not-for-profit|county college", title, re.I)
-    return {
+    rec = {
         "id": f"nj-{key}",
         "csfa": "",
         "number": "",
@@ -113,6 +115,8 @@ def normalize(row: dict) -> dict:
         "loi": False,
         "updated": None,
     }
+    # No email addresses in any field, as in West Virginia's records (the list has none today).
+    return {k: without_email(v) if isinstance(v, str) else v for k, v in rec.items()}
 
 
 def build_records(items: list[dict], today: str | None = None, skips: list[dict] | None = None) -> list[dict]:

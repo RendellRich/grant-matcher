@@ -30,6 +30,8 @@ from pathlib import Path
 
 import requests
 
+from .display import without_email
+
 LIST = "https://grants.wv.gov/_api/web/lists/getbytitle('AvailableGrants')/items?$top=500"
 SITE = "https://grants.wv.gov/"
 MIN_ROWS = 20  # the list holds about 125 rows, most of them old; fewer than this means it changed shape
@@ -87,13 +89,6 @@ def _day(s: str | None) -> str | None:
     return t.date().isoformat()
 
 
-EMAIL = re.compile(r"(?:mailto:)?[\w.+-]+@[\w-]+(?:\.[\w-]+)+", re.I)
-
-
-def without_email(text: str) -> str:
-    return EMAIL.sub("the contact on the state's page", text)
-
-
 def who_can_apply(text: str) -> tuple[bool, str]:
     """(nonprofits can apply, what the card says about who can) from the state's EntityEligible text."""
     text = _clean(text)
@@ -117,7 +112,7 @@ def normalize(item: dict, today: str | None = None) -> dict:
     apply_link = _clean(item.get("LinkToApply"))
     dates = [f"{_clean(item.get(f'ImportantDateTitle{n}'))}: {_day(item.get(f'ImportantDate{n}'))}." for n in (1, 2, 3)
              if _clean(item.get(f"ImportantDateTitle{n}")) and _day(item.get(f"ImportantDate{n}"))]
-    # The program contact's name and phone, not the email address, as with Iowa's program officers.
+    # The program contact's name and phone, not the email address.
     contact = ", ".join(t for t in (_clean(item.get("ContactName1")),
                                     _clean(item.get("ContactPhone1"))) if t)
     kind = _clean(item.get("TypeOfGrant"))
@@ -155,7 +150,7 @@ def normalize(item: dict, today: str | None = None) -> dict:
         "updated": _day(item.get("Modified")),
         "_rolling": rolling,
     }
-    # No email addresses anywhere in the record, as with Iowa's program officers: the name and phone are kept, and an
+    # No email addresses anywhere in the record: the contact's name and phone are kept, and an
     # address in the text ("respond by email to jane.doe@wv.gov") points to the state's page instead.
     return {k: without_email(v) if isinstance(v, str) else v for k, v in rec.items()}
 

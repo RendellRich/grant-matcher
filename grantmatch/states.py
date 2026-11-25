@@ -5,11 +5,12 @@ Each of the 50 states and the District of Columbia has an entry with its status:
   built      an adapter reads the state's own list (file, catalog and module are set)
   next       a machine-readable source exists and is worth an adapter next (none at the moment)
   decide     a machine-readable source works, but whether to use it is Ren's call (docs/state-coverage.md says why)
-  html       the state's grant list was seen, and it is web pages, a dashboard or a bid system with no data file
+  html       the grant pages checked are web pages, a dashboard or a bid system, not a data file
   none       what was checked has no current list of grant calls: past awards only, a login, or a list that is
              empty or abandoned
-  unchecked  the research couldn't establish the answer: the site turned scripts away, showed a captcha, or
-             wasn't tested beyond a search. Nothing is claimed about these states; they need a look in a browser
+  unchecked  the research couldn't establish the answer: the site turned scripts away, showed a captcha, wasn't
+             tested, or a check couldn't be completed (Texas: the research session's own permission check blocked
+             the probe). Nothing is claimed about these states; they need a look in a browser
 
 Florida is built too, but keeps its own export (florida.py writes a catalog of programs, not open calls, with
 county programs and its own vectors). Every other built state is listed in STATE_PROGRAMS, which export_web
@@ -61,7 +62,7 @@ STATES: dict[str, dict] = {
     "MT": {"status": "html", "source": "Montana WebGrants storefront (mostly expired)"},
     "NE": {"status": "unchecked", "source": "Agency pages; DED uses AmpliFund (not tested)"},
     "NV": {"status": "html", "source": "Office of Federal Assistance grant opportunities (Airtable view)"},
-    "NH": {"status": "unchecked", "source": "No source found by search; nothing tested"},
+    "NH": {"status": "unchecked", "source": "No source named; nothing tested"},
     "NJ": {"status": "built", "source": "New Jersey Treasury list of state grant opportunities", "file": "newjersey",
            "catalog": "New Jersey", "module": "newjersey", "report": "New Jersey Treasury list", "refresh": None},
     "NM": {"status": "unchecked", "source": "SHARE NM, reportedly login-based (not tested)"},

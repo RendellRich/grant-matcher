@@ -99,3 +99,11 @@ def test_a_county_title_that_names_nonprofits_or_a_county_college_stays_open():
     for title in ("Cape May County Open Space Grants for Nonprofit Organizations", "County College Opportunity Grant"):
         rec = nj.normalize({"category": "x", "title": title, "url": "", "agency": "NJ", "deadline": "Rolling"})
         assert rec["nonprofit_eligible"] is True and rec["applicant_types"] == nj.WHO, title
+
+
+def test_email_addresses_are_taken_out_of_every_field():
+    rec = nj.normalize({"category": "Health", "title": "Mini-grants: email grants@doh.nj.gov to apply",
+                        "url": "mailto:grants@doh.nj.gov", "agency": "NJ Department of Health", "deadline": "Rolling"})
+    assert rec["title"] == "Mini-grants: email the contact on the state's page to apply"
+    assert not any("@" in v for v in rec.values() if isinstance(v, str))
+    assert rec["id"] == "nj-mini-grants-email-the-contact-on-the-state-s-page-to-apply"

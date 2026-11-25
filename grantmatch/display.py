@@ -20,6 +20,16 @@ STATE_NAMES = {
     "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont",
     "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"}
 
+# An email address in a state's listing text, with or without a mailto: link. The state adapters
+# (westvirginia.py, newjersey.py) keep none: the contact's name and phone are enough, and the page has the rest.
+EMAIL = re.compile(r"(?:mailto:)?[\w.+-]+@[\w-]+(?:\.[\w-]+)+", re.I)
+
+
+def without_email(text: str) -> str:
+    """The text with each email address replaced by a pointer to the state's page."""
+    return EMAIL.sub("the contact on the state's page", text)
+
+
 EMPTY_VALUES ={"", "NONE", "N/A", "NA", "NOT APPLICABLE", "0", "-", "NULL"}
 # Kept in capitals wherever they appear.
 ACRONYMS = {"PO", "LLC", "LLP", "USA", "US", "YMCA", "YWCA", "II", "III", "IV", "CPA", "MD", "PA", "PC",
