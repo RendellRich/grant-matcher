@@ -260,7 +260,7 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
 
 def expected_parts() -> tuple[dict[str, str], list[str]]:
     """The skipped-*.json(l).gz files the report expects, each with what to say when it is missing, and the ones it
-    reads only when present (states whose refresh job isn't approved yet)."""
+    reads only when present (states that have no refresh job yet)."""
     expected = {"skipped-federal.json.gz": "federal (after the next twice-daily refresh)"}
     optional = []
     for code, r in REPORT.items():

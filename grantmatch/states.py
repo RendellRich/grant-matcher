@@ -53,7 +53,7 @@ STATES: dict[str, dict] = {
            "report": "IowaGrants.gov", "refresh": "daily"},
     "KS": {"status": "unchecked", "source": "grants.ks.gov and the KS Infrastructure Hub (blocked to scripts)"},
     "KY": {"status": "unchecked", "source": "CHFS, KDE and eMARS pages (found by search, not tested)"},
-    "LA": {"status": "unchecked", "source": "LaPAC (procurement bids); LED's monthly Opportunity Roadmap PDF not opened"},
+    "LA": {"status": "unchecked", "source": "LaPAC (procurement bids); LED's monthly Opportunity Roadmap PDF, no link recorded"},
     "ME": {"status": "html", "source": "Maine Community Funding Finder"},
     "MD": {"status": "none", "source": "grants.maryland.gov list, abandoned since September 2023"},
     "MA": {"status": "html", "source": "COMMBUYS bid search"},
