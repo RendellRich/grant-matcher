@@ -13,8 +13,9 @@ Each of the 50 states and the District of Columbia has an entry with its status:
   none       nowhere the research looked has a current public list of state grant calls: past awards only, a
              login wall, or a list that is empty or abandoned. If any page it looked at posts current calls, the
              state is html instead
-  unchecked  the research couldn't establish the answer (Mississippi: the one table that might list current calls
-             is filled by script and wasn't read). Nothing is claimed about these states
+  unchecked  the research couldn't establish the answer (Massachusetts: the public bid search loads, but no grant
+             call was seen on it; Mississippi: the one table that might list current calls is filled by script and
+             wasn't read). Nothing is claimed about these states
 
 Florida is built too, but keeps its own export (florida.py writes a catalog of programs, not open calls, with
 county programs and its own vectors). Every other built state is listed in STATE_PROGRAMS, which export_web
@@ -67,17 +68,17 @@ STATES: dict[str, dict] = {
            "source": "The arts division's robots.txt disallows ClaudeBot; health, law enforcement, volunteer and parks sites turn scripts away"},
     "ME": {"status": "blocked", "source": "maine.gov turns scripts away, robots.txt included"},
     "MD": {"status": "html",
-           "source": "Department of Commerce State Grants table (the grants.maryland.gov list is abandoned)"},
-    "MA": {"status": "html", "source": "COMMBUYS bid search"},
-    "MI": {"status": "html", "source": "MI Funding Hub"},
+           "source": "Department of Commerce State Grants table (terms unconfirmed)"},
+    "MA": {"status": "unchecked", "source": "COMMBUYS public bid search (no grant call seen on its first page of open bids)"},
+    "MI": {"status": "html", "source": "MI Funding Hub grant pages and sitemap"},
     "MN": {"status": "built",
            "source": "Minnesota Department of Health and Office of Justice Programs pages only (two agencies, not a statewide list)",
            "file": "minnesota", "catalog": "Minnesota, 2 agencies", "module": "minnesota",
            "report": "Minnesota (Health and Justice Programs pages)", "refresh": None, "in_skip_report": False},
     "MS": {"status": "unchecked",
            "source": "Agency pages; the Human Services procurement table is filled by script and wasn't read"},
-    "MO": {"status": "html", "source": "Natural Resources, Arts Council and ServMO grant pages"},
-    "MT": {"status": "html", "source": "Montana WebGrants storefront (mostly expired)"},
+    "MO": {"status": "html", "source": "Natural Resources, Arts Council and ServMO grant pages (mo.gov data policy requires state disclaimers)"},
+    "MT": {"status": "html", "source": "Montana WebGrants storefront (nothing clearly current; terms unconfirmed)"},
     "NE": {"status": "blocked", "source": "nebraska.gov terms bar robots and scrapers without written permission"},
     "NV": {"status": "blocked", "source": "airtable.com robots.txt disallows the state's shared grant view"},
     "NH": {"status": "blocked", "source": "nh.gov agency sites turn scripts away"},
@@ -90,7 +91,7 @@ STATES: dict[str, dict] = {
            "file": "newyork", "catalog": "NY SFS", "module": "newyork", "report": "New York SFS grant search",
            "refresh": None, "in_skip_report": False},
     "NC": {"status": "blocked", "source": "nc.gov terms allow copying for non-commercial use only"},
-    "ND": {"status": "html", "source": "North Dakota WebGrants storefront"},
+    "ND": {"status": "html", "source": "North Dakota WebGrants storefront (2 rows; terms unconfirmed)"},
     "OH": {"status": "built", "source": "Ohio Grants Partnership", "file": "ohio", "catalog": "Ohio", "module": "ohio",
            "report": "Ohio Grants Partnership", "refresh": "daily"},
     "OK": {"status": "html", "source": "Oklahoma Arts Council grants page (one agency); OK Grants needs registration"},

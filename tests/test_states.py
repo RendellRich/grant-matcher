@@ -3,6 +3,7 @@ import importlib
 from pathlib import Path
 
 from grantmatch import export_web, states
+from grantmatch.display import STATE_NAMES
 
 
 def test_every_state_and_dc_has_one_entry_with_a_known_status():
@@ -138,10 +139,20 @@ def test_every_state_has_the_status_the_research_established():
     assert by["built"] == {"CA", "DC", "FL", "IA", "IL", "MN", "NJ", "NY", "OH", "WA", "WV"}
     # robots.txt, terms or a refusal to scripts keep the pages out
     assert by["blocked"] == {"AL", "CO", "IN", "LA", "ME", "NC", "NE", "NH", "NM", "NV", "RI", "TX", "VT", "WI"}
-    assert by["unchecked"] == {"MS"}   # the only one the research couldn't establish
+    assert by["unchecked"] == {"MA", "MS"}   # the two the research couldn't establish
     # "none" only where nowhere the research looked posts current state calls
     assert by["none"] == {"AZ", "DE", "OR"} and by["decide"] == {"AK", "HI", "PA"} and by["next"] == set()
-    assert len(by["html"]) == 19 and {"KS", "MD", "TN"} <= by["html"]
+    assert len(by["html"]) == 18 and {"KS", "MD", "MI", "MO", "MT", "ND", "TN"} <= by["html"]
+
+
+def test_the_coverage_page_counts_and_statuses_match_the_registry():
+    doc = (Path(export_web.__file__).parent.parent / "docs/state-coverage.md").read_text(encoding="utf-8")
+    n = {st: sum(s["status"] == st for s in states.STATES.values()) for st in states.STATUSES}
+    assert (f"{n['decide']} left out by decision, {n['html']} HTML only, {n['blocked']} blocked, "
+            f"{n['none']} none found, {n['unchecked']} unchecked. Total {len(states.STATES)}.") in doc
+    label = {"html": "HTML only", "unchecked": "unchecked"}
+    for code in ("MD", "MA", "MI", "MO", "MT", "ND"):
+        assert f"| {STATE_NAMES[code]} | {label[states.STATES[code]['status']]} |" in doc, code
 
 
 def test_nothing_learned_from_a_page_we_may_not_use_is_recorded():
