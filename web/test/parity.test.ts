@@ -40,6 +40,10 @@ describe.skipIf(!have)("parity with Python scoring", () => {
   const fl = have ? load("florida") : null;
   const fdn = have ? load("foundations-FL") : null;
   const ca = have && existsSync(new URL("programs-CA.json.gz", DIR)) ? load("programs-CA") : null;
+  // Every other state's programs file the export wrote (grantmatch/states.py), through the same scorer.
+  const states = new Map<string, ReturnType<typeof load>>();
+  const stateCodes = new Set<string>(golden.cases.flatMap((c: { states?: Record<string, unknown> }) => Object.keys(c.states ?? {})));
+  for (const st of stateCodes) states.set(st, load(`programs-${st}`));
   const [y, m, d] = (golden.today ?? "2026-11-14").split("-").map(Number);
 
   for (const c of golden.cases) {
@@ -67,9 +71,14 @@ describe.skipIf(!have)("parity with Python scoring", () => {
         florida: scoreFlorida(fl!.records, p, similarities(fl!.vecs, q), s.show_earmarks, cities).map((r) => ({ id: r.rec.id, ...pick(r) })),
         california: ca ? scoreFlorida(ca.records, p, similarities(ca.vecs, q), false, cities).map((r) => ({ id: r.rec.id, ...pick(r) })) : [],
       };
-      for (const src of ["federal", "foundations", "florida", "california"] as const) {
-        const want = byId(c[src] ?? []);
-        const have_ = byId(got[src]);
+      const pairs: [string, Row[], Row[]][] = (["federal", "foundations", "florida", "california"] as const).map((src) => [src, c[src] ?? [], got[src]] as [string, Row[], Row[]]);
+      for (const [st, rows] of Object.entries((c.states ?? {}) as Record<string, Row[]>)) {
+        const o = states.get(st)!;
+        pairs.push([`programs-${st}`, rows, scoreFlorida(o.records, p, similarities(o.vecs, q), false, cities).map((r) => ({ id: r.rec.id, ...pick(r) }))]);
+      }
+      for (const [src, wantRows, gotRows] of pairs) {
+        const want = byId(wantRows);
+        const have_ = byId(gotRows);
         expect([...have_.keys()].sort(), `${src} ids`).toEqual([...want.keys()].sort());
         for (const [id, w] of want) {
           const g = have_.get(id)!;
@@ -90,7 +99,9 @@ function pick(r: { score: number; tier: string; reasons: string[]; cautions: str
   return { score: r.score, tier: r.tier, reasons: r.reasons, cautions: r.cautions };
 }
 
-function byId(rows: { id: string; score: number; tier: string; reasons: string[]; cautions: string[] }[]) {
+type Row = { id: string; score: number; tier: string; reasons: string[]; cautions: string[] };
+
+function byId(rows: Row[]) {
   const m = new Map<string, (typeof rows)[number]>();
   for (const r of rows) m.set(m.has(r.id) ? r.id + "#" + m.size : r.id, r);
   return m;

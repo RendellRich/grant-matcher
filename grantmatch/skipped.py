@@ -37,6 +37,8 @@ SOURCES = {
     "iowa": "IowaGrants.gov",
     "ohio": "Ohio Grants Partnership",
     "washington": "FundHubWA (Washington)",
+    "westvirginia": "grants.wv.gov (West Virginia)",
+    "newjersey": "New Jersey Treasury list",
     "florida": "Florida state catalog",
     "foundation": "Private foundation (IRS 990-PF)",
     "community": "Community foundation or United Way (IRS 990)",
@@ -64,6 +66,10 @@ REASONS = {
         "Has the agency extended the deadline without updating the date?"),
     "no_title": ("Left out", "No title", "The portal row has no title to show.", "Is it a real call with a missing field?"),
     "no_portal_id": ("Left out", "No portal ID", "The row can't be linked to the portal.", "Is it a real call with a missing field?"),
+    "no_deadline": (
+        "Left out", "No due date and not rolling",
+        "The state's list is never pruned, and this row has no due date and doesn't say it takes applications any time.",
+        "Is the program still running? Its agency page may show the next round."),
     "state_not_nonprofit": (
         "Never shown", "The state says nonprofits can't apply",
         "The state's own listing names who may apply, and nonprofits are not among them.",
@@ -233,7 +239,7 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
         new.sort(key=lambda r: (r["source"] in ("foundation", "community"), -(r.get("assets") or 0)))
         lines += table(new, 40, with_assets=any(r.get("assets") for r in new))
     rank = {code: i for i, code in enumerate(REASONS)}
-    for src in ("federal", "california", "illinois", "iowa", "ohio", "washington", "florida"):
+    for src in ("federal", "california", "illinois", "iowa", "ohio", "washington", "westvirginia", "newjersey", "florida"):
         # Earmarks are only counted above: by law nobody else can apply, and the CSV lists them all.
         items = [r for r in rows if r["source"] == src and r["reason"] != "earmark"]
         if items:
@@ -262,6 +268,8 @@ def main() -> None:
     ap.add_argument("--iowa", type=Path)
     ap.add_argument("--ohio", type=Path)
     ap.add_argument("--washington", type=Path)
+    ap.add_argument("--westvirginia", type=Path)
+    ap.add_argument("--newjersey", type=Path)
     ap.add_argument("--previous", type=Path, help="last report's CSV, for first-seen dates and what is new")
     ap.add_argument("--decisions", type=Path, help="review decisions (default data/skip-review.csv)")
     ap.add_argument("--csv", type=Path, required=True)
@@ -278,6 +286,10 @@ def main() -> None:
                 "skipped-washington.json.gz": "Washington (after the next daily refresh)",
                 "skipped-foundations.jsonl.gz": "private foundations (after the next monthly foundation refresh)",
                 "skipped-community.jsonl.gz": "community foundations (after the next monthly foundation refresh)"}
+    # West Virginia and New Jersey ship from snapshots until a refresh job publishes their lists; read them if present.
+    for name in ("skipped-westvirginia.json.gz", "skipped-newjersey.json.gz"):
+        if (args.parts / name).exists():
+            rows += _read_rows(args.parts / name)[0]
     for name, label in expected.items():
         path = args.parts / name
         if path.exists():
@@ -293,7 +305,8 @@ def main() -> None:
     else:
         missing.append("Florida catalog")
     for path, source in ((args.california, "california"), (args.illinois, "illinois"),
-                         (args.iowa, "iowa"), (args.ohio, "ohio"), (args.washington, "washington")):
+                         (args.iowa, "iowa"), (args.ohio, "ohio"), (args.washington, "washington"),
+                         (args.westvirginia, "westvirginia"), (args.newjersey, "newjersey")):
         if path and path.exists():
             rows += hidden_programs(path, source, decisions)
     today = datetime.now(timezone.utc).date().isoformat()

@@ -30,6 +30,8 @@ export interface Meta {
   coverage?: boolean;
   /** States besides Florida with their own programs file: its name, its source and when it was fetched. */
   programs?: Record<string, { file: string; source: string; updated?: string }>;
+  /** Every state's catalog status from grantmatch/states.py: built, next, decide, html or none. */
+  catalogs?: Record<string, { status: string; source: string }>;
 }
 
 /** grantmatch/coverage.py: registered foundations against what the state files hold. */
@@ -103,5 +105,19 @@ export const loadCoverage = () => json<Coverage>("coverage.json");
 export const loadExamples = () => json<Record<string, Example>>("examples.json");
 /** The file holding a state's programs, or null when the state has none. Florida's keeps its own name. */
 export const programsFile = (meta: Meta | null, state: string) => (state === "FL" ? "florida" : meta?.programs?.[state]?.file ?? null);
+/** What a profile in a state with no state catalog sees where the state tab would be, or null when the state has
+ *  one (or the data's list of states hasn't loaded). Plain words: what is missing, why, and what still covers it. */
+export function noCatalogNote(meta: Meta | null, state: string, name: string): string | null {
+  if (!meta || (!meta.catalogs && !meta.programs) || programsFile(meta, state)) return null; // no list loaded: say nothing
+  const status = meta.catalogs?.[state]?.status;
+  const kind = state === "DC" || state === "PR" ? "" : "state ";
+  const why = status === "built" ? ` ${name} ${kind}grants aren't available right now.`
+    : status === "html" ? ` ${name} posts its grants only as web pages, so they aren't read in yet.`
+    : status === "next" || status === "decide" ? ` A source for ${name} ${kind}grants is being looked at.`
+    : status === "none" ? ` No single public list of ${name} ${kind}grants was found.`
+    : "";
+  const cover = meta.states.includes(state) ? "Federal grants and foundations cover" : "Federal grants cover";
+  return `No ${name} ${kind}catalog yet.${why} ${cover} ${name}.`;
+}
 /** A state's counties and the cities, towns and Census places in each (grantmatch/counties.py). */
 export const loadCounties = (state: string) => json<Record<string, string[]>>(`counties-${state}.json`);

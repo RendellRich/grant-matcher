@@ -22,6 +22,7 @@ import requests
 from . import embed
 from . import corporate
 from . import local as local_programs
+from .states import STATE_PROGRAMS, catalogs
 from .skipped import load_decisions
 from .display import assistance_label, bracket_caps, format_address, present, shouting, tidy_name, tidy_text
 
@@ -193,17 +194,6 @@ def apply_reviews(records: list[dict], source: str, decisions: dict) -> int:
     return changed
 
 
-# States besides Florida with their own adapter: the data file's name, where it comes from, and the label
-# the site puts before each call's number.
-STATE_PROGRAMS = {
-    "CA": {"file": "california", "source": "California Grants Portal", "catalog": "Grants Portal"},
-    "IL": {"file": "illinois", "source": "Illinois Catalog of State Financial Assistance", "catalog": "Illinois NOFO"},
-    "IA": {"file": "iowa", "source": "IowaGrants.gov", "catalog": "IowaGrants"},
-    "OH": {"file": "ohio", "source": "Ohio Grants Partnership", "catalog": "Ohio"},
-    "WA": {"file": "washington", "source": "FundHubWA (Washington Department of Commerce)", "catalog": "FundHubWA"},
-}
-
-
 def program_vectors(records: list[dict], raw: bytes | None) -> tuple[list[str], np.ndarray]:
     """Vectors for every record, in record order. The published vectors are used where they exist; a record
     without one (the vectors file is missing, or older than the records) is embedded here."""
@@ -231,6 +221,23 @@ def write(out: Path, name: str, payload: dict, ids: list[str], vecs: np.ndarray)
     print(f"{name}: {len(payload.get('records', []))} records, {len(ids)} vectors")
 
 
+def florida_records(payload: dict) -> tuple[list[dict], list[dict]]:
+    """Florida's records for the site: the catalog's programs with review decisions applied, then the county and
+    city programs entered by hand (grantmatch/local.py). Returns (all records, the hand-kept ones), so the caller
+    can embed the hand-kept ones; the catalog's vectors come with the release."""
+    records = [tidy_program(r) for r in payload["programs"]]
+    apply_reviews(records, "florida", load_decisions(None))
+    extra = local_programs.load(fiscal_year=payload.get("fiscal_year", ""))
+    if extra:
+        sites = website_cycles()
+        for r in extra:
+            tidy_program(r)
+            if sites.get(r["id"]):
+                r["_cycle"] = sites[r["id"]]
+        records += extra
+    return records, extra
+
+
 def main() -> None:
     global LOCAL_ONLY
     ap = argparse.ArgumentParser(description=__doc__)
@@ -241,7 +248,8 @@ def main() -> None:
     LOCAL_ONLY = args.local
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
-    meta: dict = {"states": []}
+    # Every state's catalog status (grantmatch/states.py), so the site can say when a state has none.
+    meta: dict = {"states": [], "catalogs": catalogs()}
 
     raw = fetch("opportunities.json.gz")
     if raw:
@@ -254,25 +262,17 @@ def main() -> None:
     if raw:
         payload = json.loads(gzip.decompress(raw))
         ids, vecs = vectors(fetch("florida.npz"))
-        records = [tidy_program(r) for r in payload["programs"]]
-        apply_reviews(records, "florida", load_decisions(None))
-        # County and city programs entered by hand (grantmatch/local.py) join the state's, embedded here.
-        extra = local_programs.load(fiscal_year=payload.get("fiscal_year", ""))
+        records, extra = florida_records(payload)
         if extra:
             from .rank_more import florida_doc
-            sites = website_cycles()
-            for r in extra:
-                tidy_program(r)
-                if sites.get(r["id"]):
-                    r["_cycle"] = sites[r["id"]]
-            records += extra
             ids = ids + [r["id"] for r in extra]
             vecs = np.concatenate([vecs, embed.embed_texts([florida_doc(r) for r in extra]).astype(np.float16)])
         write(out, "florida", {"fetched_at": payload.get("fetched_at", ""), "fiscal_year": payload.get("fiscal_year", ""),
                                "records": records}, ids, vecs)
         meta["florida"] = payload.get("fiscal_year", "")
 
-    # Other states' programs (STATE_PROGRAMS), one file each; the site's state tab follows the profile's state.
+    # Other states' programs (STATE_PROGRAMS in grantmatch/states.py), one file each; the site's state tab follows
+    # the profile's state. A state not yet refreshed into the release ships from its snapshot in data/.
     for state, spec in STATE_PROGRAMS.items():
         raw = fetch(f"{spec['file']}.json.gz")
         if not raw:
@@ -400,6 +400,8 @@ def golden(out: Path, examples: dict, path: Path) -> None:
     fdn, fdn_ids, fdn_v = load("foundations-FL")
     frame = load_frame(fed)
     ca = load("programs-CA") if (out / "programs-CA.json.gz").exists() else None
+    # Every other state with a programs file, through the same scorer, so a new adapter's records are checked too.
+    others = {st: load(f"programs-{st}") for st in STATE_PROGRAMS if st != "CA" and (out / f"programs-{st}.json.gz").exists()}
     cases = []
     for key, ex in examples.items():
         q = np.array(ex["vector"], dtype=np.float32)
@@ -427,6 +429,7 @@ def golden(out: Path, examples: dict, path: Path) -> None:
                 "florida": rows(score_florida(fl, p, sims(fl_ids, fl_v, q), spec["show_earmarks"], cities), "id"),
                 # Another state's open calls through the same scorer: matching funds, loans and reimbursement.
                 "california": rows(score_florida(ca[0], p, sims(ca[1], ca[2], q), False, cities), "id") if ca else [],
+                "states": {st: rows(score_florida(o[0], p, sims(o[1], o[2], q), False, cities), "id") for st, o in others.items()},
             })
     path.write_text(json.dumps({"today": GOLDEN_DAY.isoformat(), "cases": cases}), encoding="utf-8")
     print(f"golden: {len(cases)} cases to {path}")
