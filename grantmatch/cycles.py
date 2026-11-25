@@ -8,8 +8,9 @@ reads the text, and records one of:
   deadline  the site gives an application deadline that is still ahead
   closed    the site says it is not taking applications or requests now
   none      the site was read but says nothing either way
-  error     the site could not be reached, or it is off limits (off_limits below: robots.txt keeps out
-            this crawler, ClaudeBot or another Anthropic agent, or the host's terms forbid automation)
+  error     the site could not be reached, or it is off limits (off_limits below: robots.txt couldn't be
+            read or keeps out this crawler, ClaudeBot or another Anthropic agent, or the host's terms forbid
+            automation)
 
 It is a reading of the funder's words, not a promise: the site shows the line it found and when.
 
@@ -67,6 +68,8 @@ BLOCKED_HOSTS = {
     "thechildrenstrust.org": "its terms of use prohibit copying, reproducing or reselling its resources",
 }
 MAX_REDIRECTS = 10
+MAX_ROBOTS_BYTES = 5_000_000  # far past any real robots.txt; a bigger one counts as unreadable
+UNREAD_ROBOTS = "robots.txt could not be read"
 TIMEOUT = (6, 12)  # connect, read
 MAX_BYTES = 1_500_000
 SNIPPET = 160
@@ -224,7 +227,7 @@ def site_url(raw) -> str:
 
 
 _local = threading.local()
-_robots: dict[str, tuple[robotparser.RobotFileParser, list[str]]] = {}
+_robots: dict[str, tuple[robotparser.RobotFileParser, list[str]] | None] = {}  # None: couldn't be read
 _robots_lock = threading.Lock()
 
 
@@ -277,35 +280,47 @@ def robots_disallows(lines: list[str], token: str, path: str) -> bool:
     return not best[1]
 
 
-def _robots_for(root: str) -> tuple[robotparser.RobotFileParser, list[str]]:
+def _robots_for(root: str) -> tuple[robotparser.RobotFileParser, list[str]] | None:
+    """The site's rules, or None when they couldn't be read. Only two answers settle it: 200 (the rules) and 404 or
+    410 (there are none). A 403, a server error, a timeout, a refused connection or anything else leaves them unknown,
+    and an unknown robots.txt is not read as "go ahead": RFC 9309 asks that much for server and network errors, and
+    this project asks it of a 403 too."""
     with _robots_lock:
         if root in _robots:
             return _robots[root]
-    lines: list[str] = []
+    lines = None
     try:
-        # Asked for as text: some servers answer 406 to a request for HTML, which would read as "no rules".
+        # Asked for as text: some servers answer 406 to a request for HTML.
         r = session().get(root + "/robots.txt", timeout=TIMEOUT, allow_redirects=True,
                           headers={"Accept": "text/plain,*/*;q=0.8"})
-        if r.ok and len(r.content) < 500_000:
+        if r.status_code in (404, 410):
+            lines = []
+        elif r.status_code == 200 and len(r.content) <= MAX_ROBOTS_BYTES:
             lines = r.text.lstrip("\ufeff").splitlines()
     except requests.RequestException:
         pass
-    rp = robotparser.RobotFileParser()
-    rp.parse(lines)
+    found = None
+    if lines is not None:
+        rp = robotparser.RobotFileParser()
+        rp.parse(lines)
+        found = (rp, lines)
     with _robots_lock:
-        _robots[root] = (rp, lines)
-    return rp, lines
+        _robots[root] = found
+    return found
 
 
 def off_limits(url: str) -> str | None:
-    """Why the project may not read this page, or None when it may. A site whose terms are on the blocklist, or
-    whose robots.txt keeps out this crawler, ClaudeBot or another Anthropic agent, is off limits; the user agent
-    is never changed to get around it."""
+    """Why the project may not read this page, or None when it may. A site whose terms are on the blocklist, whose
+    robots.txt couldn't be read, or whose robots.txt keeps out this crawler, ClaudeBot or another Anthropic agent,
+    is off limits; the user agent is never changed to get around it."""
     why = blocked_by_terms(url)
     if why:
         return f"site terms: {why}"  # nothing is asked of the host, robots.txt included
     p = urlparse(url)
-    rp, lines = _robots_for(f"{p.scheme}://{p.netloc}")
+    rules = _robots_for(f"{p.scheme}://{p.netloc}")
+    if rules is None:
+        return UNREAD_ROBOTS
+    rp, lines = rules
     path = (p.path or "/") + (f"?{p.query}" if p.query else "")
     if not rp.can_fetch(AGENT, url) or robots_disallows(lines, TOKEN, path):
         return "robots.txt asks automated visitors to stay out"

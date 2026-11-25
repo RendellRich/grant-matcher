@@ -110,3 +110,29 @@ describe("county and city programs outside Florida", () => {
       .toContainEqual({ label: "Note", text: "The page gives two dates." });
   });
 });
+
+describe("match and tax status on a hand-kept program's card", () => {
+  const checks = (r: FloridaRec, extra: Partial<Profile> = {}) =>
+    Object.fromEntries((floridaEntry(scoreFlorida([r], profile(extra), null)[0], true, profile(extra)).ready ?? []).map((c) => [c.key, c]));
+  const base = rec({ level: "County", requires_501c3: null, applicant_types: "Nonprofits.", award: "Up to $10,000." });
+
+  it("says a required match stops an organization that can't provide one, and takes 20 points", () => {
+    const r = { ...base, match: "25%" };
+    expect(checks(r).match).toMatchObject({ state: "no", label: "Match required" });
+    expect(checks(r).match.note).toContain("(25%)");
+    expect(checks(r, { canCostShare: true }).match.state).toBe("ok");
+    const [without, withIt] = [scoreFlorida([base], profile(), null)[0], scoreFlorida([r], profile(), null)[0]];
+    expect(withIt.cautions).toContain("Requires matching funds (25%)");
+    expect(without.score - withIt.score).toBe(20);
+  });
+
+  it("says nothing about a match the program doesn't mention", () => {
+    expect(checks(base).match).toBeUndefined();
+  });
+
+  it("claims neither way about 501(c)(3) when the answer isn't a yes or no", () => {
+    expect(checks(base, { has501c3: "No" })["501c3"]).toBeUndefined();
+    expect(checks({ ...base, requires_501c3: false }, { has501c3: "No" })["501c3"].label).toBe("No 501(c)(3) needed");
+    expect(checks({ ...base, requires_501c3: true }, { has501c3: "No" })["501c3"].label).toBe("Needs 501(c)(3)");
+  });
+});

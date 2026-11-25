@@ -61,7 +61,7 @@ export function CoverageNote() {
     <details class="filters coverage" onToggle={open}>
       <summary>What the data covers</summary>
       <div class="coverage-body" aria-live="polite">
-        <p>Federal grants cover the whole country. Foundations cover every state. State grants cover Florida, California, Illinois, Iowa, Ohio and Washington (Washington's are mostly climate and energy); county, city and community foundation programs cover Florida, with a partial hand-kept list for some counties and cities in Arizona, California, Illinois, Nevada, New York, Pennsylvania, Texas and Washington.</p>
+        <p>Federal grants cover the whole country. Foundations cover every state. State grants cover Florida, California, Illinois, Iowa, Ohio, Washington (mostly climate and energy), West Virginia, New Jersey, New York, the District of Columbia and Minnesota (two agencies only); county, city and community foundation programs cover Florida, with a partial hand-kept list for some counties and cities in Arizona, California, Illinois, Nevada, New York, Pennsylvania, Texas and Washington.</p>
         {data === "loading" ? <p>Loading the state-by-state counts.</p> : null}
         {data === "error" ? <p class="error">The state-by-state counts could not be loaded right now.</p> : null}
         {data && typeof data === "object" ? (

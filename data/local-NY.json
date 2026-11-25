@@ -29,8 +29,8 @@
     "Richmond County"
    ],
    "objectives": "City Council discretionary expense funding for community organizations.",
-   "who": "Not-for-profit community-based organizations.",
-   "requires_501c3": false,
+   "who": "Not-for-profit community-based organizations with IRS tax-exempt status, usually 501(c)(3); some other 501(c) types may qualify. Fiscal sponsors and fiscal conduits are not allowed.",
+   "requires_501c3": null,
    "application": "Submit the Council application in the January to February filing period.",
    "award": "Not stated on the page.",
    "opens": "2026-01-05",
@@ -55,7 +55,7 @@
    ],
    "objectives": "Discretionary funding for nonprofit programmatic expenses in Queens.",
    "who": "Nonprofits that meet the office's guidelines.",
-   "requires_501c3": false,
+   "requires_501c3": null,
    "application": "The page gives January to June for applications; nonprofits must meet the office's guidelines.",
    "award": "Not stated on the page.",
    "opens": null,
@@ -63,6 +63,7 @@
    "deadlines": "Applications are taken January to June; the page gives no exact dates.",
    "subjects": "Community",
    "url": "https://www.queensbp.nyc.gov/budget/",
+   "source_note": "The office's guidelines are in a document that couldn't be read, so check them for matching funds and tax status rules.",
    "checked": "2026-11-25"
   },
   {
@@ -81,7 +82,7 @@
    ],
    "objectives": "Programs, services and events of nonprofits that directly support Brooklyn and its residents.",
    "who": "Nonprofit organizations.",
-   "requires_501c3": false,
+   "requires_501c3": null,
    "application": "Complete the Discretionary Expense Funding Application linked on the page.",
    "award": "Not stated on the page.",
    "opens": null,
@@ -89,6 +90,7 @@
    "deadlines": "The page gives no application dates.",
    "subjects": "Community",
    "url": "https://www.brooklynbp.nyc.gov/departments/budget/",
+   "source_note": "The page gives no tax status or matching rules for this funding, and the application form wasn't read.",
    "checked": "2026-11-25"
   }
  ]

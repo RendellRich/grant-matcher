@@ -12,8 +12,8 @@ report of what needs review:
   blank    the page came back with almost no text, which usually means it is built in the browser
            and needs a person (or a real browser) to read it
   error    the page could not be reached; blocked means the page is off limits and was not read: robots.txt
-           keeps out this crawler, ClaudeBot or another Anthropic agent, or the host's terms forbid
-           automation (grantmatch/cycles.py). A blocked entry is reported, never deleted
+           couldn't be read, or keeps out this crawler, ClaudeBot or another Anthropic agent, or the host's
+           terms forbid automation (grantmatch/cycles.py). A blocked entry is reported, never deleted
   stale    the entry's checked date is older than --stale-days
 
 It never edits an entry. A person reads the page and updates the entry and its checked date.

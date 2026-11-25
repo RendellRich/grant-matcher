@@ -3,6 +3,7 @@ from datetime import date
 from urllib import robotparser
 
 import pytest
+import requests
 
 from grantmatch import cycles, watch
 
@@ -137,3 +138,52 @@ def test_robots_txt_is_asked_for_as_text_and_its_rules_are_read(monkeypatch):
     monkeypatch.setattr(cycles, "session", Session)
     assert "ClaudeBot" in cycles.off_limits("https://example.org/grants")
     assert sent["url"] == "https://example.org/robots.txt" and sent["Accept"].startswith("text/plain")
+
+
+def serving(monkeypatch, answer):
+    """Every robots.txt request gets `answer`: a (status, text) pair, or an exception to raise. Nothing else may be
+    asked for."""
+    asked = []
+
+    class Session:
+        def get(self, url, **kwargs):
+            assert url.endswith("/robots.txt"), url
+            asked.append(url)
+            if isinstance(answer, Exception):
+                raise answer
+            reply = Reply(status=answer[0])
+            reply.text = answer[1]
+            reply.content = answer[1].encode("utf-8")
+            return reply
+
+    monkeypatch.setattr(cycles, "_robots", {})
+    monkeypatch.setattr(cycles, "session", Session)
+    return asked
+
+
+@pytest.mark.parametrize("answer", [
+    (403, "Access Denied"), (401, ""), (503, ""), (500, ""), (429, ""), (406, ""), (202, ""),
+    requests.Timeout(), requests.ConnectionError(), requests.exceptions.SSLError(), requests.TooManyRedirects(),
+    (200, "#" * (cycles.MAX_ROBOTS_BYTES + 1)),
+], ids=["403", "401", "503", "500", "429", "406", "202", "timeout", "refused", "bad-certificate", "redirect-loop",
+        "too-big"])
+def test_a_robots_txt_that_cant_be_read_puts_the_site_off_limits(monkeypatch, answer):
+    asked = serving(monkeypatch, answer)
+    url = "https://example.org/grants"
+    assert cycles.off_limits(url) == "robots.txt could not be read"
+    assert cycles.get(url) is None
+    assert watch.read(url) == {"s": "blocked", "why": "robots.txt could not be read"}
+    assert cycles.check(url, date(2026, 11, 25)) == {"s": "error"}
+    assert asked == ["https://example.org/robots.txt"]  # asked once, and no try over plain http
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_a_site_with_no_robots_txt_has_no_rules(monkeypatch, status):
+    serving(monkeypatch, (status, "<html>Not found</html>"))
+    assert cycles.off_limits("https://example.org/grants") is None
+
+
+def test_a_large_robots_txt_is_read_to_the_end(monkeypatch):
+    serving(monkeypatch, (200, "# filler\n" * 80_000 + "User-agent: *\nDisallow: /grants\n"))
+    assert not cycles.allowed("https://example.org/grants")
+    assert cycles.allowed("https://example.org/about")

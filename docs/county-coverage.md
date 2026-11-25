@@ -6,18 +6,20 @@ What Grant Matcher holds for county and city grants, checked November 25, 2026.
 
 ## How a program gets in
 
-1. robots.txt is read first, with the user agent `grant-matcher (github.com/RendellRich/grant-matcher)`. A site that keeps out this crawler, ClaudeBot or another Anthropic agent is off limits. The agent is never changed to get around it.
+1. robots.txt is read first, with the user agent `grant-matcher (github.com/RendellRich/grant-matcher)`. A site that keeps out this crawler, ClaudeBot or another Anthropic agent is off limits, and so is a site whose robots.txt can't be read. The agent is never changed to get around it.
 2. The site's terms are read. Terms that forbid automation or commercial reuse (Grant Matcher is a paid product) put the host on the blocklist.
-3. The title, who may apply, the dates and the link must be supported by the live page. What the page doesn't say is not filled in.
+3. The title, who may apply, the dates and the link must be supported by the live page. Matching funds and tax status rules are checked in the linked guidelines too. What they don't say is not filled in, and a guideline that couldn't be read is named in the entry's `source_note`.
 4. A program whose deadline has passed is kept only when the page shows it comes round again. It then ranks as "Between rounds".
 
-The weekly page watcher and website check apply rules 1 and 2 in code (`off_limits` in `grantmatch/cycles.py`): robots.txt is checked for this crawler and for `ClaudeBot`, `Claude-User`, `Claude-SearchBot`, `Claude-Web` and `anthropic-ai`, wildcard paths included; every redirect is checked before it is followed; and hosts in `BLOCKED_HOSTS` are never requested. A page that becomes off limits is reported by the watcher as blocked. Its entry is not deleted, and a person decides what to do.
+The weekly page watcher and website check apply rules 1 and 2 in code (`off_limits` in `grantmatch/cycles.py`): robots.txt is checked for this crawler and for `ClaudeBot`, `Claude-User`, `Claude-SearchBot`, `Claude-Web` and `anthropic-ai`, wildcard paths included; every redirect is checked before it is followed; and hosts in `BLOCKED_HOSTS` are never requested. Only two answers for robots.txt let a page be read: 200 (the rules are followed) and 404 or 410 (there are none). A 401, 403, 429, a server error, a timeout, a refused connection, a bad certificate or anything else is "robots.txt could not be read", and the site is off limits. A page that is off limits is reported by the watcher as blocked. Its entry is not deleted, and a person decides what to do.
 
-Two gaps in the code, so a person still has to look: a robots.txt that can't be fetched (a timeout, a 403 or a server error) is read as "no rules", and terms are only as good as the blocklist, which is kept by hand. When checking a new entry, treat a robots.txt that can't be confirmed as off limits.
+What this changes for the foundation website check (`grantmatch/cycles.py`, thousands of sites): a site whose robots.txt can't be read is now recorded as an error and not read, where before it was read. Its website note drops off the card until the file can be read again, and the try over plain http for a broken certificate no longer happens, since a certificate error also leaves https robots.txt unread. How many foundation sites this affects was not measured. Foundation scores don't use the website check.
+
+Terms are only as good as the blocklist, which is kept by hand.
 
 ### Watched pages that are now off limits
 
-These entries were already in the lists. Their pages can't be rechecked automatically any more.
+These entries were already in the lists. Their pages can't be rechecked automatically. On November 25, 2026, of 145 watched pages, 7 were off limits by their rules or terms and 7 more because robots.txt could not be read (checked twice, with the same result). Six of those 7 unreadable ones already failed to load before this change (403 or timeout); the Citrus County file did load.
 
 | Entry (list) | Page | Why |
 |---|---|---|
@@ -27,6 +29,11 @@ These entries were already in the lists. Their pages can't be rechecked automati
 | `pasco-opioid-fund` (FL) | cms1files.revize.com (a PDF) | robots.txt keeps automated visitors out |
 | `ohio-history-fund` (OH) | www.ohiohistory.org (both pages) | robots.txt keeps out ClaudeBot |
 | `humanities-iowa-mini-grants` (IA) | humanitiesiowa.submittable.com (its second page, humanitiesiowa.org, is still read) | terms can't be confirmed |
+| `sarasota-contracted-human-services` (FL) | www.scgov.net | robots.txt answers 403 |
+| `citrus-tourist-development-grants` (FL) | s3.us-east-1.amazonaws.com (a PDF) | robots.txt answers 403 |
+| `fldoe-21st-cclc` (FL, two pages) | www.fldoe.org | robots.txt answers 403 |
+| `oag-voca-victim-assistance` (FL) | www.myfloridalegal.com | robots.txt answers 403 |
+| `isl-adult-volunteer-literacy` (IL, two pages) | www.ilsos.gov | robots.txt times out |
 
 The weekly website check also stops reading these, so a website status it recorded before (for example "applications are open") drops off at its next run. For a program with no dates, that can move it to "Between rounds".
 
@@ -41,7 +48,8 @@ One file per state, `data/local-<ST>.json`: `{"about": "...", "programs": [...]}
 | `level` | yes | `State`, `County`, `City`, `Children's services council`, `Community foundation` or `United Way` |
 | `counties` | yes | County names as in `data/counties.json.gz`, or `["Statewide"]` |
 | `objectives`, `who`, `application`, `award` | yes | In plain words, from the page. Say "Not stated on the page." when it isn't |
-| `requires_501c3` | yes | `true` only when the page requires it and allows no fiscal sponsor or other route |
+| `requires_501c3` | yes | `true` only when the program requires 501(c)(3) status and allows no fiscal sponsor or other route; `false` only when it says tax status isn't needed (individuals or unincorporated groups may apply); `null` for anything else (a sponsor or another 501(c) type will do, or the page doesn't say). With `null` the card claims neither |
+| `match` | no | The required match, for example `25%` or `100% cash`. Takes 20 points off for a profile that can't cost share, and the card says so |
 | `url`, `checked` | yes | The official page (https) and the date a person checked it |
 | `opens`, `closes` | no | `yyyy-mm-dd` or `null` |
 | `rolling` | no | `true` for a program that takes applications any time; no `closes` |
@@ -52,26 +60,26 @@ One file per state, `data/local-<ST>.json`: `{"about": "...", "programs": [...]}
 | `exclude_places` | no | Places in those counties that are not served, for example Chicago in a suburban Cook County program. Not with `places` |
 | `source_note` | no | Something the page gets wrong or leaves unclear; shown on the card as "Note" |
 
-`places`, `exclude_places`, `area` and `source_note` are new. Florida's file uses none of them and is unchanged. New files carry no email addresses. FIPS codes are not stored, because nothing reads them yet; counties are matched by name against `data/counties.json.gz`. Phase 2 would need them.
+`places`, `exclude_places`, `area`, `match`, `source_note` and a `null` `requires_501c3` are new. Florida's file uses none of them and is unchanged. New files carry no email addresses. FIPS codes are not stored, because nothing reads them yet; counties are matched by name against `data/counties.json.gz`. Phase 2 would need them.
 
 How a place is matched: the card says "Funds work in <area>" when one of the profile's cities or counties is in the program's list, and "Only for work in <area>" (40 points off) when not. A county typed into the profile counts as every place in it, so someone who types a county also matches a city program inside it. In a program for towns and unincorporated areas (Maricopa County CDBG), an organization that types only an unincorporated place's name should add the county.
 
 ## First batch: what was kept
 
-48 researched entries: 29 loaded, 7 verified and held, 12 dropped.
+48 researched entries: 29 loaded, 7 verified and held, 12 dropped. The Cook County CDBG and ESG page became two entries, since ESG requires a match and CDBG doesn't, so the files hold 30.
 
 | Loaded into | Programs |
 |---|---|
 | `local-AZ.json` (3) | Maricopa County: ESG and CDBG public services, CDBG, HOME CHDO |
 | `local-CA.json` (6) | Los Angeles County arts (2) and Care First grants; San Bernardino County CDBG; Alameda County ARTSFUND; Sacramento County TOT grants |
-| `local-IL.json` (+2) | Cook County violence intervention; Cook County CDBG and ESG |
+| `local-IL.json` (+3) | Cook County violence intervention; Cook County CDBG; Cook County ESG |
 | `local-NV.json` (1) | Clark County Outside Agency Grant |
 | `local-NY.json` (3) | New York City Council discretionary funding; Queens and Brooklyn Borough Presidents |
 | `local-PA.json` (2) | Philadelphia Cultural Fund |
 | `local-TX.json` (8) | Houston Arts Alliance (4); Dallas ArtsActivate; Tarrant County CDBG and ESG; San Antonio arts operating grants |
 | `local-WA.json` (+4) | 4Culture (King County) |
 
-**Held, not loaded:** 7 Florida entries (6 Miami-Dade County Cultural Affairs grants and 1 Children's Services Council of Broward County sponsorship) are in `data/pending/local-FL.json`, which nothing reads. Loading them changes Florida's file and what a Florida profile sees, so it waits for a decision. To load them, move the programs into `data/local-FL.json`.
+**Held, not loaded:** 7 Florida entries (6 Miami-Dade County Cultural Affairs grants and 1 Children's Services Council of Broward County sponsorship) are in `data/pending/local-FL.json`, which nothing reads. Loading them changes Florida's file and what a Florida profile sees, so it waits for a decision. To load them, move the programs into `data/local-FL.json`. Their linked guidelines were not checked for matching funds or tax status rules (arts grants often require a match), so check those first.
 
 **Dropped:**
 
@@ -90,6 +98,12 @@ How a place is matched: the card says "Funds work in <area>" when one of the pro
 | Detroit Neighborhood Opportunity Fund | detroitmi.gov terms prohibit commercial use |
 | Cambridge community benefits grants | cambridgema.gov prohibits commercial use |
 
+**Match and tax status rules** (checked in the linked guidelines, November 25, 2026):
+
+- A match is required by: both Los Angeles County arts grants (dollar for dollar, cash), Cook County ESG (100%), Tarrant County ESG (100%) and Maricopa County HOME CHDO (25% non-federal).
+- 501(c)(3) with no other route: Maricopa County CDBG and its homeless services notice (the application offers no other tax status), Cook County CDBG and ESG, and San Antonio arts operating grants. Cook County CDBG capital money also goes to suburban municipalities.
+- Guidelines not read, so match or tax status rules may be missing: Alameda ARTSFUND (constantcontact.com robots.txt can't be read), Dallas ArtsActivate (the file host's robots.txt can't be read), Queens Borough President (a document that needs a browser app), Brooklyn Borough President (a Microsoft form), both Philadelphia Cultural Fund grants (canva.com keeps automated visitors out). Each of these cards says so in its note, except the checklist can't show a match it doesn't know about.
+
 Judgment calls a person may want to change:
 
 - "All rights reserved" or a copyright line with no ban on commercial use was not treated as a ban.
@@ -103,7 +117,7 @@ The list of counties is the research's; the population order was not rechecked. 
 | County | Loaded | Notes |
 |---|---|---|
 | Los Angeles, CA | 3 | County arts and justice grants |
-| Cook, IL | 2 | County programs |
+| Cook, IL | 3 | County programs |
 | Harris, TX | 4 | City of Houston arts only; no county program |
 | Maricopa, AZ | 3 | County programs |
 | San Diego, CA | 0 | Not read: sandiegocounty.gov timed out, robots.txt included |
@@ -137,7 +151,7 @@ San Diego, Orange, Riverside, Santa Clara, Bexar and the other "not read" notes 
 | Arizona | 3 | 0 | 3 | Maricopa 3 |
 | California | 6 | 0 | 6 | Los Angeles 3, San Bernardino 1, Alameda 1, Sacramento 1 |
 | Florida | 56 | 7 | 49 | Pinellas 15, Hillsborough 11, Manatee 5, Sarasota 5, Polk 5, Orange 4, Hernando 4, Pasco 3, DeSoto 3, Lee 2, Citrus 2, Charlotte 2, Osceola 1, Seminole 1 |
-| Illinois | 12 | 10 | 2 | Cook 2 |
+| Illinois | 13 | 10 | 3 | Cook 3 |
 | Iowa | 6 | 6 | 0 | none |
 | Nevada | 1 | 0 | 1 | Clark 1 |
 | New York | 3 | 0 | 3 | Kings 2, Queens 2, Bronx 1, New York 1, Richmond 1 |
@@ -163,7 +177,7 @@ Effort figures are estimates, not measurements.
 
 **Phase 3: more counties.** The next 75 counties by population, then CDBG entitlement cities, looking first at public services, arts and human services pages.
 
-- This batch: 48 drafted, 29 loaded and 7 held. Plan on losing about a quarter to robots.txt, terms or pages that don't support the entry.
+- This batch: 48 drafted, 29 loaded and 7 held. Plan on losing about a quarter to robots.txt, terms or pages that don't support the entry. Read each program's guidelines, not only its page: in this batch they held match and tax status rules the pages left out.
 - About 1 to 2 hours a county for finding, checking and entering, so 75 counties is roughly 2 to 4 weeks of work. A script can draft from permitted pages; a person approves each entry.
 - Add `fips` to entries when phase 2 needs the join.
 

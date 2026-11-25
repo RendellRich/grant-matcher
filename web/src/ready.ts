@@ -122,7 +122,8 @@ export function floridaReadiness(r: FloridaRec, p: ReadyProfile, lines: string[]
   const text = [r.applicant_types, r.application, r.award, r.restrictions, r.deadlines].filter((x) => typeof x === "string").join(" \n ");
   const checks: ReadyCheck[] = [];
   const where = local ? "This program" : call ? "This call" : "This program";
-  const c501 = need501(local ? r.requires_501c3 === true : MUST_501.test(r.applicant_types ?? "") ? true : null, p, where);
+  // A hand-kept program says yes, no or neither (null): neither claims nothing, like a state list that doesn't say.
+  const c501 = need501(local ? r.requires_501c3 ?? null : MUST_501.test(r.applicant_types ?? "") ? true : null, p, where);
   if (c501) checks.push(c501);
   if (call) {
     // California's portal says these outright: a required match, a loan, and how the money is paid.
@@ -136,7 +137,10 @@ export function floridaReadiness(r: FloridaRec, p: ReadyProfile, lines: string[]
       checks.push({ key: "pay", state: "ok", label: "Advance or reimbursement", note: "The state portal says it pays by advance or reimbursement; ask which applies to you." });
     } else if (/^Advance/i.test(how)) checks.push({ key: "pay", state: "ok", label: "Paid in advance", note: "The state portal says it pays in advance." });
   } else {
-    checks.push(...fromText(text, p));
+    // A hand-kept program's required match (grantmatch/local.py) is a fact, so it beats what the words suggest.
+    const match = typeof r.match === "string" ? r.match : "";
+    const found = fromText(text, p);
+    checks.push(...(match ? [...found.filter((c) => c.key !== "match"), matchCheck(true, p, "", match)] : found));
   }
   checks.push(windowCheck(r, local, call, p.today ?? new Date()));
   const status = ["Taking applications now", "Taking applications with no set deadline", "Applications open ", "Between rounds:"];

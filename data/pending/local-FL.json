@@ -1,5 +1,5 @@
 {
- "about": "Verified Florida entries held for a decision: nothing reads this folder, so Florida's site data is unchanged. To load them, move these programs into data/local-FL.json (docs/county-coverage.md).",
+ "about": "Verified Florida entries held for a decision: nothing reads this folder, so Florida's site data is unchanged. To load them, move these programs into data/local-FL.json (docs/county-coverage.md). Their guidelines were not checked for matching funds or tax status rules: do that before loading.",
  "programs": [
   {
    "slug": "miami-dade-community-grants",
