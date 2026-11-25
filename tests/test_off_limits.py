@@ -165,8 +165,10 @@ def serving(monkeypatch, answer):
     (403, "Access Denied"), (401, ""), (503, ""), (500, ""), (429, ""), (406, ""), (202, ""),
     requests.Timeout(), requests.ConnectionError(), requests.exceptions.SSLError(), requests.TooManyRedirects(),
     (200, "#" * (cycles.MAX_ROBOTS_BYTES + 1)),
+    (200, "<!DOCTYPE html>\n<html><body>Please verify you are a person</body></html>"),
+    (200, "\ufeff\r\n  <html><head><title>Not found</title></head></html>"),
 ], ids=["403", "401", "503", "500", "429", "406", "202", "timeout", "refused", "bad-certificate", "redirect-loop",
-        "too-big"])
+        "too-big", "html-page", "html-after-blank-lines"])
 def test_a_robots_txt_that_cant_be_read_puts_the_site_off_limits(monkeypatch, answer):
     asked = serving(monkeypatch, answer)
     url = "https://example.org/grants"
@@ -187,3 +189,8 @@ def test_a_large_robots_txt_is_read_to_the_end(monkeypatch):
     serving(monkeypatch, (200, "# filler\n" * 80_000 + "User-agent: *\nDisallow: /grants\n"))
     assert not cycles.allowed("https://example.org/grants")
     assert cycles.allowed("https://example.org/about")
+
+
+def test_an_empty_robots_txt_has_no_rules(monkeypatch):
+    serving(monkeypatch, (200, ""))
+    assert cycles.off_limits("https://example.org/grants") is None

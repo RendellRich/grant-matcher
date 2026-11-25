@@ -11,7 +11,7 @@ What Grant Matcher holds for county and city grants, checked November 25, 2026.
 3. The title, who may apply, the dates and the link must be supported by the live page. Matching funds and tax status rules are checked in the linked guidelines too. What they don't say is not filled in, and a guideline that couldn't be read is named in the entry's `source_note`.
 4. A program whose deadline has passed is kept only when the page shows it comes round again. It then ranks as "Between rounds".
 
-The weekly page watcher and website check apply rules 1 and 2 in code (`off_limits` in `grantmatch/cycles.py`): robots.txt is checked for this crawler and for `ClaudeBot`, `Claude-User`, `Claude-SearchBot`, `Claude-Web` and `anthropic-ai`, wildcard paths included; every redirect is checked before it is followed; and hosts in `BLOCKED_HOSTS` are never requested. Only two answers for robots.txt let a page be read: 200 (the rules are followed) and 404 or 410 (there are none). A 401, 403, 429, a server error, a timeout, a refused connection, a bad certificate or anything else is "robots.txt could not be read", and the site is off limits. A page that is off limits is reported by the watcher as blocked. Its entry is not deleted, and a person decides what to do.
+The weekly page watcher and website check apply rules 1 and 2 in code (`off_limits` in `grantmatch/cycles.py`): robots.txt is checked for this crawler and for `ClaudeBot`, `Claude-User`, `Claude-SearchBot`, `Claude-Web` and `anthropic-ai`, wildcard paths included; every redirect is checked before it is followed; and hosts in `BLOCKED_HOSTS` are never requested. Only two answers for robots.txt let a page be read: 200 (the rules are followed) and 404 or 410 (there are none). A 200 that is a web page instead of the file, a 401, 403, 429, a server error, a timeout, a refused connection, a bad certificate or anything else is "robots.txt could not be read", and the site is off limits. A page that is off limits is reported by the watcher as blocked. Its entry is not deleted, and a person decides what to do.
 
 What this changes for the foundation website check (`grantmatch/cycles.py`, thousands of sites): a site whose robots.txt can't be read is now recorded as an error and not read, where before it was read. Its website note drops off the card until the file can be read again, and the try over plain http for a broken certificate no longer happens, since a certificate error also leaves https robots.txt unread. How many foundation sites this affects was not measured. Foundation scores don't use the website check.
 
@@ -19,7 +19,7 @@ Terms are only as good as the blocklist, which is kept by hand.
 
 ### Watched pages that are now off limits
 
-These entries were already in the lists. Their pages can't be rechecked automatically. On November 25, 2026, of 145 watched pages, 7 were off limits by their rules or terms and 7 more because robots.txt could not be read (checked twice, with the same result). Six of those 7 unreadable ones already failed to load before this change (403 or timeout); the Citrus County file did load.
+These entries were already in the lists. Their pages can't be rechecked automatically. On November 25, 2026, of 145 watched pages, 7 were off limits by their rules or terms and 8 more because robots.txt could not be read (checked twice, with the same result). Six of those 8 unreadable ones already failed to load before this change (403 or timeout); the Citrus County file and the e-CImpact sign-in page did load.
 
 | Entry (list) | Page | Why |
 |---|---|---|
@@ -34,6 +34,7 @@ These entries were already in the lists. Their pages can't be rechecked automati
 | `fldoe-21st-cclc` (FL, two pages) | www.fldoe.org | robots.txt answers 403 |
 | `oag-voca-victim-assistance` (FL) | www.myfloridalegal.com | robots.txt answers 403 |
 | `isl-adult-volunteer-literacy` (IL, two pages) | www.ilsos.gov | robots.txt times out |
+| `uws-summer-care-2027` (FL, its second page) | agency.e-cimpact.com | robots.txt answers with a web page |
 
 The weekly website check also stops reading these, so a website status it recorded before (for example "applications are open") drops off at its next run. For a program with no dates, that can move it to "Between rounds".
 
@@ -48,7 +49,7 @@ One file per state, `data/local-<ST>.json`: `{"about": "...", "programs": [...]}
 | `level` | yes | `State`, `County`, `City`, `Children's services council`, `Community foundation` or `United Way` |
 | `counties` | yes | County names as in `data/counties.json.gz`, or `["Statewide"]` |
 | `objectives`, `who`, `application`, `award` | yes | In plain words, from the page. Say "Not stated on the page." when it isn't |
-| `requires_501c3` | yes | `true` only when the program requires 501(c)(3) status and allows no fiscal sponsor or other route; `false` only when it says tax status isn't needed (individuals or unincorporated groups may apply); `null` for anything else (a sponsor or another 501(c) type will do, or the page doesn't say). With `null` the card claims neither |
+| `requires_501c3` | yes | `true` only when the program requires 501(c)(3) status and allows no fiscal sponsor or other route; `false` only when it says tax status isn't needed (individuals or unincorporated groups may apply); `null` for anything else (a sponsor or another 501(c) type will do, or the page doesn't say). With `null` no points come off, and "Can we apply?" (card and copied summary) asks a profile without 501(c)(3) status to "Check tax status" and read who can apply; it never reads as a clean yes |
 | `match` | no | The required match, for example `25%` or `100% cash`. Takes 20 points off for a profile that can't cost share, and the card says so |
 | `url`, `checked` | yes | The official page (https) and the date a person checked it |
 | `opens`, `closes` | no | `yyyy-mm-dd` or `null` |

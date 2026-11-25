@@ -101,7 +101,8 @@ def check(entry: dict, counties: dict[str, list[str]], state: str = "FL") -> lis
             problems.append(f"{k} must be a yyyy-mm-dd date or null")
     if entry.get("opens") and entry.get("closes") and entry["opens"] > entry["closes"]:
         problems.append("opens is after closes")
-    # null: not a yes or no (another route, such as a fiscal sponsor, or the page doesn't say), so no card claims either
+    # null: not a yes or no (another route, such as a fiscal sponsor, or the page doesn't say). No points off; the
+    # card asks an organization without the status to check (web/src/ready.ts).
     required = entry.get("requires_501c3", "missing")
     if not (required is None or isinstance(required, bool)):
         problems.append("requires_501c3 must be true, false or null")
