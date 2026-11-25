@@ -31,7 +31,7 @@ def test_a_listing_becomes_an_open_call_record():
     assert rec["restrictions"] == "Any Non-Profit that specializes in stream restoration may apply."
     assert rec["application"] == "Respond by email to the program. Intent to Apply due: 2026-11-30."
     assert rec["url"] == rec["web"] == "https://dep.wv.gov/wwe/programs/pages/in-lieu-fee.aspx"
-    assert rec["contact"] == "Pat Lee, pat@example.gov, 304-555-0100"   # the first contact only
+    assert rec["contact"] == "Pat Lee, 304-555-0100"   # the first contact's name and phone, no email address
     assert rec["award"] == "Type: Competitive." and rec["updated"] == "2026-05-15"
 
 
@@ -105,3 +105,27 @@ def test_a_bare_not_or_no_near_nonprofits_is_not_an_exclusion():
     for text in ("Nonprofits are not eligible.", "Non-profit organizations may not apply.",
                  "Open to all entities except nonprofits."):
         assert wv.who_can_apply(text)[0] is False, text
+
+
+def test_unclear_wording_keeps_the_grant_open_and_only_a_real_exclusion_closes_it():
+    still_open = (
+        "Nonprofits that cannot provide match may request a waiver",
+        "Nonprofits may not receive more than $5,000.",             # a limit, not an exclusion
+        "Nonprofits cannot apply directly; they must partner with a county.",
+        "Nonprofits are not eligible as the lead applicant.",
+        "No nonprofits or businesses may apply",                      # unclear: kept, with the state's words on the card
+    )
+    for text in still_open:
+        yes, said = wv.who_can_apply(text)
+        assert yes is True and said == text, text
+    for text in ("Nonprofits not eligible", "No nonprofits.", "Nonprofits cannot be applicants.",
+                 "Nonprofits may not receive funds.", "Not open to non-profit organizations."):
+        assert wv.who_can_apply(text)[0] is False, text
+
+
+def test_the_snapshot_keeps_no_email_addresses():
+    import gzip
+    import json
+    from pathlib import Path
+    payload = json.loads(gzip.decompress((Path(wv.__file__).parent.parent / "data" / "westvirginia.json.gz").read_bytes()))
+    assert payload["programs"] and not any("@" in r["contact"] for r in payload["programs"])

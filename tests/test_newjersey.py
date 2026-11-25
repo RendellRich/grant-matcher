@@ -93,3 +93,9 @@ def test_titles_that_say_municipal_or_county_grants_are_not_open_to_nonprofits()
     rec = nj.normalize({"category": "Environment", "title": "Urban & Community Forestry Program", "url": "",
                         "agency": "NJ DEP", "deadline": "Rolling"})
     assert rec["nonprofit_eligible"] is True and rec["applicant_types"] == nj.WHO
+
+
+def test_a_county_title_that_names_nonprofits_or_a_county_college_stays_open():
+    for title in ("Cape May County Open Space Grants for Nonprofit Organizations", "County College Opportunity Grant"):
+        rec = nj.normalize({"category": "x", "title": title, "url": "", "agency": "NJ", "deadline": "Rolling"})
+        assert rec["nonprofit_eligible"] is True and rec["applicant_types"] == nj.WHO, title

@@ -80,7 +80,9 @@ def normalize(row: dict) -> dict:
     key = slug(title)
     url = row["url"] if row["url"].startswith("http") else SITE
     loan = bool(LOAN.search(title))
-    government = bool(GOVERNMENT_ONLY.search(title))
+    # "Cape May County Open Space Grants for Nonprofit Organizations" names nonprofits, and a county college is a
+    # school, not a county government: both stay open.
+    government = bool(GOVERNMENT_ONLY.search(title)) and not re.search(r"non-?\s?profit|not-for-profit|county college", title, re.I)
     return {
         "id": f"nj-{key}",
         "csfa": "",

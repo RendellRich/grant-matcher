@@ -44,10 +44,16 @@ NONPROFIT = re.compile(r"non-?\s?profit|not-for-profit|501\s*\(?\s*c\s*\)?\s*\(?
 # open to nonprofit organizations". A bare "not" or "no" nearby isn't one ("No match is required for non-profit
 # organizations"), and the "not" in "not-for-profit" never counts.
 _NP = r"(?:non-?\s?profits?|not-for-profits?)"
+# When the wording is unclear the grant stays open, with the state's text on the card: hiding a grant a nonprofit
+# could use costs more than showing one it can't, and West Virginia isn't in the weekly skipped report yet. So a
+# limit ("may not receive more than $5,000"), a condition ("nonprofits that cannot provide match may request a
+# waiver") or a partner route ("cannot apply directly", "not eligible as the lead applicant") doesn't close it.
+_LEAD = r"(?!\s+(?:directly|alone|on their own|as (?:the |a )?(?:lead|prime|primary)))"
 NO_NONPROFIT = re.compile(
-    rf"\b{_NP}(?:\s+(?:organi[sz]ations?|agencies|entities|groups))?\s+(?:are|is)\s+(?:not\s+eligible|ineligible|excluded)"
-    rf"|\b{_NP}[^.;]{{0,30}}\b(?:may|can|shall)\s*not\b(?!-)"
-    rf"|\b{_NP}[^.;]{{0,30}}\bcannot\b"
+    rf"\b{_NP}(?:\s+(?:organi[sz]ations?|agencies|entities|groups))?\s+(?:(?:are|is)\s+)?(?:not\s+eligible|ineligible|excluded){_LEAD}"
+    rf"|\b{_NP}[^.;]{{0,30}}\b(?:(?:may|can|shall)\s*not|cannot)\s+(?:apply|be\s+(?:applicants?|eligible)"
+    rf"|receive\s+(?:funding|funds|awards?|grants?)\s*(?:[.;,]|$)){_LEAD}"
+    rf"|\bno\s+{_NP}\s*(?:[.;]|$)"
     rf"|\b(?:not open to|excluding|excludes|except(?: for)?)\s+(?:[\w-]+\s+){{0,3}}?{_NP}", re.I)
 # A sentence that names nonprofits only as reviewers ("reviewed by ... state and federal agencies as well as non
 # profits") doesn't make them applicants.
@@ -101,7 +107,8 @@ def normalize(item: dict, today: str | None = None) -> dict:
     apply_link = _clean(item.get("LinkToApply"))
     dates = [f"{_clean(item.get(f'ImportantDateTitle{n}'))}: {_day(item.get(f'ImportantDate{n}'))}." for n in (1, 2, 3)
              if _clean(item.get(f"ImportantDateTitle{n}")) and _day(item.get(f"ImportantDate{n}"))]
-    contact = ", ".join(t for t in (_clean(item.get("ContactName1")), _clean(item.get("ContactEmail1")),
+    # The program contact's name and phone, not the email address, as with Iowa's program officers.
+    contact = ", ".join(t for t in (_clean(item.get("ContactName1")),
                                     _clean(item.get("ContactPhone1"))) if t)
     kind = _clean(item.get("TypeOfGrant"))
     today = today or date.today().isoformat()
