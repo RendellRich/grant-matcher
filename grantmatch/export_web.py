@@ -13,6 +13,7 @@ import io
 import json
 import argparse
 import re
+import zlib
 from datetime import date
 from pathlib import Path
 
@@ -106,7 +107,7 @@ def link_checks() -> dict[str, dict]:
         return {}
     try:
         links = (json.loads(gzip.decompress(raw)).get("_freshness") or {}).get("links")
-    except (OSError, ValueError, EOFError, AttributeError):
+    except (OSError, ValueError, EOFError, AttributeError, zlib.error):
         return {}
     return links if isinstance(links, dict) else {}
 

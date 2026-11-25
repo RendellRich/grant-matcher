@@ -110,6 +110,9 @@ const plural = (n: number, noun: string) => `${n.toLocaleString("en-US")} ${n ==
 
 export const DEAD_LINK = "Link didn't open when last checked";
 
+/** What the card's date is of. A foundation's is when its IRS return data was read, not its website. */
+export const checkedLabel = (e: Pick<Entry, "source">) => (e.source === "fdn" ? "IRS data last checked" : "Last checked");
+
 /** The card's "Last checked" date and dead-link flag, from the export's stamps. */
 export function lastChecked(r: Stamps): { checked?: string; dead?: boolean } {
   const s = r._checked ?? "";

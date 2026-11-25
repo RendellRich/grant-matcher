@@ -2,8 +2,8 @@
 
 The states come from the registry (grantmatch/states.py): every built state but Florida whose refresh is weekly or
 has no job yet. The daily states keep their own jobs. Each state's pages are checked against the project's
-crawling rule (cycles.off_limits) first, and a state that fails, is off limits or writes nothing never stops the
-others: its previous file is left exactly as it was. A state's data file and skipped list are written into the
+crawling rule (cycles.off_limits) first, and a state that fails, is off limits, writes nothing or comes back with
+no calls never stops the others: its previous file is left exactly as it was. A state's data file and skipped list are written into the
 out folder only when its whole run succeeded, and the states written are listed in <out>/refreshed.txt, one file
 name per line, for the job's embedding and upload steps. The exit code is 1 when any state failed.
 
@@ -47,9 +47,11 @@ def refresh_one(code: str, out: Path, allowed=None) -> None:
     work.mkdir(parents=True)
     try:
         data, skipped = work / f"{name}.json.gz", work / f"skipped-{name}.json.gz"
-        adapter.build(data, skipped)
+        calls = adapter.build(data, skipped)
         if not data.exists():
             raise RuntimeError("the adapter wrote no data file")
+        if not calls:  # a renamed field can drop every row: keep the last file and have a person look
+            raise RuntimeError("the adapter read no open calls")
         if skipped.exists():
             os.replace(skipped, out / skipped.name)
         os.replace(data, out / data.name)

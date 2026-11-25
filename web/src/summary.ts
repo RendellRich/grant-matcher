@@ -1,6 +1,6 @@
 // A one-page plain-text summary of a grant, for a grant writer to paste into a document or another tool.
 // Built only from what the card already shows, so it never says more than the data does.
-import { callState, DEAD_LINK, type Entry } from "./entries";
+import { callState, checkedLabel, DEAD_LINK, type Entry } from "./entries";
 import { readySummary } from "./ready";
 
 const SOURCE: Record<Entry["source"], string> = { fed: "Federal grant", fdn: "Foundation", fl: "State or local program" };
@@ -36,7 +36,7 @@ export function grantSummary(e: Entry, today: Date = new Date()): string {
   const out: string[] = [e.title, [sourceLabel(e), e.catalog, ...e.facts].filter(Boolean).join(" · ")];
   if (e.url) out.push(e.url);
   if (e.dead) out.push(`${DEAD_LINK}.`);
-  if (e.checked) out.push(`Last checked: ${e.checked}`);
+  if (e.checked) out.push(`${checkedLabel(e)}: ${e.checked}`);
   out.push("");
   if (e.side) out.push(e.sideQuiet ? `Size: ${e.side}` : e.side.startsWith("Due") || e.side.startsWith("Est.") ? `Deadline: ${e.side.replace(/^Due /, "")}` : e.side);
   out.push(`Grant Matcher score: ${e.score} of 100 (${e.tier === "Long shot" ? "long shot" : `${e.tier.toLowerCase()} match`})`);

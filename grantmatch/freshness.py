@@ -1,4 +1,4 @@
-"""Check that every source the master list is built from is still current, and that its links still open.
+"""Check how old the data behind the master list is, and whether the links it can check still open.
 
 The page watch (grantmatch/watch.py) reads the pages behind the hand-kept lists. This adds the rest, and runs at
 the end of the same weekly job, so no new job is needed:
@@ -6,17 +6,24 @@ the end of the same weekly job, so no new job is needed:
   data      the date each source's data is from (federal, foundations, community foundations, the company list,
             the county names, the funder website check, the coverage numbers, every built state and every
             hand-kept file), against how long that source may go before it is old
-  links     the public page each source is read from, and the link on every state call. Pages the page watch
+  links     the public page each source is read from, and the links on state calls. Pages the page watch
             has just read are not asked for again. A link is dead when it answers 404 or 410, or can't be reached
-            on two checks in a row. A page that is off limits (robots.txt, unread robots.txt, terms) or that
-            turns scripts away (401, 403, 429...) is reported on its own and never counted dead
+            (a timeout, a refused connection, a 5xx) on two checks in a row, and stays dead until it answers.
+            A page that is off limits (robots.txt, unread robots.txt, terms) or that answers any other error
+            (400, 401, 403, 405, 429...) is reported on its own and never counted dead
   records   hand-kept programs whose closing date has passed with no next round entered
 
 Every page is asked for through cycles.fetch_page, which applies the project's crawling rule (off_limits) to the
 address and every redirect and sends the project's own user agent. Requests to one host are spaced out, longer
 when its robots.txt asks, and a run is capped (MAX_PAGES, PER_HOST, TIME_BUDGET): what doesn't fit waits for a
-later week, oldest first. Federal grant pages, Florida's catalog pages and foundation websites are not opened
-here: the Grants.gov refresh, the Florida refresh and the funder website check read those themselves.
+later week, oldest first.
+
+Not link-checked: federal grant links (no job opens them; the Grants.gov refresh reads the API, not the grant
+pages), Florida's catalog links and foundation websites (the Florida refresh and the funder website check read
+those pages, but no link result is recorded from them) and pages on off-limits hosts.
+
+A finding is listed in full the first time and only counted after that. A release file that couldn't be read is
+reported as that, not as old data.
 
 It never edits an entry. Results are written into the page watch's report and state file (under "_freshness").
 
@@ -69,9 +76,10 @@ TIME_BUDGET = 150   # seconds of link checking; no new request starts past it
 RELEASE_BUDGET = 90  # seconds of reading the release; files after it are reported as not read
 WORKERS = 8
 GONE = (404, 410)
-REFUSED = (401, 403, 406, 429, 451)  # the site turns scripts away: not proof the page is gone
+UNREAD = "could not read"  # a release file whose read failed or was skipped: not the same as old
 FORGET_DAYS = 35    # a link no longer listed is remembered this long, so a file that failed to load loses nothing
-SHOWN = 40          # lines of one kind in the report
+SHOWN = 40          # lines of one kind in the report, for the lists that aren't findings
+NEW_ROOM = 20_000   # characters of new findings in one report; the rest are listed in a later one
 STAMP = re.compile(r'"(?:fetched_at|checked_at|made_at)"\s*:\s*"(\d{4}-\d{2}-\d{2}[^"]*)"')
 
 
@@ -143,10 +151,13 @@ def payload(raw: bytes | None) -> dict:
 
 
 def asset(release, data_dir: Path, name: str, head: bool = False, snapshot: str | None = None) -> tuple[bytes | None, str]:
-    """(bytes, "release" or "repository copy"), falling back to data/ as export_web does."""
+    """(bytes, "release" or "repository copy"), falling back to data/ as export_web does when the release has no
+    copy. A read that failed or was skipped is (None, UNREAD): the older copy in data/ would read as old data."""
     raw = release(name, head)
     if raw:
         return raw, "release"
+    if name in getattr(release, "failed", ()):
+        return None, UNREAD
     path = data_dir / (snapshot or name)
     return (path.read_bytes(), "repository copy") if path.exists() else (None, "")
 
@@ -187,12 +198,14 @@ def age(stamp: str | None, today: date) -> int | None:
 
 
 def source(key: str, name: str, every: str, stamp: str | None, where: str, today: date,
-           pages: tuple | list = (), notes: tuple | list = ()) -> dict:
+           pages: tuple | list = (), notes: tuple | list = (), partial: int = 0) -> dict:
+    """One source. `partial` counts the files of a many-file source that couldn't be read."""
     days = age(stamp, today)
     limit = MAX_DAYS[every]
+    unread = where == UNREAD
     return {"key": key, "name": name, "every": every, "date": str(stamp)[:10] if days is not None else None,
-            "days": days, "limit": limit, "stale": days is None or days > limit, "where": where,
-            "pages": list(pages), "notes": list(notes)}
+            "days": days, "limit": limit, "stale": not unread and (days is None or days > limit), "unread": unread,
+            "partial": partial, "where": where, "pages": list(pages), "notes": list(notes)}
 
 
 def _count(n: int, one: str, many: str) -> str:
@@ -251,6 +264,7 @@ def inventory(today: date, release=None, data_dir: Path = DATA) -> tuple[list[di
     # Foundation files: one per state and kind. The oldest is the source's date. Only their starts are read.
     listed = set()
     states_raw = release("states.json")
+    list_unread = "states.json" in getattr(release, "failed", ())
     try:
         listed = set(json.loads(states_raw)) if states_raw else set()
     except (ValueError, TypeError):
@@ -267,8 +281,12 @@ def inventory(today: date, release=None, data_dir: Path = DATA) -> tuple[list[di
         notes = [f"{len(found)} state files read" + (f", {from_copy} from the repository copy" if from_copy else "")]
         if dated:
             notes.append(f"oldest is {dated[0][2]}")
-        add(key, name, "monthly", dated[0][0] if dated else None,
-            "release" if found and not from_copy else "repository copy" if found else "", today, [page], notes)
+        failed = sum(1 for r in read if r and r[1] == UNREAD) + list_unread
+        if failed:
+            notes.append(f"{_count(failed, 'file', 'files')} could not be read")
+        where = "release" if found and not from_copy else "repository copy" if found else ""
+        add(key, name, "monthly", dated[0][0] if dated else None, UNREAD if failed and not dated else where, today,
+            [page], notes, partial=failed)
 
     # The funder website check also tells which hand-kept programs say they are open.
     raw, where = asset(release, data_dir, "cycles.json.gz")
@@ -290,14 +308,14 @@ def inventory(today: date, release=None, data_dir: Path = DATA) -> tuple[list[di
         raw, where = asset(release, data_dir, name, head=code == "FL")
         records = [] if code == "FL" else payload(raw).get("programs") or []
         notes = []
-        if code != "FL":
+        if code != "FL" and where != UNREAD:
             past = sum(1 for r in records if r.get("closes") and str(r["closes"]) < today.isoformat())
             notes.append(f"{len(records)} calls in the file" + (f", {past} past deadline (the export leaves them out)"
                                                                if past else ""))
             for r in records:
                 link(r.get("url"), f"{code} state call: {str(r.get('title', ''))[:80]}")
         if where == "repository copy":
-            notes.append("read from the repository copy; the release has none or couldn't be read")
+            notes.append("read from the repository copy; the release has none")
         add(f"state:{code}", s["report"] if STATE_NAMES.get(code, code) in s["report"]
             else f"{STATE_NAMES.get(code, code)}: {s['report']}", s["refresh"] or "no job yet",
             stamp_of(raw), where, today, s["pages"], notes)
@@ -333,7 +351,8 @@ def from_code(code: int) -> dict:
     if 200 <= code < 300:
         return {"s": "ok"}
     why = f"HTTP {code}"
-    return {"s": "gone" if code in GONE else "refused" if code in REFUSED else "unreachable", "why": why}
+    # Only a 5xx says the site is in trouble; any other error (400, 403, 405...) is an answer that turns this away.
+    return {"s": "gone" if code in GONE else "unreachable" if code >= 500 else "refused", "why": why}
 
 
 def link_reading(url: str) -> dict:
@@ -365,13 +384,15 @@ def from_watch(reading: dict) -> dict:
 
 def remember(before: dict | None, reading: dict, today: date) -> dict:
     """What to keep for a link after this reading. n counts checks in a row, on separate days, that couldn't
-    reach it (two make it dead) or couldn't look at it."""
+    reach it (two make it dead) or couldn't look at it. A dead link stays dead until a reading is ok."""
     day = today.isoformat()
     s = reading["s"]
     if s == "ok":
         return {"s": "ok", "d": day}
     if s == "gone":
         return {"s": "dead", "d": day, "why": reading.get("why", "")}
+    if (before or {}).get("s") == "dead":  # a page that can't be reached or looked at hasn't come back
+        return {**before, "d": day} if s == "unreachable" else dict(before)
     chain = "n" if s == "unreachable" else "b"
     n = (before or {}).get(chain, 0)
     if not n or (before or {}).get("d") != day:  # a second run the same day isn't a second check
@@ -461,62 +482,122 @@ def _cut(lines: list[str]) -> list[str]:
     return lines[:SHOWN] + ([f"- and {more} more"] if more > 0 else [])
 
 
+def findings(sources: list[dict], links: dict[str, list[str]], memory: dict, past: list[dict]) -> list[tuple[str, str, str]]:
+    """Everything that needs a person, each as (a key that stays the same from week to week, its kind, its line)."""
+    out = []
+    for s in sources:
+        if s["stale"]:
+            said = f"data from {s['date']}, {s['days']} days old" if s["date"] else "no date could be read"
+            out.append((f"stale:{s['key']}", "stale",
+                        f"- **{s['name']}** (`{s['key']}`): {said}; the limit is {s['limit']} days "
+                        f"(refresh: {s['every']})."))
+    for url in sorted(links):
+        m = memory.get(url) or {}
+        if m.get("s") == "dead":
+            out.append((f"dead:{url}", "dead",
+                        f"- {url} : {m.get('why', '')}" + (f", {m['n']} checks in a row" if m.get("n") else "")
+                        + f". Used by: {'; '.join(links[url][:3])}" + (" and others" if len(links[url]) > 3 else "")))
+    for p in past:
+        out.append((f"past:{p['list']}/{p['key']}/{p['closes']}", "past",
+                    f"- `{p['list']}` / `{p['key']}`: {p['name']}, closed {p['closes']}"))
+    return out
+
+
+# kind: (heading for new ones, one, many) for the carried-over count
+KINDS = {"stale": ("Data that is old or missing", "old source", "old sources"),
+         "dead": ("Dead links", "dead link", "dead links"),
+         "past": ("Closing date passed, no next round entered", "closing date passed", "closing dates passed")}
+
+
+def condition(s: dict, memory: dict) -> str:
+    """A source's state in a few words, to tell whether it changed since the last report."""
+    data = "could not read" if s["unread"] else "old" if s["stale"] else "ok"
+    page = ", ".join(sorted({(memory.get(u) or {}).get("s", "not checked") for u in s["pages"]}))
+    return f"{data}; {page}"
+
+
 def report(sources: list[dict], links: dict[str, list[str]], memory: dict, past: list[dict], stats: dict,
-           today: date, watched: set[str], failed: list[str]) -> tuple[str, int]:
-    """The section added to the page watch's report, and how many things in it need a person."""
-    stale = [s for s in sources if s["stale"]]
-    dead = sorted((u, memory[u]) for u in links if memory.get(u, {}).get("s") == "dead")
+           today: date, watched: set[str], previous: dict) -> tuple[str, int, list[str], dict[str, str]]:
+    """(the section added to the page watch's report, how many findings are new, the keys of the findings already
+    reported, each source's condition). New findings are listed in full; ones reported before are only counted."""
+    items = findings(sources, links, memory, past)
+    reported = set(previous.get("flagged") or [])
+    new = [i for i in items if i[0] not in reported]
+    carried = [i for i in items if i[0] in reported]
+    shown, room = [], NEW_ROOM
+    for item in new:
+        if len(item[2]) + 1 > room:
+            break
+        shown.append(item)
+        room -= len(item[2]) + 1
+    never = sum(1 for u in links if u not in memory)
+    lines = [f"# Freshness check, {today.isoformat()}", "",
+             f"{len(sources)} sources and {len(links)} links. {len(new)} newly need a look and {len(carried)} are "
+             f"carried over from earlier reports. This run asked for "
+             f"{stats['pages']} pages on {stats['hosts']} hosts in {stats['seconds']} seconds"
+             + (f", left {stats['blocked']} unasked as off limits" if stats.get("blocked") else "")
+             + (f"; {len(stats.get('watched', []))} came from the page watch" if stats.get("watched") else "")
+             + f"; {stats['deferred']} planned pages ran out of time and {never} links have not been checked yet."]
+    for kind, (heading, _, _) in KINDS.items():
+        mine = [line for _, k, line in shown if k == kind]
+        if mine:
+            lines += ["", f"## New: {heading[0].lower()}{heading[1:]}", "", *mine]
+    if len(new) > len(shown):
+        lines += ["", f"{len(new) - len(shown)} more new findings didn't fit here; a later report lists them."]
+    if carried:
+        counts = [_count(sum(1 for _, k, _ in carried if k == kind), one, many)
+                  for kind, (_, one, many) in KINDS.items() if any(k == kind for _, k, _ in carried)]
+        lines += ["", "## Still open from earlier reports", "",
+                  f"{', '.join(counts)}. Each was listed in full when first reported and isn't counted again."]
+    unread = [s for s in sources if s["unread"] or s["partial"]]
+    if unread:
+        lines += ["", "## Could not read this run (not counted as old)", ""]
+        lines += _cut([f"- {s['name']} (`{s['key']}`)"
+                       + (f": {_count(s['partial'], 'file', 'files')}" if s["partial"] else "") for s in unread])
     once = sorted(u for u in links if memory.get(u, {}).get("s") == "unreachable")
+    if once:
+        lines += ["", "## Didn't open once (dead if it fails again next check)", ""]
+        lines += _cut([f"- {u} : {memory[u].get('why', '')}" for u in once])
+
     shut: dict[tuple[str, str], list[str]] = {}
     for url in links:
         m = memory.get(url) or {}
         # The watched pages that are blocked or turned away are already in the page watch's own list above.
         if m.get("s") in ("blocked", "refused") and url not in watched:
             shut.setdefault((urlparse(url).netloc, m.get("why", "")), []).append(url)
-    count = len(stale) + len(dead) + len(past)
-    never = sum(1 for u in links if u not in memory)
-    lines = [f"# Freshness check, {today.isoformat()}", "",
-             f"{len(sources)} sources and {len(links)} links. {count} need a look. This run asked for "
-             f"{stats['pages']} pages on {stats['hosts']} hosts in {stats['seconds']} seconds"
-             + (f", left {stats['blocked']} unasked as off limits" if stats.get("blocked") else "")
-             + (f"; {len(stats.get('watched', []))} came from the page watch" if stats.get("watched") else "")
-             + f"; {stats['deferred']} planned pages ran out of time and {never} links have not been checked yet."]
-    if failed:
-        lines += ["", f"{len(failed)} release files couldn't be read this run (first: `{failed[0]}`)."]
-    if stale:
-        lines += ["", "## Data that is old or missing", ""]
-        for s in stale:
-            said = (f"data from {s['date']}, {s['days']} days old" if s["date"] else "no date could be read")
-            lines.append(f"- **{s['name']}** (`{s['key']}`): {said}; the limit is {s['limit']} days "
-                         f"(refresh: {s['every']}).")
-    if dead:
-        lines += ["", "## Dead links", ""]
-        lines += _cut([f"- {u} : {m.get('why', '')}"
-                       + (f", {m['n']} checks in a row" if m.get("n") else "")
-                       + f". Used by: {'; '.join(links[u][:3])}" + (" and others" if len(links[u]) > 3 else "")
-                       for u, m in dead])
-    if past:
-        lines += ["", "## Closing date passed, no next round entered", ""]
-        lines += _cut([f"- `{p['list']}` / `{p['key']}`: {p['name']}, closed {p['closes']}" for p in past])
-    if once:
-        lines += ["", "## Didn't open once (dead if it fails again next check)", ""]
-        lines += _cut([f"- {u} : {memory[u].get('why', '')}" for u in once])
-    if shut:
-        lines += ["", "## Not checked: off limits or turned away (never counted as dead)", ""]
-        rows = []
-        for (host, why), urls in sorted(shut.items()):
-            weeks = max(memory[u].get("b", 1) for u in urls)
-            rows.append(f"- {host}: {why} ({len(urls)} {'page' if len(urls) == 1 else 'pages'}"
-                        + (f", {weeks} checks in a row" if weeks > 1 else "") + ")")
-        lines += _cut(rows)
-    lines += ["", "## Every source", "", "| Source | Data from | Limit (days) | Refresh | Its page | Notes |",
-              "|---|---|---:|---|---|---|"]
-    for s in sources:
-        states = [(memory.get(u) or {}).get("s", "not checked") for u in s["pages"]]
-        page = ", ".join(sorted(set(states))) if states else ""
-        lines.append(f"| {s['name']} | {s['date'] or 'unknown'}{' (old)' if s['stale'] else ''} | {s['limit']} "
+    lines += ["", "## Not link-checked", "",
+              "- Federal grant links: no job opens them (the Grants.gov refresh reads the API, not the grant pages).",
+              "- Florida catalog links: the weekly Florida refresh reads the catalog pages; no link result is kept.",
+              "- Foundation websites: the weekly website check reads them; no link result is kept.",
+              "- Off-limits hosts and pages that turn scripts away (never counted as dead). Hand-kept and company "
+              "pages are in the page watch's list above" + ("; the others:" if shut else ".")]
+    rows = []
+    for (host, why), urls in sorted(shut.items()):
+        weeks = max(memory[u].get("b", 1) for u in urls)
+        rows.append(f"  - {host}: {why} ({_count(len(urls), 'page', 'pages')}"
+                    + (f", {weeks} checks in a row" if weeks > 1 else "") + ")")
+    lines += _cut(rows)
+
+    conditions = {s["key"]: condition(s, memory) for s in sources}
+    before = previous.get("sources") or {}
+    changed = [s for s in sources if before.get(s["key"]) != conditions[s["key"]]]
+    lines += ["", "## Sources new or changed since the last report", ""]
+    if changed:
+        lines += ["| Source | Data from | Limit (days) | Refresh | Its page | Notes |", "|---|---|---:|---|---|---|"]
+    for s in changed:
+        page = conditions[s["key"]].split("; ", 1)[1]
+        said = s["date"] or ("could not read" if s["unread"] else "unknown")
+        lines.append(f"| {s['name']} | {said}{' (old)' if s['stale'] else ''} | {s['limit']} "
                      f"| {s['every']} | {page} | {'; '.join(s['notes'])} |")
-    return "\n".join(lines) + "\n", count
+    if len(changed) < len(sources):
+        lines += ([""] if changed else []) + [f"{len(sources) - len(changed)} other sources are as they were."]
+
+    keys = {i[0] for i in carried} | {i[0] for i in shown}
+    # What couldn't be looked at this run stays reported, so it isn't listed as new when it can be read again.
+    if unread:
+        keys |= reported & {f"stale:{s['key']}" for s in unread}
+        keys |= {k for k in reported if k.startswith("dead:") and (memory.get(k[len("dead:"):]) or {}).get("s") == "dead"}
+    return "\n".join(lines) + "\n", len(new), sorted(keys), conditions
 
 
 # ---------------- running it ----------------
@@ -524,11 +605,12 @@ def report(sources: list[dict], links: dict[str, list[str]], memory: dict, past:
 def check(previous: dict | None, watch_readings: dict[str, dict], today: date, release=None,
           data_dir: Path = DATA, linker=check_links, skip: set[str] = frozenset()) -> dict:
     """One run. `previous` is what the last run kept, `watch_readings` the page watch's readings by address (those
-    pages aren't asked for again) and `skip` addresses to leave alone. Returns the report text, how many things
-    need a look, what to keep and the run's numbers."""
+    pages aren't asked for again) and `skip` addresses to leave alone. Returns the report text, how many findings
+    are new, what to keep and the run's numbers."""
     release = release or Release()
     sources, links, past = inventory(today, release, data_dir)
-    old = (previous or {}).get("links") or {}
+    previous = previous or {}
+    old = previous.get("links") or {}
     pages = {u for s in sources for u in s["pages"]}
     asked = [u for u in links if u not in watch_readings and u not in skip]
     readings, stats = linker(plan(asked, pages, old))
@@ -539,9 +621,10 @@ def check(previous: dict | None, watch_readings: dict[str, dict], today: date, r
     memory = {u: m for u, m in old.items() if u in links or str(m.get("d", "")) >= keep_after}
     for url, reading in readings.items():
         memory[url] = remember(old.get(url), reading, today)
-    text, count = report(sources, links, memory, past, stats, today, set(watch_readings) | set(skip),
-                         getattr(release, "failed", []))
-    return {"text": text, "flagged": count, "memory": {"checked": today.isoformat(), "links": memory},
+    text, count, keys, conditions = report(sources, links, memory, past, stats, today, set(watch_readings) | set(skip),
+                                           previous)
+    return {"text": text, "flagged": count,
+            "memory": {"checked": today.isoformat(), "links": memory, "flagged": keys, "sources": conditions},
             "stats": stats, "sources": sources, "past": past, "links": links}
 
 
@@ -561,7 +644,7 @@ def main() -> None:
     save_state(args.state, {**state, KEY: result["memory"]})
     s = result["stats"]
     print(f"{len(result['sources'])} sources, {len(result['links'])} links, {s['pages']} pages asked for on "
-          f"{s['hosts']} hosts, {s['deferred']} deferred, {result['flagged']} need a look; link checks "
+          f"{s['hosts']} hosts, {s['deferred']} deferred, {result['flagged']} new findings; link checks "
           f"{s['seconds']}s, whole run {round(time.monotonic() - started)}s; report in {args.report}")
 
 

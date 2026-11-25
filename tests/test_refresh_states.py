@@ -1,15 +1,12 @@
 """The weekly state refresh driver (grantmatch/refresh_states.py) and the proposed workflows that use it
 (docs/proposed-workflows/, text files nothing runs). No network: the adapters' build functions are replaced."""
-import gzip
 import importlib
-import json
 import re
 import sys
 
-import numpy as np
 import pytest
 
-from grantmatch import embed, export_web, refresh_states, skipped, states
+from grantmatch import export_web, refresh_states, skipped, states
 
 ROOT = export_web.LOCAL.parent
 CODES = ["DC", "MN", "NJ", "NY", "WV"]
@@ -21,7 +18,7 @@ def test_the_driver_runs_every_built_state_that_has_no_daily_job():
                                               if s["status"] == "built" and c != "FL" and s["refresh"] != "daily"]
 
 
-def fake_adapters(monkeypatch, broken=(), silent=()):
+def fake_adapters(monkeypatch, broken=(), silent=(), empty=()):
     """Each adapter writes its two files, except the broken ones, which write half a file and fail."""
     for code in CODES:
         module = importlib.import_module(f"grantmatch.{states.STATES[code]['module']}")
@@ -33,7 +30,7 @@ def fake_adapters(monkeypatch, broken=(), silent=()):
             if code in broken:
                 raise RuntimeError("the page changed shape")
             skipped_out.write_bytes(f"skipped {code}".encode())
-            return 1
+            return 0 if code in empty else 1
 
         monkeypatch.setattr(module, "build", build)
 
@@ -89,14 +86,16 @@ def test_the_exit_code_signals_a_failure_and_the_files_are_listed(tmp_path, monk
     assert (tmp_path / "refreshed.txt").read_text(encoding="utf-8").split() == [name(c) for c in CODES]
 
 
-def test_a_state_with_no_open_call_embeds_to_an_empty_file(tmp_path, monkeypatch):
-    src, out = tmp_path / "x.json.gz", tmp_path / "x.npz"
-    src.write_bytes(gzip.compress(json.dumps({"programs": []}).encode()))
-    monkeypatch.setattr(embed, "embed_texts", lambda texts: pytest.fail("nothing to embed"))
-    monkeypatch.setattr(sys, "argv", ["embed", "programs", str(src), str(out)])
-    embed.main()
-    ids, vecs = export_web.vectors(out.read_bytes())
-    assert ids == [] and vecs.shape == (0, 384) and vecs.dtype == np.float16
+def test_a_state_that_comes_back_with_no_calls_keeps_its_old_file(tmp_path, monkeypatch):
+    """Renamed fields can drop every row: the adapter writes an empty file and returns 0."""
+    (tmp_path / "westvirginia.json.gz").write_bytes(b"last week")
+    (tmp_path / "skipped-westvirginia.json.gz").write_bytes(b"last skipped")
+    fake_adapters(monkeypatch, empty={"WV"})
+    done, failed = refresh_states.refresh(tmp_path, allowed=lambda url: None)
+    assert "WV" not in done and "no open calls" in failed["WV"]
+    assert (tmp_path / "westvirginia.json.gz").read_bytes() == b"last week"
+    assert (tmp_path / "skipped-westvirginia.json.gz").read_bytes() == b"last skipped"
+    assert "westvirginia" not in (tmp_path / "refreshed.txt").read_text(encoding="utf-8")
 
 
 def proposed(which):

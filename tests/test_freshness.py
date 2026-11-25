@@ -108,6 +108,23 @@ def test_blocked_and_refused_pages_are_never_dead():
     assert freshness.from_code(503)["s"] == "unreachable" and freshness.from_code(200) == {"s": "ok"}
 
 
+@pytest.mark.parametrize("code", [400, 401, 403, 405, 406, 418, 429, 451])
+def test_any_other_error_but_a_5xx_is_a_refusal_not_a_dead_link(code):
+    first = freshness.remember(None, freshness.from_code(code), TODAY)
+    assert first["s"] == "refused"
+    assert freshness.remember(first, freshness.from_code(code), date(2026, 12, 3))["s"] == "refused"
+
+
+def test_a_dead_link_stays_dead_until_a_reading_is_ok():
+    dead = freshness.remember(None, freshness.from_code(404), TODAY)
+    later = date(2026, 12, 3)
+    for reading in (freshness.from_code(403), freshness.from_code(405), freshness.from_code(503),
+                    {"s": "unreachable", "why": "ReadTimeout"}, {"s": "blocked", "why": "robots.txt could not be read"}):
+        kept = freshness.remember(dead, reading, later)
+        assert (kept["s"], kept["why"]) == ("dead", "HTTP 404"), reading
+    assert freshness.remember(dead, {"s": "ok"}, later) == {"s": "ok", "d": "2026-12-03"}
+
+
 def test_the_page_watchs_readings_become_link_results():
     assert freshness.from_watch({"s": "ok", "text": "hi"}) == {"s": "ok"}
     assert freshness.from_watch({"s": "error", "why": "HTTP 404"})["s"] == "gone"
@@ -219,10 +236,12 @@ def test_one_run_flags_old_data_dead_links_and_past_deadlines(tmp_path):
     assert memory["https://county.example.org/old"]["s"] == "dead"
     assert memory["https://calls.example.org/closed"]["s"] == "dead"
     assert memory["https://county.example.org/any"]["s"] == "blocked"
-    assert "## Dead links" in text and "HTTP 410" in text and "local-FL: old-grant" in text
-    assert "## Closing date passed, no next round entered" in text and "`old-grant`" in text
+    assert "## New: dead links" in text and "HTTP 410" in text and "local-FL: old-grant" in text
+    assert "## New: closing date passed, no next round entered" in text and "`old-grant`" in text
     assert "state:CA" in text and "25 days old" in text
-    blocked = text[text.index("## Not checked"):text.index("## Every source")]
+    blocked = text[text.index("## Not link-checked"):text.index("## Sources new or changed")]
+    for kind in ("Federal grant links", "Florida catalog links", "Foundation websites", "Off-limits hosts"):
+        assert kind in blocked
     assert "calls.example.org" in blocked and "county.example.org" not in blocked  # the watch lists its own
     dead = [u for u, m in memory.items() if m["s"] == "dead"]
     assert result["flagged"] == len(dead) + len(result["past"]) + sum(s["stale"] for s in result["sources"])
@@ -237,6 +256,93 @@ def test_a_link_unreachable_two_weeks_running_turns_dead(tmp_path):
     second, asked = run_check(tmp_path, previous=first["memory"], answers=down, today=date(2026, 12, 3))
     assert asked[0] == "https://calls.example.org/open"  # confirmed first
     assert second["memory"]["links"]["https://calls.example.org/open"]["s"] == "dead"
+
+
+# ---------------- only new findings are listed ----------------
+
+def test_findings_already_reported_are_counted_not_listed_again(tmp_path):
+    watched = {"https://county.example.org/old": {"s": "error", "why": "HTTP 404"}}
+    first, _ = run_check(tmp_path, watched=watched)
+    assert first["flagged"] >= 3 and "`old-grant`" in first["text"]
+    assert {"dead:https://county.example.org/old", "past:local-FL/old-grant/2026-09-01", "stale:state:CA"} <= set(
+        first["memory"]["flagged"])
+    sources_in_first = first["text"].split("## Sources new or changed since the last report")[1]
+    assert sources_in_first.count("\n| ") == len(first["sources"]) + 1  # the first report has every source
+
+    second, _ = run_check(tmp_path, previous=first["memory"], watched=watched, today=date(2026, 11, 27))
+    text = second["text"]
+    assert second["flagged"] == 0 and "## New:" not in text and "`old-grant`" not in text
+    assert "## Still open from earlier reports" in text and "1 dead link, 1 closing date passed" in text
+    assert "## Sources new or changed" in text and "other sources are as they were" in text
+    assert "| Source |" not in text  # nothing about any source changed
+    assert set(second["memory"]["flagged"]) == set(first["memory"]["flagged"])
+
+    gone = dict(watched, **{"https://sample.example.com/giving": {"s": "error", "why": "HTTP 410"}})
+    third, _ = run_check(tmp_path, previous=second["memory"], watched=gone, today=date(2026, 11, 28))
+    assert third["flagged"] == 1
+    new = third["text"].split("## New: dead links")[1].split("##")[0]
+    assert "sample.example.com" in new and "county.example.org" not in new
+
+
+def test_a_fixed_finding_that_comes_back_is_new_again(tmp_path):
+    url = "https://county.example.org/old"
+    bad = {url: {"s": "error", "why": "HTTP 404"}}
+    first, _ = run_check(tmp_path, watched=bad)
+    fixed, _ = run_check(tmp_path, previous=first["memory"], watched={url: {"s": "ok"}}, today=date(2026, 11, 27))
+    assert f"dead:{url}" not in fixed["memory"]["flagged"]
+    again, _ = run_check(tmp_path, previous=fixed["memory"], watched=bad, today=date(2026, 11, 28))
+    assert again["flagged"] == 1 and url in again["text"]
+
+
+def test_new_findings_that_do_not_fit_are_listed_later_not_forgotten(tmp_path, monkeypatch):
+    monkeypatch.setattr(freshness, "NEW_ROOM", 300)
+    first, _ = run_check(tmp_path)
+    listed = len(first["memory"]["flagged"])
+    assert 0 < listed < first["flagged"] and "more new findings didn't fit" in first["text"]
+    second, _ = run_check(tmp_path, previous=first["memory"], today=date(2026, 11, 27))
+    assert second["flagged"] == first["flagged"] - listed and len(second["memory"]["flagged"]) > listed
+
+
+# ---------------- a release that can't be read ----------------
+
+class Unreadable:
+    """A release whose every read fails (or, with `names`, only those)."""
+
+    def __init__(self, names=None):
+        self.failed, self.names = [], names
+
+    def __call__(self, name, head=False):
+        if self.names is None or name in self.names:
+            self.failed.append(name)
+        return None
+
+
+def spent_budget():
+    release = freshness.Release(budget=0, clock=lambda: 1.0)
+    release.until = 0.0
+    return release
+
+
+@pytest.mark.parametrize("release", [Unreadable(), spent_budget()], ids=["failed", "over budget"])
+def test_a_file_that_could_not_be_read_is_not_called_old(tmp_path, release):
+    data = fake_data(tmp_path)  # its California copy is old: it must not be read in the release's place
+    sources, links, _ = freshness.inventory(date(2027, 3, 1), release, data)
+    by = {s["key"]: s for s in sources}
+    for key in ("federal", "foundations", "community", "websites", "coverage", "state:CA", "state:WV"):
+        assert by[key]["unread"] and not by[key]["stale"], key
+    assert not [u for u in links if "calls.example.org" in u]
+
+
+def test_an_unread_file_is_left_out_of_the_count_and_keeps_what_was_reported(tmp_path):
+    first, _ = run_check(tmp_path)
+    assert "stale:state:CA" in first["memory"]["flagged"]
+    linker = lambda urls: ({}, {"pages": 0, "hosts": 0, "deferred": len(urls), "seconds": 0})  # noqa: E731
+    unread = freshness.check(first["memory"], {}, date(2026, 11, 27), release=Unreadable({"california.json.gz"}),
+                             data_dir=tmp_path, linker=linker)
+    assert unread["flagged"] == 0 and "## Could not read this run" in unread["text"] and "state:CA" in unread["text"]
+    assert "stale:state:CA" in unread["memory"]["flagged"]
+    back, _ = run_check(tmp_path, previous=unread["memory"], today=date(2026, 11, 28))
+    assert back["flagged"] == 0  # not new again
 
 
 # ---------------- inside the page watch ----------------
@@ -326,7 +432,8 @@ def test_the_export_reads_link_results_from_the_published_watch_state(monkeypatc
     links = {"https://example.org/a": {"s": "ok", "d": "2026-11-26"}}
     monkeypatch.setattr(export_web, "fetch", lambda name, local=None: gz({"_freshness": {"links": links}}))
     assert export_web.link_checks() == links
-    for raw in (None, gz({"https://example.org/a": {"fp": "x"}}), b"not gzip", gz([1])):
+    corrupt = b"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x00" + b"\xff" * 8  # a gzip header, then nonsense (zlib.error)
+    for raw in (None, gz({"https://example.org/a": {"fp": "x"}}), b"not gzip", gz([1]), corrupt):
         monkeypatch.setattr(export_web, "fetch", lambda name, local=None, raw=raw: raw)
         assert export_web.link_checks() == {}
 
