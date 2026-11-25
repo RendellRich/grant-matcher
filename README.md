@@ -43,7 +43,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Saves your filters with your profile:** type of support (general operating, start-up, capacity building and more), the amount you want to ask for, funder types, timing (open now, or due within 30, 60 or 90 days), words to avoid, and a hide list (scholarship funds, invitation only, no unsolicited requests, research grants, matching funds required). They never change a score, and each tab says how many they hide.
 - **Exports** your strong and possible matches to CSV and the deadlines to a calendar file (.ics).
 - **Narrows the list** without changing any score: search words across every result and its details, award size, deadline and agency for federal grants, agency for Florida programs, and for foundations their typical grant, whether they publish how to apply, whether they refuse unsolicited requests, and whether they're based in or fund your cities.
-- **Says when each result was last checked.** Cards show "Last checked <date>", the date its source was read ("IRS data last checked" on foundations, since it is the tax-return data, not their websites), and "Link didn't open when last checked" when the weekly [freshness check](docs/freshness.md) found the link dead. Neither changes a score.
+- **Says how old each result's data is.** Cards show "Last checked <date>", the date its source was read ("IRS data last checked" on foundations, since it is the tax-return data, not their websites), and "Link didn't open when last checked" when the weekly [freshness check](docs/freshness.md) found the link dead. Neither changes a score.
 - **Marks what's new.** Grants, foundations and programs that weren't in the data at your last visit carry a New tag, and "Only new since your last visit" shows just those. The record of what you've seen stays in your browser.
 - **Flags eligibility while your 501(c)(3) is pending.** Foundations whose own filing asks for 501(c)(3) status or an IRS determination letter get a caution and a lower score, with a note about a fiscal sponsor, and one checkbox hides them. Federal grants that require 501(c)(3) status say the same.
 - **Keeps a shortlist** of the results you mark, saved in your browser and, on Pro, to your account so it is the same on every device, with its own CSV. Each one has a stage: Saved, Applying or Submitted, with the date it moved. Submitted ones stop showing in the results and stay on the shortlist.
@@ -335,7 +335,7 @@ A GitHub Action runs twice a day and pulls every posted and forecasted opportuni
 | [District Grants Clearinghouse](https://communityaffairs.dc.gov/node/26) (web page, CC BY 3.0) | no job yet: the snapshot in `data/`, made November 25, 2026 | none |
 | Minnesota [Health](https://www.health.state.mn.us/about/grants/index.html) and [Justice Programs](https://dps.mn.gov/divisions/ojp/ojp-grants/funding-opportunities) grant pages (two agencies) | no job yet: the snapshot in `data/`, made November 25, 2026 | none |
 | Pages behind the hand-kept lists (`local-<ST>.json`, `corporate.json`) | weekly | `watch-pages.yml` |
-| [Freshness check](docs/freshness.md): how old every source's data is, and whether source pages and state call links still open | weekly | `watch-pages.yml` (the same run) |
+| [Freshness check](docs/freshness.md): how old the data is, and whether source pages and state call links still open | weekly | `watch-pages.yml` (the same run) |
 | Skipped grants review (`skipped-grants.csv` and the `skip-review` issue) | weekly | `skipped-report.yml` |
 | Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
 | Each foundation's own website (the home page and the grants or apply page it links to), for an open cycle, a deadline ahead, an application link, or a note that it isn't taking requests | weekly | `refresh-websites.yml` |
@@ -400,7 +400,7 @@ grantmatch/local.py     programs entered by hand: state calls, county and city g
 grantmatch/skipped.py   the weekly list of grants left out, and why
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
 grantmatch/watch.py     weekly check of the pages behind both hand-kept lists
-grantmatch/freshness.py   weekly check of every source's age and links, run with the page watch
+grantmatch/freshness.py   weekly check of data age, source pages and state call links, run with the page watch
 grantmatch/refresh_states.py  one driver for the weekly state adapters (not in a job yet)
 grantmatch/history.py   each foundation's giving across five tax years
 grantmatch/coverage.py  registered foundations per state against what the state files hold

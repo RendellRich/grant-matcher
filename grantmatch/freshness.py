@@ -3,17 +3,17 @@
 The page watch (grantmatch/watch.py) reads the pages behind the hand-kept lists. This adds the rest, and runs at
 the end of the same weekly job, so no new job is needed:
 
-  data      the date each source's data is from (federal, foundations, community foundations, the company list,
-            the county names, the funder website check, the coverage numbers, every built state and every
-            hand-kept file), against how long that source may go before it is old
-  links     the public page each source is read from, and the links on state calls. Pages the page watch
+  data      the date the data is from (federal, foundations, community foundations, the company list, the
+            county names, the funder website check, the coverage numbers, the built states and the hand-kept
+            files), against how long each may go before it is old
+  links     the public pages the sources are read from, and the links on state calls. Pages the page watch
             has just read are not asked for again. A link is dead when it answers 404 or 410, or can't be reached
             (a timeout, a refused connection, a 5xx) on two checks in a row, and stays dead until it answers.
             A page that is off limits (robots.txt, unread robots.txt, terms) or that answers any other error
             (400, 401, 403, 405, 429...) is reported on its own and never counted dead
   records   hand-kept programs whose closing date has passed with no next round entered
 
-Every page is asked for through cycles.fetch_page, which applies the project's crawling rule (off_limits) to the
+Pages are asked for only through cycles.fetch_page, which applies the project's crawling rule (off_limits) to the
 address and every redirect and sends the project's own user agent. Requests to one host are spaced out, longer
 when its robots.txt asks, and a run is capped (MAX_PAGES, PER_HOST, TIME_BUDGET): what doesn't fit waits for a
 later week, oldest first.
@@ -241,7 +241,7 @@ def past_deadlines(entries: list[tuple[str, dict]], websites: dict, today: date)
 
 
 def inventory(today: date, release=None, data_dir: Path = DATA) -> tuple[list[dict], dict[str, list[str]], list[dict]]:
-    """(every source with the date its data is from, every link to check with what uses it, past deadlines)."""
+    """(the sources with the date their data is from, the links to check with what uses them, past deadlines)."""
     release = release or Release()
     sources: list[dict] = []
     links: dict[str, list[str]] = {}
@@ -292,6 +292,8 @@ def inventory(today: date, release=None, data_dir: Path = DATA) -> tuple[list[di
     raw, where = asset(release, data_dir, "cycles.json.gz")
     sites = payload(raw).get("sites") or {}
     add("websites", "Funder website check", "weekly", stamp_of(raw), where, today)
+    # Without it, a program whose website says applications are open can't be told from one past its closing date.
+    sources[-1]["unusable"] = not isinstance(payload(raw).get("sites"), dict)
     raw, where = asset(release, data_dir, "coverage.json")
     add("coverage", "Foundation coverage numbers", "monthly", stamp_of(raw), where, today)
 
@@ -522,6 +524,10 @@ def report(sources: list[dict], links: dict[str, list[str]], memory: dict, past:
     reported, each source's condition). New findings are listed in full; ones reported before are only counted."""
     items = findings(sources, links, memory, past)
     reported = set(previous.get("flagged") or [])
+    # With no website check to read, hold new past closing dates: some may be programs that say they are open.
+    no_websites = any(s.get("unusable") for s in sources)
+    if no_websites:
+        items = [i for i in items if i[1] != "past" or i[0] in reported]
     new = [i for i in items if i[0] not in reported]
     carried = [i for i in items if i[0] in reported]
     shown, room = [], NEW_ROOM
@@ -549,6 +555,11 @@ def report(sources: list[dict], links: dict[str, list[str]], memory: dict, past:
                   for kind, (_, one, many) in KINDS.items() if any(k == kind for _, k, _ in carried)]
         lines += ["", "## Still open from earlier reports", "",
                   f"{', '.join(counts)}. Each was listed in full when first reported and isn't counted again."]
+        old = [f"{s['name']} (`{s['key']}`)" for s in sources if s["stale"] and f"stale:{s['key']}" in reported]
+        if old:
+            lines += ["", f"Old sources still open: {'; '.join(old)}."]
+    if no_websites:
+        lines += ["", "The funder website check couldn't be read, so no new past closing dates are listed this run."]
     unread = [s for s in sources if s["unread"] or s["partial"]]
     if unread:
         lines += ["", "## Could not read this run (not counted as old)", ""]
@@ -593,6 +604,8 @@ def report(sources: list[dict], links: dict[str, list[str]], memory: dict, past:
         lines += ([""] if changed else []) + [f"{len(sources) - len(changed)} other sources are as they were."]
 
     keys = {i[0] for i in carried} | {i[0] for i in shown}
+    if no_websites:
+        keys |= {k for k in reported if k.startswith("past:")}
     # What couldn't be looked at this run stays reported, so it isn't listed as new when it can be read again.
     if unread:
         keys |= reported & {f"stale:{s['key']}" for s in unread}
