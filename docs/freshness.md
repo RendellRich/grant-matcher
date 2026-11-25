@@ -6,7 +6,7 @@ The page watch writes its own report and readings first. If the freshness check 
 
 ## What is checked
 
-**How old each source's data is.**
+**How old the data is.**
 
 | Source | Date read from | Refreshed by | Old after |
 |---|---|---|---|
@@ -23,7 +23,7 @@ The page watch writes its own report and readings first. If the freshness check 
 
 A source with no readable date counts as old. A release file whose read failed, or was skipped because the 90 seconds for reading the release ran out, is reported as "could not read": it is not counted as old, and the older copy in `data/` is not read in its place. The built states and their limits come from the registry (`grantmatch/states.py`), so a new state joins with no change here.
 
-**Whether links open.** The public page each source is read from (each built state's `pages` in the registry; Grants.gov, the two IRS pages and the Census file for the others), the links on state calls, and the pages behind the hand-kept and company programs. The hand-kept pages are the ones the page watch has just read, so they aren't asked for twice.
+**Whether links open.** The public pages the sources are read from (each built state's `pages` in the registry; Grants.gov, the two IRS pages and the Census file for the others), the links on state calls, and the pages behind the hand-kept and company programs. The hand-kept pages are the ones the page watch has just read, so they aren't asked for twice.
 
 | Result | When | Counted as dead |
 |---|---|---|
@@ -33,9 +33,9 @@ A source with no readable date counts as old. A release file whose read failed, 
 | blocked | robots.txt keeps this crawler or an Anthropic agent out, robots.txt couldn't be read, or the host's terms forbid automation | never; not asked for |
 | refused | any other answer that isn't 2xx, 404, 410 or 5xx (400, 401, 403, 405, 406, 429, 451 and so on) | never, unless it was already dead |
 
-Every request goes through the project's crawling rule (`off_limits` in `grantmatch/cycles.py`), redirects included, with the project's own user agent. Only the status is read, not the page. Requests to one host are 2 seconds apart, 10 for communityaffairs.dc.gov, and longer when robots.txt asks. One run asks for at most 150 pages, 20 from one host, and starts no request after 150 seconds of link checking. What doesn't fit waits for a later week, longest unchecked first. With the links in `data/` and the release on November 25, each link comes round about every two to three weeks (estimate).
+Every request goes through the project's crawling rule (`off_limits` in `grantmatch/cycles.py`), redirects included, with the project's own user agent. Only the status is read, not the page. Requests to one host are 2 seconds apart, 10 for communityaffairs.dc.gov, and longer when robots.txt asks. One run asks for at most 150 pages, 20 from one host, and starts no request after 150 seconds of link checking. What doesn't fit waits for a later week, longest unchecked first. With the links in `data/` and the release on November 25, the links it may open come round about every two to three weeks (estimate).
 
-**Stale records.** A hand-kept program whose closing date has passed, with no later window entered, not rolling, and whose page didn't say applications are open at the last website check. Old `checked` dates are listed entry by entry in the page watch's own part of the report. State calls past their deadline are counted in the source table; the export already leaves them out.
+**Stale records.** A hand-kept program whose closing date has passed, with no later window entered, not rolling, and whose page didn't say applications are open at the last website check. Old `checked` dates are listed entry by entry in the page watch's own part of the report. State calls past their deadline are counted in the source table; the export already leaves them out. When the website check's file (`cycles.json.gz`) can't be read, no new past closing date is listed that run, and the ones already reported are kept.
 
 ### Not link-checked
 
@@ -54,7 +54,7 @@ A company program's page that didn't open is noted in the card's details. The fi
 
 ## What to do with the report
 
-The report is the second part of the weekly `page-watch` issue. A finding is listed in full the first time it appears; after that it is only counted under "Still open from earlier reports", and of the freshness findings only new ones count toward posting a comment. So work from the report that first listed it. The keys of what has been reported are in `watch-state.json.gz` under `_freshness`. The source table shows only sources that are new or changed.
+The report is the second part of the weekly `page-watch` issue. A finding is listed in full the first time it appears; after that it is only counted under "Still open from earlier reports" (old sources are also named there), and of the freshness findings only new ones count toward posting a comment. So work from the report that first listed it. The keys of what has been reported are in `watch-state.json.gz` under `_freshness`. The source table shows only sources that are new or changed.
 
 1. **Data that is old or missing:** open that source's refresh job and see why it didn't run or publish. For New York, DC and Minnesota, remake the snapshot (`python -m grantmatch.newyork --out data/newyork.json.gz`, and the same for the others) or add the proposed job below.
 2. **Dead links:** open the page in a browser. If it moved, update the entry's `url` in `data/local-<ST>.json` or `data/corporate.json`, or the adapter and the registry's `pages` for a state. If a program is gone, remove its entry. A state call with a dead link is the state's list to fix; `hide` it in `data/skip-review.csv` if it shouldn't show.

@@ -32,6 +32,7 @@ def fake_data(tmp_path):
              "closes": "2026-09-01"}
     rolling = {"slug": "any-time", "title": "Any Time", "url": "https://county.example.org/any", "checked": "2026-11-20",
                "rolling": True, "closes": None}
+    (tmp_path / "cycles.json.gz").write_bytes(gz({"checked_at": "2026-11-25T00:00:00+00:00", "sites": {}}))
     (tmp_path / "local-FL.json").write_text(json.dumps({"programs": [entry, rolling]}), encoding="utf-8")
     (tmp_path / "corporate.json").write_text(json.dumps({"foundations": [
         {"ein": "1", "company": "Sample Co", "program": {"url": "https://sample.example.com/giving", "checked": "2026-11-20"}}]}),
@@ -301,6 +302,42 @@ def test_new_findings_that_do_not_fit_are_listed_later_not_forgotten(tmp_path, m
     assert 0 < listed < first["flagged"] and "more new findings didn't fit" in first["text"]
     second, _ = run_check(tmp_path, previous=first["memory"], today=date(2026, 11, 27))
     assert second["flagged"] == first["flagged"] - listed and len(second["memory"]["flagged"]) > listed
+
+
+def test_old_sources_already_reported_are_still_named(tmp_path):
+    first, _ = run_check(tmp_path)
+    second, _ = run_check(tmp_path, previous=first["memory"], today=date(2026, 11, 27))
+    line = [x for x in second["text"].splitlines() if x.startswith("Old sources still open:")]
+    assert second["flagged"] == 0 and len(line) == 1
+    assert "California Grants Portal (`state:CA`)" in line[0]
+    assert "Old sources still open" not in first["text"]  # the first report lists them in full instead
+
+
+@pytest.mark.parametrize("how", ["failed", "missing", "corrupt"])
+def test_without_the_website_check_no_new_past_closing_date_is_listed(tmp_path, how):
+    key = "past:local-FL/old-grant/2026-09-01"
+    linker = lambda urls: ({}, {"pages": 0, "hosts": 0, "deferred": len(urls), "seconds": 0})  # noqa: E731
+
+    def run(previous, today, readable):
+        data = fake_data(tmp_path)
+        release = no_release
+        if not readable and how == "failed":
+            release = Unreadable({"cycles.json.gz"})
+        elif not readable and how == "missing":
+            (data / "cycles.json.gz").unlink()
+        elif not readable:
+            (data / "cycles.json.gz").write_bytes(b"not gzip")
+        return freshness.check(previous, {}, today, release=release, data_dir=data, linker=linker)
+
+    unread = run(None, TODAY, readable=False)
+    assert unread["past"] and key not in unread["memory"]["flagged"]
+    assert "## New: closing date passed" not in unread["text"] and "no new past closing dates" in unread["text"]
+    seen = run(unread["memory"], date(2026, 11, 27), readable=True)
+    assert key in seen["memory"]["flagged"] and "`old-grant`" in seen["text"]
+    again = run(seen["memory"], date(2026, 11, 28), readable=False)
+    assert key in again["memory"]["flagged"] and "`old-grant`" not in again["text"]
+    back = run(again["memory"], date(2026, 11, 29), readable=True)
+    assert back["flagged"] == 0  # not new again
 
 
 # ---------------- a release that can't be read ----------------

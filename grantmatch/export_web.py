@@ -100,8 +100,8 @@ def website_cycles() -> dict[str, dict]:
 
 
 def link_checks() -> dict[str, dict]:
-    """The weekly freshness check's result for each link (grantmatch/freshness.py), from the page watch's
-    published state file. Empty until a check has been published."""
+    """The weekly freshness check's results for the links it checked (grantmatch/freshness.py), from the page
+    watch's published state file. Empty until a check has been published."""
     raw = fetch("watch-state.json.gz")
     if not raw:
         return {}

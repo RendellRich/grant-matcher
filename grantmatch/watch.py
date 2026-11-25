@@ -18,8 +18,8 @@ report of what needs review:
 
 It never edits an entry. A person reads the page and updates the entry and its checked date.
 
-The same run then does the freshness check (grantmatch/freshness.py, docs/freshness.md): how old every source's
-data is and whether the other links still open. Its section is added to the report, its results go into the state
+The same run then does the freshness check (grantmatch/freshness.py, docs/freshness.md): how old the data is
+and whether source pages and state call links still open. Its section is added to the report, its results go into the state
 file under "_freshness", and what it flags for the first time counts toward the flagged total. It runs after the page watch's own
 report and state are written, so a freshness error leaves them as they are and is noted in the report.
 
