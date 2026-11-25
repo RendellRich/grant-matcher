@@ -73,7 +73,7 @@ Status (the registry's value in brackets):
 | South Carolina | unchecked | Agency pages (SCDE, SC Energy, SCORF, BHDD) | HTML | https://ed.sc.gov/finance/grants/scde-grant-opportunities/ (one agency; not tested) | Not tested; data.sc.gov didn't respond. |
 | South Dakota | unchecked | Agency pages and news posts on sd.gov | HTML | https://www.sd.gov/sdac?id=cs_kb_article_view&sysparm_article=KB0045433 (not tested) | Not tested; data.sd.gov didn't respond. |
 | Tennessee | unchecked | Central Procurement Office grant page; Rural Development printable list | HTML / DOCX | https://www.tn.gov/generalservices/procurement/central-procurement-office--cpo-/library-/grant-funding-information.html (403 to scripts) | Blocked to scripts and WebFetch; the printable DOCX list wasn't opened. |
-| Texas | unchecked | Electronic State Business Daily, Grants | JS app (NetSuite backend) | https://www.txsmartbuy.gov/esbd | The statewide grant list since November 2024 (per the research note). The site's script has a CSV export routine, but no public data endpoint could be verified: the research session's own permission check blocked the probe. The README's earlier survey found that its robots.txt disallows crawling. |
+| Texas | unchecked | Electronic State Business Daily, Grants | JS app (NetSuite backend) | https://www.txsmartbuy.gov/esbd | The statewide grant list since November 2024 (per the research note). The site's script has a CSV export routine, but no public data endpoint could be verified: the research session's own permission check blocked the probe. An earlier survey in this repo (November 2026) found that its robots.txt disallows crawling. |
 | Utah | HTML only | Utah Funding Opportunities Portal | Looker Studio report | https://gopb.utah.gov/funding-resources/ (links the report) | No export without a Google login. |
 | Vermont | none found | data.vermont.gov State of Vermont Grants Issued | Socrata | https://data.vermont.gov/resource/xifk-zskz.json | Awards, not open calls. Opportunities are on agency pages (HTML), which weren't surveyed one by one. |
 | Virginia | HTML only | Governor's Office Grants directory | HTML table | https://www.governor.virginia.gov/constituent-services/grants/ | About 58 rows, free-text application periods, some stale. |
@@ -90,7 +90,7 @@ Three states have a machine-readable list that isn't built. Each needs Ren's dec
 
 | State | What works | Recommended | Why |
 |---|---|---|---|
-| Alaska | Online Public Notices RSS (`https://aws.state.ak.us/OnlinePublicNotices/Feeds/RSS.aspx`), filtered to `<category>Grants</category>` | Leave out for now | It is a feed of every public notice, not a grant list: 1 of its 100 newest notices was a grant, and the 100 cover about 9 days, so roughly one grant a week, from that one look. That rate rests on a single snapshot of the feed. Items age out in about 9 days, so a weekly refresh could miss some in a busy week, and deadline and eligibility would have to be read from the notice text. |
+| Alaska | Online Public Notices RSS (`https://aws.state.ak.us/OnlinePublicNotices/Feeds/RSS.aspx`), filtered to `<category>Grants</category>` | Leave out for now | It is a feed of every public notice, not a grant list: 1 of its 100 newest notices was a grant, and the 100 cover about 9 days, so roughly one grant a week. That rate rests on a single snapshot of the feed. Items age out in about 9 days, so a weekly refresh could miss some in a busy week, and deadline and eligibility would have to be read from the notice text. |
 | Hawaii | HANDS JSON (`POST https://hands.ehawaii.gov/hands/api/bidding-opportunities?size=200&page=0&sort=publish_date_dt,desc` with `{"statuses":["POSTED"], ...}`) | Leave out for now | An undocumented API behind the procurement page: 6 of 185 posted items had "grant" in the title, with no description and no eligibility field, so every card would only say "read the notice". It could change without notice. |
 | Pennsylvania | pa.gov grant search (`POST https://www.pa.gov/cv-pxy/rest/search/v2`): 380 grants, 80 accepting applications, an applicant type with Nonprofit (125) | Leave out | The best data of any state not built, but it is the site's internal search proxy, not a published feed. It could be locked down or close at any time. |
 
@@ -98,7 +98,7 @@ Three states have a machine-readable list that isn't built. Each needs Ren's dec
 
 **Not worth it now:** Maryland (abandoned since 2023), Oregon (housing only, empty), Montana and North Dakota (2 to 4 rows).
 
-**Unchecked, needs a look in a browser:** Arkansas, Colorado, Idaho, Kansas, Kentucky, Minnesota, Mississippi, Missouri, Nebraska, New Hampshire, New Mexico, South Carolina, South Dakota, Tennessee, Texas and Wisconsin. Texas's list is known to exist, but its robots.txt disallows crawling, so it would need the Comptroller's permission or a published export.
+**Unchecked, needs a look in a browser:** Arkansas, Colorado, Idaho, Kansas, Kentucky, Minnesota, Mississippi, Missouri, Nebraska, New Hampshire, New Mexico, South Carolina, South Dakota, Tennessee, Texas and Wisconsin. Texas's list is known to exist, but an earlier survey in this repo (November 2026) found that its robots.txt disallows crawling, so it would need the Comptroller's permission or a published export.
 
 ## (d) Proposed refresh job
 
