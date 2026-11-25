@@ -93,3 +93,20 @@ describe("hand-kept programs between rounds", () => {
     expect(localWindow(state({ rolling: true }), day).line).toBe("Taking applications with no set deadline");
   });
 });
+
+describe("county and city programs outside Florida", () => {
+  const houston = rec({ id: "local-tx-x", level: "City", area: "Houston", places: ["houston"], requires_501c3: false });
+
+  it("serve only the places they name, in Python's words", () => {
+    const one = (cities: string[]) => scoreFlorida([houston], profile(), null, false, cities)[0];
+    expect(one(["Houston"]).reasons).toContain("Funds work in Houston, where you work");
+    expect(one(["Pasadena"]).cautions).toContain("Only for work in Houston");
+  });
+
+  it("show a note about the program's page in the details, only when there is one", () => {
+    const entry = (r: FloridaRec) => floridaEntry(scoreFlorida([r], profile(), null)[0], true);
+    expect(entry(houston).rows?.some((x) => x.label === "Note")).toBe(false);
+    expect(entry({ ...houston, source_note: "The page gives two dates." }).rows)
+      .toContainEqual({ label: "Note", text: "The page gives two dates." });
+  });
+});

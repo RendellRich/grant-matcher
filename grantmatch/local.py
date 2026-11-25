@@ -25,6 +25,8 @@ DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 LEVELS = ("State", "County", "City", "Children's services council", "Community foundation", "United Way")
 STATEWIDE = "Statewide"  # counties: ["Statewide"] for a program open across the state
 REQUIRED = ("slug", "title", "agency", "level", "counties", "objectives", "who", "application", "award", "url", "checked")
+# Names people type for a place that the Census places-by-county file doesn't carry, allowed in "places".
+ALIASES = {"NY": {"Kings": ["Brooklyn"], "New York": ["Manhattan", "New York City"], "Richmond": ["Staten Island"]}}
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
           "November", "December"]
 
@@ -53,7 +55,33 @@ def county_places(state: str = "FL") -> dict[str, list[str]]:
     return json.loads(gzip.decompress(path.read_bytes())).get(state, {}) if path.exists() else {}
 
 
-def check(entry: dict, counties: dict[str, list[str]]) -> list[str]:
+def check_places(entry: dict, counties: dict[str, list[str]], state: str) -> list[str]:
+    """What is wrong with "places", "exclude_places" and "area": a program that serves only part of its counties
+    (one city, or the county outside its big cities) says which places, and what the card calls them."""
+    given = [k for k in ("places", "exclude_places") if k in entry]
+    if not given:
+        return ["area is only used with places or exclude_places"] if "area" in entry else []
+    problems = []
+    if len(given) == 2:
+        problems.append("use places or exclude_places, not both")
+    if STATEWIDE in (entry.get("counties") or []):
+        problems.append("a statewide program has no places")
+    if not (isinstance(entry.get("area"), str) and entry["area"].strip()):
+        problems.append(f"{given[0]} needs an area, the words the card uses for them")
+    names = [c for c in entry.get("counties") or [] if c in counties]
+    inside = {p.lower() for c in names for p in counties[c]}
+    also = {n.lower() for c in names for n in (c, f"{c} County", *ALIASES.get(state.upper(), {}).get(c, []))}
+    for key in given:
+        values = entry[key]
+        if not (isinstance(values, list) and values and all(isinstance(v, str) and v.strip() for v in values)):
+            problems.append(f"{key} must be a list of place names")
+            continue
+        known = inside | also if key == "places" else inside
+        problems += [f"{key}: {v!r} is not a place in its counties" for v in values if counties and v.lower() not in known]
+    return problems
+
+
+def check(entry: dict, counties: dict[str, list[str]], state: str = "FL") -> list[str]:
     """What is wrong with one entry, in plain words; empty when it is fine."""
     problems = [f"missing {k}" for k in REQUIRED if not entry.get(k)]
     slug = str(entry.get("slug", ""))
@@ -83,7 +111,9 @@ def check(entry: dict, counties: dict[str, list[str]]) -> list[str]:
         v = entry.get(k)
         if v and not str(v).startswith("https://"):
             problems.append(f"{k} must start with https://")
-    return problems
+    if "source_note" in entry and not (isinstance(entry["source_note"], str) and entry["source_note"].strip()):
+        problems.append("source_note must be a sentence")
+    return problems + check_places(entry, counties, state)
 
 
 def deadline_text(entry: dict) -> str:
@@ -109,7 +139,12 @@ def to_record(entry: dict, counties: dict[str, list[str]], fiscal_year: str = ""
     for c in names:
         places |= {c.lower(), f"{c.lower()} county"}
         places |= {p.lower() for p in counties.get(c, [])}
-    return {
+    # Only part of those counties: the named places, or the county's places without the ones left out.
+    if entry.get("places"):
+        places = {p.lower() for p in entry["places"]}
+    places -= {p.lower() for p in entry.get("exclude_places", [])}
+    area = entry.get("area") or area
+    record = {
         "id": record_id(entry["slug"], state),
         "csfa": "",
         "title": entry["title"],
@@ -137,6 +172,9 @@ def to_record(entry: dict, counties: dict[str, list[str]], fiscal_year: str = ""
         "rolling": bool(entry.get("rolling", False)),
         "checked": entry["checked"],
     }
+    if entry.get("source_note"):  # only when there is one, so other records stay as they were
+        record["source_note"] = entry["source_note"]
+    return record
 
 
 def load(path: Path | None = None, counties: dict[str, list[str]] | None = None, fiscal_year: str = "",
@@ -150,7 +188,7 @@ def load(path: Path | None = None, counties: dict[str, list[str]] | None = None,
     entries = json.loads(path.read_text(encoding="utf-8")).get("programs", [])
     problems, seen = [], set()
     for e in entries:
-        for p in check(e, counties):
+        for p in check(e, counties, state):
             problems.append(f"{e.get('slug', '?')}: {p}")
         if e.get("slug") in seen:
             problems.append(f"{e['slug']}: slug used twice")

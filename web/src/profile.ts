@@ -23,7 +23,7 @@ export const DELIVERY: [Delivery, string][] = [
 ];
 export const REGISTRATIONS: [string, string][] = [["sam", "SAM.gov and a UEI"], ["grantsgov", "A Grants.gov account"], ["audit", "Audited financials"]];
 export const FUNDER_TYPES: [string, string][] = [
-  ["federal", "Federal"], ["florida", "State programs"], ["Private foundation", "Private foundations"],
+  ["federal", "Federal"], ["florida", "State and local programs"], ["Private foundation", "Private foundations"],
   ["Community foundation", "Community foundations"], ["Public foundation", "Public foundations"], ["United Way or federated fund", "United Ways"],
 ];
 export const TIMING: [Timing, string][] = [

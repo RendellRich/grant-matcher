@@ -2,8 +2,8 @@
 // publishes each state's status in meta.json), and a state with a catalog sees its tab and no note.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { callsTally, grantsPhrase, noCatalogNote, programsFile, shownSources, type Meta } from "../src/data";
-import { callState } from "../src/entries";
+import { callsTally, grantsPhrase, localTally, noCatalogNote, programsFile, shownSources, type Meta } from "../src/data";
+import { callState, programState } from "../src/entries";
 import { STATE_NAMES } from "../src/profile";
 
 const meta: Meta = {
@@ -152,5 +152,55 @@ describe("the state an exported call came from", () => {
     for (const key of ["fl:fl-86722", "fl:local-sample-county-kids", "fl:local-wa-x", "fed:1", "fdn:2"]) {
       expect(callState(key)).toBeNull();
     }
+  });
+});
+
+describe("a state with county and city programs but no state catalog", () => {
+  const local: Meta = {
+    states: ["TX"],
+    programs: { TX: { file: "programs-TX", source: "county and city programs entered by hand", local_only: true, local: true } },
+    catalogs: { TX: { status: "blocked", source: "txsmartbuy.gov" } },
+  };
+
+  it("keeps its tab and says above it that the tab holds hand-kept county and city programs only", () => {
+    expect(programsFile(local, "TX")).toBe("programs-TX");
+    expect(noCatalogNote(local, "TX", "Texas")).toBe(
+      "No Texas state catalog yet. Key grant sites for Texas can't be used here: their rules or terms don't allow it, or they turn automated readers away, so Texas state grants aren't read in. The Texas local programs tab has county and city programs only, entered by hand from each program's own page: a partial list, not every county or city. Federal grants and foundations cover Texas.");
+  });
+
+  it("counts them as county and city programs, not state calls", () => {
+    expect(localTally("Texas", 8)).toBe(
+      "8 county and city programs in Texas, entered by hand from each program's own page. This is partial coverage, with no Texas state catalog; each card shows when it was checked.");
+    expect(localTally("Nevada", 1)).toContain("1 county and city program in Nevada");
+  });
+
+  it("names the tab local and leaves the state-call wording out", () => {
+    const app = readFileSync(new URL("../src/app.tsx", import.meta.url), "utf8");
+    expect(app).toContain("fl: localOnly ? [`${state} local programs`, `${state} local programs`, `${state} local program`]");
+    expect(app).toContain("localOnly ? localTally(stName, all.length) : callsTally(st, stName, all, info, updated)");
+  });
+});
+
+describe("hand-kept programs beside a state's open calls", () => {
+  const hand = (level: string, k: number) => Array.from({ length: k }, () => ({ nonprofit_eligible: true, applicant_types: "Nonprofits", level }));
+
+  it("are counted apart from the state's list, and county coverage is said to be partial", () => {
+    expect(callsTally("CA", "California", [...calls(2), ...hand("County", 5), ...hand("City", 1)], { source: "California Grants Portal" }, "")).toBe(
+      "2 of 2 open California state grant and loan calls list nonprofits as eligible, from the California Grants Portal. Plus 6 programs entered by hand from their own pages. County and city programs are only partly covered for California: 6 of those are county or city programs.");
+  });
+
+  it("don't claim county coverage when they are all state calls", () => {
+    expect(callsTally("OH", "Ohio", [...calls(3), ...hand("State", 1)], undefined, "")).toBe(
+      "3 of 3 open Ohio state grant and loan calls list nonprofits as eligible. Plus 1 program entered by hand from its own page. County and city programs aren't covered for Ohio yet.");
+  });
+});
+
+describe("a hand-kept program on an export", () => {
+  it("is labelled with its own state, read off the key", () => {
+    expect(programState("fl:local-tx-houston-x")).toBe("Texas");
+    expect(programState("fl:local-ny-nyc-x")).toBe("New York");
+    expect(programState("fl:local-wa-x")).toBe("Washington");
+    expect(programState("fl:local-manatee-childrens")).toBe("Florida");
+    expect(programState("fl:48.001")).toBe("Florida");
   });
 });

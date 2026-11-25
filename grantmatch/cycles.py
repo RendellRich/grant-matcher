@@ -8,7 +8,8 @@ reads the text, and records one of:
   deadline  the site gives an application deadline that is still ahead
   closed    the site says it is not taking applications or requests now
   none      the site was read but says nothing either way
-  error     the site could not be reached, or robots.txt asks automated visitors to stay out
+  error     the site could not be reached, or it is off limits (off_limits below: robots.txt keeps out
+            this crawler, ClaudeBot or another Anthropic agent, or the host's terms forbid automation)
 
 It is a reading of the funder's words, not a promise: the site shows the line it found and when.
 
@@ -29,7 +30,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timezone
 from urllib import robotparser
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 import requests
 
@@ -38,6 +39,34 @@ from .display import present
 from .export_web import fetch, foundation_states
 
 AGENT = "grant-matcher/1.0 (+https://github.com/RendellRich/grant-matcher; weekly check of public grant pages)"
+TOKEN = "grant-matcher"  # the name robots.txt rules would use for this crawler
+# A site that keeps any of these out is treated as keeping this project out.
+ANTHROPIC_AGENTS = ("ClaudeBot", "Claude-User", "Claude-SearchBot", "Claude-Web", "anthropic-ai")
+# Hosts whose terms forbid automated reading or commercial reuse (Grant Matcher is a paid product), or whose terms
+# can't be read to find out. robots.txt doesn't say this, so the list is kept by hand: add a host with its reason
+# when a terms page says so. A host covers its subdomains. Last reviewed November 25, 2026.
+BLOCKED_HOSTS = {
+    "surveymonkey.com": "its Acceptable Uses Policy bars automated extraction without written permission",
+    "eunasolutions.com": "the Euna Supplier Network terms bar screen scraping without a license",
+    "gobonfire.com": "the Euna Supplier Network terms bar screen scraping without a license",
+    "bonfirehub.com": "the Euna Supplier Network terms bar screen scraping without a license",
+    "submittable.com": "its terms page sits behind a bot check, so permission can't be established",
+    "in.gov": "its terms bar putting its content into an information retrieval system",
+    "nc.gov": "its terms allow copying for non-commercial use only",
+    "wisconsin.gov": "its site policy limits the material to noncommercial use",
+    "nebraska.gov": "its terms bar robots and scrapers without written permission",
+    "dhhs.ne.gov": "the Nebraska.gov terms, taken to cover it, bar robots and scrapers without written permission",
+    "nmculture.dca.nm.gov": "its terms bar reproducing site content without permission",
+    "nmad.dca.nm.gov": "the Cultural Affairs terms, taken to cover it, bar reproducing site content without permission",
+    "kansascommerce.gov": "its terms limit reuse",
+    "ed.sc.gov": "its terms bar reproducing the site's material without permission",
+    "phila.gov": "its terms of use prohibit commercial use without written permission",
+    "cambridgema.gov": "its disclaimer prohibits commercial use without written consent",
+    "detroitmi.gov": "its privacy and disclaimer page prohibits commercial use without written permission",
+    "kingcounty.gov": "its terms of use bar publishing or commercially exploiting its content without permission",
+    "thechildrenstrust.org": "its terms of use prohibit copying, reproducing or reselling its resources",
+}
+MAX_REDIRECTS = 10
 TIMEOUT = (6, 12)  # connect, read
 MAX_BYTES = 1_500_000
 SNIPPET = 160
@@ -195,8 +224,113 @@ def site_url(raw) -> str:
 
 
 _local = threading.local()
-_robots: dict[str, robotparser.RobotFileParser | None] = {}
+_robots: dict[str, tuple[robotparser.RobotFileParser, list[str]]] = {}
 _robots_lock = threading.Lock()
+
+
+class OffLimits(Exception):
+    """A page the project's crawling rule says not to read; the message is why."""
+
+
+def blocked_by_terms(url: str) -> str | None:
+    """Why this address's host is on the terms blocklist (a subdomain counts), or None."""
+    host = (urlparse(url).hostname or "").lower().rstrip(".")
+    for blocked, why in BLOCKED_HOSTS.items():
+        if host == blocked or host.endswith("." + blocked):
+            return why
+    return None
+
+
+def robots_disallows(lines: list[str], token: str, path: str) -> bool:
+    """Whether robots.txt keeps `token` off `path`, read as RFC 9309 says: the groups naming it (else "*"), `*`
+    and `$` in paths, the longest matching rule winning and Allow on a tie. Python's own parser ignores the
+    wildcards, so this is checked on top of it."""
+    groups: list[tuple[list[str], list[tuple[bool, str]]]] = []
+    named = True  # the next User-agent line starts a new group
+    for line in lines:
+        key, colon, value = line.split("#", 1)[0].partition(":")
+        key, value = key.strip().lower(), value.strip()
+        if not colon:
+            continue
+        if key == "user-agent":
+            if named:
+                groups.append(([], []))
+                named = False
+            groups[-1][0].append(value.split("/")[0].strip().lower())
+        elif key in ("allow", "disallow", "crawl-delay", "request-rate"):
+            named = True  # the group's list of agents is over
+            if groups and key in ("allow", "disallow"):
+                groups[-1][1].append((key == "allow", value))
+    token = token.lower()
+    mine = [g for g in groups if any(a and a != "*" and token.startswith(a) for a in g[0])] \
+        or [g for g in groups if "*" in g[0]]
+    best = (0, True)  # no rule at all means allowed
+    path = unquote(path)
+    for _, group_rules in mine:
+        for allow, pattern in group_rules:
+            if not pattern:  # "Disallow:" with nothing after it disallows nothing
+                continue
+            end = pattern.endswith("$")
+            regex = ".*".join(re.escape(unquote(part)) for part in pattern.removesuffix("$").split("*"))
+            if re.match(regex + ("$" if end else ""), path):
+                best = max(best, (len(pattern), allow))
+    return not best[1]
+
+
+def _robots_for(root: str) -> tuple[robotparser.RobotFileParser, list[str]]:
+    with _robots_lock:
+        if root in _robots:
+            return _robots[root]
+    lines: list[str] = []
+    try:
+        # Asked for as text: some servers answer 406 to a request for HTML, which would read as "no rules".
+        r = session().get(root + "/robots.txt", timeout=TIMEOUT, allow_redirects=True,
+                          headers={"Accept": "text/plain,*/*;q=0.8"})
+        if r.ok and len(r.content) < 500_000:
+            lines = r.text.lstrip("\ufeff").splitlines()
+    except requests.RequestException:
+        pass
+    rp = robotparser.RobotFileParser()
+    rp.parse(lines)
+    with _robots_lock:
+        _robots[root] = (rp, lines)
+    return rp, lines
+
+
+def off_limits(url: str) -> str | None:
+    """Why the project may not read this page, or None when it may. A site whose terms are on the blocklist, or
+    whose robots.txt keeps out this crawler, ClaudeBot or another Anthropic agent, is off limits; the user agent
+    is never changed to get around it."""
+    why = blocked_by_terms(url)
+    if why:
+        return f"site terms: {why}"  # nothing is asked of the host, robots.txt included
+    p = urlparse(url)
+    rp, lines = _robots_for(f"{p.scheme}://{p.netloc}")
+    path = (p.path or "/") + (f"?{p.query}" if p.query else "")
+    if not rp.can_fetch(AGENT, url) or robots_disallows(lines, TOKEN, path):
+        return "robots.txt asks automated visitors to stay out"
+    for agent in ANTHROPIC_AGENTS:
+        if not rp.can_fetch(agent, url) or robots_disallows(lines, agent, path):
+            return f"robots.txt keeps {agent} out, which this project treats as off limits"
+    return None
+
+
+def allowed(url: str) -> bool:
+    return off_limits(url) is None
+
+
+def fetch_page(url: str, **kwargs) -> requests.Response:
+    """GET that checks every address, redirects included, before asking for it. Raises OffLimits."""
+    for _ in range(MAX_REDIRECTS + 1):
+        why = off_limits(url)
+        if why:
+            raise OffLimits(why)
+        r = session().get(url, allow_redirects=False, **kwargs)
+        if not r.is_redirect:
+            return r
+        r.close()
+        url = urljoin(url, r.headers["location"])
+    raise requests.TooManyRedirects(url)
 
 
 def session() -> requests.Session:
@@ -207,30 +341,10 @@ def session() -> requests.Session:
     return _local.s
 
 
-def allowed(url: str) -> bool:
-    p = urlparse(url)
-    root = f"{p.scheme}://{p.netloc}"
-    with _robots_lock:
-        known = root in _robots
-        rp = _robots.get(root)
-    if not known:
-        rp = robotparser.RobotFileParser()
-        try:
-            r = session().get(root + "/robots.txt", timeout=TIMEOUT, allow_redirects=True)
-            rp.parse(r.text.splitlines() if r.ok and len(r.content) < 500_000 else [])
-        except requests.RequestException:
-            rp.parse([])
-        with _robots_lock:
-            _robots[root] = rp
-    return rp.can_fetch(AGENT, url)
-
-
 def get(url: str) -> tuple[str, str] | None:
-    """The page's final URL and HTML, or None when it isn't reachable, isn't HTML, or robots.txt says no."""
-    if not allowed(url):
-        return None
+    """The page's final URL and HTML, or None when it isn't reachable, isn't HTML, or is off limits."""
     try:
-        with session().get(url, timeout=TIMEOUT, allow_redirects=True, stream=True) as r:
+        with fetch_page(url, timeout=TIMEOUT, stream=True) as r:
             if not r.ok or "html" not in r.headers.get("content-type", "html").lower():
                 return None
             body = b""
@@ -243,13 +357,14 @@ def get(url: str) -> tuple[str, str] | None:
             except UnicodeDecodeError:  # most pages without UTF-8 are Windows-1252, whatever the header says
                 enc = r.encoding if r.encoding and r.encoding.lower() not in ("iso-8859-1", "latin-1") else "cp1252"
                 return r.url, body.decode(enc, errors="replace")
-    except (requests.RequestException, UnicodeError, ValueError):
+    except (OffLimits, requests.RequestException, UnicodeError, ValueError):
         return None
 
 
 def check(url: str, today: date) -> dict:
     home = get(url)
-    if home is None and url.startswith("https://"):
+    # Plain http is a second try for a broken certificate, never a way round a page that is off limits.
+    if home is None and url.startswith("https://") and allowed(url):
         home = get("http://" + url[len("https://"):])
     if home is None:
         return {"s": "error"}

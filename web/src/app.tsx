@@ -5,12 +5,12 @@ import { ClientBar } from "./clients";
 import { parseWorkspace, readOwnProfile, writeOwnProfile } from "./sync";
 import { billing, clearUpgrade, isPaid, myWorkspace, PLANS_URL, takeSignInReturn, saveUpgrade, search, signOut, takeUpgradedParam, takeUpgradeParam, takeEmailOffParam, watchSession, type FileLink, type Gate, type Interval } from "./access";
 import {
-  loadCounties, loadExamples, loadLinked, loadMeta, callsTally, grantsPhrase, noCatalogNote, programsFile, shownSources,
+  loadCounties, loadExamples, loadLinked, loadMeta, callsTally, localTally, grantsPhrase, noCatalogNote, programsFile, shownSources,
   type Example, type Meta, type Source,
 } from "./data";
 import { embedMission } from "./embed";
 import {
-  callState, isNarrowed, narrow, NO_NARROW, profileNarrow, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
+  callState, isNarrowed, narrow, NO_NARROW, profileNarrow, programState, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
 } from "./entries";
 import { download, toCsv, toIcs } from "./exports";
 import { summariesFile } from "./summary";
@@ -37,8 +37,10 @@ const NOTICE = "This product uses the Grants.gov API but is not endorsed or cert
 // The state tab is named for the profile's state: "Florida programs", "California programs".
 // "District of Columbia" doesn't fit a phone's two-by-two tabs, so its short label is "DC".
 const shortName = (k: string, state: string) => (k === "fl" ? (state === "District of Columbia" ? "DC" : state) : { fdn: "Foundations", fed: "Federal", shortlist: "Shortlist" }[k] ?? k);
-const nouns = (state: string): Record<SourceKey, [string, string, string]> => ({
-  fl: [`${state} programs`, `${state} programs`, `${state} program`],
+// A state with no state catalog but hand-kept county and city programs says "local", never just "programs".
+const nouns = (state: string, localOnly = false): Record<SourceKey, [string, string, string]> => ({
+  fl: localOnly ? [`${state} local programs`, `${state} local programs`, `${state} local program`]
+    : [`${state} programs`, `${state} programs`, `${state} program`],
   fdn: ["Foundations", "foundations", "foundation"],
   fed: ["Federal grants", "federal grants", "federal grant"],
 });
@@ -209,11 +211,13 @@ export function App() {
 
   const st = applied.state;
   const stName = STATE_NAMES[st] ?? st;
-  const NOUN = nouns(stName);
+  const localOnly = Boolean(meta?.programs?.[st]?.local_only);
+  const NOUN = nouns(stName, localOnly);
   // The state tab follows the profile's state: Florida's catalog and county programs, or another state's open calls.
   const progFile = programsFile(meta, st);
   const hasProgs = Boolean(progFile);
-  // A state with no catalog gets a plain line where its tab would be, not an empty tab.
+  // A state with no catalog gets a plain line where its tab would be, not an empty tab. With hand-kept county and city
+  // programs it has a tab too, and the line says that is all the tab holds.
   const noCatalog = noCatalogNote(meta, st, stName);
   const fl: Loaded<Source<FloridaRec>> = progs[st] ?? { state: "loading" };
 
@@ -590,7 +594,7 @@ export function App() {
               : total ? <><strong>{n(total, "strong match", "strong matches")}</strong> for this profile: {listing}.</>
               : <><strong>No strong matches yet.</strong> {shownOrder.map((k) => n(possible[k], `possible ${NOUN[k][2]}`, `possible ${NOUN[k][1]}`)).join(", ")}. More specific key words usually help.</>}
           </h1>
-          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : hasProgs ? ` and ${grantsPhrase(st, stName)}` : ""}, ranked against your mission with the reasons spelled out.</p>
+          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : localOnly ? ` and some county and city programs in ${stName}` : hasProgs ? ` and ${grantsPhrase(st, stName)}` : ""}, ranked against your mission with the reasons spelled out.</p>
           <p class="notice">{NOTICE}</p>
         </div>
       </header>
@@ -663,7 +667,7 @@ export function App() {
           {blank ? null : (
             <details class="ready">
               <summary><h2>Getting ready to apply</h2></summary>
-              <Checklist state={st} />
+              <Checklist state={st} local={Boolean(meta?.programs?.[st]?.local)} />
             </details>
           )}
           <Footer coverage={!!meta?.coverage} />
@@ -992,7 +996,8 @@ export function App() {
     );
   }
 
-  /** Another state's open calls (grantmatch/california.py): each has its own dates, match and payment terms. */
+  /** Another state's open calls (grantmatch/california.py): each has its own dates, match and payment terms. A state
+   *  with no catalog shows only its hand-kept county and city programs. */
   function callsPanel() {
     if (fl.state === "error") return <p class="error">{stName} program data could not be loaded right now. Try again in a few minutes.</p>;
     if (!flEntries || fl.state !== "ready") return loading(`${stName} programs`);
@@ -1003,16 +1008,18 @@ export function App() {
     const picks = shown.filter((e) => e.tier !== "Long shot");
     return (
       <>
-        {tally("fl", callsTally(st, stName, all, info, updated), shown)}
+        {tally("fl", localOnly ? localTally(stName, all.length) : callsTally(st, stName, all, info, updated), shown)}
         {narrowBar("fl", flEntries, shown, "programs")}
         <details class="filters">
           <summary>How the score works</summary>
           <div class="filters-body">
             <ul class="how">
-              <li>Up to 75 points for how closely the call's purpose matches your mission</li>
+              <li>Up to 75 points for how closely the {localOnly ? "program's" : "call's"} purpose matches your mission</li>
               <li>Up to 25 points for your key words in its title and purpose, with rare words worth more</li>
-              <li>Points off for matching funds you can't provide, for loans, and for student aid paid to individuals or schools</li>
-              <li>A call that pays by reimbursement gets a caution, not a lower score</li>
+              {localOnly ? null : <li>Points off for matching funds you can't provide, for loans, and for student aid paid to individuals or schools</li>}
+              {localOnly ? null : <li>A call that pays by reimbursement gets a caution, not a lower score</li>}
+              {info?.local ? <li>County and city programs lose points when your cities are outside the area they serve, or when they require 501(c)(3) status you don't have yet</li> : null}
+              {info?.local ? <li>Programs entered by hand lose points between rounds, when no application window is open or announced</li> : null}
               <li>Strong is 60 and up, possible is 35 to 59</li>
             </ul>
           </div>
@@ -1082,9 +1089,7 @@ function pickRest(f: ProfileForm): Partial<ProfileForm> {
 
 function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
   const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
-    : callState(e.key) ? `${callState(e.key)!.name} grant` : e.key.startsWith("fl:local-wa-") ? "Washington program"
-    : e.key.startsWith("fl:local-oh-") ? "Ohio program" : e.key.startsWith("fl:local-ia-") ? "Iowa program"
-    : e.key.startsWith("fl:local-il-") ? "Illinois program" : "Florida program");
+    : callState(e.key) ? `${callState(e.key)!.name} grant` : `${programState(e.key)} program`);
   const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
   return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
     items.map((e) => {
@@ -1233,7 +1238,7 @@ function BlankSteps() {
   );
 }
 
-function Checklist({ state }: { state: string }) {
+function Checklist({ state, local }: { state: string; local: boolean }) {
   return (
     <div class="checklist">
       <h2>Getting ready to apply</h2>
@@ -1352,6 +1357,15 @@ function Checklist({ state }: { state: string }) {
           </ul>
         </>
       ) : null}
+      {local ? (
+        <>
+          <h3>For county and city programs</h3>
+          <ul>
+            <li>These are entered by hand from each program's own page, with the date they were checked. They are a partial list, not every county or city. Confirm the dates, rules and service area there before you apply.</li>
+            <li>Many take one round a year. A card marked "Between rounds" has no window open or announced; its Deadlines line says what the page gave.</li>
+          </ul>
+        </>
+      ) : null}
       {state === "FL" ? <h3>For Florida state programs</h3> : null}
       {state === "FL" ? <ul>
         <li>The state pays grants and contracts to registered vendors. Register at <a href="https://www.myfloridamarketplace.com" target="_blank" rel="noopener">MyFloridaMarketPlace</a> and keep a Florida Substitute W-9 on file with the Department of Financial Services.</li>
@@ -1367,7 +1381,7 @@ function Footer({ coverage }: { coverage: boolean }) {
     <footer class="footer">
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page and rechecked every week. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities. New York data from the Statewide Financial System's public search for grant opportunities. District of Columbia data from the District Grants Clearinghouse on DC.gov, licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0<span class="sr-only"> (opens in a new tab)</span></a> and reformatted. Minnesota data from the Department of Health's and the Office of Justice Programs' grant pages only.</p>
+      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page and rechecked every week. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities. New York data from the Statewide Financial System's public search for grant opportunities. District of Columbia data from the District Grants Clearinghouse on DC.gov, licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0<span class="sr-only"> (opens in a new tab)</span></a> and reformatted. Minnesota data from the Department of Health's and the Office of Justice Programs' grant pages only. County and city programs outside Florida are entered by hand from each program's own page, for some counties and cities only.</p>
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there. Your shortlist stays in this browser, unless you have Pro and save your profile and shortlist to your account.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>

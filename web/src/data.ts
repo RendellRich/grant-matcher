@@ -30,8 +30,10 @@ export interface Meta {
   florida?: string;
   coverage?: boolean;
   /** States besides Florida with their own programs file: its name, its source and when it was fetched.
-   *  who_listed is false when the state's list never says who may apply. */
-  programs?: Record<string, { file: string; source: string; updated?: string; who_listed?: boolean }>;
+   *  who_listed is false when the state's list never says who may apply. local_only is true for a state with no
+   *  state catalog whose file holds only hand-kept county and city programs; local is true when any state's file
+   *  holds some of those. */
+  programs?: Record<string, { file: string; source: string; updated?: string; who_listed?: boolean; local_only?: boolean; local?: boolean }>;
   /** Every state's catalog status from grantmatch/states.py: built, next, decide, html, blocked, none or unchecked. */
   catalogs?: Record<string, { status: string; source: string }>;
 }
@@ -107,10 +109,12 @@ export const loadCoverage = () => json<Coverage>("coverage.json");
 export const loadExamples = () => json<Record<string, Example>>("examples.json");
 /** The file holding a state's programs, or null when the state has none. Florida's keeps its own name. */
 export const programsFile = (meta: Meta | null, state: string) => (state === "FL" ? "florida" : meta?.programs?.[state]?.file ?? null);
-/** What a profile in a state with no state catalog sees where the state tab would be, or null when the state has
- *  one (or the data's list of states hasn't loaded). Plain words: what is missing, why, and what still covers it. */
+/** What a profile in a state with no state catalog sees above the tabs, or null when the state has one (or the
+ *  data's list of states hasn't loaded). Plain words: what is missing, why, and what still covers it, including a
+ *  tab of hand-kept county and city programs when there is one. */
 export function noCatalogNote(meta: Meta | null, state: string, name: string): string | null {
-  if (!meta || (!meta.catalogs && !meta.programs) || programsFile(meta, state)) return null; // no list loaded: say nothing
+  const localOnly = Boolean(meta?.programs?.[state]?.local_only);
+  if (!meta || (!meta.catalogs && !meta.programs) || (programsFile(meta, state) && !localOnly)) return null; // no list loaded: say nothing
   const status = meta.catalogs?.[state]?.status;
   const kind = state === "DC" || state === "PR" ? "" : "state ";
   // Mid-sentence the District takes "the"; at the start of a sentence, "The".
@@ -129,16 +133,26 @@ export function noCatalogNote(meta: Meta | null, state: string, name: string): s
     : status === "blocked" ? ` Key grant sites for ${the} can't be used here: their rules or terms don't allow it, or they turn automated readers away, so ${grants} aren't read in.`
     : status === "unchecked" ? ` ${Grants} aren't read in yet.`
     : "";
-  return `No ${name} ${kind}catalog yet.${why} ${cover}`;
+  const partial = localOnly
+    ? ` The ${name} local programs tab has county and city programs only, entered by hand from each program's own page: a partial list, not every county or city.`
+    : "";
+  return `No ${name} ${kind}catalog yet.${why}${partial} ${cover}`;
 }
+/** The line above the local programs of a state with no state catalog. */
+export const localTally = (name: string, count: number) =>
+  `${count.toLocaleString("en-US")} county and city ${count === 1 ? "program" : "programs"} in ${name}, entered by hand from each program's own page. This is partial coverage, with no ${name} state catalog; each card shows when it was checked.`;
 /** "Ohio state grants", but "District of Columbia grants": the District isn't a state. */
 export const grantsPhrase = (state: string, name: string) => `${name} ${state === "DC" ? "" : "state "}grants`;
 
-/** The line above a state's open calls: how many, from where, how fresh, and what isn't covered. */
-export function callsTally(state: string, name: string, calls: { nonprofit_eligible: boolean; applicant_types?: string }[],
+/** The line above a state's open calls: how many, from where, how fresh, and what isn't covered. Programs kept by
+ *  hand (they have a level) aren't the state's list, and some are between rounds, so they are counted apart. */
+export function callsTally(state: string, name: string, records: { nonprofit_eligible: boolean; applicant_types?: string; level?: string }[],
                            info: { source?: string; who_listed?: boolean } | undefined, updated: string): string {
   const count = (n: number) => n.toLocaleString("en-US");
   const dc = state === "DC";
+  const calls = records.filter((r) => !r.level);
+  const hand = records.length - calls.length;
+  const local = records.filter((r) => r.level && r.level !== "State").length;
   const shown = calls.filter((r) => r.nonprofit_eligible);
   // A call that doesn't say who may apply is shown, but it doesn't "list nonprofits as eligible": counted apart.
   const unstated = shown.filter((r) => ELIGIBILITY_UNSTATED.test(r.applicant_types ?? "")).length;
@@ -152,7 +166,12 @@ export function callsTally(state: string, name: string, calls: { nonprofit_eligi
     : unstated
       ? `${listed}; ${count(unstated)} more ${unstated === 1 ? "doesn't" : "don't"} say who may apply.${source ? ` ${source[0].toUpperCase()}${source.slice(1)}.` : ""}`
       : `${listed}${from}${when}.`;
-  return dc ? line : `${line} County and city programs aren't covered for ${name} yet.`;
+  const plus = hand ? ` Plus ${count(hand)} ${hand === 1 ? "program" : "programs"} entered by hand from ${hand === 1 ? "its own page" : "their own pages"}.` : "";
+  if (dc) return line + plus;
+  const cover = local
+    ? `County and city programs are only partly covered for ${name}: ${count(local)} of those ${local === 1 ? "is a county or city program" : "are county or city programs"}.`
+    : `County and city programs aren't covered for ${name} yet.`;
+  return `${line}${plus} ${cover}`;
 }
 
 /** The result tabs to show: the state tab only when the profile's state has programs, so a preview's counts from
