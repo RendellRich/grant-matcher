@@ -2,7 +2,7 @@
 
 What Grant Matcher covers in each of the 50 states and the District of Columbia, checked November 25, 2026. The state-by-state research behind section (b) was done the same day with anonymous requests only (no accounts, keys, sign-ups or terms). The registry that the code reads is `grantmatch/states.py`; this page explains it.
 
-**Short answer.** Federal grants, private foundations, community foundations and the county list cover all 50 states and DC. State grant catalogs cover 8 states (Florida, California, Illinois, Iowa, Ohio, Washington, and, new in this change, West Virginia and New Jersey). In the other 42 states and DC the site says plainly that there is no state catalog yet and that federal grants and foundations still cover the state. County and city programs are hand-kept for 5 states.
+**Short answer.** Federal grants, private foundations, community foundations and the county list cover all 50 states and DC. State grant catalogs cover 8 states (Florida, California, Illinois, Iowa, Ohio, Washington, and, new in this change, West Virginia and New Jersey). In the other 42 states and DC the site says plainly that there is no state catalog yet and that federal grants and foundations still cover the state. Of those 43: 3 have a machine-readable list that needs Ren's decision (Alaska, Hawaii, Pennsylvania), 16 post their grants only as web pages or a dashboard, 8 had no current list in what was checked, and 16 are **unchecked**: the research couldn't establish the answer (blocked, a captcha, or not tested beyond a search), so the site claims nothing about them. County and city programs are hand-kept for 5 states.
 
 ## (a) Audit by data source
 
@@ -19,91 +19,99 @@ What Grant Matcher covers in each of the 50 states and the District of Columbia,
 
 ## (b) Each state
 
-Status: **built** (an adapter reads the state's own list), **built this PR**, **next batch** (machine-readable and worth an adapter next), **needs Ren's decision**, **HTML only** (web pages, a dashboard or a bid system, no feed), **none found** (no single public list, or the one that exists is empty or abandoned). "Blocked" means the site turned away scripted requests, so the check is unverified.
+Status (the registry's value in brackets):
+
+- **built** (`built`): an adapter reads the state's own list. **built this PR** marks West Virginia and New Jersey.
+- **needs Ren's decision** (`decide`): a machine-readable list works but isn't built; section (c) gives a recommendation for each.
+- **HTML only** (`html`): the state's list was seen, and it is web pages, a dashboard or a bid system with no data file.
+- **none found** (`none`): what was checked has no current list of calls: past awards only, a login, or a list that is empty or abandoned.
+- **unchecked** (`unchecked`): the research couldn't establish the answer. The site was blocked to scripts, showed a captcha, or wasn't tested beyond a search. Nothing is claimed; the notes say only what was seen. The page's note for these says only that the state's grants aren't read in yet.
+- `next` (an adapter worth building next) is in the registry but no state has it now.
 
 | State | Status | Source | Format | Data URL | Notes |
 |---|---|---|---|---|---|
 | Alabama | HTML only | ADECA Funding Opportunities and Grant Calendar | HTML (WordPress) | https://adeca.alabama.gov/about/funding-opportunities/ | One agency, not statewide. The site's RSS is news posts. |
-| Alaska | next batch | State of Alaska Online Public Notices | RSS 2.0 | https://aws.state.ak.us/OnlinePublicNotices/Feeds/RSS.aspx | Weak: the feed holds the 100 newest notices of every kind (1 was a grant), about 9 days, so it needs a daily poll. No agency, deadline or eligibility fields. A bot check guards the help page. |
+| Alaska | needs Ren's decision | State of Alaska Online Public Notices | RSS 2.0 | https://aws.state.ak.us/OnlinePublicNotices/Feeds/RSS.aspx | Machine-readable, not built. The feed holds the 100 newest notices of every kind, about 9 days' worth; 1 of the 100 was a grant. No agency, deadline or eligibility fields. A bot check guarded the help page. Section (c): recommended to leave out. |
 | Arizona | none found | grants.az.gov, which points to Euna Grants (eCivis) | n/a | https://grants.az.gov/funding-opportunities-0 | The listings are behind a subscriber login. |
-| Arkansas | none found | DFA Intergovernmental Services grant program pages | HTML | https://www.dfa.arkansas.gov/office/intergovernmental-services/grant-programs/ (not tested) | No central portal; programs are spread across agency pages. Found by search only. |
+| Arkansas | unchecked | DFA Intergovernmental Services grant program pages | HTML | https://www.dfa.arkansas.gov/office/intergovernmental-services/grant-programs/ (not tested) | Found by search only. The search showed program pages spread across agencies; no central portal turned up, but none was tested. |
 | California | built | California Grants Portal | CSV | https://data.ca.gov/dataset/california-grants-portal | Daily refresh (`grantmatch/california.py`). |
-| Colorado | none found | OEDIT Programs and Funding; SIPA govgrants | HTML | https://oedit.colorado.gov/programs-and-funding | Blocked (403). data.colorado.gov has no opportunity dataset. |
+| Colorado | unchecked | OEDIT Programs and Funding; SIPA govgrants | HTML | https://oedit.colorado.gov/programs-and-funding (403 CloudFront); https://sipa.colorado.gov/govgrants (403) | Blocked to scripts, so what these pages hold is unknown. data.colorado.gov's catalog search for "grant" found only charity financials, no opportunities. |
 | Connecticut | none found | data.ct.gov (awards); CTsource Bid Board | Socrata, awards only | https://api.us.socrata.com/api/catalog/v1?domains=data.ct.gov&q=grant | Past awards only. Nonprofit Grant Program rounds go through CTsource, which has no export. |
 | Delaware | none found | data.delaware.gov | Socrata, awards only | https://api.us.socrata.com/api/catalog/v1?domains=data.delaware.gov&q=grant | Grant-in-Aid is a legislative application system, not a list of calls. |
 | District of Columbia | HTML only | District Grants Clearinghouse (Serve DC) | HTML; weekly Funding Alert PDFs | https://communityaffairs.dc.gov/node/26 | No feed found; whether the Drupal topic page has RSS is unverified. |
 | Florida | built | Catalog of State Financial Assistance | HTML catalog | https://apps.fldfs.com/fsaa/catalog.aspx | Weekly refresh (`grantmatch/florida.py`), plus county programs by hand. |
 | Georgia | HTML only | Georgia Grants Portal (OPB) | HTML (Power Pages) | https://cares.georgia.gov/grantopportunities/ | One office, not statewide, and empty when checked. |
-| Hawaii | next batch | HANDS (Hawaii Awards and Notices Data System) | JSON (POST) | https://hands.ehawaii.gov/hands/api/bidding-opportunities | Weak: undocumented API behind the public page, mostly procurement; about 6 of 185 posted items were grants. No description or eligibility field. |
-| Idaho | none found | Idaho Commerce grants and agency pages | HTML | https://commerce.idaho.gov/incentives-and-financing/grants | Blocked (Cloudflare). |
+| Hawaii | needs Ren's decision | HANDS (Hawaii Awards and Notices Data System) | JSON (POST) | https://hands.ehawaii.gov/hands/api/bidding-opportunities | Machine-readable, not built. An undocumented API behind the public page, mostly procurement: 6 of 185 posted items had "grant" in the title. No description or eligibility field. Section (c): recommended to leave out. |
+| Idaho | unchecked | Idaho Commerce grants page | HTML | https://commerce.idaho.gov/incentives-and-financing/grants (403 Cloudflare challenge) | Blocked to scripts. A search showed separate agency pages (Commerce, Arts, Parks, State Board of Education); none was read. |
 | Illinois | built | CSFA list of open funding notices (GATA) | HTML | https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx | Daily refresh (`grantmatch/illinois.py`). |
 | Indiana | HTML only | State Agency Grant Opportunities (Euna Grants list) | HTML iframe; PDF | https://gn.ecivis.com/GO/gn_redir/T/mk3lzl56q0ht/iframe/true | 1 open when checked. Public, no login, but no feed. |
 | Iowa | built | IowaGrants.gov | HTML | https://www.iowagrants.gov/storefrontFOList.do | Daily refresh (`grantmatch/iowa.py`). |
-| Kansas | none found | grants.ks.gov; KS Infrastructure Hub | HTML / PDF | https://www.grants.ks.gov/ | Blocked (Akamai); applications need a login. |
-| Kentucky | none found | CHFS Grant Opportunities, KDE Competitive Grants, eMARS public access | HTML | https://chfs.ky.gov/agencies/os/oas/Pages/grants.aspx (not tested) | No statewide list; solicitations go through eMARS. Found by search only. |
-| Louisiana | none found | LaPAC (procurement) | HTML / PDF | https://wwwcfprd.doa.louisiana.gov/osp/lapac/pubmain.cfm | No grant catalog; LED's monthly roadmap PDF mixes sources. |
+| Kansas | unchecked | grants.ks.gov; KS Infrastructure Hub; Commerce grants calendar | HTML / PDF | https://www.grants.ks.gov/ (403 Akamai); https://www.kshub.gov/iija/open-grant-opportunities (403); https://www.kansas.gov/grants/index.do (404) | Blocked to scripts, so the pages weren't read. That applications go through a portal that needs a login is from a search, unverified. Commerce publishes a yearly PDF grants guide (https://kansascommerce.gov/grantscalendar/, not opened). |
+| Kentucky | unchecked | CHFS Grant Opportunities, KDE Competitive Grants, eMARS public access | HTML | https://chfs.ky.gov/agencies/os/oas/Pages/grants.aspx (not tested) | Found by search only. The search suggests solicitations go through eMARS Vendor Self Service; nothing was opened. |
+| Louisiana | none found | LaPAC (procurement) | HTML / PDF | https://wwwcfprd.doa.louisiana.gov/osp/lapac/pubmain.cfm | LaPAC answered (200) and is procurement bids; no grant catalog in what was checked. LDOE eGMS covers education allocations only; LED's monthly roadmap PDF mixes federal, state and private items. |
 | Maine | HTML only | Maine Community Funding Finder | HTML (Drupal view) | https://www.maine.gov/moca/funding | 62 items, aimed at communities; no nonprofit applicant type. |
 | Maryland | none found | grants.maryland.gov SharePoint list | JSON (SharePoint REST) | https://grants.maryland.gov/_api/web/lists/getbytitle('Maryland%20State%20and%20Foundation%20Grants')/items?$filter=Approved%20eq%201&$top=5000 | Machine-readable but abandoned: nothing added after September 2023, nothing open. Not worth an adapter. |
 | Massachusetts | HTML only | COMMBUYS public bid search | HTML (JSF app) | https://www.commbuys.com/bso/view/search/external/advancedSearchBid.xhtml | Grants posted as bids; results need form postbacks. |
 | Michigan | HTML only | MI Funding Hub | JS app | https://mifundinghub.org/find-funding/ | Undocumented admin-ajax call with a page nonce; aimed at local governments. |
-| Minnesota | HTML only | Office of Grants Management, Find a Grant | HTML | https://mn.gov/grants/find-a-grant/ | Served a bot captcha; unverified. |
-| Mississippi | none found | Agency pages (for example MDHS Grant Opportunities) | HTML | https://www.mdhs.ms.gov/ (not tested) | No statewide portal found. |
-| Missouri | none found | Agency pages; data.mo.gov | n/a | https://moarpa.mo.gov/grant-programs/ (not tested) | data.mo.gov's catalog search found only ARRA and federal expenditure data from 2012 to 2017. |
+| Minnesota | unchecked | Office of Grants Management, Find a Grant | HTML | https://mn.gov/grants/find-a-grant/ (200, but a Radware bot captcha) | The captcha wasn't passed, so the list wasn't seen. https://mn.gov/grants/search/json.jsp returns JSON, but it is the site's page search, not opportunities. |
+| Mississippi | unchecked | Agency pages (for example MDHS Grant Opportunities) | HTML | https://www.mdhs.ms.gov/ (not tested) | Found by search only; no statewide portal turned up, but nothing was opened. |
+| Missouri | unchecked | Agency pages; data.mo.gov | n/a | https://moarpa.mo.gov/grant-programs/ (not tested) | Only data.mo.gov was checked: its catalog search found ARRA and federal expenditure data from 2012 to 2017, no opportunities. Agency pages weren't opened. |
 | Montana | HTML only | WebGrants storefront | HTML | https://funding.mt.gov/outsideStorefrontList.jsp | 4 listed, mostly expired. |
-| Nebraska | none found | Agency pages; DED uses AmpliFund (an application system) | n/a | https://opportunity.nebraska.gov/ (not tested) | No central public list found. |
+| Nebraska | unchecked | Agency pages; DED uses AmpliFund (an application system) | n/a | https://opportunity.nebraska.gov/ (not tested) | Found by search only; nothing was opened. |
 | Nevada | HTML only | Office of Federal Assistance, Grant Opportunities | Airtable view | https://airtable.com/appnYtlggE8fe6n3H/shrev4GTlV51q2EJD | The Airtable API needs a key. |
-| New Hampshire | none found | Agency pages | n/a | none: the research notes give no URL | No central state list found. |
+| New Hampshire | unchecked | none named | n/a | none: the research notes give no URL | Nothing was tested; a search turned up only agency pages. |
 | New Jersey | built this PR | Treasury Grants Office, State Grant Opportunities | CSV (no header) | https://www.nj.gov/treasury/grants-management/opportunities/state/state-data.csv | 37 rows, 31 open on November 25. Columns category, title, url, agency, deadline. No eligibility field, so every call says to read the notice, except 2 whose titles say municipal or county grants, marked not open to nonprofits. The page says the list isn't complete. |
-| New Mexico | none found | SHARE NM (PeopleSoft) | n/a | none: the research notes give no URL | Reportedly login-based (unverified); data.nm.gov's catalog query failed. |
+| New Mexico | unchecked | SHARE NM (PeopleSoft) | n/a | none: the research notes give no URL | Not tested. SHARE NM is reportedly login-based (unverified); data.nm.gov's catalog query failed. |
 | New York | HTML only | Statewide Financial System, Search for Grant Opportunities | HTML (PeopleSoft grid) | https://esupplier.sfs.ny.gov/psc/fscm/SUPPLIER/ERP/c/NY_SUPPUB_FL.AUC_RESP_INQ_AUC.GBL | Has a Not-For-Profit eligibility value and due dates; the only export needs a postback. Best scraper candidate. |
 | North Carolina | HTML only | NC.gov Grant Opportunities | HTML table | https://www.nc.gov/your-government/all-nc-state-services/grant-opportunities | About 74 programs, no deadlines. |
 | North Dakota | HTML only | WebGrants storefront | HTML | https://grants.nd.gov/storefrontFOList.do | 2 rows. |
-| Ohio | built | Ohio Grants Partnership | JSON | https://grants.ohio.gov/funding-opportunities/find-current-opportunities | Daily refresh (`grantmatch/ohio.py`, which reads the page's JSON list). |
-| Oklahoma | none found | OK Grants | login portal | https://grants.ok.gov/ | Needs registration. |
+| Ohio | built | Ohio Grants Partnership current opportunities | JSON | https://api.obm.ohio.gov/grants/getfundingopportunities/0/0/1 | Daily refresh. This is the list `grantmatch/ohio.py` reads (`LIST`). The public page the adapter links when an opportunity has no detail page, https://grants.ohio.gov/funding-opportunities/find-current-opportunities, returned 404 to a script on 2026-11-25 (as did https://grants.ohio.gov/). |
+| Oklahoma | none found | OK Grants | login portal | https://grants.ok.gov/ | Redirects to a login page; the opportunity search needs registration. data.ok.gov has only old funding summaries and awards. |
 | Oregon | none found | OHCS and ODHS/OHA Housing Grant Opportunities | Socrata JSON | https://data.oregon.gov/resource/8e87-r9yi.json | Machine-readable but housing only and empty ("No opportunities at this time"), as is https://data.oregon.gov/resource/qqzc-277f.json. Not worth an adapter unless Oregon fills them. |
-| Pennsylvania | needs Ren's decision | pa.gov Discover State Grants | JSON (POST) | https://www.pa.gov/cv-pxy/rest/search/v2 | Works: 380 grants, 80 accepting applications, an applicant type field with Nonprofit (125). But it is the site's own search proxy, not a published feed, and could change or close any time. Not built. |
+| Pennsylvania | needs Ren's decision | pa.gov Discover State Grants | JSON (POST) | https://www.pa.gov/cv-pxy/rest/search/v2 | Machine-readable, not built. 380 grants, 80 accepting applications, an applicant type field with Nonprofit (125). But it is the site's own search proxy, not a published feed. Section (c): recommended to leave out. |
 | Rhode Island | HTML only | Grants Management Office funding opportunities (Euna Grants list) | HTML table | https://gn.ecivis.com/GO/gn_redir/T/vijhe5b15ds1/iframe/true | About 9 open; clean HTML. |
-| South Carolina | none found | Agency pages (SCDE, SC Energy, SCORF, BHDD) | HTML | https://ed.sc.gov/finance/grants/scde-grant-opportunities/ (one agency; not tested) | No central list; data.sc.gov didn't respond. |
-| South Dakota | none found | Agency pages and news posts on sd.gov | HTML | https://www.sd.gov/sdac?id=cs_kb_article_view&sysparm_article=KB0045433 (not tested) | No central list; data.sd.gov didn't respond. |
-| Tennessee | none found | Central Procurement Office grant page; Rural Development printable list | HTML / DOCX | https://www.tn.gov/generalservices/procurement/central-procurement-office--cpo-/library-/grant-funding-information.html (403 to scripts) | Blocked; the printable DOCX list wasn't opened. |
-| Texas | HTML only (data endpoint unverified) | Electronic State Business Daily, Grants | JS app (NetSuite backend) | https://www.txsmartbuy.gov/esbd | The statewide grant list since November 2024. The site's script has a CSV export routine, but no public data endpoint could be verified (the probe was blocked), so this is unverified rather than none. The README's earlier survey found that its robots.txt disallows crawling. |
+| South Carolina | unchecked | Agency pages (SCDE, SC Energy, SCORF, BHDD) | HTML | https://ed.sc.gov/finance/grants/scde-grant-opportunities/ (one agency; not tested) | Not tested; data.sc.gov didn't respond. |
+| South Dakota | unchecked | Agency pages and news posts on sd.gov | HTML | https://www.sd.gov/sdac?id=cs_kb_article_view&sysparm_article=KB0045433 (not tested) | Not tested; data.sd.gov didn't respond. |
+| Tennessee | unchecked | Central Procurement Office grant page; Rural Development printable list | HTML / DOCX | https://www.tn.gov/generalservices/procurement/central-procurement-office--cpo-/library-/grant-funding-information.html (403 to scripts) | Blocked to scripts and WebFetch; the printable DOCX list wasn't opened. |
+| Texas | unchecked | Electronic State Business Daily, Grants | JS app (NetSuite backend) | https://www.txsmartbuy.gov/esbd | The statewide grant list since November 2024 (per the research note). The site's script has a CSV export routine, but no public data endpoint could be verified: the probe was blocked. The README's earlier survey found that its robots.txt disallows crawling. |
 | Utah | HTML only | Utah Funding Opportunities Portal | Looker Studio report | https://gopb.utah.gov/funding-resources/ (links the report) | No export without a Google login. |
-| Vermont | none found | data.vermont.gov State of Vermont Grants Issued | Socrata | https://data.vermont.gov/resource/xifk-zskz.json | Awards, not open calls. |
+| Vermont | none found | data.vermont.gov State of Vermont Grants Issued | Socrata | https://data.vermont.gov/resource/xifk-zskz.json | Awards, not open calls. Opportunities are on agency pages (HTML), which weren't surveyed one by one. |
 | Virginia | HTML only | Governor's Office Grants directory | HTML table | https://www.governor.virginia.gov/constituent-services/grants/ | About 58 rows, free-text application periods, some stale. |
 | Washington | built | FundHubWA | JSON (WordPress) | https://fundhub.wa.gov/funding/ | Daily refresh (`grantmatch/washington.py`, through the site's WordPress JSON API). |
 | West Virginia | built this PR | grants.wv.gov AvailableGrants list | JSON (SharePoint REST) | https://grants.wv.gov/_api/web/lists/getbytitle('AvailableGrants')/items?$top=500 | 124 rows, never pruned: 7 kept on November 25 (83 past due, 34 with no due date and not rolling). Who may apply is the state's EntityEligible text; 4 of the 7 are open to nonprofits. The REST API is the site's own, not a published open-data feed. |
-| Wisconsin | none found | Agency pages (DHS solicitations, DOJ, DNR, DATCP, DOA) | HTML | https://www.dhs.wisconsin.gov/business/solicitations-list.htm (one agency; not tested) | No central list; data.wi.gov didn't respond. |
+| Wisconsin | unchecked | Agency pages (DHS solicitations, DOJ, DNR, DATCP, DOA) | HTML | https://www.dhs.wisconsin.gov/business/solicitations-list.htm (one agency; not tested) | Not tested; data.wi.gov didn't respond. |
 | Wyoming | HTML only | Wyoming Grants Connect Hub | Power BI report | https://sbd.wyo.gov/grants | No documented export. |
 
-Counts: 6 built before this change, 2 built this PR, 2 next batch, 1 needs Ren's decision, 18 HTML only (DC included), 22 none found.
+Counts: 6 built before this change, 2 built this PR, 3 need Ren's decision, 16 HTML only (DC included), 8 none found, 16 unchecked. Total 51.
 
-## (c) Next batch
+## (c) Needs a decision, and what's left
 
-Machine-readable, worth an adapter, in order:
+Three states have a machine-readable list that isn't built. Each needs Ren's decision; the recommendation for all three is to leave them out for now.
 
-1. **Hawaii.** HANDS JSON (`POST https://hands.ehawaii.gov/hands/api/bidding-opportunities?size=200&page=0&sort=publish_date_dt,desc` with `{"statuses":["POSTED"], ...}`). Keep only titles that say grant or GIA; no eligibility, so the same "read the notice" rule as New Jersey. About 6 grants at a time. Undocumented, so check it again before building.
-2. **Alaska.** The Online Public Notices RSS, `<category>Grants</category>` only. About one grant a week; deadline and eligibility would come from the notice text. Needs the daily job to catch items before they age out.
+| State | What works | Recommended | Why |
+|---|---|---|---|
+| Alaska | Online Public Notices RSS (`https://aws.state.ak.us/OnlinePublicNotices/Feeds/RSS.aspx`), filtered to `<category>Grants</category>` | Leave out for now | It is a feed of every public notice, not a grant list: 1 of its 100 newest notices was a grant, and the 100 cover about 9 days, so roughly one grant a week. Items age out in about 9 days, so a weekly refresh would miss some, and deadline and eligibility would have to be read from the notice text. |
+| Hawaii | HANDS JSON (`POST https://hands.ehawaii.gov/hands/api/bidding-opportunities?size=200&page=0&sort=publish_date_dt,desc` with `{"statuses":["POSTED"], ...}`) | Leave out for now | An undocumented API behind the procurement page: 6 of 185 posted items had "grant" in the title, with no description and no eligibility field, so every card would only say "read the notice". It could change without notice. |
+| Pennsylvania | pa.gov grant search (`POST https://www.pa.gov/cv-pxy/rest/search/v2`): 380 grants, 80 accepting applications, an applicant type with Nonprofit (125) | Leave out | The best data of any state not built, but it is the site's internal search proxy, not a published feed. It could be locked down or close at any time. |
 
-Needs Ren's decision first:
+**HTML only, worth a scraper later** (each would be the state's first catalog): New York (SFS grid, with a Not-For-Profit eligibility value), Rhode Island and Indiana (public Euna Grants lists), Virginia (Governor's directory), North Carolina (program table). Check each site's terms and robots.txt first.
 
-- **Pennsylvania.** The pa.gov search proxy (`POST https://www.pa.gov/cv-pxy/rest/search/v2`) gives the best data of any state not yet built (380 grants with applicant types), but it is the site's internal search, not a published feed.
+**Not worth it now:** Maryland (abandoned since 2023), Oregon (housing only, empty), Montana and North Dakota (2 to 4 rows).
 
-HTML only, worth a scraper later (each would be the state's first catalog): New York (SFS grid, with a Not-For-Profit eligibility value), Rhode Island and Indiana (public Euna Grants lists), Virginia (Governor's directory), North Carolina (program table). Check each site's terms and robots.txt first.
-
-Not worth it now: Maryland (abandoned since 2023), Oregon (housing only, empty), Montana and North Dakota (2 to 4 rows), Texas (robots.txt disallows crawling).
+**Unchecked, needs a look in a browser:** Arkansas, Colorado, Idaho, Kansas, Kentucky, Minnesota, Mississippi, Missouri, Nebraska, New Hampshire, New Mexico, South Carolina, South Dakota, Tennessee, Texas and Wisconsin. Texas's list is known to exist, but its robots.txt disallows crawling, so it would need the Comptroller's permission or a published export.
 
 ## (d) Proposed refresh job
 
 Not made: workflows are Ren's call. Until one is approved, West Virginia and New Jersey ship from the snapshots `data/westvirginia.json.gz` and `data/newjersey.json.gz`, made on November 25, 2026. `export_web.fetch()` asks the release for `westvirginia.json.gz`, gets a 404, and reads the file in `data/` instead (tested in `tests/test_states.py`). There is no vectors file in either place, so `program_vectors()` embeds the records during the export, as it already does for the hand-kept lists. A snapshot ages. `export_web` leaves out any call whose closing date is before the day of the export (`still_open()`, for every open-call state; Florida's catalog and the hand-kept lists keep their own rules), so expired calls stop showing, and the state tab says when its data was last updated. Calls the state adds after the snapshot don't appear until it is remade (`python -m grantmatch.westvirginia --out data/westvirginia.json.gz` and `python -m grantmatch.newjersey --out data/newjersey.json.gz`) or the refresh job runs. On November 25 the New Jersey snapshot had 9 dated calls (the first closing December 4) and 22 rolling ones; West Virginia's 7 close between December 15, 2026 and June 30, 2027, except one ongoing. The deploy workflow's push paths don't include these two files, so a new snapshot reaches the site on the next deploy that runs for another reason (several a day).
 
-The proposed change, one new workflow:
+The proposed change is one new workflow that runs **weekly**. Weekly means a call a state opens mid-week can show up to a week late. Closed calls still drop out at every site export, which runs several times a day, because `still_open()` checks each record's closing date against the export day, not the refresh day.
 
 ```yaml
 # .github/workflows/refresh-states.yml (proposed, not added)
 name: Refresh state lists
 on:
   schedule:
-    - cron: "17 13 * * *"   # daily
+    - cron: "17 13 * * 1"   # weekly, Mondays at 13:17 UTC
   workflow_dispatch:
 permissions:
   contents: write
@@ -149,4 +157,9 @@ Later states join the same job as more lines in the two steps, so the job count 
 | California | 64 to 81 s | 2 |
 | Illinois | 142 to 158 s | 3 |
 
-So the existing jobs take 50 to 158 seconds, 1 to 3 billed minutes a run. Illinois and Iowa are slower because they read a page per notice; California downloads a 6.6 MB file. The West Virginia and New Jersey adapters each make one small request (a 700 KB JSON list and a 7 KB CSV), like Ohio and Washington, but the job runs two of them and two embedding steps, so expect it near California's: about 60 to 90 seconds, **1 to 2 billed minutes a run, 30 to 62 billed minutes a month** run daily (2 minutes every day of a 31-day month is the top). If it ever ran as slowly as Illinois it would be about 90 a month. A deploy triggered by a refresh (`deploy-site.yml` build and deploy jobs) took 6 to 8 minutes on the same day, so also adding "Refresh state lists" to deploy-site's `workflow_run` list would add about **210 to 270 billed minutes a month** on top. That isn't needed: the export reads the release at every deploy, and the federal refresh alone triggers a deploy twice a day, so new West Virginia and New Jersey data reaches the site within about 12 hours without it. The recommendation is the refresh job alone, at 30 to 62 minutes a month; running it weekly instead would be about 4 to 9.
+So the existing jobs take 50 to 158 seconds, 1 to 3 billed minutes a run. Illinois and Iowa are slower because they read a page per notice; California downloads a 6.6 MB file. The West Virginia and New Jersey adapters each make one small request (a 700 KB JSON list and a 7 KB CSV), like Ohio and Washington, but the job runs two of them and two embedding steps, so expect it near California's: about 60 to 90 seconds, **1 to 2 billed minutes a run**.
+
+- **Proposed, weekly:** about 4.3 runs a month, so **about 4 to 9 billed minutes a month**.
+- **Rejected alternative, daily:** 30 to 62 billed minutes a month (2 minutes every day of a 31-day month is the top), for calls showing up within a day instead of within a week.
+
+A deploy triggered by a refresh (`deploy-site.yml` build and deploy jobs) took 6 to 8 minutes on November 24, about 7 to 9 billed minutes. Adding "Refresh state lists" to deploy-site's `workflow_run` list would add about 30 to 40 billed minutes a month even run weekly (210 to 270 if daily). That isn't needed: the export reads the release at every deploy, and the federal refresh alone triggers a deploy twice a day, so new West Virginia and New Jersey data reaches the site within about 12 hours of the weekly refresh without it. The recommendation is the weekly refresh job alone, at about 4 to 9 minutes a month.

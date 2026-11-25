@@ -16,25 +16,36 @@ const meta: Meta = {
     WV: { status: "built", source: "West Virginia grants.wv.gov list of available grants" },
     NJ: { status: "built", source: "New Jersey Treasury list of state grant opportunities" },
     CA: { status: "built", source: "California Grants Portal" },
-    KS: { status: "none", source: "grants.ks.gov needs a login (blocked to scripts)" },
+    KS: { status: "unchecked", source: "grants.ks.gov and the KS Infrastructure Hub (blocked to scripts)" },
+    MD: { status: "none", source: "grants.maryland.gov list, abandoned since September 2023" },
     DC: { status: "html", source: "District Grants Clearinghouse (Serve DC)" },
-    HI: { status: "next", source: "HANDS" },
+    HI: { status: "decide", source: "HANDS" },
     PA: { status: "decide", source: "pa.gov" },
+    XX: { status: "next", source: "x" },
   },
 };
 const note = (st: string, m: Meta | null = meta) => noCatalogNote(m, st, STATE_NAMES[st] ?? st);
 
 describe("a state with no catalog", () => {
   it("says so in plain words and names what still covers it", () => {
-    expect(note("KS")).toBe("No Kansas state catalog yet. No single public list of Kansas state grants was found. Federal grants and foundations cover Kansas.");
-    expect(note("HI")).toBe("No Hawaii state catalog yet. A source for Hawaii state grants is being looked at. Federal grants cover Hawaii.");
-    expect(note("PA")).toContain("A source for Pennsylvania state grants is being looked at.");
+    expect(note("MD")).toBe("No Maryland state catalog yet. No current public list of Maryland state grants was found. Federal grants cover Maryland.");
+    expect(note("HI")).toBe("No Hawaii state catalog yet. Hawaii has a machine-readable grant list that isn't read in yet. Federal grants cover Hawaii.");
+    expect(note("PA")).toContain("Pennsylvania has a machine-readable grant list that isn't read in yet.");
+    expect(noCatalogNote(meta, "XX", "Somewhere")).toContain("A source for Somewhere state grants is being looked at.");
+  });
+
+  it("claims nothing about a state the research couldn't check", () => {
+    const ks = note("KS")!;
+    expect(ks).toBe("No Kansas state catalog yet. Kansas state grants aren't read in yet. Federal grants and foundations cover Kansas.");
+    expect(ks).not.toMatch(/\bfound\b|no single|no current|only as/i);
   });
 
   it("doesn't call the District of Columbia a state", () => {
-    expect(note("DC")).toBe("No District of Columbia catalog yet. The District of Columbia posts its grants only as web pages, so they aren't read in yet. Federal grants and foundations cover the District of Columbia.");
+    expect(note("DC")).toBe("No District of Columbia catalog yet. The District of Columbia posts its grants as web pages or a dashboard, not a data file, so they aren't read in yet. Federal grants and foundations cover the District of Columbia.");
     const none: Meta = { ...meta, catalogs: { DC: { status: "none", source: "x" } } };
-    expect(note("DC", none)).toBe("No District of Columbia catalog yet. No single public list of grants from the District of Columbia was found. Federal grants and foundations cover the District of Columbia.");
+    expect(note("DC", none)).toBe("No District of Columbia catalog yet. No current public list of grants from the District of Columbia was found. Federal grants and foundations cover the District of Columbia.");
+    const unchecked: Meta = { ...meta, catalogs: { DC: { status: "unchecked", source: "x" } } };
+    expect(note("DC", unchecked)).toBe("No District of Columbia catalog yet. Grants from the District of Columbia aren't read in yet. Federal grants and foundations cover the District of Columbia.");
   });
 
   it("still reads when the data predates the registry or a built state's file is missing", () => {

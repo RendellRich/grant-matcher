@@ -30,7 +30,7 @@ export interface Meta {
   coverage?: boolean;
   /** States besides Florida with their own programs file: its name, its source and when it was fetched. */
   programs?: Record<string, { file: string; source: string; updated?: string }>;
-  /** Every state's catalog status from grantmatch/states.py: built, next, decide, html or none. */
+  /** Every state's catalog status from grantmatch/states.py: built, next, decide, html, none or unchecked. */
   catalogs?: Record<string, { status: string; source: string }>;
 }
 
@@ -118,9 +118,13 @@ export function noCatalogNote(meta: Meta | null, state: string, name: string): s
   const cover = `${meta.states.includes(state) ? "Federal grants and foundations cover" : "Federal grants cover"} ${the}.`;
   // A state that has a catalog whose file didn't come through: say only that, not that there's no catalog.
   if (status === "built") return `${The} ${kind}grants aren't available right now. ${cover}`;
-  const why = status === "html" ? ` ${The} posts its grants only as web pages, so they aren't read in yet.`
-    : status === "next" || status === "decide" ? ` A source for ${grants} is being looked at.`
-    : status === "none" ? ` No single public list of ${grants} was found.`
+  // Each says no more than the research showed (grantmatch/states.py): "unchecked" makes no claim at all.
+  const Grants = kind ? `${The} state grants` : `Grants from ${the}`;
+  const why = status === "html" ? ` ${The} posts its grants as web pages or a dashboard, not a data file, so they aren't read in yet.`
+    : status === "decide" ? ` ${The} has a machine-readable grant list that isn't read in yet.`
+    : status === "next" ? ` A source for ${grants} is being looked at.`
+    : status === "none" ? ` No current public list of ${grants} was found.`
+    : status === "unchecked" ? ` ${Grants} aren't read in yet.`
     : "";
   return `No ${name} ${kind}catalog yet.${why} ${cover}`;
 }

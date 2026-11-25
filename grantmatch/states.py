@@ -2,11 +2,14 @@
 
 Each of the 50 states and the District of Columbia has an entry with its status:
 
-  built    an adapter reads the state's own list (file, catalog and module are set)
-  next     a machine-readable source exists and is worth an adapter next
-  decide   a source works, but whether to use it is Ren's call (docs/state-coverage.md says why)
-  html     the state lists its grants only as web pages, a dashboard or a bid system
-  none     no single public list of the state's grant calls was found, or the one that exists is empty or abandoned
+  built      an adapter reads the state's own list (file, catalog and module are set)
+  next       a machine-readable source exists and is worth an adapter next (none at the moment)
+  decide     a machine-readable source works, but whether to use it is Ren's call (docs/state-coverage.md says why)
+  html       the state's grant list was seen, and it is web pages, a dashboard or a bid system with no data file
+  none       what was checked has no current list of grant calls: past awards only, a login, or a list that is
+             empty or abandoned
+  unchecked  the research couldn't establish the answer: the site turned scripts away, showed a captcha, or
+             wasn't tested beyond a search. Nothing is claimed about these states; they need a look in a browser
 
 Florida is built too, but keeps its own export (florida.py writes a catalog of programs, not open calls, with
 county programs and its own vectors). Every other built state is listed in STATE_PROGRAMS, which export_web
@@ -14,74 +17,75 @@ reads; export_web also publishes each state's status in meta.json, so the site c
 catalog. Sources and checks: docs/state-coverage.md (researched November 2026).
 
 To add a state: write an adapter that produces the same record fields as ohio.py, set its entry here to
-"built" with file, source, catalog, module, report (its heading in the skipped grants review) and refresh (None
-until a refresh job is approved), and propose a refresh job. The site and the skipped report need no change.
+"built" with file, source, catalog, module, report (its heading in the skipped grants review) and refresh (how
+often its refresh job runs; None until one is approved, and the proposal for new states is weekly), and propose
+a refresh job. The site and the skipped report need no change.
 """
 from __future__ import annotations
 
 from .display import STATE_NAMES
 
-STATUSES = ("built", "next", "decide", "html", "none")
+STATUSES = ("built", "next", "decide", "html", "none", "unchecked")
 
 STATES: dict[str, dict] = {
     "AL": {"status": "html", "source": "ADECA Funding Opportunities and Grant Calendar (one agency)"},
-    "AK": {"status": "next", "source": "State of Alaska Online Public Notices (RSS, Grants category)"},
-    "AZ": {"status": "none", "source": "grants.az.gov points to Euna Grants (eCivis), which needs an account"},
-    "AR": {"status": "none", "source": "Agency pages only"},
+    "AK": {"status": "decide", "source": "State of Alaska Online Public Notices (RSS of every notice; a few are grants)"},
+    "AZ": {"status": "none", "source": "grants.az.gov points to Euna Grants (eCivis), behind a subscriber login"},
+    "AR": {"status": "unchecked", "source": "DFA Intergovernmental Services grant program pages (found by search, not tested)"},
     "CA": {"status": "built", "source": "California Grants Portal", "file": "california", "catalog": "Grants Portal",
            "module": "california", "report": "California Grants Portal", "refresh": "daily"},
-    "CO": {"status": "none", "source": "Agency pages only (blocked to scripts)"},
+    "CO": {"status": "unchecked", "source": "OEDIT Programs and Funding, SIPA govgrants (blocked to scripts)"},
     "CT": {"status": "none", "source": "Past awards on data.ct.gov; calls on the CTsource bid board"},
-    "DE": {"status": "none", "source": "Past awards on data.delaware.gov only"},
+    "DE": {"status": "none", "source": "Past awards on data.delaware.gov; no open-call dataset"},
     "DC": {"status": "html", "source": "District Grants Clearinghouse (Serve DC)"},
     "FL": {"status": "built", "source": "Florida Catalog of State Financial Assistance", "file": "florida",
            "catalog": "CSFA", "module": "florida", "report": "Florida state catalog", "refresh": "weekly"},
     "GA": {"status": "html", "source": "Georgia Grants Portal (OPB only, empty when checked)"},
-    "HI": {"status": "next", "source": "HANDS, Hawaii Awards and Notices Data System (JSON)"},
-    "ID": {"status": "none", "source": "Agency pages only (blocked to scripts)"},
+    "HI": {"status": "decide", "source": "HANDS, Hawaii Awards and Notices Data System (undocumented JSON, mostly procurement)"},
+    "ID": {"status": "unchecked", "source": "Idaho Commerce grants page (blocked to scripts)"},
     "IL": {"status": "built", "source": "Illinois Catalog of State Financial Assistance", "file": "illinois",
            "catalog": "Illinois NOFO", "module": "illinois", "report": "Illinois state notices (GATA)", "refresh": "daily"},
     "IN": {"status": "html", "source": "State Agency Grant Opportunities (Euna Grants list)"},
     "IA": {"status": "built", "source": "IowaGrants.gov", "file": "iowa", "catalog": "IowaGrants", "module": "iowa",
            "report": "IowaGrants.gov", "refresh": "daily"},
-    "KS": {"status": "none", "source": "grants.ks.gov needs a login (blocked to scripts)"},
-    "KY": {"status": "none", "source": "Agency pages only"},
-    "LA": {"status": "none", "source": "Agency pages only"},
+    "KS": {"status": "unchecked", "source": "grants.ks.gov and the KS Infrastructure Hub (blocked to scripts)"},
+    "KY": {"status": "unchecked", "source": "CHFS, KDE and eMARS pages (found by search, not tested)"},
+    "LA": {"status": "none", "source": "LaPAC (procurement bids); no grant catalog in what was checked"},
     "ME": {"status": "html", "source": "Maine Community Funding Finder"},
     "MD": {"status": "none", "source": "grants.maryland.gov list, abandoned since September 2023"},
     "MA": {"status": "html", "source": "COMMBUYS bid search"},
     "MI": {"status": "html", "source": "MI Funding Hub"},
-    "MN": {"status": "html", "source": "Office of Grants Management, Find a Grant"},
-    "MS": {"status": "none", "source": "Agency pages only"},
-    "MO": {"status": "none", "source": "Agency pages only"},
+    "MN": {"status": "unchecked", "source": "Office of Grants Management, Find a Grant (served a bot captcha)"},
+    "MS": {"status": "unchecked", "source": "Agency pages such as MDHS Grant Opportunities (not tested)"},
+    "MO": {"status": "unchecked", "source": "Agency pages (not tested); data.mo.gov has no opportunity dataset"},
     "MT": {"status": "html", "source": "Montana WebGrants storefront (mostly expired)"},
-    "NE": {"status": "none", "source": "Agency pages only"},
+    "NE": {"status": "unchecked", "source": "Agency pages; DED uses AmpliFund (not tested)"},
     "NV": {"status": "html", "source": "Office of Federal Assistance grant opportunities (Airtable view)"},
-    "NH": {"status": "none", "source": "Agency pages only"},
+    "NH": {"status": "unchecked", "source": "No source found by search; nothing tested"},
     "NJ": {"status": "built", "source": "New Jersey Treasury list of state grant opportunities", "file": "newjersey",
            "catalog": "New Jersey", "module": "newjersey", "report": "New Jersey Treasury list", "refresh": None},
-    "NM": {"status": "none", "source": "Agency pages only"},
+    "NM": {"status": "unchecked", "source": "SHARE NM, reportedly login-based (not tested)"},
     "NY": {"status": "html", "source": "Statewide Financial System, Search for Grant Opportunities"},
     "NC": {"status": "html", "source": "NC.gov Grant Opportunities table"},
     "ND": {"status": "html", "source": "North Dakota WebGrants storefront"},
     "OH": {"status": "built", "source": "Ohio Grants Partnership", "file": "ohio", "catalog": "Ohio", "module": "ohio",
            "report": "Ohio Grants Partnership", "refresh": "daily"},
-    "OK": {"status": "none", "source": "OK Grants needs an account"},
+    "OK": {"status": "none", "source": "OK Grants redirects to a login page"},
     "OR": {"status": "none", "source": "Two housing datasets on data.oregon.gov, both empty"},
     "PA": {"status": "decide", "source": "pa.gov Discover State Grants (the site's own search proxy)"},
     "RI": {"status": "html", "source": "Grants Management Office funding opportunities (Euna Grants list)"},
-    "SC": {"status": "none", "source": "Agency pages only"},
-    "SD": {"status": "none", "source": "Agency pages only"},
-    "TN": {"status": "none", "source": "Agency pages only (blocked to scripts)"},
-    "TX": {"status": "html", "source": "Electronic State Business Daily, Grants (robots.txt disallows crawling)"},
+    "SC": {"status": "unchecked", "source": "Agency pages (not tested); data.sc.gov didn't respond"},
+    "SD": {"status": "unchecked", "source": "Agency pages and sd.gov posts (not tested); data.sd.gov didn't respond"},
+    "TN": {"status": "unchecked", "source": "Central Procurement Office grant page (blocked to scripts)"},
+    "TX": {"status": "unchecked", "source": "Electronic State Business Daily, Grants (data endpoint not verified)"},
     "UT": {"status": "html", "source": "Utah Funding Opportunities Portal (Looker Studio report)"},
-    "VT": {"status": "none", "source": "Past awards on data.vermont.gov only"},
+    "VT": {"status": "none", "source": "Past awards on data.vermont.gov; calls on agency pages"},
     "VA": {"status": "html", "source": "Governor's Office Grants directory"},
     "WA": {"status": "built", "source": "FundHubWA (Washington Department of Commerce)", "file": "washington",
            "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily"},
     "WV": {"status": "built", "source": "West Virginia grants.wv.gov list of available grants", "file": "westvirginia",
            "catalog": "grants.wv.gov", "module": "westvirginia", "report": "grants.wv.gov (West Virginia)", "refresh": None},
-    "WI": {"status": "none", "source": "Agency pages only"},
+    "WI": {"status": "unchecked", "source": "Agency pages (not tested); data.wi.gov didn't respond"},
     "WY": {"status": "html", "source": "Wyoming Grants Connect Hub (Power BI report)"},
 }
 

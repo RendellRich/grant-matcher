@@ -123,9 +123,31 @@ def test_unclear_wording_keeps_the_grant_open_and_only_a_real_exclusion_closes_i
         assert wv.who_can_apply(text)[0] is False, text
 
 
-def test_the_snapshot_keeps_no_email_addresses():
+def test_no_snapshot_record_has_an_email_address_in_any_field():
     import gzip
     import json
+    import re
     from pathlib import Path
-    payload = json.loads(gzip.decompress((Path(wv.__file__).parent.parent / "data" / "westvirginia.json.gz").read_bytes()))
-    assert payload["programs"] and not any("@" in r["contact"] for r in payload["programs"])
+    email = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+    data = Path(wv.__file__).parent.parent / "data"
+    for name in ("westvirginia.json.gz", "newjersey.json.gz"):
+        payload = json.loads(gzip.decompress((data / name).read_bytes()))
+        assert payload["programs"], name
+        found = [(r["id"], k) for r in payload["programs"] for k, v in r.items() if isinstance(v, str) and email.search(v)]
+        assert found == [], name
+
+
+def test_email_addresses_are_taken_out_of_every_text_field_and_the_sentence_still_reads():
+    rec = wv.normalize(item(
+        HowToApply="<div>Respond by email to the program at <span>pat.lee@wv.g</span><span>ov</span>, saying you intend to apply.</div>",
+        Guidelines="<p>Questions: <a href=\"mailto:pat@example.gov\">pat@example.gov</a></p>",
+        FullDetails="<div>Write to grants@dep.wv.gov for the guide.</div>"), today="2026-11-25")
+    assert rec["application"].startswith("Respond by email to the program at the contact on the state's page, saying you intend to apply.")
+    assert rec["restrictions"] == "Questions: the contact on the state's page"
+    assert "Write to the contact on the state's page for the guide." in rec["objectives"]
+    assert not any("@" in v for v in rec.values() if isinstance(v, str))
+    assert rec["contact"] == "Pat Lee, 304-555-0100"
+
+
+def test_inline_tags_dont_split_words():
+    assert wv._clean("<div>current project<span>s</span> are <b>Departm</b>ent</div>") == "current projects are Department"

@@ -33,7 +33,8 @@ def test_each_built_state_has_an_adapter_with_the_shared_shape():
 
 def test_meta_says_which_states_have_no_catalog():
     cat = states.catalogs()
-    assert cat["KS"] == {"status": "none", "source": "grants.ks.gov needs a login (blocked to scripts)"}
+    assert cat["KS"] == {"status": "unchecked", "source": "grants.ks.gov and the KS Infrastructure Hub (blocked to scripts)"}
+    assert cat["AK"]["status"] == cat["HI"]["status"] == "decide"
     assert cat["WV"]["status"] == cat["NJ"]["status"] == cat["FL"]["status"] == "built"
     assert cat["PA"]["status"] == "decide" and cat["DC"]["status"] == "html"
     assert list(cat) == sorted(cat)
@@ -121,3 +122,10 @@ def test_the_export_drops_closed_snapshot_calls_but_not_florida_or_hand_kept_pro
     assert loop.index("still_open(payload[\"programs\"]") < loop.index("local_programs.load(state=state)")
     assert "still_open" not in inspect.getsource(export_web.florida_records)
     assert "still_open" not in src[:src.index("for state, spec in STATE_PROGRAMS.items()")]
+
+
+def test_states_the_research_couldnt_check_claim_nothing():
+    unchecked = {c for c, s in states.STATES.items() if s["status"] == "unchecked"}
+    assert unchecked == {"AR", "CO", "ID", "KS", "KY", "MN", "MS", "MO", "NE", "NH", "NM", "SC", "SD", "TN", "TX", "WI"}
+    for code in unchecked | {c for c, s in states.STATES.items() if s["status"] == "none"}:
+        assert "only" not in states.STATES[code]["source"].lower(), code   # no "agency pages only" without a check

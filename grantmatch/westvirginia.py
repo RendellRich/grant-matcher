@@ -65,6 +65,9 @@ LOAN = re.compile(r"\bloans?\b|\brevolving (?:loan )?funds?\b", re.I)
 
 def _clean(s: str | None) -> str:
     s = re.sub(r"<\s*(?:br|p|li|h\d|div)\b[^>]*>", " ", s or "", flags=re.I)
+    # Inline tags (span, b, a, font) don't break words: SharePoint's editor splits text, even an email address
+    # ("John.Giroir@wv.g</span><span>ov"), across them. Block tags above become spaces.
+    s = re.sub(r"<\s*/?\s*(?:span|b|i|u|em|strong|font|a|sup|sub)\b[^>]*>", "", s, flags=re.I)
     s = re.sub(r"<[^>]+>", " ", s)
     s = html.unescape(s).replace("\xa0", " ").replace("\u200b", "")
     return re.sub(r"\s+", " ", s).strip()
@@ -82,6 +85,13 @@ def _day(s: str | None) -> str | None:
     if t.tzinfo is not None:
         t = t.astimezone(timezone.utc).replace(tzinfo=None) - timedelta(hours=4)
     return t.date().isoformat()
+
+
+EMAIL = re.compile(r"(?:mailto:)?[\w.+-]+@[\w-]+(?:\.[\w-]+)+", re.I)
+
+
+def without_email(text: str) -> str:
+    return EMAIL.sub("the contact on the state's page", text)
 
 
 def who_can_apply(text: str) -> tuple[bool, str]:
@@ -112,7 +122,7 @@ def normalize(item: dict, today: str | None = None) -> dict:
                                     _clean(item.get("ContactPhone1"))) if t)
     kind = _clean(item.get("TypeOfGrant"))
     today = today or date.today().isoformat()
-    return {
+    rec = {
         "id": f"wv-{item.get('Id') or item.get('ID')}",
         "csfa": "",
         "number": "",
@@ -145,6 +155,9 @@ def normalize(item: dict, today: str | None = None) -> dict:
         "updated": _day(item.get("Modified")),
         "_rolling": rolling,
     }
+    # No email addresses anywhere in the record, as with Iowa's program officers: the name and phone are kept, and an
+    # address in the text ("respond by email to jane.doe@wv.gov") points to the state's page instead.
+    return {k: without_email(v) if isinstance(v, str) else v for k, v in rec.items()}
 
 
 def build_records(items: list[dict], today: str | None = None, skips: list[dict] | None = None) -> list[dict]:
