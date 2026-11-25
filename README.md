@@ -8,7 +8,7 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Foundations:** private foundations (IRS Form 990-PF) plus community foundations, public foundations, and United Ways (Form 990 Schedule I) that give in your state, with who they funded, typical grant size, and how to apply
 - **Florida state programs:** state programs open to nonprofits from Florida's Catalog of State Financial Assistance, with legislative earmarks filtered out
 - **Other states' grants:** open calls from the state's own list in California, Illinois, Iowa, Ohio, Washington, West Virginia, New Jersey and New York, from the District of Columbia's grants clearinghouse, and from two Minnesota agencies' pages (health and justice programs, not a statewide list). For every other state the page says there is no state catalog yet; [docs/state-coverage.md](docs/state-coverage.md) says why for each
-- **County programs:** county grant programs for nonprofits, such as Manatee County's children's services funding, entered by hand from each program's own page
+- **County and city programs:** grant programs for nonprofits, such as Manatee County's children's services funding, entered by hand from each program's own page. Florida's list is the fullest; Arizona, California, Illinois, Nevada, New York, Pennsylvania, Texas and Washington have a short list for some counties and cities ([docs/county-coverage.md](docs/county-coverage.md)). No free national or state catalog of county or city grants exists in what was searched, so coverage is partial
 
 **Try it:** [rendellrich.github.io/grant-matcher](https://rendellrich.github.io/grant-matcher/). Visitors see the top 3 matches, free accounts the top 10 in each list, and Pro every match.
 
@@ -161,7 +161,7 @@ Florida's Department of Financial Services keeps the Catalog of State Financial 
 
 California's agencies post every grant and loan opportunity to the [California Grants Portal](https://www.grants.ca.gov/), which the State Library publishes as public-domain open data, updated daily. `grantmatch/california.py` reads that file and keeps the open and forecasted calls, in the same fields as Florida's programs so the same scorer reads them. Unlike Florida's catalog these are open calls, so each record also carries its open date, deadline, required match, whether it is a loan, and how the money is paid (most pay by reimbursement).
 
-The data is refreshed daily and published with the release. On the site, the state tab follows the profile's state: a Florida profile sees Florida programs, a California, Illinois, Iowa, Minnesota, New Jersey, New York, Ohio, Washington, West Virginia or District of Columbia profile sees that state's (or the District's) grants, and a profile in any other state sees a plain note above the tabs instead of a state tab: "No Alabama state catalog yet," the reason when the research established one, and that federal grants and foundations still cover the state.
+The data is refreshed daily and published with the release. On the site, the state tab follows the profile's state: a Florida profile sees Florida programs, a California, Illinois, Iowa, Minnesota, New Jersey, New York, Ohio, Washington, West Virginia or District of Columbia profile sees that state's (or the District's) grants, and a profile in any other state sees a plain note above the tabs: "No Alabama state catalog yet," the reason when the research established one, and that federal grants and foundations still cover the state. Such a state has no state tab unless it has hand-kept county and city programs (below), and then the note says that is all the tab holds.
 
 A call whose list or notice doesn't say who may apply is kept, and its card says "Who may apply isn't listed; read the notice" instead of "Open to nonprofits".
 
@@ -223,11 +223,11 @@ Every state and DC has one entry in `grantmatch/states.py`: its status (built, n
 
 No public catalog lists county and city grants, community foundation and United Way grant cycles, children's services council calls, or the state agency calls Florida's catalog leaves out (federal money the state passes through, such as 21st Century Community Learning Centers, AmeriCorps and VOCA victim assistance, and statewide councils such as Florida Humanities), so they are kept by hand in `data/local-FL.json`, one entry per program, from the program's own page: the counties it serves, who can apply, whether it requires 501(c)(3) status, the application window when there is one, and the date the page was checked. `grantmatch/local.py` checks every entry (a bad date, an unknown county or a repeated name stops the export) and adds them to the Florida tab, keyed `fl:local-<slug>`. Each entry's `level` is `State`, `County`, `City`, `Children's services council` (the property-tax children's boards such as Pinellas' Juvenile Welfare Board), `Community foundation` or `United Way`; a statewide entry lists its counties as `["Statewide"]` and gets no place rule. They score like state programs, with two more rules: points off when your cities are outside the county, and when the program requires 501(c)(3) status you don't have yet. Word rarity and the similarity median are still measured on the state programs alone, so adding or editing an entry never changes a state program's score. The weekly website check reads each program's page, and its closing date goes into `changes.json` like a federal deadline.
 
-Other states can have the same kind of list: `data/local-<ST>.json` (Illinois, Iowa, Ohio and Washington have one) joins that state's tab, keyed `local-<st>-<slug>` so keys never clash with Florida's. Deploys, the website check and the page watch pick up every state's file.
+Other states can have the same kind of list: `data/local-<ST>.json`, keyed `local-<st>-<slug>` so keys never clash with Florida's. Illinois, Iowa, Ohio and Washington have lists of state calls their adapter can't see; Arizona, California, Illinois, Nevada, New York, Pennsylvania, Texas and Washington have county and city programs, a first batch of 29 entered November 25, 2026. A state with a state catalog shows them in its tab. A state without one (Arizona, Nevada, Pennsylvania, Texas) gets a "local programs" tab, with a note above the tabs saying it holds county and city programs only, entered by hand, as a partial list. A city program, or one that leaves part of a county out, names the places it serves (`places` or `exclude_places`, with the `area` the card shows), and `source_note` records something the program's page gets wrong. Deploys, the website check and the page watch pick up every state's file. [docs/county-coverage.md](docs/county-coverage.md) has the entry format, the coverage by county, what was left out and why, and the plan.
 
 A program that takes applications any time gets `"rolling": true` (and no `closes`). One that is between rounds (no window open or announced, not rolling, and its website not saying applications are open at the last weekly check) loses 15 points and gets a "Between rounds" caution, so programs a nonprofit can apply to now or soon rank first; `score.ts` and `rank_more.py` apply the same rule.
 
-To add or change one, edit the file from the official page, update `checked`, and run `python -m grantmatch.local` to check every state's file.
+To add or change one, check that the site's robots.txt and terms allow it (docs/county-coverage.md), edit the file from the official page, update `checked`, and run `python -m grantmatch.local` to check every state's file.
 
 ## Skipped grants review
 
@@ -291,7 +291,7 @@ Every card's details end with "Copy one-page summary" and "Download as text", an
 
 The IRS data can't tell a company's foundation from a family's. `data/corporate.json` names company foundations by EIN, the company behind each, and, where the company's own giving page says so, the local program a small nonprofit can apply to: who can apply, the amount, when and how. `grantmatch/corporate.py` checks the file, and the foundation cards show the company and its program, with a filter for company foundations. Only one part changes a score: when the company's page limits its grants to named counties (`"counties": {"FL": [...]}`, as Duke Energy's Florida page does), the foundation is scored like a county program. Work in those counties gets a reason, work elsewhere loses 40 points with a caution, and a profile with no cities gets a smaller penalty and a prompt to add them. County names are checked against `data/counties.json.gz`. Markets the company names only loosely (Bank of America's "Tampa Bay") stay as text, since the counties they cover aren't stated.
 
-Both hand-kept lists go stale when a program changes after it was entered. Every Thursday `grantmatch/watch.py` (workflow `watch-pages.yml`) reads each page the two files point to, HTML, PDF or Word, and compares it with last week's reading, kept as `watch-state.json.gz` on the data-latest release. It opens or adds to a `page-watch` issue listing new status wording ("on hold", "now accepting", "applications are closed"), sentences added or removed, blank pages, pages it could not reach and entries checked more than 90 days ago. It never edits an entry: a person reads the page, updates the entry and sets its `checked` date. Some government sites turn away automated readers; those show as "could not reach" and need a look in a browser.
+Both hand-kept lists go stale when a program changes after it was entered. Every Thursday `grantmatch/watch.py` (workflow `watch-pages.yml`) reads each page the two files point to, HTML, PDF or Word, and compares it with last week's reading, kept as `watch-state.json.gz` on the data-latest release. It opens or adds to a `page-watch` issue listing new status wording ("on hold", "now accepting", "applications are closed"), sentences added or removed, blank pages, pages it could not reach and entries checked more than 90 days ago. It never edits an entry: a person reads the page, updates the entry and sets its `checked` date. Some government sites turn away automated readers; those show as "could not reach" and need a look in a browser. A page that is off limits (robots.txt or terms) shows as blocked; it is not read and its entry is not deleted.
 
 A national program run through local stores, such as Walmart's Spark Good grants, is listed in every state it serves, even when the foundation's IRS return names other states among the top 12 it gave to. Without that, the Walmart Foundation was missing from Florida's list.
 
@@ -301,7 +301,7 @@ The foundation refresh reads six IRS filing years, enough for five tax years per
 
 ## Coverage
 
-Federal grants cover the whole country, and foundations cover every state and DC. State grant lists cover 10 states and the District of Columbia (Minnesota's is two agencies only) and hand-kept county and city programs 5; [docs/state-coverage.md](docs/state-coverage.md) audits every source and every state. "What the data covers" in the site's footer shows the foundation numbers state by state.
+Federal grants cover the whole country, and foundations cover every state and DC. State grant lists cover 10 states and the District of Columbia (Minnesota's is two agencies only), and hand-kept county and city programs cover some counties and cities in 9 states ([docs/county-coverage.md](docs/county-coverage.md)); [docs/state-coverage.md](docs/state-coverage.md) audits every source and every state. "What the data covers" in the site's footer shows the foundation numbers state by state.
 
 `grantmatch/coverage.py` compares the IRS Exempt Organizations Business Master File with the state files after each foundation refresh:
 
@@ -336,7 +336,7 @@ A GitHub Action runs twice a day and pulls every posted and forecasted opportuni
 | Florida [Catalog of State Financial Assistance](https://apps.fldfs.com/fsaa/catalog.aspx), current fiscal year | weekly | `refresh-florida.yml` |
 | Each foundation's own website (the home page and the grants or apply page it links to), for an open cycle, a deadline ahead, an application link, or a note that it isn't taking requests | weekly | `refresh-websites.yml` |
 
-The website check (`grantmatch/cycles.py`) honors robots.txt, identifies itself, reads at most two pages per site, and visits a site shared by several funders once. The site quotes the sentence it found, with the page and the date checked, since a page can change after it was read. It never changes a score.
+The website check (`grantmatch/cycles.py`) honors robots.txt, identifies itself, reads at most two pages per site, treats a site that keeps out ClaudeBot or another Anthropic agent as off limits, never requests a host whose terms forbid automation or commercial reuse (a hand-kept blocklist), and visits a site shared by several funders once. The site quotes the sentence it found, with the page and the date checked, since a page can change after it was read. It never changes a score.
 
 ## Run it yourself
 
@@ -392,7 +392,7 @@ grantmatch/newyork.py  New York Statewide Financial System grant opportunities
 grantmatch/districtofcolumbia.py  District Grants Clearinghouse
 grantmatch/minnesota.py  Minnesota Health and Justice Programs grant pages (two agencies)
 grantmatch/states.py   every state's catalog status and source; STATE_PROGRAMS comes from it
-grantmatch/local.py     Florida programs entered by hand: state calls, county and city grants, community foundation cycles
+grantmatch/local.py     programs entered by hand: state calls, county and city grants, community foundation cycles
 grantmatch/skipped.py   the weekly list of grants left out, and why
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
 grantmatch/watch.py     weekly check of the pages behind both hand-kept lists
@@ -408,12 +408,14 @@ PRODUCT.md              who it's for and the product's rules
 DESIGN.md               design system: colors, type, components, and accessibility rules
 docs/images/            README screenshots
 docs/state-coverage.md  what each source covers, state by state, and the next states to add
+docs/county-coverage.md county and city programs: entry format, coverage, what was left out and why, the plan
 .github/workflows/      data refreshes, tests, and the site deploy
 ```
 
 ## Roadmap
 
 - More states' grant catalogs: for 18 states the grant pages checked are web pages, a bid board or a dashboard rather than a data file, 14 are blocked and would need written permission or a published file, and Massachusetts and Mississippi still need a look in a browser (docs/state-coverage.md). A refresh job for New York, DC and Minnesota. Alaska, Hawaii and Pennsylvania were left out by decision on 2026-11-25
+- County and city grants: a nationwide directory of local funders from HUD allocations and Census government units (funders, not open calls), then more counties ([docs/county-coverage.md](docs/county-coverage.md))
 
 ## Why I built it
 

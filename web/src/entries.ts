@@ -294,6 +294,13 @@ export function callState(key: string): { code: string; name: string } | null {
   return code && name ? { code, name } : null;
 }
 
+/** The state a hand-kept program belongs to, read off its key ("fl:local-tx-..." is Texas). Florida's keys carry
+ *  no state ("fl:local-..."), so it is the answer for any other program key. */
+export function programState(key: string): string {
+  const code = key.match(/^fl:local-([a-z]{2})-/)?.[1].toUpperCase();
+  return (code && (STATE_NAMES as Record<string, string>)[code]) || "Florida";
+}
+
 export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean, p?: Profile): Entry {
   const r = s.rec;
   const why = sortReasons(s.reasons, s.cautions, "its title or objectives", hasKw);
@@ -318,6 +325,7 @@ export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean, p?: Profile)
     rows.push({ label: "Agency site", href, linkText: href.split("://")[1].replace(/\/$/, "").toLowerCase() });
   }
   if (local) {
+    if (r.source_note) rows.push({ label: "Note", text: r.source_note });
     rows.push(...site.rows);
     if (r.checked && /^\d{4}-\d{2}-\d{2}$/.test(r.checked)) {
       rows.push({ label: "Source", text: `Entered by hand from the program's own page, checked ${fmtDate(ymdDate(r.checked))}` });

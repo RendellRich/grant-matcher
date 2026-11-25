@@ -184,3 +184,109 @@ def test_programs_between_rounds_rank_below_open_ones():
     assert list(out["id"]) == ["local-ia-open", "local-ia-closed"]
     assert out.iloc[0]["score"] - out.iloc[1]["score"] == 15
     assert rank_more.BETWEEN_ROUNDS in out.iloc[1]["cautions"]
+
+
+TX = {"Harris": ["Houston", "Pasadena"], "Tarrant": ["Arlington", "Bedford", "Fort Worth"]}
+NY = {"Kings": ["New York"], "New York": ["New York"]}
+
+
+def test_a_city_program_names_only_its_places():
+    e = entry(level="City", counties=["Harris"], area="Houston", places=["Houston"])
+    assert local.check(e, TX, "TX") == []
+    r = local.to_record(e, TX, state="TX")
+    assert r["places"] == ["houston"] and r["area"] == "Houston"
+    p = Profile(mission=PROFILE.mission, keywords=PROFILE.keywords)
+
+    def where(cities):
+        row = score_florida([r], p, cities=cities).iloc[0]
+        return [x for x in list(row["reasons"]) + list(row["cautions"]) if "Houston" in x]
+
+    assert where(["Houston"]) == ["Funds work in Houston, where you work"]
+    assert where(["Pasadena"]) == ["Only for work in Houston"]  # same county, outside the city
+
+
+def test_places_left_out_of_a_county():
+    e = entry(counties=["Tarrant"], area="Tarrant County outside Fort Worth", exclude_places=["Fort Worth"])
+    assert local.check(e, TX, "TX") == []
+    r = local.to_record(e, TX, state="TX")
+    assert r["places"] == ["arlington", "bedford", "tarrant", "tarrant county"]
+    assert r["area"] == "Tarrant County outside Fort Worth"
+
+
+def test_places_are_checked_against_the_counties():
+    def problems(state="TX", known=TX, **kw):
+        return local.check(entry(**{"counties": ["Harris"], **kw}), known, state)
+
+    assert problems(area="Dallas", places=["Dallas"]) == ["places: 'Dallas' is not a place in its counties"]
+    assert problems(area="x", exclude_places=["Harris"]) == ["exclude_places: 'Harris' is not a place in its counties"]
+    assert problems(places=["Houston"]) == ["places needs an area, the words the card uses for them"]
+    assert problems(area="Houston") == ["area is only used with places or exclude_places"]
+    assert "use places or exclude_places, not both" in problems(area="x", places=["Houston"], exclude_places=["Pasadena"])
+    assert "places must be a list of place names" in problems(area="x", places="Houston")
+    assert "a statewide program has no places" in problems(counties=["Statewide"], area="x", places=["Houston"])
+    assert problems("NY", NY, counties=["Kings"], area="Brooklyn", places=["Brooklyn", "Kings County"]) == []
+    assert problems(area="x", places=["Brooklyn"]) == ["places: 'Brooklyn' is not a place in its counties"]
+
+
+def test_a_source_note_is_carried_only_when_there_is_one():
+    assert "source_note" not in local.to_record(entry(), COUNTIES)
+    r = local.to_record(entry(source_note="The page gives two dates."), COUNTIES)
+    assert r["source_note"] == "The page gives two dates."
+    assert local.check(entry(source_note=""), COUNTIES) == ["source_note must be a sentence"]
+
+
+def test_every_county_and_city_file_is_clean():
+    import re
+    from grantmatch import cycles
+    email = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+    for st in ("AZ", "CA", "NV", "NY", "PA", "TX", "IL", "WA"):
+        rows = [r for r in local.load(state=st) if r["level"] != "State"]
+        assert rows, st
+        for r in rows:
+            assert r["id"].startswith(f"local-{st.lower()}-") and len(f"fl:{r['id']}") <= 63
+            assert r["places"] and r["area"] and r["checked"] >= "2026-11-25"
+            assert not [k for k, v in r.items() if isinstance(v, str) and email.search(v)], r["id"]
+            for url in (r["url"], r["web"]):
+                assert not cycles.blocked_by_terms(url), url
+
+
+def test_the_held_florida_entries_are_ready_but_not_loaded():
+    from pathlib import Path
+    pending = local.load(Path(local.LOCAL) / "pending" / "local-FL.json")
+    assert len(pending) == 7
+    loaded = {r["id"] for r in local.load()}
+    assert not loaded & {r["id"] for r in pending}
+    assert not any(c for c in ("Miami-Dade", "Broward")
+                   for e in json.loads(local.file_for("FL").read_text(encoding="utf-8"))["programs"] if c in e["counties"])
+
+
+def test_no_florida_slug_reads_as_another_states_key():
+    from grantmatch.display import STATE_NAMES
+    for e in json.loads(local.file_for("FL").read_text(encoding="utf-8"))["programs"]:
+        assert e["slug"][2] != "-" or e["slug"][:2].upper() not in STATE_NAMES, e["slug"]
+
+
+def test_a_state_with_no_catalog_gets_a_local_only_file(tmp_path, monkeypatch):
+    import numpy as np
+
+    from grantmatch import embed, export_web
+
+    monkeypatch.setattr(export_web, "LOCAL_ONLY", True)
+    monkeypatch.setattr(embed, "embed_texts", lambda texts: np.ones((len(texts), 384), dtype=np.float32))
+    assert export_web.local_only_states() == ["AZ", "NV", "PA", "TX"]  # CA, IL, NY and WA have their own adapters
+    meta = {}
+    export_web.write_local_only(tmp_path, meta)
+    assert sorted(meta["programs"]) == ["AZ", "NV", "PA", "TX"]
+    tx = meta["programs"]["TX"]
+    assert tx["local_only"] and tx["local"] and tx["file"] == "programs-TX" and tx["updated"] == "2026-11-25T12:00+00:00"
+    payload = json.loads(gzip.decompress((tmp_path / "programs-TX.json.gz").read_bytes()))
+    assert payload["vec_ids"] == [r["id"] for r in payload["records"]]
+    assert all(r["level"] != "State" and r["_title"] for r in payload["records"])
+
+
+def test_a_built_states_hand_kept_programs_join_its_tab():
+    from grantmatch import export_web
+    for st, n in (("IL", 2), ("WA", 4), ("CA", 6), ("NY", 3)):
+        rows = export_web.hand_kept(st)
+        assert export_web.has_local(rows) and sum(r["level"] != "State" for r in rows) == n, st
+    assert not export_web.has_local(export_web.hand_kept("OH"))

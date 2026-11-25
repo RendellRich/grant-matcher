@@ -1,0 +1,140 @@
+{
+ "about": "California county and city grant programs, entered by hand from each program's own page. Not a complete list. Change an entry only from the official page, and update its checked date (docs/county-coverage.md).",
+ "programs": [
+  {
+   "slug": "lac-arts-ogp",
+   "title": "Organizational Grant Program",
+   "agency": "Los Angeles County Department of Arts and Culture",
+   "level": "County",
+   "counties": [
+    "Los Angeles"
+   ],
+   "objectives": "Two-year grants to Los Angeles County nonprofit arts organizations whose services give residents direct access to arts activities and programming.",
+   "who": "Tax-exempt organizations (IRS) with principal offices in Los Angeles County, a primary arts mission and at least two full years of arts programming there.",
+   "requires_501c3": false,
+   "application": "Apply through the department's Organizational Grant Program pages. New applicants must attend or watch a workshop.",
+   "award": "Not stated on the page.",
+   "opens": "2026-08-31",
+   "closes": "2026-10-05",
+   "deadlines": "The 2027-28 round closed October 5, 2026. It is a two-year grant; no next date is published.",
+   "subjects": "Arts; Culture",
+   "url": "https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/ogp-grantseekers-timeline-categories",
+   "web": "https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/ogp-grantseekers-eligibility",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "lac-arts-ciag",
+   "title": "Community Impact Arts Grant",
+   "agency": "Los Angeles County Department of Arts and Culture",
+   "level": "County",
+   "counties": [
+    "Los Angeles"
+   ],
+   "objectives": "Arts projects at nonprofit social service and social justice organizations, city departments, tribal governments and fiscally sponsored organizations.",
+   "who": "Nonprofits whose main work is not arts (501(c)(3), budget of $25,000 or more, offices in the county, two years of arts-based activities), city departments, tribal governments and projects under a California fiscal sponsor. Arts-specific nonprofits, individuals and K-12 schools are not eligible.",
+   "requires_501c3": false,
+   "application": "Apply through the department's grant pages.",
+   "award": "Not stated on the page.",
+   "opens": "2026-08-31",
+   "closes": "2026-10-05",
+   "deadlines": "The 2027-28 round closed October 5, 2026. No next date is published.",
+   "subjects": "Arts; Social services",
+   "url": "https://www.lacountyarts.org/funding/community-impact-arts-grant-program/grantseekers/grantseekers-apply",
+   "web": "https://www.lacountyarts.org/funding/community-impacts-arts-grants/grantseekers/grantseekers-eligibility",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "lac-jcod-cfci-y5",
+   "title": "Care First Community Investment (CFCI) Year 5 Care Grants",
+   "agency": "Los Angeles County Justice, Care and Opportunities Department",
+   "level": "County",
+   "counties": [
+    "Los Angeles"
+   ],
+   "objectives": "Community programs that provide alternatives to incarceration and direct community investment, in 30 program areas.",
+   "who": "Community-based organizations.",
+   "requires_501c3": false,
+   "application": "Applications went to a third-party administrator for each strategy area.",
+   "award": "More than $73 million across the program areas.",
+   "opens": "2026-07-24",
+   "closes": "2026-09-08",
+   "deadlines": "Year 5, the fifth round, closed September 8, 2026. No next date is published.",
+   "subjects": "Reentry; Mental health; Employment; Youth",
+   "url": "https://jcod.lacounty.gov/program/care-first-community-investment-cfci-year-5-care-grants/",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "sbc-cdbg-py2027",
+   "title": "CDBG Notice of Funding Availability (PY2027-28)",
+   "agency": "San Bernardino County Community Development and Housing",
+   "level": "County",
+   "counties": [
+    "San Bernardino"
+   ],
+   "area": "San Bernardino County's participating cities",
+   "exclude_places": [
+    "Chino Hills",
+    "Fontana",
+    "Hesperia",
+    "Ontario",
+    "Rancho Cucamonga",
+    "Rialto",
+    "San Bernardino",
+    "Upland",
+    "Victorville",
+    "Apple Valley"
+   ],
+   "objectives": "Public services and capital improvements for low and moderate income communities in the county's CDBG participating cities.",
+   "who": "Eligible entities, including cities and nonprofit organizations. Cities with their own HUD funding are not part of the program.",
+   "requires_501c3": false,
+   "application": "Apply online; see the notice.",
+   "award": "About $4.7 million anticipated for the Urban County program, about $2.6 million of it for participating cities.",
+   "opens": "2026-09-14",
+   "closes": "2026-10-15",
+   "deadlines": "The 2027-28 program year closed October 15, 2026, at 4 p.m. No next date is published.",
+   "subjects": "Community development; Public services",
+   "url": "https://cdh.sbcounty.gov/wp-content/uploads/sites/117/2027-2028-CDBG-NOFA-Notice.pdf",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "alameda-artsfund-2027",
+   "title": "ARTSFUND Grants Program (2027)",
+   "agency": "Alameda County Arts Commission",
+   "level": "County",
+   "counties": [
+    "Alameda"
+   ],
+   "objectives": "General operating support for Alameda County arts and cultural nonprofits, for July 2027 to June 2029.",
+   "who": "Nonprofit arts and cultural organizations serving the county.",
+   "requires_501c3": false,
+   "application": "Apply online through the link on the page, by 5 p.m.",
+   "award": "Standard award $2,500.",
+   "opens": "2026-11-23",
+   "closes": "2027-02-04",
+   "deadlines": "Applications opened November 23, 2026 and are due Thursday, February 4, 2027, at 5 p.m.",
+   "subjects": "Arts; Culture",
+   "url": "https://arts.alamedacountyca.gov/artsfund/",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "sacramento-tot-grant-fy2627",
+   "title": "Transient Occupancy Tax (TOT) Grant Program (FY2026-27)",
+   "agency": "Sacramento County Office of Budget and Debt Management",
+   "level": "County",
+   "counties": [
+    "Sacramento"
+   ],
+   "objectives": "Project and program grants to Sacramento County nonprofits in arts and culture, community development, economic or workforce development, and health and human services. Not general operating support.",
+   "who": "Nonprofits that have completed one fiscal year and have a physical presence and services in the county; fiscal sponsors are permitted.",
+   "requires_501c3": false,
+   "application": "Apply online in the TOT Grant Portal.",
+   "award": "$5,000 to $35,000; $1,000,000 a year in all. Paid by reimbursement.",
+   "opens": "2026-01-05",
+   "closes": "2026-02-13",
+   "deadlines": "FY2026-27, the tenth cycle, closed February 13, 2026. No next date is published.",
+   "subjects": "Tourism; Community; Human services",
+   "url": "https://bdm.saccounty.gov/us/en/tot-grant-program/grant-description-and-guidelines.html",
+   "checked": "2026-11-25"
+  }
+ ]
+}

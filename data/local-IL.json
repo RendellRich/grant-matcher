@@ -1,5 +1,5 @@
 {
- "about": "Illinois grant programs with their own application windows that aren't posted to the state's GATA list of funding notices, entered by hand from each program's own page: the Illinois Arts Council's Salesforce grants, Illinois Humanities' grants, the Illinois State Library's adult literacy grants, and the Attorney General's crime victim grants. grantmatch/local.py checks this file and turns each entry into an Illinois program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
+ "about": "Illinois grant programs with their own application windows that aren't posted to the state's GATA list of funding notices, entered by hand from each program's own page: the Illinois Arts Council's Salesforce grants, Illinois Humanities' grants, the Illinois State Library's adult literacy grants, and the Attorney General's crime victim grants. Also Cook County programs. grantmatch/local.py checks this file and turns each entry into an Illinois program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
  "programs": [
   {
    "slug": "iac-general-operating-support",
@@ -220,6 +220,50 @@
    "url": "https://illinoisattorneygeneral.gov/safer-communities/supporting-victims-of-crime/violent-crime-vcva",
    "web": "https://illinoisattorneygeneral.gov/Safer-Communities/Grants",
    "checked": "2026-11-24"
+  },
+  {
+   "slug": "cook-jac-cvi-2026",
+   "title": "Community Violence Intervention Grants",
+   "agency": "Cook County Justice Advisory Council",
+   "level": "County",
+   "counties": [
+    "Cook"
+   ],
+   "objectives": "Community violence intervention services in Chicago and suburban Cook County, including street outreach.",
+   "who": "Community-based nonprofit organizations that provide eligible violence intervention services.",
+   "requires_501c3": false,
+   "application": "Notice of funding on the Justice Advisory Council grants page.",
+   "award": "Up to $15 million in all for 2026.",
+   "opens": "2026-07-01",
+   "closes": "2026-08-03",
+   "deadlines": "The 2026 round closed August 3, 2026. The county also ran this notice in 2025; no next date is published.",
+   "subjects": "Violence prevention; Public safety",
+   "url": "https://www.cookcountyil.gov/JACGrants",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "cook-cdbg-esg-2026",
+   "title": "CDBG and ESG Applications (Program Year 2026)",
+   "agency": "Cook County Department of Planning and Development",
+   "level": "County",
+   "counties": [
+    "Cook"
+   ],
+   "area": "suburban Cook County",
+   "exclude_places": [
+    "Chicago"
+   ],
+   "objectives": "Federal CDBG and ESG funds for capital improvements, social services and homelessness prevention in income-eligible suburban communities.",
+   "who": "Suburban municipalities and nonprofits serving suburban communities (capital); nonprofits serving suburban communities (public service and ESG).",
+   "requires_501c3": false,
+   "application": "See the county's application guides.",
+   "award": "Not stated on the page.",
+   "opens": "2026-01-14",
+   "closes": "2026-03-20",
+   "deadlines": "The 2026 round closed March 20, 2026. The county takes applications each year; no next date is published.",
+   "subjects": "Community development; Homelessness; Social services",
+   "url": "https://www.cookcountyil.gov/service/community-development-block-grant-cdbg-and-emergency-solutions-grants-esg-applications-2026",
+   "checked": "2026-11-25"
   }
  ]
 }

@@ -1,0 +1,25 @@
+{
+ "about": "Nevada county and city grant programs, entered by hand from each program's own page. Not a complete list. Change an entry only from the official page, and update its checked date (docs/county-coverage.md).",
+ "programs": [
+  {
+   "slug": "clark-outside-agency-grant-fy2728",
+   "title": "Outside Agency Grant (FY2027/2028)",
+   "agency": "Clark County Social Service",
+   "level": "County",
+   "counties": [
+    "Clark"
+   ],
+   "objectives": "Programs that substantially benefit county residents: self-sufficiency, community pride or cohesion, or community infrastructure.",
+   "who": "Nonprofit organizations, public agencies and government entities.",
+   "requires_501c3": false,
+   "application": "Apply online; instructions on the county's grant page.",
+   "award": "About $3,000,000 in all, tentative. Minimum request $10,000 (community track) or $25,000 (department track).",
+   "opens": "2026-10-01",
+   "closes": "2026-10-29",
+   "deadlines": "The FY 2027/2028 round closed October 29, 2026. The county takes applications each year; no next date is published.",
+   "subjects": "Human services; Community",
+   "url": "https://www.clarkcountynv.gov/residents/assistance_programs/outside-agency-grant",
+   "checked": "2026-11-25"
+  }
+ ]
+}
