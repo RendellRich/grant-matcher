@@ -1,5 +1,6 @@
 // "Can we apply?": the handful of facts that stop a small nonprofit from applying, checked against its profile.
-// Each source says different things, so each gets its own reader; a check is left out when the record doesn't say.
+// Each source says different things, so each gets its own reader; a check is left out when the record doesn't say
+// (except a hand-kept program's tax status, below, which must never read as a clean yes).
 // It never changes a score: the scorer's cautions already do that. The card shows these instead of the cautions
 // they repeat (see `covered`), and the cautions stay on the entry for the filters and the CSV.
 import type { FederalExtra, FederalRec, FloridaRec, FoundationOut, Profile } from "./score";
@@ -29,8 +30,14 @@ const ADVANCE = /\b(?:paid|payment|funds?) (?:in )?advance\b|\badvance payments?
 const SAM = /\bSAM\.gov\b|\bUnique Entity (?:ID|Identifier)\b|\bUEI\b/;
 const MUST_501 = /must (?:be|have) (?:a )?(?:registered )?501\s*\(?c\)?\s*\(?3\)?|501\s*\(?c\)?\s*\(?3\)?\s*(?:status )?(?:is )?required|only (?:to )?501\s*\(?c\)?\s*\(?3\)?/i;
 
-function need501(required: boolean | null, p: ReadyProfile, where: string): ReadyCheck | null {
-  if (required === null) return null;
+function need501(required: boolean | null, p: ReadyProfile, where: string, handKept = false): ReadyCheck | null {
+  if (required === null) {
+    // A hand-kept program with neither answer (grantmatch/local.py) may still turn this applicant away (a fiscal
+    // sponsor or another 501(c) type is needed, or the page doesn't say), so without the status it asks them to look.
+    return handKept && p.has501c3 !== "Yes"
+      ? { key: "501c3", state: "check", label: "Check tax status", note: "This program's tax status rule isn't a simple yes or no; read Who can apply before you start." }
+      : null;
+  }
   if (!required) {
     return { key: "501c3", state: "ok", label: "No 501(c)(3) needed", note: `${where} doesn't require 501(c)(3) status.` };
   }
@@ -122,8 +129,8 @@ export function floridaReadiness(r: FloridaRec, p: ReadyProfile, lines: string[]
   const text = [r.applicant_types, r.application, r.award, r.restrictions, r.deadlines].filter((x) => typeof x === "string").join(" \n ");
   const checks: ReadyCheck[] = [];
   const where = local ? "This program" : call ? "This call" : "This program";
-  // A hand-kept program says yes, no or neither (null): neither claims nothing, like a state list that doesn't say.
-  const c501 = need501(local ? r.requires_501c3 ?? null : MUST_501.test(r.applicant_types ?? "") ? true : null, p, where);
+  // A hand-kept program says yes, no or neither (null).
+  const c501 = need501(local ? r.requires_501c3 ?? null : MUST_501.test(r.applicant_types ?? "") ? true : null, p, where, local);
   if (c501) checks.push(c501);
   if (call) {
     // California's portal says these outright: a required match, a loan, and how the money is paid.

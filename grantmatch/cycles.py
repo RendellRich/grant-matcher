@@ -282,7 +282,8 @@ def robots_disallows(lines: list[str], token: str, path: str) -> bool:
 
 def _robots_for(root: str) -> tuple[robotparser.RobotFileParser, list[str]] | None:
     """The site's rules, or None when they couldn't be read. Only two answers settle it: 200 (the rules) and 404 or
-    410 (there are none). A 403, a server error, a timeout, a refused connection or anything else leaves them unknown,
+    410 (there are none). A 200 that is a web page (a sign-in, a bot check, a "not found" page) isn't the rules. That,
+    a 403, a server error, a timeout, a refused connection or anything else leaves them unknown,
     and an unknown robots.txt is not read as "go ahead": RFC 9309 asks that much for server and network errors, and
     this project asks it of a 403 too."""
     with _robots_lock:
@@ -296,7 +297,9 @@ def _robots_for(root: str) -> tuple[robotparser.RobotFileParser, list[str]] | No
         if r.status_code in (404, 410):
             lines = []
         elif r.status_code == 200 and len(r.content) <= MAX_ROBOTS_BYTES:
-            lines = r.text.lstrip("\ufeff").splitlines()
+            text = r.text.lstrip("\ufeff")
+            if not text.lstrip().startswith("<"):  # no robots.txt line starts with a tag; a web page does
+                lines = text.splitlines()
     except requests.RequestException:
         pass
     found = None

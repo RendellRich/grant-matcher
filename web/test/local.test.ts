@@ -130,8 +130,12 @@ describe("match and tax status on a hand-kept program's card", () => {
     expect(checks(base).match).toBeUndefined();
   });
 
-  it("claims neither way about 501(c)(3) when the answer isn't a yes or no", () => {
-    expect(checks(base, { has501c3: "No" })["501c3"]).toBeUndefined();
+  it("asks an organization without 501(c)(3) to check when the answer isn't a yes or no", () => {
+    for (const has501c3 of ["No", "Pending"] as const) {
+      expect(checks(base, { has501c3 })["501c3"]).toMatchObject({ state: "check", label: "Check tax status" });
+      expect(checks(base, { has501c3, fiscalSponsor: true })["501c3"].label).toBe("Check tax status");
+    }
+    expect(checks(base, { has501c3: "Yes" })["501c3"]).toBeUndefined();
     expect(checks({ ...base, requires_501c3: false }, { has501c3: "No" })["501c3"].label).toBe("No 501(c)(3) needed");
     expect(checks({ ...base, requires_501c3: true }, { has501c3: "No" })["501c3"].label).toBe("Needs 501(c)(3)");
   });
