@@ -283,7 +283,15 @@ function scaler(semantic: Map<string, number> | null, yardstick?: Map<string, nu
 
 // ---------- federal ----------
 
-export interface FederalRec {
+/** Display only, stamped by grantmatch/export_web.py and never scored: when the record's source was read, and
+ *  what the weekly freshness check found for its link. */
+export interface Stamps {
+  _checked?: string; // yyyy-mm-dd, or the data file's full fetched_at
+  _link?: string; // "ok" or "dead"
+  _link_at?: string; // yyyy-mm-dd, when the link was last checked
+}
+
+export interface FederalRec extends Stamps {
   id: string; number: string; title: string; agency_code: string; agency: string; status: string;
   close_date: string | null; award_ceiling: number | null; award_floor: number | null;
   cost_sharing: boolean; applicant_types: string[]; categories: string[]; category_labels: string[];
@@ -428,7 +436,7 @@ export interface SampleGrant {
   _to?: string; _city?: string; _city_title?: string; _purpose?: string;
 }
 
-export interface FoundationRec {
+export interface FoundationRec extends Stamps {
   ein: string; name: string; city: string; state: string; tax_year: string; kind?: string;
   website?: string | null; preselected_only: boolean; apply?: Record<string, string> | null;
   grant_count: number | null; grant_median: number | null; grants_total: number | null;
@@ -456,7 +464,7 @@ export interface CompanyGiving {
   company: string;
   places?: string[]; // lowercase counties and their cities, when the company's page limits grants to them
   area?: string; // how the card names those places
-  program?: { name: string; who: string; amount: string; when: string; how: string; focus?: string; url: string; checked: string };
+  program?: { name: string; who: string; amount: string; when: string; how: string; focus?: string; url: string; checked: string; link?: string };
 }
 
 export interface WebsiteCycle {
@@ -582,7 +590,7 @@ export function scoreFoundations(records: FoundationRec[], p: Profile, state: st
 
 // ---------- Florida programs ----------
 
-export interface FloridaRec {
+export interface FloridaRec extends Stamps {
   id: string; csfa: string; title: string; agency: string; objectives: string; assistance: string;
   applicant_types: string; nonprofit_eligible: boolean; earmark: boolean; restrictions: string;
   application: string; award: string; deadlines: string; contact: string; web: string; subjects: string;
