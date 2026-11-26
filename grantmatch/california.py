@@ -101,6 +101,7 @@ def normalize(row: dict) -> dict:
     deadline = (row.get("ApplicationDeadline") or "").strip()
     closes = _day(deadline)
     match = _clean(row.get("MatchingFunds"))
+    match_none = match.lower() == "not required"  # the portal says none is needed; a blank says nothing
     match = "" if match.lower() in ("", "not required") else match
     submit = _pairs(row.get("ElecSubmission"))
     how = []
@@ -151,6 +152,7 @@ def normalize(row: dict) -> dict:
         "funding_method": _clean(row.get("FundingMethod")),
         "loi": (row.get("LOI") or "").strip().lower() == "yes",
         "updated": _day(row.get("LastUpdated")),
+        **({"match_none": True} if match_none else {}),
     }
 
 

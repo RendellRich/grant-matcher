@@ -195,7 +195,7 @@ describe("a hand-kept program whose tax status rule isn't a yes or no", () => {
     const r = entries.find((e) => e.id === "local-pa-phila-cultural-fund-art-culture")!;
     const p = profile({ has501c3: "No", fiscalSponsor: false, canCostShare: false, today: openDay(r) });
     const text = grantSummary(floridaEntry(scoreFlorida([r], p, null)[0], true, p), p.today);
-    expect(text).toContain("CAN WE APPLY? 1 THING TO CHECK");
+    expect(text).toContain("CAN WE APPLY? 2 THINGS TO CHECK"); // tax status, and its pages don't state a match
     expect(text).toContain(`- Check: ${question}`);
     expect(text).not.toContain(clean);
   });

@@ -1,6 +1,7 @@
 // "Can we apply?": the handful of facts that stop a small nonprofit from applying, checked against its profile.
 // Each source says different things, so each gets its own reader; a check is left out when the record doesn't say
-// (except a hand-kept program's tax status, below, which must never read as a clean yes).
+// (except a hand-kept program's tax status and a program's matching funds, below, which must never read as a clean
+// yes: silence about a match shows "Match not stated").
 // It never changes a score: the scorer's cautions already do that. The card shows these instead of the cautions
 // they repeat (see `covered`), and the cautions stay on the entry for the filters and the CSV.
 import type { FederalExtra, FederalRec, FloridaRec, FoundationOut, Profile } from "./score";
@@ -22,8 +23,12 @@ const shortDate = (d: Date) => `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getF
 const ymd = (s?: string | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) : null);
 const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 
-// Words in a program's own text. A "no match required" line wins over the word "match" elsewhere.
-const NO_MATCH = /\bno (?:cash |local )?match(?:ing)?(?: funds?)?(?: is| are)? required\b|\bno match(?:ing)?(?: fund)? requirements?\b|\bno match required\b/i;
+// Words in a program's own text. "No match required" is said only for words that say none is needed. A line about a
+// cash match alone doesn't (in-kind may still be asked), and neither does text that says both.
+const NONE_NEEDED = /\bno (?:local |minimum )?match(?:ing)?(?: funds?)?(?: is| are)? required\b|\bno match(?:ing)?(?: fund)? requirements?\b|\bno cost[- ]shar(?:e|ing)(?: or match(?:ing(?: funds?)?)?)?(?: is| are)? required\b|\b(?:match(?:ing(?: funds?)?)?|cost[- ]shar(?:e|ing))(?: is| are)? not (?:required|a requirement)\b|\bdo(?:es)? not require (?:a |any )?(?:local )?(?:match(?:ing(?: funds?)?)?|cost[- ]shar(?:e|ing))\b/gi;
+const PLAIN_MATCH = /\bmatch (?:is |are )?required\b|\brequires? (?:a )?(?:\d{1,3} ?% )?(?:cash |local )?match\b|\b\d{1,3} ?% (?:cash |local )?match\b/i;
+const CASH_ONLY = /\bno cash match/i;
+const MENTION = /\bmatching (?:funds?|funding|requirement|contribution|grant)|\b(?:cash|in-kind|local)[- ]match|\bcost[- ]shar/i;
 const MATCH = /\b(?:cash|in-kind|local|dollar-for-dollar|\d{1,3} ?%)\s+match\b|\bmatching (?:funds?|requirement|contribution)s?\b|\bmatch (?:is |are )?required\b|\brequires? (?:a )?(?:cash )?match\b|\bcost[- ]shar(?:e|ing)\b/i;
 const REIMBURSE = /\breimburs(?:e|ed|es|ing|ement|ements|able)\b/i;
 const ADVANCE = /\b(?:paid|payment|funds?) (?:in )?advance\b|\badvance payments?\b/i;
@@ -65,17 +70,35 @@ function matchCheck(required: boolean, p: ReadyProfile, none: string, detail = "
     : { key: "match", state: "no", label: "Match required", note: `Matching funds are required${what}; your profile says you can't provide them.` };
 }
 
+const unstated = (note: string): ReadyCheck => ({ key: "match", state: "check", label: "Match not stated", note });
+const SILENT = "Nothing read from this program says whether matching funds are required; ask before you apply.";
+const UNCLEAR = "It mentions matching funds without saying plainly whether you must provide them; read its rules before you apply.";
+
+/** What a program's words say about matching funds. `purpose` (its objectives) only tells silence from a mention. */
+function matchWords(text: string, purpose: string): { says: "none" | "mentioned" | "unclear" | "silent"; plain: boolean } {
+  const rest = text.replace(NONE_NEEDED, " ");
+  const plain = PLAIN_MATCH.test(rest) && !CASH_ONLY.test(text);
+  if (rest !== text) return { says: PLAIN_MATCH.test(rest) ? "unclear" : "none", plain };
+  if (CASH_ONLY.test(text)) return { says: "unclear", plain };
+  if (MATCH.test(text)) return { says: "mentioned", plain };
+  return { says: MENTION.test(`${text}\n${purpose}`) ? "unclear" : "silent", plain };
+}
+
+const NONE_IN_TEXT = "Its text says no matching funds are required.";
+
 const REIMBURSE_CHECK: ReadyCheck = {
   key: "pay", state: "check", label: "Paid by reimbursement",
   note: "It pays by reimbursement: you spend your own money first and are paid back, so plan your cash before you apply.",
 };
 
 /** A program's own words, for sources that only have text. */
-function fromText(text: string, p: ReadyProfile): ReadyCheck[] {
+function fromText(text: string, p: ReadyProfile, purpose: string): ReadyCheck[] {
   const out: ReadyCheck[] = [];
   if (SAM.test(text)) out.push(samCheck(p, "Its text mentions SAM.gov registration."));
-  if (NO_MATCH.test(text)) out.push(matchCheck(false, p, "Its text says no matching funds are required."));
-  else if (MATCH.test(text)) out.push(matchCheck(true, p, "", "its text mentions a match"));
+  const { says } = matchWords(text, purpose);
+  if (says === "none") out.push(matchCheck(false, p, NONE_IN_TEXT));
+  else if (says === "mentioned") out.push(matchCheck(true, p, "", "its text mentions a match"));
+  else out.push(unstated(says === "unclear" ? UNCLEAR : SILENT));
   if (REIMBURSE.test(text)) out.push(REIMBURSE_CHECK);
   else if (ADVANCE.test(text)) out.push({ key: "pay", state: "ok", label: "Paid in advance", note: "Its text says funds are paid in advance." });
   return out;
@@ -111,7 +134,10 @@ export function federalReadiness(r: FederalRec & Partial<FederalExtra>, p: Ready
   const c501 = need501(only501 ? true : open ? false : null, p, "This opportunity");
   if (c501) checks.push(c501);
   checks.push(samCheck(p, "Every federal grant needs an active SAM.gov registration and a UEI."));
-  checks.push(matchCheck(Boolean(r.cost_sharing), p, "Grants.gov lists no cost sharing or matching requirement.", "cost sharing"));
+  // Grants.gov's own yes or no; when the notice's record left it out (grantmatch/fetch.py), it is not a "no".
+  checks.push(r.cost_sharing_unstated && !r.cost_sharing
+    ? unstated("Grants.gov doesn't say whether cost sharing or matching funds are required; read the notice.")
+    : matchCheck(Boolean(r.cost_sharing), p, "Grants.gov lists no cost sharing or matching requirement.", "cost sharing"));
   const close = r.close ?? null;
   if (r.status === "forecasted") {
     checks.push({ key: "open", state: "check", label: "Not open yet", note: "This is a forecast: the agency expects to post it, but you can't apply until it does." });
@@ -122,6 +148,21 @@ export function federalReadiness(r: FederalRec & Partial<FederalExtra>, p: Ready
 }
 
 // ---------- state, county and city programs ----------
+
+/** An open call's match: the list's own field (`match`, or `match_none` when it says none is needed), else its words.
+ *  A list with neither is silent, which is "not stated", never "no match". */
+function callMatch(r: FloridaRec, text: string, p: ReadyProfile): ReadyCheck {
+  const match = typeof r.match === "string" ? r.match : "";
+  if (match) return matchCheck(true, p, "", match);
+  const { says, plain } = matchWords(text, r.objectives ?? "");
+  const listed = r.match_none === true;
+  if (listed || says === "none") {
+    if (plain) return unstated(UNCLEAR);
+    return matchCheck(false, p, listed ? "The state's list says no match is required." : NONE_IN_TEXT);
+  }
+  if (plain && says === "mentioned") return matchCheck(true, p, "", "its text asks for a match");
+  return unstated(says === "silent" ? SILENT : UNCLEAR);
+}
 
 export function floridaReadiness(r: FloridaRec, p: ReadyProfile, lines: string[] = []): Readiness {
   const local = Boolean(r.level);
@@ -135,8 +176,7 @@ export function floridaReadiness(r: FloridaRec, p: ReadyProfile, lines: string[]
   if (call) {
     // California's portal says these outright: a required match, a loan, and how the money is paid.
     if (SAM.test(text)) checks.push(samCheck(p, "Its text mentions SAM.gov registration."));
-    const match = typeof r.match === "string" ? r.match : "";
-    checks.push(matchCheck(Boolean(match), p, "The state portal lists no matching funds requirement.", match));
+    checks.push(callMatch(r, text, p));
     if (r.loan === true) checks.push({ key: "loan", state: "no", label: "A loan, not a grant", note: "This is a loan you repay, not a grant." });
     const how = typeof r.funding_method === "string" ? r.funding_method : "";
     if (how.startsWith("Reimbursement")) checks.push(REIMBURSE_CHECK);
@@ -146,7 +186,7 @@ export function floridaReadiness(r: FloridaRec, p: ReadyProfile, lines: string[]
   } else {
     // A hand-kept program's required match (grantmatch/local.py) is a fact, so it beats what the words suggest.
     const match = typeof r.match === "string" ? r.match : "";
-    const found = fromText(text, p);
+    const found = fromText(text, p, r.objectives ?? "");
     checks.push(...(match ? [...found.filter((c) => c.key !== "match"), matchCheck(true, p, "", match)] : found));
   }
   checks.push(windowCheck(r, local, call, p.today ?? new Date()));

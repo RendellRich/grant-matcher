@@ -295,6 +295,7 @@ export interface FederalRec extends Stamps {
   id: string; number: string; title: string; agency_code: string; agency: string; status: string;
   close_date: string | null; award_ceiling: number | null; award_floor: number | null;
   cost_sharing: boolean; applicant_types: string[]; categories: string[]; category_labels: string[];
+  cost_sharing_unstated?: boolean; // set only when Grants.gov's record left cost sharing out; display only
   description: string; eligibility_text: string; url: string; _title?: string;
 }
 
@@ -601,6 +602,7 @@ export interface FloridaRec extends Stamps {
   source_note?: string; // something the program's page gets wrong or leaves unclear
   // Open calls only (grantmatch/california.py)
   state?: string; number?: string; status?: string; match?: string; loan?: boolean; funding_method?: string;
+  match_none?: boolean; // the list's own match field says none is needed; display only (ready.ts)
   loi?: boolean; updated?: string | null; _catalog?: string;
 }
 

@@ -126,8 +126,8 @@ describe("match and tax status on a hand-kept program's card", () => {
     expect(without.score - withIt.score).toBe(20);
   });
 
-  it("says nothing about a match the program doesn't mention", () => {
-    expect(checks(base).match).toBeUndefined();
+  it("says a match isn't stated when the program doesn't mention one", () => {
+    expect(checks(base).match).toMatchObject({ state: "check", label: "Match not stated" });
   });
 
   it("asks an organization without 501(c)(3) to check when the answer isn't a yes or no", () => {
