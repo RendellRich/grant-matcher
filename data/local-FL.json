@@ -1058,6 +1058,154 @@
       "web": "https://www.floridahealth.gov/wp-content/uploads/2026/08/FY-26-27-Florida-Cancer-Innovation-Fund-FOA.pdf",
       "checked": "2026-11-24",
       "contact": "FloridaCancerInnovationFund@flhealth.gov"
+    },
+    {
+      "slug": "miami-dade-community-grants",
+      "title": "Community Grants (CG) Program",
+      "agency": "Miami-Dade County Department of Cultural Affairs",
+      "level": "County",
+      "counties": [
+        "Miami-Dade"
+      ],
+      "objectives": "Small and large community-based cultural (dance, theater, music, visual arts) programs, projects and events, such as fairs, parades, neighborhood festivals and publications, in four quarterly rounds.",
+      "who": "Florida not-for-profit corporations with 501(c)(3) status, or units of local government; other 501(c) types are reviewed case by case. Individuals and unincorporated groups may apply for project grants through a 501(c)(3) fiscal agent. Schools, school support groups and organizations that get institutional support from Miami-Dade County are not eligible. Once per program year.",
+      "requires_501c3": null,
+      "match": "100% in cash or cash and in-kind, with cash at least half the request",
+      "application": "Apply on the department's online grants system (see the guidelines on the program page). First-time applicants must attend a Community Grants workshop and consult the program administrator at least a week before the deadline.",
+      "award": "Up to $7,500 for first-time applicants and one-time events; up to $10,000 for major recurring events with project budgets under $150,000; up to $15,000 for those with budgets of $150,000 or more and a two-year record.",
+      "opens": "2027-01-22",
+      "closes": "2027-02-18",
+      "deadlines": "Fourth quarter (projects first public July 1 to September 30, 2027): applications open January 22, 2027 and close February 18, 2027 at 11:59 p.m.; ask for access before 5 p.m. that day. The December 3, 2026 round is on hold.",
+      "subjects": "Arts; Culture; Festivals",
+      "url": "https://miamidadearts.org/node/12909",
+      "checked": "2026-11-25"
+    },
+    {
+      "slug": "miami-dade-cultural-advancement",
+      "title": "Cultural Advancement (ADV) Grants",
+      "agency": "Miami-Dade County Department of Cultural Affairs",
+      "level": "County",
+      "counties": [
+        "Miami-Dade"
+      ],
+      "objectives": "General operating support for a designated group of mid-size to large arts organizations, on a three-year cycle.",
+      "who": "Only organizations recommended for funding the year before or invited by Department staff. Needs 501(c)(3) status, a primary office in Miami-Dade, average budgets of at least $500,000, three years of programs and two paid full-time administrators. Organizations whose main mission is arts programs for or with children are not eligible.",
+      "requires_501c3": true,
+      "match": "100% in cash",
+      "application": "Apply on the department's online grants system (see the guidelines on the program page).",
+      "award": "Up to $160,000.",
+      "opens": "2026-02-02",
+      "closes": "2026-03-09",
+      "deadlines": "FY 2026-2027 applications closed March 9, 2026. The program runs on a three-year review cycle.",
+      "subjects": "Arts; Culture",
+      "url": "https://www.miamidadearts.org/cultural-advancement-adv-grants-program",
+      "checked": "2026-11-25",
+      "source_note": "By invitation: you can't apply unless you were recommended the year before or Department staff invited you."
+    },
+    {
+      "slug": "miami-dade-cultural-development",
+      "title": "Cultural Development (CDG) Grants",
+      "agency": "Miami-Dade County Department of Cultural Affairs",
+      "level": "County",
+      "counties": [
+        "Miami-Dade"
+      ],
+      "objectives": "General operating support for mid-sized arts organizations.",
+      "who": "A selected group of mid-size arts organizations: Florida not-for-profit corporations for at least three years with 501(c)(3) status, average budgets of at least $250,000, a primary office in Miami-Dade and a paid full-time administrator.",
+      "requires_501c3": true,
+      "match": "100% in cash",
+      "application": "Apply on the department's online grants system (see the guidelines on the program page).",
+      "award": "Up to $75,000.",
+      "opens": "2026-03-02",
+      "closes": "2026-04-09",
+      "deadlines": "FY 2026-2027 applications closed April 9, 2026. No next date is published.",
+      "subjects": "Arts; Culture",
+      "url": "https://www.miamidadearts.org/cultural-development-grants-cdg-program",
+      "checked": "2026-11-25"
+    },
+    {
+      "slug": "miami-dade-developing-arts",
+      "title": "Developing Arts in Neighborhoods (DAN) Grants",
+      "agency": "Miami-Dade County Department of Cultural Affairs",
+      "level": "County",
+      "counties": [
+        "Miami-Dade"
+      ],
+      "objectives": "Support for small and developing cultural groups with budgets under $100,000.",
+      "who": "Florida not-for-profit arts groups of at least two years, with budgets of $100,000 or less and a Community Grants award in the last two years. Unincorporated groups may apply through a 501(c)(3) fiscal agent. Organizations whose main mission is cultural programs for or with children, governments, colleges and schools are not eligible.",
+      "requires_501c3": null,
+      "match": "100% in cash",
+      "application": "Apply on the department's online grants system (see the guidelines on the program page).",
+      "award": "Up to $20,000.",
+      "opens": "2026-03-02",
+      "closes": "2026-04-09",
+      "deadlines": "FY 2026-2027 applications closed April 9, 2026. No next date is published.",
+      "subjects": "Arts; Culture",
+      "url": "https://www.miamidadearts.org/developing-arts-neighborhoods-dan-grants-program",
+      "checked": "2026-11-25"
+    },
+    {
+      "slug": "miami-dade-festivals-events",
+      "title": "Festivals and Special Events (FEST) Grants",
+      "agency": "Miami-Dade County Department of Cultural Affairs",
+      "level": "County",
+      "counties": [
+        "Miami-Dade"
+      ],
+      "objectives": "Major annual festivals and special events.",
+      "who": "Organizations funded in the first year of the current three-year cycle; a new organization that meets every requirement may apply in the later years after talking with the program administrator. Needs 501(c)(3) status (other 501(c) types case by case, with approval) or to be a local government, and a total operating budget of at least $150,000.",
+      "requires_501c3": null,
+      "match": "100% to 300% from private sources, by division",
+      "application": "Apply on the department's online grants system (see the guidelines on the program page).",
+      "award": "Up to $145,000, by category and division.",
+      "opens": "2026-02-02",
+      "closes": "2026-03-09",
+      "deadlines": "FY 2026-2027 applications closed March 9, 2026. No next date is published.",
+      "subjects": "Arts; Culture",
+      "url": "https://www.miamidadearts.org/festivals-and-special-events-fest-grants-program",
+      "checked": "2026-11-25"
+    },
+    {
+      "slug": "miami-dade-hannibal-cox",
+      "title": "Hannibal Cox, Jr. (HCJ) Cultural Grants",
+      "agency": "Miami-Dade County Department of Cultural Affairs",
+      "level": "County",
+      "counties": [
+        "Miami-Dade"
+      ],
+      "objectives": "Support for mid-sized arts, science and history organizations.",
+      "who": "Florida not-for-profit arts, science and history organizations of at least three years with 501(c)(3) status (other 501(c) types case by case), budgets of $100,000 to $250,000, a paid director and three years of year-round professional programs. Organizations whose main mission is cultural programs for or with children, and governments, are not eligible.",
+      "requires_501c3": null,
+      "match": "100% in cash",
+      "application": "Apply on the department's online grants system (see the guidelines on the program page).",
+      "award": "Up to $40,000.",
+      "opens": "2026-02-02",
+      "closes": "2026-03-12",
+      "deadlines": "FY 2026-2027 applications closed March 12, 2026. No next date is published.",
+      "subjects": "Arts; Culture",
+      "url": "https://www.miamidadearts.org/hannibal-cox-jr-hcj-cultural-grants-program",
+      "checked": "2026-11-25"
+    },
+    {
+      "slug": "broward-csc-sponsorships",
+      "title": "Sponsorships",
+      "agency": "Children's Services Council of Broward County",
+      "level": "Children's services council",
+      "counties": [
+        "Broward"
+      ],
+      "objectives": "Sponsorship of events that support Broward children and families: service or cultural fairs, conferences, training scholarships for children, workshops for child-serving professionals and large community events. Not fundraisers, award banquets, concerts or school field trips.",
+      "who": "Organizations registered as 501(c)(3) charities, or governments, working in Broward County for children and families. Individuals are not eligible.",
+      "requires_501c3": true,
+      "application": "Use the Apply here link on the page. Send a signed letter, the activity and its budget, a W-9 and the IRS determination letter.",
+      "award": "Up to $2,000 a request (high-traffic events at the Council's discretion), one award a fiscal year. The Council will not be an event's only funder.",
+      "opens": null,
+      "closes": null,
+      "rolling": true,
+      "deadlines": "Any time: send at least 60 days, and no more than 180 days, before the event. Reviewed first come, first served.",
+      "subjects": "Children; Families",
+      "url": "https://www.cscbroward.org/categories/funding-opportunity/sponsorships/",
+      "checked": "2026-11-25"
     }
   ]
 }

@@ -250,14 +250,38 @@ def test_every_county_and_city_file_is_clean():
                 assert not cycles.blocked_by_terms(url), url
 
 
-def test_the_held_florida_entries_are_ready_but_not_loaded():
+def test_the_seven_rechecked_florida_entries_are_loaded_with_what_their_guidelines_say():
+    import re
+    from datetime import date
     from pathlib import Path
-    pending = local.load(Path(local.LOCAL) / "pending" / "local-FL.json")
-    assert len(pending) == 7
-    loaded = {r["id"] for r in local.load()}
-    assert not loaded & {r["id"] for r in pending}
-    assert not any(c for c in ("Miami-Dade", "Broward")
-                   for e in json.loads(local.file_for("FL").read_text(encoding="utf-8"))["programs"] if c in e["counties"])
+
+    from grantmatch import cycles, rank_more
+
+    assert not (Path(local.LOCAL) / "pending").exists()
+    records = {r["id"]: r for r in local.load()}
+    new = {i: r for i, r in records.items() if "miami-dade-" in i or i == "local-broward-csc-sponsorships"}
+    assert len(new) == 7
+    assert {i: r["requires_501c3"] for i, r in new.items()} == {
+        "local-miami-dade-community-grants": None,        # a 501(c)(3) fiscal agent or another 501(c) type will do
+        "local-miami-dade-cultural-advancement": True,
+        "local-miami-dade-cultural-development": True,
+        "local-miami-dade-developing-arts": None,         # not-for-profit, or through a fiscal agent
+        "local-miami-dade-festivals-events": None,        # other 501(c) types case by case
+        "local-miami-dade-hannibal-cox": None,            # other 501(c) types case by case
+        "local-broward-csc-sponsorships": True,
+    }
+    assert all(r["match"].startswith("100%") for i, r in new.items() if "miami-dade-" in i)
+    assert "match" not in new["local-broward-csc-sponsorships"]  # its pages don't state one
+    cg = new["local-miami-dade-community-grants"]
+    assert (cg["opens"], cg["closes"]) == ("2027-01-22", "2027-02-18")  # not open on the day it was checked
+    day = date(2026, 11, 25)
+    assert not rank_more.between_rounds(cg, day) and not rank_more.between_rounds(new["local-broward-csc-sponsorships"], day)
+    assert rank_more.between_rounds(new["local-miami-dade-cultural-advancement"], day)
+    email = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+    for r in new.values():
+        assert r["checked"] == "2026-11-25" and r["places"] and r["url"].startswith("https://")
+        assert not cycles.blocked_by_terms(r["url"])
+        assert not [v for v in r.values() if isinstance(v, str) and (email.search(v) or "\u2014" in v)], r["id"]
 
 
 def test_no_florida_slug_reads_as_another_states_key():
