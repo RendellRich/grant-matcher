@@ -1,14 +1,14 @@
 // "Can we apply?": the handful of facts that stop a small nonprofit from applying, checked against its profile.
 // Each source says different things, so each gets its own reader; a check is left out when the record doesn't say
 // (except a hand-kept program's tax status and a program's matching funds, below, which must never read as a clean
-// yes: silence about a match shows "Match not stated").
+// yes: where we can't tell about a match it shows "Match not stated").
 // It never changes a score: the scorer's cautions already do that. The card shows these instead of the cautions
 // they repeat (see `covered`), and the cautions stay on the entry for the filters and the CSV.
 import type { FederalExtra, FederalRec, FloridaRec, FoundationOut, Profile } from "./score";
 
 export type ReadyState = "ok" | "check" | "no";
 export interface ReadyCheck {
-  key: "501c3" | "sam" | "match" | "pay" | "loan" | "open";
+  key: "501c3" | "sam" | "match" | "pay" | "loan" | "invite" | "open";
   state: ReadyState;
   label: string; // a few words for the card
   note: string; // one sentence for the details
@@ -24,11 +24,16 @@ const ymd = (s?: string | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Dat
 const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 
 // Words in a program's own text. "No match required" is said only for words that say none is needed. A line about a
-// cash match alone doesn't (in-kind may still be asked), and neither does text that says both.
+// cash match alone doesn't (in-kind may still be asked), and neither does text that also asks for a match, or a line
+// limited by "unless", "except" or "for ...". grantmatch/match_words.py is the same reading in Python; change a
+// pattern in both (tests/fixtures/match-statements.json holds the shared cases).
 const NONE_NEEDED = /\bno (?:local |minimum )?match(?:ing)?(?: funds?)?(?: is| are)? required\b|\bno match(?:ing)?(?: fund)? requirements?\b|\bno cost[- ]shar(?:e|ing)(?: or match(?:ing(?: funds?)?)?)?(?: is| are)? required\b|\b(?:match(?:ing(?: funds?)?)?|cost[- ]shar(?:e|ing))(?: is| are)? not (?:required|a requirement)\b|\bdo(?:es)? not require (?:a |any )?(?:local )?(?:match(?:ing(?: funds?)?)?|cost[- ]shar(?:e|ing))\b/gi;
+// A "none needed" line that only covers some cases.
+const LIMITED = new RegExp(`(?:${NONE_NEEDED.source})[\\s,]+(?:unless|except|for)\\b`, "i");
+// Words that ask someone for a match, in the ways the plain patterns miss.
+const ASKS = /\b(?:must|shall)(?: \w+)? be matched\b(?! (?:to|with (?:a |an |the )?(?:mentors?|volunteers?))\b)|\bmatched (?:dollar[- ]for[- ]dollar|on a)\b|\brequired to (?:\w+ )?match\b|\brequir(?:e|es|ed|ing) (?:a |an )?(?:local |cash |in-kind )?matching\b|\bmatching ratios?\b|\bmatch (?:rates?|ratios?|requirements?)\b|\brequired (?:cash |local |in-kind )?match\b|\bmatch(?:es)? required\b|\bfor matching purposes\b|\b(?:company|funding) match(?:es)?\b|\b\d+ ?: ?\d+(?: (?:cash|in-kind|local|funding|or|and))* match|\b\d+[- ]to[- ]\d+ (?:cash |funding )?match|\bpercent(?:age)? (?:cash |local )?match|\bmust (?:\w+ )?(?:provide|contribute)\b[^.]{0,40}\bmatch/i;
 const PLAIN_MATCH = /\bmatch (?:is |are )?required\b|\brequires? (?:a )?(?:\d{1,3} ?% )?(?:cash |local )?match\b|\b\d{1,3} ?% (?:cash |local )?match\b/i;
 const CASH_ONLY = /\bno cash match/i;
-const MENTION = /\bmatching (?:funds?|funding|requirement|contribution|grant)|\b(?:cash|in-kind|local)[- ]match|\bcost[- ]shar/i;
 const MATCH = /\b(?:cash|in-kind|local|dollar-for-dollar|\d{1,3} ?%)\s+match\b|\bmatching (?:funds?|requirement|contribution)s?\b|\bmatch (?:is |are )?required\b|\brequires? (?:a )?(?:cash )?match\b|\bcost[- ]shar(?:e|ing)\b/i;
 const REIMBURSE = /\breimburs(?:e|ed|es|ing|ement|ements|able)\b/i;
 const ADVANCE = /\b(?:paid|payment|funds?) (?:in )?advance\b|\badvance payments?\b/i;
@@ -71,17 +76,23 @@ function matchCheck(required: boolean, p: ReadyProfile, none: string, detail = "
 }
 
 const unstated = (note: string): ReadyCheck => ({ key: "match", state: "check", label: "Match not stated", note });
-const SILENT = "Nothing read from this program says whether matching funds are required; ask before you apply.";
-const UNCLEAR = "It mentions matching funds without saying plainly whether you must provide them; read its rules before you apply.";
+// One line for every "not stated": the patterns can't prove a program says nothing, so it doesn't claim that.
+const UNKNOWN = "We couldn't tell whether matching funds are required; read the notice.";
 
-/** What a program's words say about matching funds. `purpose` (its objectives) only tells silence from a mention. */
-function matchWords(text: string, purpose: string): { says: "none" | "mentioned" | "unclear" | "silent"; plain: boolean } {
+export interface MatchWords { says: "none" | "mentioned" | "unclear" | "silent"; plain: boolean; asks: boolean }
+
+/** What a program's words say about matching funds. `purpose` (its objectives) can only turn silence or "none" into
+ *  unclear. "silent" means no pattern saw a match asked for. */
+export function matchWords(text: string, purpose = ""): MatchWords {
   const rest = text.replace(NONE_NEEDED, " ");
   const plain = PLAIN_MATCH.test(rest) && !CASH_ONLY.test(text);
-  if (rest !== text) return { says: PLAIN_MATCH.test(rest) ? "unclear" : "none", plain };
-  if (CASH_ONLY.test(text)) return { says: "unclear", plain };
-  if (MATCH.test(text)) return { says: "mentioned", plain };
-  return { says: MENTION.test(`${text}\n${purpose}`) ? "unclear" : "silent", plain };
+  const asks = ASKS.test(`${rest}\n${purpose.replace(NONE_NEEDED, " ")}`);
+  let says: MatchWords["says"];
+  if (rest !== text) says = asks || PLAIN_MATCH.test(rest) || LIMITED.test(text) ? "unclear" : "none";
+  else if (CASH_ONLY.test(text)) says = "unclear";
+  else if (MATCH.test(text)) says = "mentioned";
+  else says = asks ? "unclear" : "silent";
+  return { says, plain, asks };
 }
 
 const NONE_IN_TEXT = "Its text says no matching funds are required.";
@@ -98,7 +109,7 @@ function fromText(text: string, p: ReadyProfile, purpose: string): ReadyCheck[] 
   const { says } = matchWords(text, purpose);
   if (says === "none") out.push(matchCheck(false, p, NONE_IN_TEXT));
   else if (says === "mentioned") out.push(matchCheck(true, p, "", "its text mentions a match"));
-  else out.push(unstated(says === "unclear" ? UNCLEAR : SILENT));
+  else out.push(unstated(UNKNOWN));
   if (REIMBURSE.test(text)) out.push(REIMBURSE_CHECK);
   else if (ADVANCE.test(text)) out.push({ key: "pay", state: "ok", label: "Paid in advance", note: "Its text says funds are paid in advance." });
   return out;
@@ -154,14 +165,14 @@ export function federalReadiness(r: FederalRec & Partial<FederalExtra>, p: Ready
 function callMatch(r: FloridaRec, text: string, p: ReadyProfile): ReadyCheck {
   const match = typeof r.match === "string" ? r.match : "";
   if (match) return matchCheck(true, p, "", match);
-  const { says, plain } = matchWords(text, r.objectives ?? "");
+  const { says, plain, asks } = matchWords(text, r.objectives ?? "");
   const listed = r.match_none === true;
   if (listed || says === "none") {
-    if (plain) return unstated(UNCLEAR);
+    if (plain || asks || LIMITED.test(text)) return unstated(UNKNOWN);
     return matchCheck(false, p, listed ? "The state's list says no match is required." : NONE_IN_TEXT);
   }
   if (plain && says === "mentioned") return matchCheck(true, p, "", "its text asks for a match");
-  return unstated(says === "silent" ? SILENT : UNCLEAR);
+  return unstated(UNKNOWN);
 }
 
 export function floridaReadiness(r: FloridaRec, p: ReadyProfile, lines: string[] = []): Readiness {
@@ -188,6 +199,10 @@ export function floridaReadiness(r: FloridaRec, p: ReadyProfile, lines: string[]
     const match = typeof r.match === "string" ? r.match : "";
     const found = fromText(text, p, r.objectives ?? "");
     checks.push(...(match ? [...found.filter((c) => c.key !== "match"), matchCheck(true, p, "", match)] : found));
+  }
+  // A hand-kept program only invited or earlier recipients may apply to (grantmatch/local.py).
+  if (r.by_invitation === true) {
+    checks.push({ key: "invite", state: "check", label: "By invitation", note: "Only organizations that were invited, or recommended for funding before, may apply; read Who can apply." });
   }
   checks.push(windowCheck(r, local, call, p.today ?? new Date()));
   const status = ["Taking applications now", "Taking applications with no set deadline", "Applications open ", "Between rounds:"];

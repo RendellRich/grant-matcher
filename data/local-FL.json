@@ -1082,6 +1082,7 @@
     },
     {
       "slug": "miami-dade-cultural-advancement",
+      "by_invitation": true,
       "title": "Cultural Advancement (ADV) Grants",
       "agency": "Miami-Dade County Department of Cultural Affairs",
       "level": "County",

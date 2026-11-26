@@ -603,6 +603,7 @@ export interface FloridaRec extends Stamps {
   // Open calls only (grantmatch/california.py)
   state?: string; number?: string; status?: string; match?: string; loan?: boolean; funding_method?: string;
   match_none?: boolean; // the list's own match field says none is needed; display only (ready.ts)
+  by_invitation?: boolean; // a hand-kept program open only by invitation or prior award; display only (ready.ts)
   loi?: boolean; updated?: string | null; _catalog?: string;
 }
 

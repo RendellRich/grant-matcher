@@ -110,6 +110,8 @@ def check(entry: dict, counties: dict[str, list[str]], state: str = "FL") -> lis
         problems.append("match must say how much, for example 25%")
     if "rolling" in entry and not isinstance(entry["rolling"], bool):
         problems.append("rolling must be true or false")
+    if "by_invitation" in entry and not isinstance(entry["by_invitation"], bool):
+        problems.append("by_invitation must be true or false")
     if entry.get("rolling") and entry.get("closes"):
         problems.append("rolling programs have no closes date")
     for k in ("url", "web"):
@@ -177,7 +179,7 @@ def to_record(entry: dict, counties: dict[str, list[str]], fiscal_year: str = ""
         "rolling": bool(entry.get("rolling", False)),
         "checked": entry["checked"],
     }
-    for key in ("match", "source_note"):  # only when there is one, so other records stay as they were
+    for key in ("match", "source_note", "by_invitation"):  # only when set, so other records stay as they were
         if entry.get(key):
             record[key] = entry[key]
     return record

@@ -299,10 +299,14 @@ def keep_published(out: Path, skipped_out: Path | None = None) -> int:
     if not payload.get("programs") or not payload.get("fetched_at"):
         raise RuntimeError("The published illinois.json.gz holds no calls or no date; leaving the release as it is")
     skipped = published("skipped-illinois.json.gz") if skipped_out is not None else None
+    if skipped is not None:  # a cut-off or wrong file must not replace the release's copy
+        listed = json.loads(gzip.decompress(skipped))
+        if not (isinstance(listed, dict) and isinstance(listed.get("rows"), list)):
+            raise RuntimeError("The published skipped-illinois.json.gz isn't a skipped list; leaving the release as it is")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(raw)
     if skipped_out is not None:
-        if skipped:
+        if skipped is not None:
             skipped_out.parent.mkdir(parents=True, exist_ok=True)
             skipped_out.write_bytes(skipped)
         else:  # none was ever published, so an empty list replaces nothing
