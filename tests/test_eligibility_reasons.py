@@ -3,7 +3,7 @@ through the TypeScript scorer in web/test/eligibility.test.ts, so the two stay i
 import json
 from pathlib import Path
 
-from grantmatch import districtofcolumbia, minnesota, newjersey, newyork, ohio, westvirginia
+from grantmatch import districtofcolumbia, maryland, minnesota, newjersey, newyork, ohio, westvirginia
 from grantmatch.match import Profile
 from grantmatch.rank_more import ELIGIBILITY_UNSTATED, score_florida
 
@@ -27,7 +27,7 @@ def test_each_case_gets_the_eligibility_reason_it_should():
 
 
 def test_every_adapters_blank_eligibility_wording_is_recognized():
-    texts = [newyork.WHO, minnesota.WHO, districtofcolumbia.WHO, newjersey.WHO, westvirginia.who_can_apply("")[1],
+    texts = [maryland.WHO, newyork.WHO, minnesota.WHO, districtofcolumbia.WHO, newjersey.WHO, westvirginia.who_can_apply("")[1],
              ohio.normalize({"Opportunity": {"OpportunityTitle": "A"}})["applicant_types"]]
     for text in texts:
         assert ELIGIBILITY_UNSTATED.search(text), text

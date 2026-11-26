@@ -15,6 +15,7 @@ The page watch writes its own report and readings first. If the freshness check 
 | Florida catalog | `florida.json.gz` `fetched_at` | `refresh-florida.yml`, weekly | 10 days |
 | West Virginia, New Jersey | each state file's `fetched_at` | `refresh-states.yml`, weekly | 10 days |
 | New York, District of Columbia, Minnesota | the snapshot's `fetched_at` | no job yet | 14 days |
+| Arkansas, Maryland, North Dakota, Wyoming | each state file's `fetched_at` | `refresh-states.yml` once on main (the registry says no refresh job until its first run) | 14 days |
 | Funder website check | `cycles.json.gz` `checked_at` | `refresh-websites.yml`, weekly | 10 days |
 | Private and community foundations | the oldest state file's `fetched_at` | `refresh-foundations.yml`, monthly | 45 days |
 | Foundation coverage numbers | `coverage.json` `made_at` | `refresh-foundations.yml`, monthly | 45 days |
@@ -62,7 +63,7 @@ A company program's page that didn't open is noted in the card's details. The fi
 
 The report is the second part of the weekly `page-watch` issue. A finding is listed in full the first time it appears; after that it is only counted under "Still open from earlier reports" (old sources are also named there), and of the freshness findings only new ones count toward posting a comment. So work from the report that first listed it. The keys of what has been reported are in `watch-state.json.gz` under `_freshness`. The source table shows only sources that are new or changed.
 
-1. **Data that is old or missing:** open that source's refresh job and see why it didn't run or publish. For New York, DC and Minnesota, remake the snapshot (`python -m grantmatch.newyork --out data/newyork.json.gz`, and the same for the others) or add the proposed job below.
+1. **Data that is old or missing:** open that source's refresh job and see why it didn't run or publish. For New York, DC and Minnesota, remake the snapshot (`python -m grantmatch.newyork --out data/newyork.json.gz`, and the same for the others) or add the proposed job below. For Arkansas, Maryland, North Dakota and Wyoming, a run that fails usually means the page changed shape: read the page, update the adapter.
 2. **Dead links:** open the page in a browser. If it moved, update the entry's `url` in `data/local-<ST>.json` or `data/corporate.json`, or the adapter and the registry's `pages` for a state. If a program is gone, remove its entry. A state call with a dead link is the state's list to fix; `hide` it in `data/skip-review.csv` if it shouldn't show.
 3. **Closing date passed, no next round entered:** read the program's page. Enter the next window, mark it `rolling`, leave it (it ranks as "Between rounds" when it comes round each year), or remove it. It is listed once, then counted until its dates change.
 4. **Didn't open once:** nothing yet.
@@ -96,6 +97,10 @@ Then:
 4. Update the rows in this page, the README and [state-coverage.md](state-coverage.md) that say New York, DC and Minnesota have no job or that the five states are not in the skipped grants report.
 
 Until step 2, the registry says those three have no refresh job, which stays true. The tests were run on November 25 as they would stand after step 1 and after steps 2 and 3, and passed.
+
+## Four web-page states added November 26
+
+`grantmatch/refresh_states.py` now also runs Arkansas, Maryland, North Dakota and Wyoming (their registry entries have no refresh set, which the driver includes). After their first successful run on main, set `"refresh": "weekly"` for them, and once the proposed skipped report is copied in, remove their `"in_skip_report": False`. The minutes they add are estimated in [state-coverage.md](state-coverage.md) section (d): about 4 to 15 billed minutes a month, mostly one more minute on each weekly refresh. The table below does not include them.
 
 ## Actions minutes
 

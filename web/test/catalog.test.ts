@@ -135,6 +135,26 @@ describe("the line above a state's open calls", () => {
     expect(callsTally("MN", "Minnesota", calls(7, 0, 6), { source }, "")).toContain("(two agencies, not a statewide list)");
   });
 
+  it("labels every one-agency or short list as partial wherever the page names the state", () => {
+    const source = "Maryland Department of Commerce State Grants table only (a short list, not a statewide list)";
+    expect(callsTally("MD", "Maryland", calls(0, 4), { source, who_listed: false }, "")).toContain("(a short list, not a statewide list)");
+    const app = readFileSync(new URL("../src/app.tsx", import.meta.url), "utf8");
+    const about = readFileSync(new URL("../src/coverage.tsx", import.meta.url), "utf8");
+    const partial: [string, string, string][] = [
+      ["AR", "Arkansas", "Arkansas data from the Arkansas Arts Council's art grants page only."],
+      ["MD", "Maryland", "Maryland data from the State Grants table on the Department of Commerce's nonprofit page only, a short list."],
+      ["ND", "North Dakota", "North Dakota data from the Council on the Arts' grant pages only."],
+      ["WY", "Wyoming", "Wyoming data from the Wyoming Arts Council's grant pages only."],
+    ];
+    for (const [code, name, footer] of partial) {
+      const note = app.slice(app.indexOf(`{state === "${code}" ? (`));
+      expect(note.slice(0, 400), code).toContain(`<h3>For ${name} state grants</h3>`);
+      expect(note.slice(0, 500), code).toContain("This isn't a statewide list. Only the ");
+      expect(app, code).toContain(footer);
+      expect(about, code).toMatch(new RegExp(`${name} \\((?:arts council only|a short list)\\)`));
+    }
+  });
+
   it("doesn't call the District a state or say its list names nonprofits", () => {
     const t = callsTally("DC", "District of Columbia", calls(0, 10), { source: "District Grants Clearinghouse (DC.gov, CC BY 3.0)", who_listed: false }, "Nov 25");
     expect(t).toBe("10 of 10 open District of Columbia grant calls are shown, from the District Grants Clearinghouse (DC.gov, CC BY 3.0), updated Nov 25. The list doesn't say who may apply, so read each notice.");

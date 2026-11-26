@@ -9,7 +9,7 @@ import pytest
 from grantmatch import export_web, refresh_states, skipped, states
 
 ROOT = export_web.LOCAL.parent
-CODES = ["DC", "MN", "NJ", "NY", "WV"]
+CODES = ["AR", "DC", "MD", "MN", "NJ", "NY", "ND", "WV", "WY"]   # the registry's order
 
 
 def test_the_driver_runs_every_built_state_that_has_no_daily_job():
@@ -43,13 +43,13 @@ def test_one_state_failing_keeps_its_file_and_does_not_stop_the_others(tmp_path,
     (tmp_path / "minnesota.json.gz").write_bytes(b"last week")
     fake_adapters(monkeypatch, broken={"MN"}, silent={"NJ"})
     done, failed = refresh_states.refresh(tmp_path, allowed=lambda url: None)
-    assert done == ["DC", "NY", "WV"] and sorted(failed) == ["MN", "NJ"]
+    assert done == ["AR", "DC", "MD", "NY", "ND", "WV", "WY"] and sorted(failed) == ["MN", "NJ"]
     assert "page changed shape" in failed["MN"] and "no data file" in failed["NJ"]
     assert (tmp_path / "minnesota.json.gz").read_bytes() == b"last week"
     assert not (tmp_path / "newjersey.json.gz").exists() and not (tmp_path / "skipped-minnesota.json.gz").exists()
     assert (tmp_path / "newyork.json.gz").read_bytes() == b"new NY"
     assert (tmp_path / "skipped-westvirginia.json.gz").exists()
-    assert (tmp_path / "refreshed.txt").read_bytes() == b"districtofcolumbia\nnewyork\nwestvirginia\n"
+    assert (tmp_path / "refreshed.txt").read_text(encoding="utf-8").split() == [name(c) for c in done]
     assert not list(tmp_path.glob(".new-*"))
 
 
@@ -62,7 +62,7 @@ def test_a_page_off_limits_is_not_read(tmp_path, monkeypatch):
         return "robots.txt keeps ClaudeBot out" if "dps.mn.gov" in url else None
 
     done, failed = refresh_states.refresh(tmp_path, allowed=allowed)
-    assert done == ["DC", "NJ", "NY", "WV"] and "ClaudeBot" in failed["MN"]
+    assert done == [c for c in CODES if c != "MN"] and "ClaudeBot" in failed["MN"]
     assert not (tmp_path / "minnesota.json.gz").exists()
     for code in CODES:  # every address an adapter reads is checked first
         module = importlib.import_module(f"grantmatch.{states.STATES[code]['module']}")

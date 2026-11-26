@@ -19,9 +19,9 @@ def test_state_programs_come_from_the_registry_and_keep_the_existing_states_as_t
     assert progs["IA"] == {"file": "iowa", "source": "IowaGrants.gov", "catalog": "IowaGrants"}
     assert progs["OH"] == {"file": "ohio", "source": "Ohio Grants Partnership", "catalog": "Ohio"}
     assert progs["WA"] == {"file": "washington", "source": "FundHubWA (Washington Department of Commerce)", "catalog": "FundHubWA"}
-    assert set(progs) == {"CA", "DC", "IL", "IA", "MN", "NJ", "NY", "OH", "WA", "WV"}
-    assert [c for c, s in progs.items() if "who_listed" in s] == ["DC", "NJ"]   # lists with no eligibility field
-    assert progs["DC"]["who_listed"] is progs["NJ"]["who_listed"] is False
+    assert set(progs) == {"AR", "CA", "DC", "IL", "IA", "MD", "MN", "ND", "NJ", "NY", "OH", "WA", "WV", "WY"}
+    assert [c for c, s in progs.items() if "who_listed" in s] == ["DC", "MD", "NJ"]   # lists with no eligibility field
+    assert progs["DC"]["who_listed"] is progs["MD"]["who_listed"] is progs["NJ"]["who_listed"] is False
     assert export_web.STATE_PROGRAMS is progs
 
 
@@ -50,7 +50,7 @@ def test_a_state_not_yet_in_the_release_ships_from_its_snapshot_in_data(monkeypa
 
     monkeypatch.setattr(export_web, "LOCAL_ONLY", False)
     monkeypatch.setattr(export_web.requests, "get", lambda url, timeout=None: Missing())
-    for code in ("WV", "NJ", "NY", "DC", "MN"):
+    for code in ("WV", "NJ", "NY", "DC", "MN", "AR", "MD", "ND", "WY"):
         name = states.STATE_PROGRAMS[code]["file"]
         raw = export_web.fetch(f"{name}.json.gz")
         assert raw == (export_web.LOCAL / f"{name}.json.gz").read_bytes(), code
@@ -67,7 +67,8 @@ def test_the_committed_snapshots_have_the_same_record_fields_as_ohio():
     from grantmatch import ohio
     want = set(ohio.normalize(item()))
     email = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-    for name in ("westvirginia", "newjersey", "newyork", "districtofcolumbia", "minnesota"):
+    for name in ("westvirginia", "newjersey", "newyork", "districtofcolumbia", "minnesota", "arkansas", "maryland",
+                 "northdakota", "wyoming"):
         payload = json.loads(gzip.decompress((export_web.LOCAL / f"{name}.json.gz").read_bytes()))
         assert payload["programs"] and payload["count"] == len(payload["programs"]), name
         assert len({r["id"] for r in payload["programs"]}) == len(payload["programs"]), name
@@ -137,13 +138,14 @@ def test_the_export_drops_closed_snapshot_calls_but_not_florida_or_hand_kept_pro
 
 def test_every_state_has_the_status_the_research_established():
     by = {st: {c for c, s in states.STATES.items() if s["status"] == st} for st in states.STATUSES}
-    assert by["built"] == {"CA", "DC", "FL", "IA", "IL", "MN", "NJ", "NY", "OH", "WA", "WV"}
+    assert by["built"] == {"AR", "CA", "DC", "FL", "IA", "IL", "MD", "MN", "ND", "NJ", "NY", "OH", "WA", "WV", "WY"}
     # robots.txt, terms or a refusal to scripts keep the pages out
     assert by["blocked"] == {"AL", "CO", "IN", "LA", "ME", "NC", "NE", "NH", "NM", "NV", "RI", "TX", "VT", "WI"}
     assert by["unchecked"] == {"MA", "MS"}   # the two the research couldn't establish
     # "none" only where nowhere the research looked posts current state calls
     assert by["none"] == {"AZ", "DE", "OR"} and by["decide"] == {"AK", "HI", "PA"} and by["next"] == set()
-    assert len(by["html"]) == 18 and {"KS", "MD", "MI", "MO", "MT", "ND", "TN"} <= by["html"]
+    # of the 18 web-page states read on 2026-11-26, four had pages that could be built (docs/state-coverage.md)
+    assert by["html"] == {"CT", "GA", "ID", "KS", "KY", "MI", "MO", "MT", "OK", "SC", "SD", "TN", "UT", "VA"}
 
 
 def test_the_coverage_page_counts_and_statuses_match_the_registry():
@@ -152,7 +154,7 @@ def test_the_coverage_page_counts_and_statuses_match_the_registry():
     assert (f"{n['decide']} left out by decision, {n['html']} HTML only, {n['blocked']} blocked, "
             f"{n['none']} none found, {n['unchecked']} unchecked. Total {len(states.STATES)}.") in doc
     label = {"html": "HTML only", "unchecked": "unchecked"}
-    for code in ("MD", "MA", "MI", "MO", "MT", "ND"):
+    for code in ("MA", "MI", "MO", "MT"):
         assert f"| {STATE_NAMES[code]} | {label[states.STATES[code]['status']]} |" in doc, code
 
 
@@ -180,6 +182,8 @@ def test_the_registry_never_claims_a_refresh_job_that_does_not_run():
             assert states.STATES[code]["refresh"] is None, code
     for code in ("WV", "NJ"):
         assert states.STATES[code]["refresh"] == "weekly", code
+    for code in ("AR", "MD", "ND", "WY"):   # no run of theirs yet (docs/freshness.md)
+        assert states.STATES[code]["refresh"] is None and states.STATES[code]["in_skip_report"] is False, code
 
 
 def test_the_friday_report_only_expects_files_it_downloads():

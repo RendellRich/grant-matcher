@@ -1363,6 +1363,42 @@ function Checklist({ state, local }: { state: string; local: boolean }) {
           </ul>
         </>
       ) : null}
+      {state === "AR" ? (
+        <>
+          <h3>For Arkansas state grants</h3>
+          <ul>
+            <li>This isn't a statewide list. Only the Arkansas Arts Council's art grants page is read, one agency; other Arkansas agencies post calls on their own pages.</li>
+            <li>General Operating Support, the Arts in Education major grants and Arts on Tour are read. Mini grants and artist grants aren't. New General Operating Support applicants send a letter of intent by an earlier date; "How to apply" on the card says so.</li>
+          </ul>
+        </>
+      ) : null}
+      {state === "MD" ? (
+        <>
+          <h3>For Maryland state grants</h3>
+          <ul>
+            <li>This isn't a statewide list. Only the short State Grants table on the Maryland Department of Commerce's nonprofit page is read; many state grants aren't on it.</li>
+            <li>The table gives each call's agency, name, link and due date, but not who may apply or what it pays, so read the notice on each one before you start.</li>
+          </ul>
+        </>
+      ) : null}
+      {state === "ND" ? (
+        <>
+          <h3>For North Dakota state grants</h3>
+          <ul>
+            <li>This isn't a statewide list. Only the North Dakota Council on the Arts' grant pages are read, one agency; other North Dakota agencies post calls on their own pages.</li>
+            <li>Some grants must be applied for at least six weeks before your project starts. The date on the card is when applications close for the year.</li>
+          </ul>
+        </>
+      ) : null}
+      {state === "WY" ? (
+        <>
+          <h3>For Wyoming state grants</h3>
+          <ul>
+            <li>This isn't a statewide list. Only the Wyoming Arts Council's grant pages are read, one agency; other Wyoming agencies post calls on their own pages.</li>
+            <li>A call may not be open yet. "How to apply" on the card gives the date applications open.</li>
+          </ul>
+        </>
+      ) : null}
       {local ? (
         <>
           <h3>For county and city programs</h3>
@@ -1387,7 +1423,7 @@ function Footer({ coverage, funders }: { coverage: boolean; funders: boolean }) 
     <footer class="footer">
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page, with the date each was checked. A weekly job rereads the pages it may read and flags changes for a person; the rest are left to be checked by hand. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities. New York data from the Statewide Financial System's public search for grant opportunities. District of Columbia data from the District Grants Clearinghouse on DC.gov, licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0<span class="sr-only"> (opens in a new tab)</span></a> and reformatted. Minnesota data from the Department of Health's and the Office of Justice Programs' grant pages only. County and city programs outside Florida are entered by hand from each program's own page, for some counties and cities only.</p>
+      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page, with the date each was checked. A weekly job rereads the pages it may read and flags changes for a person; the rest are left to be checked by hand. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities. New York data from the Statewide Financial System's public search for grant opportunities. District of Columbia data from the District Grants Clearinghouse on DC.gov, licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0<span class="sr-only"> (opens in a new tab)</span></a> and reformatted. Minnesota data from the Department of Health's and the Office of Justice Programs' grant pages only. Arkansas data from the Arkansas Arts Council's art grants page only. Maryland data from the State Grants table on the Department of Commerce's nonprofit page only, a short list. North Dakota data from the Council on the Arts' grant pages only. Wyoming data from the Wyoming Arts Council's grant pages only. County and city programs outside Florida are entered by hand from each program's own page, for some counties and cities only.</p>
       {funders ? <p>Local funders to ask come from HUD's formula allocations and the Census Bureau's Government Units listing, both U.S. government data. They are governments that get HUD money, not open grant calls.</p> : null}
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there. Your shortlist stays in this browser, unless you have Pro and save your profile and shortlist to your account.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>

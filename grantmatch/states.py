@@ -31,6 +31,9 @@ New Jersey share .github/workflows/refresh-states.yml, weekly. Set "in_skip_repo
 skipped-report.yml downloads the state's skipped file, so the Friday report doesn't call it missing. The state tab, the exports and the skipped report need no change; add the state's "For <state> state grants" note
 and its sentence in the footer (web/src/app.tsx).
 
+A state read from web pages can use grantmatch/webpages.py (the crawling rule, record fields and dropped rows), as
+arkansas.py, maryland.py, northdakota.py and wyoming.py do.
+
 To pause a built state's reads, give its entry "paused": {"why": ..., "hosts": [...]}. Nothing then asks those hosts for
 anything: the adapter republishes its last published files unchanged (grantmatch/illinois.py), the page watch, the
 freshness check and the website check treat the hosts as off limits without a request (cycles.off_limits), the data
@@ -48,7 +51,10 @@ STATES: dict[str, dict] = {
     "AL": {"status": "blocked", "source": "adeca.alabama.gov (its robots.txt disallows ClaudeBot)"},
     "AK": {"status": "decide", "source": "State of Alaska Online Public Notices (RSS of every notice; a few are grants)"},
     "AZ": {"status": "none", "source": "grants.az.gov points to Euna Grants (eCivis), behind a subscriber login"},
-    "AR": {"status": "html", "source": "Arkansas Arts Council and Health Department grant pages"},
+    "AR": {"status": "built", "source": "Arkansas Arts Council art grants page only (one agency, not a statewide list)",
+           "file": "arkansas", "catalog": "Arkansas, 1 agency", "module": "arkansas",
+           "report": "Arkansas Arts Council", "refresh": None, "in_skip_report": False,
+           "pages": ["https://www.arkansasheritage.com/funding/art-grants"]},
     "CA": {"status": "built", "source": "California Grants Portal", "file": "california", "catalog": "Grants Portal",
            "module": "california", "report": "California Grants Portal", "refresh": "daily",
            "pages": ["https://www.grants.ca.gov/"]},
@@ -80,12 +86,16 @@ STATES: dict[str, dict] = {
            "pages": ["https://www.iowagrants.gov/storefrontFOList.do"]},
     "KS": {"status": "html",
            "source": "Kansas Children's Cabinet grants page (one agency); grants.ks.gov turns scripts away"},
-    "KY": {"status": "html", "source": "Kentucky Arts Council and Health and Family Services grant pages"},
+    "KY": {"status": "html",
+           "source": "Kentucky Arts Council (its terms links return 404) and Health and Family Services grant pages"},
     "LA": {"status": "blocked",
            "source": "The arts division's robots.txt disallows ClaudeBot; health, law enforcement, volunteer and parks sites turn scripts away"},
     "ME": {"status": "blocked", "source": "maine.gov turns scripts away, robots.txt included"},
-    "MD": {"status": "html",
-           "source": "Department of Commerce State Grants table (terms unconfirmed)"},
+    "MD": {"status": "built",
+           "source": "Maryland Department of Commerce State Grants table only (a short list, not a statewide list)",
+           "file": "maryland", "catalog": "Maryland, short list", "module": "maryland",
+           "report": "Maryland Commerce State Grants table", "refresh": None, "in_skip_report": False,
+           "who_listed": False, "pages": ["https://business.maryland.gov/nonprofit-opportunities/"]},
     "MA": {"status": "unchecked", "source": "COMMBUYS public bid search (no grant call seen on its first page of open bids)"},
     "MI": {"status": "html", "source": "MI Funding Hub grant pages and sitemap"},
     "MN": {"status": "built",
@@ -112,7 +122,10 @@ STATES: dict[str, dict] = {
            "refresh": None, "in_skip_report": False,
            "pages": ["https://esupplier.sfs.ny.gov/psp/fscm/SUPPLIER/ERP/c/NY_SUPPUB_FL.AUC_RESP_INQ_AUC.GBL"]},
     "NC": {"status": "blocked", "source": "nc.gov terms allow copying for non-commercial use only"},
-    "ND": {"status": "html", "source": "North Dakota WebGrants storefront (2 rows; terms unconfirmed)"},
+    "ND": {"status": "built", "source": "North Dakota Council on the Arts pages only (one agency, not a statewide list)",
+           "file": "northdakota", "catalog": "North Dakota, 1 agency", "module": "northdakota",
+           "report": "North Dakota Council on the Arts", "refresh": None, "in_skip_report": False,
+           "pages": ["https://www.arts.nd.gov/grants"]},
     "OH": {"status": "built", "source": "Ohio Grants Partnership", "file": "ohio", "catalog": "Ohio", "module": "ohio",
            "report": "Ohio Grants Partnership", "refresh": "daily",
            "pages": ["https://grants.ohio.gov/funding-opportunities/find-current-opportunities"]},
@@ -121,14 +134,16 @@ STATES: dict[str, dict] = {
     "PA": {"status": "decide", "source": "pa.gov Discover State Grants (the site's own search proxy)"},
     "RI": {"status": "blocked", "source": "gn.ecivis.com robots.txt disallows all crawlers"},
     "SC": {"status": "html", "source": "South Carolina Arts Commission grants page (one agency)"},
-    "SD": {"status": "html", "source": "Department of Social Services requests for proposals and other agency pages"},
+    "SD": {"status": "html",
+           "source": "Department of Social Services and other agency pages (the sd.gov disclaimer couldn't be read)"},
     "TN": {"status": "html",
            "source": "Tennessee Arts Commission grants pages (one agency); tn.gov turns scripts away"},
     "TX": {"status": "blocked",
            "source": "txsmartbuy.gov robots.txt disallows all crawlers; no usable terms were confirmed for the eGrants page"},
     "UT": {"status": "html", "source": "Utah Funding Opportunities Portal (Looker Studio report)"},
     "VT": {"status": "blocked", "source": "agriculture.vermont.gov (its robots.txt disallows ClaudeBot)"},
-    "VA": {"status": "html", "source": "Governor's Office Grants directory"},
+    "VA": {"status": "html",
+           "source": "Governor's Office Grants directory (its policy link returns 404; virginia.gov allows fair use only)"},
     "WA": {"status": "built", "source": "FundHubWA (Washington Department of Commerce)", "file": "washington",
            "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily",
            "pages": ["https://fundhub.wa.gov/funding/"]},
@@ -137,7 +152,10 @@ STATES: dict[str, dict] = {
            "refresh": "weekly", "in_skip_report": False,
            "pages": ["https://grants.wv.gov/"]},
     "WI": {"status": "blocked", "source": "wisconsin.gov policy limits agency pages to noncommercial use"},
-    "WY": {"status": "html", "source": "Wyoming Grants Connect Hub (Power BI report)"},
+    "WY": {"status": "built", "source": "Wyoming Arts Council pages only (one agency, not a statewide list)",
+           "file": "wyoming", "catalog": "Wyoming, 1 agency", "module": "wyoming",
+           "report": "Wyoming Arts Council", "refresh": None, "in_skip_report": False,
+           "pages": ["https://wyoarts.state.wy.us/grants/"]},
 }
 
 # States besides Florida with their own adapter: the data file's name, where it comes from, and the label the
