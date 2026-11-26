@@ -13,6 +13,7 @@ import io
 import json
 import argparse
 import re
+import zlib
 from datetime import date
 from pathlib import Path
 
@@ -21,8 +22,9 @@ import requests
 
 from . import embed
 from . import corporate
+from . import funders
 from . import local as local_programs
-from .states import STATE_PROGRAMS, catalogs
+from .states import STATE_PROGRAMS, STATES, catalogs
 from .skipped import load_decisions
 from .display import assistance_label, bracket_caps, format_address, present, shouting, tidy_name, tidy_text
 
@@ -98,6 +100,41 @@ def website_cycles() -> dict[str, dict]:
             if isinstance(r, dict) and r.get("s") in ("open", "deadline", "closed", "apply")}
 
 
+def link_checks() -> dict[str, dict]:
+    """The weekly freshness check's results for the links it checked (grantmatch/freshness.py), from the page
+    watch's published state file. Empty until a check has been published."""
+    raw = fetch("watch-state.json.gz")
+    if not raw:
+        return {}
+    try:
+        links = (json.loads(gzip.decompress(raw)).get("_freshness") or {}).get("links")
+    except (OSError, ValueError, EOFError, AttributeError, zlib.error):
+        return {}
+    return links if isinstance(links, dict) else {}
+
+
+def stamp(records: list[dict], read_at: str, links: dict[str, dict] | None = None) -> list[dict]:
+    """Display only, scores never read it: "_checked" is when the record's source was read (a hand-kept entry's
+    own checked date, else the data file's fetched_at), and "_link"/"_link_at" are its link's last check, when
+    the freshness check could tell whether it opens."""
+    for r in records:
+        at = r.get("checked") or read_at
+        if at:
+            r["_checked"] = at
+        got = (links or {}).get(r.get("url") or "")
+        if isinstance(got, dict) and got.get("s") in ("ok", "dead"):
+            r["_link"], r["_link_at"] = got["s"], got.get("d", "")
+    return records
+
+
+def stamp_company_links(records: list[dict], links: dict[str, dict]) -> None:
+    """Marks a company program whose page didn't open at the last check (data/corporate.json)."""
+    for r in records:
+        program = (r.get("_corp") or {}).get("program")
+        if program and (links.get(program.get("url") or "") or {}).get("s") == "dead":
+            program["link"] = "dead"
+
+
 def national_programs(corp: dict[str, dict], cycles: dict[str, dict]) -> dict[str, tuple[dict, np.ndarray]]:
     """The record and vector of each company foundation with a national program (grantmatch/corporate.py),
     read from its home state's files, so it can be shown in every state the program serves."""
@@ -108,9 +145,11 @@ def national_programs(corp: dict[str, dict], cycles: dict[str, dict]) -> dict[st
             if not raw:
                 continue
             wanted = {ein for ein, e in corp.items() if e.get("serves") and e["home"] == home}
-            found = [r for r in json.loads(gzip.decompress(raw))["foundations"] if str(r.get("ein")) in wanted]
+            payload = json.loads(gzip.decompress(raw))
+            found = [r for r in payload["foundations"] if str(r.get("ein")) in wanted]
             if not found:
                 continue
+            stamp(found, payload.get("fetched_at", ""))
             ids, vecs = vectors(fetch(f"{prefix}-{home}.npz", f"{prefix}/{home}.npz"))
             row = {e: i for i, e in enumerate(ids)}
             for rec in found:
@@ -252,19 +291,43 @@ def local_only_states() -> list[str]:
     return [s for s in local_programs.states() if s != "FL" and s not in STATE_PROGRAMS]
 
 
-def write_local_only(out: Path, meta: dict) -> None:
+def write_local_only(out: Path, meta: dict, links: dict[str, dict] | None = None) -> None:
     """A programs file for each state with county and city programs but no state catalog, marked local_only so the
     site says that is all it holds."""
     for state in local_only_states():
         records = hand_kept(state)
         if not records:
             continue
-        stamp = f"{max(r['checked'] for r in records)}T12:00+00:00"  # noon, so no US time zone shows the day before
+        newest = f"{max(r['checked'] for r in records)}T12:00+00:00"  # noon, so no US time zone shows the day before
+        stamp(records, "", links)
         ids, vecs = program_vectors(records, None)
-        write(out, f"programs-{state}", {"fetched_at": stamp, "state": state, "records": records}, ids, vecs)
-        meta.setdefault("programs", {})[state] = {"file": f"programs-{state}", "updated": stamp, "local_only": True,
+        write(out, f"programs-{state}", {"fetched_at": newest, "state": state, "records": records}, ids, vecs)
+        meta.setdefault("programs", {})[state] = {"file": f"programs-{state}", "updated": newest, "local_only": True,
                                                   "local": has_local(records),
                                                   "source": "county and city programs entered by hand"}
+
+
+FUNDER_FIELDS = ("id", "name", "level", "kind", "counties", "area", "programs", "home_consortium", "website")
+
+
+def write_funders(out: Path, meta: dict, path: Path | None = None) -> None:
+    """The local funder directory (grantmatch/funders.py), one small public file per state, only the fields the page
+    shows. It is not grant data: no vectors, no scores, and no scorer or ranking reads it."""
+    data = funders.load(path or LOCAL / "funders.json.gz")
+    if not data:
+        return
+    states: dict[str, list[dict]] = {}
+    for f in data["funders"]:
+        states.setdefault(f["state"], []).append({k: f[k] for k in FUNDER_FIELDS if k in f})
+    for state, rows in states.items():
+        (out / f"funders-{state}.json").write_text(json.dumps(rows, separators=(",", ":"), ensure_ascii=False),
+                                                   encoding="utf-8")
+    hud, census = data["sources"]
+    meta["funders"] = {"states": sorted(states), "fiscal_year": data["fiscal_year"], "census_year": data["census_year"],
+                       "hud_page": hud["page"], "hud_as_of": hud["as_of"],
+                       "census_page": census["page"], "census_as_of": census["as_of"]}
+    size = sum((out / f"funders-{s}.json").stat().st_size for s in states)
+    print(f"funders: {len(data['funders'])} in {len(states)} states, {size / 1e3:.0f} kB")
 
 
 def florida_records(payload: dict) -> tuple[list[dict], list[dict]]:
@@ -296,12 +359,15 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     # Every state's catalog status (grantmatch/states.py), so the site can say when a state has none.
     meta: dict = {"states": [], "catalogs": catalogs()}
+    links = link_checks()
 
     raw = fetch("opportunities.json.gz")
     if raw:
         payload = json.loads(gzip.decompress(raw))
         ids, vecs = vectors(fetch("embeddings.npz"))
-        write(out, "federal", {"fetched_at": payload.get("fetched_at", ""), "records": [{**r, "_title": fix_title(r.get("title"))} for r in payload["opportunities"]]}, ids, vecs)
+        records = [{**r, "_title": fix_title(r.get("title"))} for r in payload["opportunities"]]
+        stamp(records, payload.get("fetched_at", ""))
+        write(out, "federal", {"fetched_at": payload.get("fetched_at", ""), "records": records}, ids, vecs)
         meta["federal"] = payload.get("fetched_at", "")
 
     raw = fetch("florida.json.gz")
@@ -313,6 +379,7 @@ def main() -> None:
             from .rank_more import florida_doc
             ids = ids + [r["id"] for r in extra]
             vecs = np.concatenate([vecs, embed.embed_texts([florida_doc(r) for r in extra]).astype(np.float16)])
+        stamp(records, payload.get("fetched_at", ""), links)
         write(out, "florida", {"fetched_at": payload.get("fetched_at", ""), "fiscal_year": payload.get("fiscal_year", ""),
                                "records": records}, ids, vecs)
         meta["florida"] = payload.get("fiscal_year", "")
@@ -338,15 +405,18 @@ def main() -> None:
         # grantmatch/local.py)
         extra = hand_kept(state)
         records += extra
+        stamp(records, payload.get("fetched_at", ""), links)
         ids, vecs = program_vectors(records, fetch(f"{spec['file']}.npz"))
         write(out, f"programs-{state}", {"fetched_at": payload.get("fetched_at", ""), "state": state, "records": records}, ids, vecs)
         meta.setdefault("programs", {})[state] = {"file": f"programs-{state}", "source": spec["source"],
                                                   "updated": payload.get("fetched_at", ""),
                                                   # a list that never says who may apply (grantmatch/states.py)
                                                   **({"who_listed": False} if spec.get("who_listed") is False else {}),
+                                                  # reads paused (grantmatch/states.py): the tab says so, with the date
+                                                  **({"paused": True} if STATES[state].get("paused") else {}),
                                                   **({"local": True} if has_local(extra) else {})}
 
-    write_local_only(out, meta)
+    write_local_only(out, meta, links)
 
     # Foundations: private (990-PF) and community/public (Schedule I), one file per state.
     states = foundation_states()
@@ -354,7 +424,7 @@ def main() -> None:
     corp = corporate.load()
     extra = national_programs(corp, cycles)
     for state in states:
-        records, all_ids, all_vecs, stamp = [], [], [], ""
+        records, all_ids, all_vecs, fetched = [], [], [], ""
         for prefix in ("foundations", "community"):
             raw = fetch(f"{prefix}-{state}.json.gz", f"{prefix}/{state}.json.gz")
             if not raw:
@@ -368,19 +438,20 @@ def main() -> None:
                     rec["_cycle"] = found
                 if str(rec.get("ein")) in corp:
                     rec["_corp"] = corporate.overlay(corp[str(rec.get("ein"))], state)
-            records += payload["foundations"]
-            stamp = stamp or payload.get("fetched_at", "")
+            records += stamp(payload["foundations"], payload.get("fetched_at", ""))
+            fetched = fetched or payload.get("fetched_at", "")
             ids, vecs = vectors(fetch(f"{prefix}-{state}.npz", f"{prefix}/{state}.npz"))
             all_ids += ids
             all_vecs.append(vecs)
         if records and extra:
             corporate.add_national(state, records, all_ids, all_vecs, extra, corp)
+        stamp_company_links(records, links)
         if records:
             # Later files win for a repeated EIN, as dict.update does in the Streamlit app.
             index = {e: i for i, e in enumerate(all_ids)}
             stacked = np.concatenate(all_vecs) if all_vecs else np.zeros((0, 384), dtype=np.float16)
             keep = sorted(index.values())
-            write(out, f"foundations-{state}", {"fetched_at": stamp, "state": state, "records": records},
+            write(out, f"foundations-{state}", {"fetched_at": fetched, "state": state, "records": records},
                   [all_ids[i] for i in keep], stacked[keep])
             meta["states"].append(state)
 
@@ -400,6 +471,7 @@ def main() -> None:
     if counties_file.exists():
         for state, counties in json.loads(gzip.decompress(counties_file.read_bytes())).items():
             (out / f"counties-{state}.json").write_text(json.dumps(counties, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+    write_funders(out, meta)
     (out / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
     total = sum(p.stat().st_size for p in out.iterdir() if p.is_file())
     print(f"data folder: {total / 1e6:.0f} MB")

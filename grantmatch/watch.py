@@ -18,6 +18,11 @@ report of what needs review:
 
 It never edits an entry. A person reads the page and updates the entry and its checked date.
 
+The same run then does the freshness check (grantmatch/freshness.py, docs/freshness.md): how old the data is
+and whether source pages and state call links still open. Its section is added to the report, its results go into the state
+file under "_freshness", and what it flags for the first time counts toward the flagged total. It runs after the page watch's own
+report and state are written, so a freshness error leaves them as they are and is noted in the report.
+
 Run:
   python -m grantmatch.watch --state build/watch-state.json.gz --report build/watch-report.md
 """
@@ -43,6 +48,7 @@ MAX_BYTES = 8_000_000
 KEEP_CHARS = 60_000  # text kept per page in the state file
 BLANK_CHARS = 300
 SHOW_ADDED, SHOW_REMOVED, SHOW_STATUS = 5, 3, 4
+MAX_REPORT = 65_000  # a GitHub issue or comment holds 65,536 characters
 
 # Words that mean a program stopped, paused or changed course. OPEN and CLOSED come from cycles.py.
 STOPPED = re.compile(
@@ -248,6 +254,32 @@ def report(results: list[tuple[dict, list[dict]]], today: date, first_run: bool)
     return "\n".join(lines) + "\n"
 
 
+def fit(text: str, room: int) -> str:
+    """The text cut at a line to fit, saying so."""
+    note = "\n\n(Cut to fit the issue.)\n"
+    return text if len(text) <= room else text[: max(0, room - len(note))].rsplit("\n", 1)[0] + note
+
+
+def with_freshness(page_report: str, section: str) -> str:
+    """Both reports in one issue body: the freshness section keeps its room, up to half, however long the page
+    watch's list is."""
+    section = fit(section, MAX_REPORT // 2)
+    return fit(page_report, MAX_REPORT - len(section) - 1) + "\n" + section
+
+
+def freshness_check(previous: dict | None, readings: dict[str, dict], today: date) -> tuple[str, int, dict | None]:
+    """(report section, things that need a person, what to keep). Any error is caught here: it is reported, last
+    week's results are kept, and the page watch carries on."""
+    try:
+        from . import freshness
+        result = freshness.check(previous, readings, today)
+        return result["text"], result["flagged"], result["memory"]
+    except Exception as e:
+        print(f"freshness check failed: {type(e).__name__}: {e}")
+        return (f"# Freshness check, {today.isoformat()}\n\nThe freshness check did not finish "
+                f"({type(e).__name__}). The page watch above is unaffected. See the job log.\n"), 1, previous
+
+
 # ---------------- running it ----------------
 
 def load_state(path: Path) -> dict:
@@ -282,17 +314,35 @@ def main() -> None:
     ap.add_argument("--report", type=Path, default=Path("build/watch-report.md"))
     ap.add_argument("--stale-days", type=int, default=90)
     ap.add_argument("--today", type=date.fromisoformat, default=date.today())
+    ap.add_argument("--no-freshness", action="store_true", help="only the page watch")
     args = ap.parse_args()
 
     state = load_state(args.state)
+    previous = state.pop("_freshness", None)
     rows = targets()
-    results, new_state = run(rows, state, args.today, args.stale_days)
+    readings: dict[str, dict] = {}
+
+    def reader(url: str) -> dict:
+        readings[url] = read(url)
+        return readings[url]
+
+    results, new_state = run(rows, state, args.today, args.stale_days, reader=reader)
     text = report(results, args.today, first_run=not state)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(text, encoding="utf-8")
+    if previous:
+        new_state["_freshness"] = previous
     save_state(args.state, new_state)
     flagged = sum(1 for _, f in results if f)
     print(f"{len(results)} pages, {flagged} need a look; report in {args.report}")
+    if not args.no_freshness:
+        section, count, memory = freshness_check(previous, readings, args.today)
+        args.report.write_text(with_freshness(text, section), encoding="utf-8")
+        if memory:
+            new_state["_freshness"] = memory
+            save_state(args.state, new_state)
+        flagged += count
+        print(f"freshness: {count} need a look")
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
             f.write(f"flagged={flagged}\n")

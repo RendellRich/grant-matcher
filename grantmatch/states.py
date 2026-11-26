@@ -23,14 +23,22 @@ reads; export_web also publishes each state's status in meta.json, so the site c
 catalog. Sources and checks: docs/state-coverage.md (researched November 2026).
 
 To add a state: write an adapter that produces the same record fields as ohio.py, set its entry here to
-"built" with file, source, catalog, module, report (its heading in the skipped grants review) and refresh (how
-often its refresh job runs; None until a refresh job exists), add "who_listed": False when its list never says
+"built" with file, source, catalog, module, pages (the public pages the list is read from, which the weekly
+freshness check in grantmatch/freshness.py opens), report (its heading in the skipped grants review) and refresh
+(how often its refresh job runs; None until a refresh job exists), add "who_listed": False when its list never says
 who may apply (the site then doesn't claim its calls list nonprofits), and add it to a refresh job: West Virginia and
 New Jersey share .github/workflows/refresh-states.yml, weekly. Set "in_skip_report": False until
 skipped-report.yml downloads the state's skipped file, so the Friday report doesn't call it missing. The state tab, the exports and the skipped report need no change; add the state's "For <state> state grants" note
 and its sentence in the footer (web/src/app.tsx).
+
+To pause a built state's reads, give its entry "paused": {"why": ..., "hosts": [...]}. Nothing then asks those hosts for
+anything: the adapter republishes its last published files unchanged (grantmatch/illinois.py), the page watch, the
+freshness check and the website check treat the hosts as off limits without a request (cycles.off_limits), the data
+keeps its old date, and the state's tab says reading is paused (export_web.py). Remove the key to resume.
 """
 from __future__ import annotations
+
+from urllib.parse import urlparse
 
 from .display import STATE_NAMES
 
@@ -42,25 +50,34 @@ STATES: dict[str, dict] = {
     "AZ": {"status": "none", "source": "grants.az.gov points to Euna Grants (eCivis), behind a subscriber login"},
     "AR": {"status": "html", "source": "Arkansas Arts Council and Health Department grant pages"},
     "CA": {"status": "built", "source": "California Grants Portal", "file": "california", "catalog": "Grants Portal",
-           "module": "california", "report": "California Grants Portal", "refresh": "daily"},
+           "module": "california", "report": "California Grants Portal", "refresh": "daily",
+           "pages": ["https://www.grants.ca.gov/"]},
     "CO": {"status": "blocked",
            "source": "colorado.gov agency sites turn scripts away; cde.state.co.us robots.txt disallows all crawlers"},
     "CT": {"status": "html", "source": "CTsource Bid Board (Nonprofit Grant Program rounds); past awards on data.ct.gov"},
     "DE": {"status": "none", "source": "Past awards on data.delaware.gov; no open-call dataset"},
     "DC": {"status": "built", "source": "District Grants Clearinghouse (DC.gov, CC BY 3.0)",
            "file": "districtofcolumbia", "catalog": "DC Clearinghouse", "module": "districtofcolumbia",
-           "report": "District Grants Clearinghouse", "refresh": None, "in_skip_report": False, "who_listed": False},
+           "report": "District Grants Clearinghouse", "refresh": None, "in_skip_report": False, "who_listed": False,
+           "pages": ["https://communityaffairs.dc.gov/node/26"]},
     "FL": {"status": "built", "source": "Florida Catalog of State Financial Assistance", "file": "florida",
-           "catalog": "CSFA", "module": "florida", "report": "Florida state catalog", "refresh": "weekly"},
+           "catalog": "CSFA", "module": "florida", "report": "Florida state catalog", "refresh": "weekly",
+           "pages": ["https://apps.fldfs.com/fsaa/catalog.aspx"]},
     "GA": {"status": "html", "source": "Georgia Grants Portal (OPB only, empty when checked)"},
     "HI": {"status": "decide", "source": "HANDS, Hawaii Awards and Notices Data System (undocumented JSON, mostly procurement)"},
     "ID": {"status": "html", "source": "Education, Serve Idaho and Health and Welfare grant pages"},
     "IL": {"status": "built", "source": "Illinois Catalog of State Financial Assistance", "file": "illinois",
-           "catalog": "Illinois NOFO", "module": "illinois", "report": "Illinois state notices (GATA)", "refresh": "daily"},
+           "catalog": "Illinois NOFO", "module": "illinois", "report": "Illinois state notices (GATA)", "refresh": "daily",
+           "pages": ["https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx"],
+           # Paused 2026-11-25 on Ren's decision: omb.illinois.gov answers robots.txt with a web page, so the state's
+           # written OK is wanted first. Remove this key to resume. il.amplifund.com is the state's grants system, where
+           # most notices' own pages are.
+           "paused": {"why": "pending the state's written OK", "hosts": ["omb.illinois.gov", "il.amplifund.com"]}},
     "IN": {"status": "blocked",
            "source": "gn.ecivis.com robots.txt disallows all crawlers; in.gov terms bar storing its content in a retrieval system"},
     "IA": {"status": "built", "source": "IowaGrants.gov", "file": "iowa", "catalog": "IowaGrants", "module": "iowa",
-           "report": "IowaGrants.gov", "refresh": "daily"},
+           "report": "IowaGrants.gov", "refresh": "daily",
+           "pages": ["https://www.iowagrants.gov/storefrontFOList.do"]},
     "KS": {"status": "html",
            "source": "Kansas Children's Cabinet grants page (one agency); grants.ks.gov turns scripts away"},
     "KY": {"status": "html", "source": "Kentucky Arts Council and Health and Family Services grant pages"},
@@ -74,7 +91,9 @@ STATES: dict[str, dict] = {
     "MN": {"status": "built",
            "source": "Minnesota Department of Health and Office of Justice Programs pages only (two agencies, not a statewide list)",
            "file": "minnesota", "catalog": "Minnesota, 2 agencies", "module": "minnesota",
-           "report": "Minnesota (Health and Justice Programs pages)", "refresh": None, "in_skip_report": False},
+           "report": "Minnesota (Health and Justice Programs pages)", "refresh": None, "in_skip_report": False,
+           "pages": ["https://www.health.state.mn.us/about/grants/index.html",
+                     "https://dps.mn.gov/divisions/ojp/ojp-grants/funding-opportunities"]},
     "MS": {"status": "unchecked",
            "source": "Agency pages; the Human Services procurement table is filled by script and wasn't read"},
     "MO": {"status": "html", "source": "Natural Resources, Arts Council and ServMO grant pages (mo.gov data policy requires state disclaimers)"},
@@ -84,16 +103,19 @@ STATES: dict[str, dict] = {
     "NH": {"status": "blocked", "source": "nh.gov agency sites turn scripts away"},
     "NJ": {"status": "built", "source": "New Jersey Treasury list of state grant opportunities", "file": "newjersey",
            "catalog": "New Jersey", "module": "newjersey", "report": "New Jersey Treasury list", "refresh": "weekly",
-           "in_skip_report": False, "who_listed": False},
+           "in_skip_report": False, "who_listed": False,
+           "pages": ["https://www.nj.gov/treasury/grants-management/opportunities/state"]},
     "NM": {"status": "blocked",
            "source": "New Mexico Arts (Cultural Affairs terms bar reproducing its sites' content without permission)"},
     "NY": {"status": "built", "source": "New York Statewide Financial System, Search for Grant Opportunities",
            "file": "newyork", "catalog": "NY SFS", "module": "newyork", "report": "New York SFS grant search",
-           "refresh": None, "in_skip_report": False},
+           "refresh": None, "in_skip_report": False,
+           "pages": ["https://esupplier.sfs.ny.gov/psp/fscm/SUPPLIER/ERP/c/NY_SUPPUB_FL.AUC_RESP_INQ_AUC.GBL"]},
     "NC": {"status": "blocked", "source": "nc.gov terms allow copying for non-commercial use only"},
     "ND": {"status": "html", "source": "North Dakota WebGrants storefront (2 rows; terms unconfirmed)"},
     "OH": {"status": "built", "source": "Ohio Grants Partnership", "file": "ohio", "catalog": "Ohio", "module": "ohio",
-           "report": "Ohio Grants Partnership", "refresh": "daily"},
+           "report": "Ohio Grants Partnership", "refresh": "daily",
+           "pages": ["https://grants.ohio.gov/funding-opportunities/find-current-opportunities"]},
     "OK": {"status": "html", "source": "Oklahoma Arts Council grants page (one agency); OK Grants needs registration"},
     "OR": {"status": "none", "source": "Two housing datasets on data.oregon.gov, both empty"},
     "PA": {"status": "decide", "source": "pa.gov Discover State Grants (the site's own search proxy)"},
@@ -108,10 +130,12 @@ STATES: dict[str, dict] = {
     "VT": {"status": "blocked", "source": "agriculture.vermont.gov (its robots.txt disallows ClaudeBot)"},
     "VA": {"status": "html", "source": "Governor's Office Grants directory"},
     "WA": {"status": "built", "source": "FundHubWA (Washington Department of Commerce)", "file": "washington",
-           "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily"},
+           "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily",
+           "pages": ["https://fundhub.wa.gov/funding/"]},
     "WV": {"status": "built", "source": "West Virginia grants.wv.gov list of available grants", "file": "westvirginia",
            "catalog": "grants.wv.gov", "module": "westvirginia", "report": "grants.wv.gov (West Virginia)",
-           "refresh": "weekly", "in_skip_report": False},
+           "refresh": "weekly", "in_skip_report": False,
+           "pages": ["https://grants.wv.gov/"]},
     "WI": {"status": "blocked", "source": "wisconsin.gov policy limits agency pages to noncommercial use"},
     "WY": {"status": "html", "source": "Wyoming Grants Connect Hub (Power BI report)"},
 }
@@ -133,6 +157,16 @@ REPORT: dict[str, dict] = {
            "in_skip_report": s.get("in_skip_report", True)}
     for code, s in STATES.items() if s["status"] == "built"
 }
+
+
+def paused_host(url: str) -> str | None:
+    """Why nothing may be asked of this address's host while its state's reads are paused, or None."""
+    host = (urlparse(url).hostname or "").lower().rstrip(".")
+    for code, s in STATES.items():
+        pause = s.get("paused")
+        if pause and any(host == h or host.endswith("." + h) for h in pause["hosts"]):
+            return f"reading {STATE_NAMES.get(code, code)}'s list is paused {pause['why']}"
+    return None
 
 
 def catalogs() -> dict[str, dict]:
@@ -161,4 +195,11 @@ def check() -> list[str]:
             problems.append(f"{code}: in_skip_report is true or false, for built states only")
         if "who_listed" in s and (not built or s["who_listed"] is not False):
             problems.append(f"{code}: who_listed is only ever false, for built states only")
+        if "paused" in s:
+            pause = s["paused"]
+            if not (built and isinstance(pause, dict) and pause.get("why") and pause.get("hosts")):
+                problems.append(f"{code}: paused is why and hosts, for built states only")
+        pages = s.get("pages")
+        if built != bool(pages) or not all(str(u).startswith("https://") for u in pages or []):
+            problems.append(f"{code}: pages is a list of https addresses, for built states only")
     return problems

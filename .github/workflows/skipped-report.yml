@@ -1,5 +1,10 @@
 name: Skipped grants review
 
+# Source copy: docs/proposed-workflows/skipped-report.yml.txt. As a text file there, nothing runs it; it takes
+# effect only once copied over .github/workflows/skipped-report.yml (docs/freshness.md has the command and steps).
+# The change from the earlier file: it also downloads the skipped lists and data files of the five states
+# refresh-states runs, and passes them to grantmatch.skipped. Same job, same schedule.
+
 # Joins what every refresh left out (skipped-*.json.gz on the data-latest release) with the programs the site
 # never shows or hides, into one CSV with a plain reason per row (grantmatch/skipped.py). The CSV goes on the
 # release as skipped-grants.csv; the summary replaces the body of the one open "skip-review" issue, and a
@@ -33,8 +38,10 @@ jobs:
           gh release download data-latest -D build/skips --clobber \
             -p 'skipped-federal.json.gz' -p 'skipped-california.json.gz' -p 'skipped-illinois.json.gz' \
             -p 'skipped-iowa.json.gz' -p 'skipped-ohio.json.gz' -p 'skipped-washington.json.gz' \
+            -p 'skipped-westvirginia.json.gz' -p 'skipped-newjersey.json.gz' -p 'skipped-newyork.json.gz' \
+            -p 'skipped-districtofcolumbia.json.gz' -p 'skipped-minnesota.json.gz' \
             -p 'skipped-foundations.jsonl.gz' -p 'skipped-community.jsonl.gz' || true
-          gh release download data-latest -D build --clobber -p florida.json.gz -p california.json.gz -p illinois.json.gz -p iowa.json.gz -p ohio.json.gz -p washington.json.gz || true
+          gh release download data-latest -D build --clobber -p florida.json.gz -p california.json.gz -p illinois.json.gz -p iowa.json.gz -p ohio.json.gz -p washington.json.gz -p westvirginia.json.gz -p newjersey.json.gz -p newyork.json.gz -p districtofcolumbia.json.gz -p minnesota.json.gz || true
           gh release download data-latest -D build/prev --clobber -p skipped-grants.csv || echo "No earlier report; this is the first."
           ls -la build/skips build || true
       - name: Build the report
@@ -43,6 +50,8 @@ jobs:
           python -m grantmatch.skipped --parts build/skips --florida build/florida.json.gz \
             --california build/california.json.gz --illinois build/illinois.json.gz \
             --iowa build/iowa.json.gz --ohio build/ohio.json.gz --washington build/washington.json.gz \
+            --westvirginia build/westvirginia.json.gz --newjersey build/newjersey.json.gz --newyork build/newyork.json.gz \
+            --districtofcolumbia build/districtofcolumbia.json.gz --minnesota build/minnesota.json.gz \
             --previous build/prev/skipped-grants.csv \
             --csv build/skipped-grants.csv --md build/skipped-report.md \
             --csv-link "https://github.com/${{ github.repository }}/releases/download/data-latest/skipped-grants.csv"

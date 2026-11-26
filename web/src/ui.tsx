@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { Entry } from "./entries";
+import { checkedLabel, DEAD_LINK, type Entry } from "./entries";
 import { readySummary, type ReadyCheck } from "./ready";
 import { download } from "./exports";
 import { grantSummary, summaryFileName } from "./summary";
@@ -58,7 +58,7 @@ export function EntryView(p: {
   const cautions = e.cautions.filter((x) => !covered.has(x));
   const statusAll = e.status.filter((x) => !covered.has(x));
   // Fits and cautions always show. The other lines fill up to MAX_WHY rows, dated and history lines first; the rest wait in the details.
-  const room = Math.max(0, MAX_WHY - e.fits.length - cautions.length - (e.ready?.length ? 1 : 0));
+  const room = Math.max(0, MAX_WHY - e.fits.length - cautions.length - (e.ready?.length ? 1 : 0) - (e.dead ? 1 : 0));
   const status = statusAll.slice(0, room);
   const also = e.also.slice(0, room - status.length);
   const rest = [...e.also.slice(also.length), ...statusAll.slice(status.length)];
@@ -82,9 +82,11 @@ export function EntryView(p: {
       <p class="facts">
         <span class="catalog">{e.catalog}</span>
         {e.facts.map((f) => <span class="fact" key={f}><span class="sep" aria-hidden="true"> · </span><span class="sr-only">, </span>{f}</span>)}
+        {e.checked ? <span class="fact"><span class="sep" aria-hidden="true"> · </span><span class="sr-only">, </span>{checkedLabel(e)} {e.checked}</span> : null}
       </p>
       <ul class="why">
         {e.fits.map((x) => <li class="good" key={x}><IconCheck /><span><span class="sr-only">Fits: </span>{x}</span></li>)}
+        {e.dead ? <li class="warn"><IconAlert /><span><span class="sr-only">Caution: </span>{DEAD_LINK}</span></li> : null}
         {cautions.map((x) => <li class="warn" key={x}><IconAlert /><span><span class="sr-only">Caution: </span>{x}</span></li>)}
         {also.map((x) => <li class="also" key={x}><IconInfo /><span><span class="sr-only">Also: </span>{x}</span></li>)}
         {status.map((x) => <li class="also" key={x}><IconClock /><span><span class="sr-only">Status: </span>{x}</span></li>)}

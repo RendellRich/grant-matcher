@@ -91,8 +91,9 @@ def test_the_skipped_report_takes_every_built_state_from_the_registry():
     # the labels the Friday issue already used for the refreshed states are unchanged
     assert expected["skipped-ohio.json.gz"] == "Ohio (after the next daily refresh)"
     assert skipped.SOURCES["washington"] == "FundHubWA (Washington)"
-    assert set(optional) == {f"skipped-{n}.json.gz" for n in
-                             ("westvirginia", "newjersey", "newyork", "districtofcolumbia", "minnesota")}
+    # every state the report doesn't expect yet: no refresh job, or not downloaded by skipped-report.yml yet
+    assert set(optional) == {f"skipped-{r['source']}.json.gz" for c, r in states.REPORT.items()
+                             if c != "FL" and not (r["refresh"] and r["in_skip_report"])}
 
 
 def test_the_skipped_report_accepts_a_programs_file_for_every_built_state(tmp_path, monkeypatch):
@@ -168,21 +169,30 @@ def test_nothing_learned_from_a_page_we_may_not_use_is_recorded():
                                              "no usable terms were confirmed for the eGrants page")
 
 
-def test_the_new_states_have_no_refresh_job_yet():
-    for code in ("NY", "DC", "MN"):
-        assert states.STATES[code]["refresh"] is None and states.REPORT[code]["in_skip_report"] is False, code
+def _workflow(name):
+    return (Path(export_web.__file__).parent.parent / ".github" / "workflows" / name).read_text(encoding="utf-8")
 
 
-def test_west_virginia_and_new_jersey_refresh_weekly_but_the_friday_report_doesnt_expect_them_yet():
-    from grantmatch import skipped
+def test_the_registry_never_claims_a_refresh_job_that_does_not_run():
+    # NY, DC and MN join the weekly job only once docs/proposed-workflows/refresh-states.yml.txt is copied in
+    if "grantmatch.refresh_states" not in _workflow("refresh-states.yml"):
+        for code in ("NY", "DC", "MN"):
+            assert states.STATES[code]["refresh"] is None, code
     for code in ("WV", "NJ"):
-        assert states.STATES[code]["refresh"] == "weekly" and states.REPORT[code]["in_skip_report"] is False, code
+        assert states.STATES[code]["refresh"] == "weekly", code
+
+
+def test_the_friday_report_only_expects_files_it_downloads():
+    from grantmatch import skipped
+    workflow = _workflow("skipped-report.yml")
     expected, optional = skipped.expected_parts()
-    # skipped-report.yml doesn't download these files yet, so the report must not list them as missing
-    assert "skipped-westvirginia.json.gz" not in expected and "skipped-newjersey.json.gz" not in expected
-    assert {"skipped-westvirginia.json.gz", "skipped-newjersey.json.gz"} <= set(optional)
-    workflow = (Path(export_web.__file__).parent.parent / ".github" / "workflows" / "skipped-report.yml").read_text(encoding="utf-8")
-    assert "skipped-westvirginia" not in workflow and "skipped-newjersey" not in workflow   # flip in_skip_report when it does
+    for code, s in states.STATES.items():
+        if s["status"] != "built" or code == "FL":
+            continue
+        name = f"skipped-{s['file']}.json.gz"
+        if f"'{name}'" not in workflow:   # not downloaded: the report must not list it as missing
+            assert states.REPORT[code]["in_skip_report"] is False, code
+            assert name not in expected and name in optional, code
 
 
 def test_the_state_refresh_workflow_runs_the_registry_states_weekly_and_publishes_what_the_export_reads():
@@ -191,6 +201,11 @@ def test_the_state_refresh_workflow_runs_the_registry_states_weekly_and_publishe
     text = path.read_text(encoding="utf-8")
     assert re.search(r'^\s*- cron: "17 13 \* \* 1"', text, re.M)   # weekly, Mondays 13:17 UTC
     refreshed = [c for c, s in states.STATES.items() if s.get("refresh") == "weekly" and c != "FL"]
+    assert "refresh-states.yml/enable" in text
+    if "python -m grantmatch.refresh_states" in text:   # the proposed driver form, once copied in
+        from grantmatch import refresh_states
+        assert set(refreshed) <= set(refresh_states.weekly_states())
+        return
     assert sorted(refreshed) == ["NJ", "WV"]
     uploads = re.search(r"gh release upload data-latest (.+?) --clobber", text).group(1).split()
     want = []
@@ -201,4 +216,3 @@ def test_the_state_refresh_workflow_runs_the_registry_states_weekly_and_publishe
         # the names export_web.fetch asks the release for, and the skipped file the report would read
         want += [f"build/{f}.json.gz", f"build/{f}.npz", f"build/skipped-{f}.json.gz"]
     assert sorted(uploads) == sorted(want) and len(uploads) == 6
-    assert "refresh-states.yml/enable" in text

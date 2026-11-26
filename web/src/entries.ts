@@ -1,6 +1,6 @@
 // Turns scored records from each source into one shape the result list draws.
 import {
-  asks501c3, fmtDate, money, type CompanyGiving, type FederalExtra, type GivingHistory, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier, type WebsiteCycle,
+  asks501c3, fmtDate, money, type CompanyGiving, type FederalExtra, type GivingHistory, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Stamps, type Tier, type WebsiteCycle,
 } from "./score";
 import { STATE_NAMES, SUPPORT_TYPES, splitList, type ProfileForm } from "./profile";
 import { federalReadiness, floridaReadiness, foundationReadiness, type ReadyCheck } from "./ready";
@@ -53,6 +53,8 @@ export interface Entry {
   steady?: boolean; // gave in each of the last four years
   firstTime?: boolean; // at least a third of its latest year's grantees were new to it
   newHere?: boolean; // its first grants to one of the person's places came in its latest year
+  checked?: string; // when its source was last read, as shown on the card ("Nov 25, 2026")
+  dead?: boolean; // its link didn't open at the last freshness check
   reach?: "national" | "state" | ""; // a foundation that gives in 5 or more states, or mostly in the person's state
   forecast?: boolean; // a federal forecast, not open yet
   ready?: ReadyCheck[]; // "Can we apply?": the facts that stop a small nonprofit, checked against the profile
@@ -106,6 +108,21 @@ function phone(v: string): DetailRow | null {
 
 const plural = (n: number, noun: string) => `${n.toLocaleString("en-US")} ${n === 1 ? noun : noun + "s"}`;
 
+export const DEAD_LINK = "Link didn't open when last checked";
+
+/** What the card's date is of. A foundation's is when its IRS return data was read, not its website. */
+export const checkedLabel = (e: Pick<Entry, "source">) => (e.source === "fdn" ? "IRS data last checked" : "Last checked");
+
+/** The card's "Last checked" date and dead-link flag, from the export's stamps. */
+export function lastChecked(r: Stamps): { checked?: string; dead?: boolean } {
+  const s = r._checked ?? "";
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(s) ? ymdDate(s) : new Date(s);
+  return {
+    ...(s && !Number.isNaN(d.getTime()) ? { checked: fmtDate(d) } : {}),
+    ...(r._link === "dead" ? { dead: true } : {}),
+  };
+}
+
 export function federalEntry(s: Scored<FederalRec & FederalExtra>, hasKw: boolean, p?: Profile): Entry {
   const r = s.rec;
   const label = r.status === "forecasted" ? "Est. due" : "Due";
@@ -128,6 +145,7 @@ export function federalEntry(s: Scored<FederalRec & FederalExtra>, hasKw: boolea
     amountHigh: (r.award_ceiling && r.award_ceiling > 0 ? r.award_ceiling : null) ?? (r.award_floor || null),
     support: supportIn(`${r.title} ${desc}`),
     forecast: r.status === "forecasted",
+    ...lastChecked(r),
     ...(p ? ready(federalReadiness(r, p, [...why.cautions, ...status])) : {}),
   };
 }
@@ -205,6 +223,7 @@ export function companyRows(c: CompanyGiving | undefined): { rows: DetailRow[]; 
   if (/^\d{4}-\d{2}-\d{2}$/.test(p.checked)) {
     rows.push({ label: "Source", text: `Entered by hand from ${c.company}'s giving page, checked ${fmtDate(ymdDate(p.checked))}` });
   }
+  if (p.link === "dead") rows.push({ label: "Program page check", text: DEAD_LINK });
   const range = /^\$[\d,]+ to \$[\d,]+$/.test(p.amount) ? p.amount : "";
   return { rows, side: range ? `Grants ${range}` : undefined, line: `Runs ${p.name}${range ? `, ${range}` : ""}` };
 }
@@ -263,6 +282,7 @@ export function foundationEntry(s: Scored<FoundationOut>, state: string, hasKw: 
     support: supportIn([...r.top_purposes, ...(r.sample_grants || []).map((g) => g?.purpose ?? ""), r._mission ?? ""].join(" ")),
     kind: r.kind ?? "Private foundation",
     corp: r._corp?.company,
+    ...lastChecked(r),
     steady: past.steady, firstTime: past.firstTime, newHere: past.newHere,
     reach: Object.values(r.recipient_states ?? {}).filter(Boolean).length >= 5 ? "national"
       : (r.grant_count ? r.in_state / r.grant_count >= 0.5 : false) ? "state" : "",
@@ -339,6 +359,7 @@ export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean, p?: Profile)
     sortClose: due,
     score: s.score, tier: s.tier, ...why, rows,
     support: supportIn(`${r.title} ${r.objectives}`),
+    ...lastChecked(r),
     ...(p ? ready(floridaReadiness(r, p, [...why.cautions, ...why.status])) : {}),
   };
 }

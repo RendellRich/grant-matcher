@@ -402,6 +402,14 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
 .ready > summary h2 { font: 650 1.25rem/1.3 var(--sans); }
 .ready .checklist h2 { display: none; }
 .ready .checklist { padding: 0 0 1rem 1.5rem; }
+/* Local funders to ask: ruled entries like the results, with no score, since these are not grants. */
+.funders-body { display: grid; gap: .75rem; padding: 0 0 1rem 1.5rem; }
+.funders-body .note { margin-bottom: 0; }
+.funders-body > p { max-width: 66ch; }
+.funder { display: grid; gap: .25rem; padding: .875rem 0 .5rem; }
+.funder h3 { font: 600 1.125rem/1.3 var(--serif); overflow-wrap: anywhere; }
+.funder-site { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+.funder-none { font-size: .875rem; }
 
 /* ---------- phones and narrow tablets ---------- */
 @media (max-width: 860px) {
@@ -420,6 +428,7 @@ input[type="search"]:focus-visible, input[type="date"]:focus-visible { outline-o
   .profile { padding-top: 1rem; }
   .profile .form-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .main { padding-top: 1.25rem; }
+  .funders-body { padding-left: 0; }
 }
 @media (max-width: 560px) {
   .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem; }

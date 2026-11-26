@@ -114,6 +114,8 @@ def normalize(hit: dict, detail: dict) -> dict:
         "estimated_funding": _num(block.get("estimatedFunding")),
         "number_of_awards": _num(block.get("numberOfAwards")),
         "cost_sharing": bool(block.get("costSharing")),
+        # Only when the record leaves it out, so a missing value never reads as "no match required".
+        **({"cost_sharing_unstated": True} if block.get("costSharing") is None else {}),
         "applicant_types": [a["id"] for a in block.get("applicantTypes") or []],
         "categories": [c["id"] for c in block.get("fundingActivityCategories") or []],
         "category_labels": [c["description"] for c in block.get("fundingActivityCategories") or []],

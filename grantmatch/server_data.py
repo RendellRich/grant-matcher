@@ -1,7 +1,8 @@
 """Get the exported data ready for the private bucket the search function reads, and upload it.
 
 The page no longer ships the grant data. The deploy workflow exports it, keeps the small public files for
-the site (meta, examples, coverage, changes, counties), and puts everything in the Supabase bucket "data".
+the site (meta, examples, coverage, changes, counties, the local funder directory), and puts everything in the
+Supabase bucket "data".
 Signed-in accounts get short-lived links to the files there; visitors get a preview the search function
 ranks itself, and for that it reads a slim copy of each state's foundations: every sample grant keeps the
 city, state and purpose the score uses, but only the first eight, which the page shows, keep the rest.
@@ -27,7 +28,7 @@ import requests
 
 SHOWN = 8  # sample grants the page shows for a foundation (web/src/entries.ts)
 SCORED = ("city", "state", "purpose", "_city_title")
-PUBLIC = re.compile(r"^(meta|examples|coverage|changes)\.json$|^counties-[A-Z]{2}\.json$")
+PUBLIC = re.compile(r"^(meta|examples|coverage|changes)\.json$|^(counties|funders)-[A-Z]{2}\.json$")
 UPLOAD = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]*(\.slim)?\.(json|json\.gz|f16)$")
 
 

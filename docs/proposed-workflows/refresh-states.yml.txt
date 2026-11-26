@@ -1,0 +1,65 @@
+name: Refresh state lists
+
+# Source copy: docs/proposed-workflows/refresh-states.yml.txt. As a text file there, nothing runs it; it takes
+# effect only once copied over .github/workflows/refresh-states.yml (docs/freshness.md has the command and steps).
+#
+# Every state adapter meant to refresh weekly (West Virginia, New Jersey, New York, the District of Columbia and
+# Minnesota), in one job, through grantmatch/refresh_states.py. The list comes from grantmatch/states.py. A state
+# that fails keeps the file already on the release; the others are still published and the run shows as failed.
+# Billed minutes: estimated 2 to 3 a run, 8 to 15 a month (docs/freshness.md).
+
+on:
+  schedule:
+    - cron: "17 13 * * 1"   # weekly, Mondays at 13:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Read the state lists
+        run: python -m grantmatch.refresh_states --out build
+      - name: Build semantic embeddings
+        # Runs when a state failed above too, so the states that worked are still published.
+        if: ${{ !cancelled() }}
+        run: |
+          if [ ! -f build/refreshed.txt ]; then echo "::error::The refresh didn't run, so there is nothing to publish."; exit 1; fi
+          : > build/upload.txt
+          failed=0
+          for f in $(cat build/refreshed.txt); do
+            if [ ! -f "build/$f.json.gz" ]; then
+              echo "::warning::build/$f.json.gz is missing; the release keeps its last $f file."
+              failed=1
+            elif python -m grantmatch.embed programs "build/$f.json.gz" "build/$f.npz"; then
+              echo "build/$f.json.gz" >> build/upload.txt
+              echo "build/$f.npz" >> build/upload.txt
+              if [ -f "build/skipped-$f.json.gz" ]; then echo "build/skipped-$f.json.gz" >> build/upload.txt; fi
+            else
+              echo "::warning::$f did not embed; the release keeps its last $f file."
+              failed=1
+            fi
+          done
+          exit $failed
+      - name: Publish as data-latest release assets
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -s build/upload.txt ]; then echo "::warning::Nothing new to publish."; exit 0; fi
+          gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
+          gh release upload data-latest $(cat build/upload.txt) --clobber
+      - name: Keep this schedule from expiring
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/refresh-states.yml/enable"
