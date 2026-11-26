@@ -1,6 +1,7 @@
 // "Local funders to ask" (src/funders.ts, src/funderlist.tsx): which funders show for a profile's places, how each is
 // described, and that none of it reads like a grant. Every funder here is invented for the test.
 import { readFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { funderFacts, fundersStatus, nearFunders, programsText, type Funder, type FundersMeta } from "../src/funders";
 import { FUNDERS_TITLE, FUNDERS_WARNING, FundersView, type FundersViewProps } from "../src/funderlist";
@@ -59,6 +60,41 @@ describe("funders near the profile's places", () => {
 
   it("works from names alone before the county list loads", () => {
     expect(nearFunders(rows, "Rivertown", null)!.map((f) => f.name)).toEqual(["Rivertown"]);
+  });
+});
+
+// The names people type, against the committed directory and county names (public federal data).
+describe("everyday names find their government", () => {
+  const data = (file: string) => JSON.parse(gunzipSync(readFileSync(new URL(`../../data/${file}`, import.meta.url))).toString("utf8"));
+  const all = data("funders.json.gz").funders as (Funder & { state: string })[];
+  const places = data("counties.json.gz") as Record<string, Record<string, string[]>>;
+  const found = (state: string, typed: string) =>
+    nearFunders(all.filter((f) => f.state === state), typed, places[state])!.map((f) => f.name);
+
+  it.each([
+    ["TN", "Nashville", "Nashville-Davidson"],
+    ["KY", "Lexington", "Lexington-Fayette"],
+    ["GA", "Macon", "Macon-Bibb County"],
+    ["LA", "Houma", "Houma-Terrebonne"],
+    ["NY", "New York City", "New York"],
+    ["NY", "Manhattan", "New York"],
+    ["NY", "Brooklyn", "New York"],
+    ["NY", "Queens", "New York"],
+    ["NY", "Bronx", "New York"],
+    ["NY", "Staten Island", "New York"],
+    ["FL", "Ft Myers", "Fort Myers"],
+    ["FL", "Ft. Lauderdale", "Fort Lauderdale"],
+    ["PR", "Bayamon", "Bayamon Municipio"],
+    ["PR", "Mayaguez", "Mayaguez Municipio"],
+    ["PR", "Manati", "Manati Municipio"],
+    ["PR", "Bayam\u00f3n", "Bayamon Municipio"],
+  ])("%s: %s", (state, typed, name) => {
+    expect(found(state, typed)).toContain(name);
+  });
+
+  it("adds no government in another state for a borough's name", () => {
+    expect(found("KS", "Manhattan")).toContain("Manhattan");
+    expect(found("KS", "Manhattan")).not.toContain("New York");
   });
 });
 

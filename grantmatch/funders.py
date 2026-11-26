@@ -37,7 +37,7 @@ import re
 import tempfile
 import unicodedata
 import zipfile
-from datetime import datetime, timezone
+from datetime import date
 from pathlib import Path
 from urllib.parse import urlparse
 from xml.etree import ElementTree  # DTDs and entities are refused before parsing (_xml)
@@ -96,10 +96,13 @@ WHOLE_CITIES = {("NY", "New York"): ("Bronx", "Kings", "New York", "Queens", "Ri
 
 # Sites a few units reported that are plainly directories, not their own website.
 NOT_OFFICIAL = ("city-data.com", "whitepages.com", "wikipedia.org")
-# Addresses in the 2026 Census file that look like a misspelling of the government's own name. A mistyped address can
-# belong to anyone, so no link is shown; nothing is put in its place. Read through again with each new file.
-MISTYPED = ("avvada.org", "ci.neewah.wi.us", "ckkillen.tx.us", "educlairewi.gov", "lowermerian.org",
-            "myhairlingen.us", "mypopanobeach.org", "taylorsvillut.gov")
+# Addresses in the 2026 Census file that look like a misspelling of the government's own name, or are malformed
+# ("w.w.w.", a dot inside "cityof"). Such an address can belong to anyone, so no link is shown; nothing is put in its
+# place. A name here covers its subdomains. Read through again with each new file.
+MISTYPED = ("avvada.org", "bristolya.org", "ci.neewah.wi.us", "city.of.bridgeton.com", "cityof.meriden.org",
+            "ckkillen.tx.us", "educlairewi.gov", "lowermerian.org", "mobilcountyal.gov", "myhairlingen.us",
+            "mypopanobeach.org", "passonegon.gov", "ppine.com", "taylorsvillut.gov", "voanokeva.gov", "w.austintexas.gov",
+            "w.toaks.org", "w.w.w.hopewellva.gov")
 # HUD's abbreviations, spelled out on the page.
 SHORT = ((r"^Ft\b", "Fort"), (r"\bHts\b", "Heights"), (r"\bTwp\b", "Township"))
 
@@ -251,8 +254,10 @@ def website(raw: str) -> str:
         if "://" in s or ":" in s.split("/")[0]:
             return ""
         s = "http://" + s
-    p = urlparse(s)
-    host = (p.hostname or "").lower()
+    try:
+        host = (urlparse(s).hostname or "").lower()
+    except ValueError:  # an unfinished "[" and the like
+        return ""
     if not re.fullmatch(r"[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}", host):
         return ""
     if any(host == d or host.endswith("." + d) for d in NOT_OFFICIAL + MISTYPED):
@@ -590,6 +595,11 @@ def download(url: str, folder: Path) -> Path:
     return path
 
 
+def read_day(*saved: Path | None) -> date:
+    """The day the data was read: a saved copy's own date (the older of them), or today for a fresh download."""
+    return min((date.fromtimestamp(p.stat().st_mtime) for p in saved if p), default=date.today())
+
+
 def write(path: Path, funders: list[dict], fiscal_year: str, read_at: str) -> None:
     payload = {
         "fetched_at": read_at,
@@ -627,7 +637,8 @@ def main() -> None:
     ap.add_argument("--hud", type=Path, help="a saved copy of the HUD allocations workbook")
     ap.add_argument("--census", type=Path, help="a saved copy of the Census Government Units zip")
     ap.add_argument("--out", type=Path, default=OUT)
-    ap.add_argument("--read-at", help="when saved copies were downloaded (yyyy-mm-ddThh:mm+00:00)")
+    ap.add_argument("--read-at", type=date.fromisoformat,
+                    help="the day the files were read, yyyy-mm-dd (default: today, or the older saved copy's own date)")
     args = ap.parse_args()
     with tempfile.TemporaryDirectory() as tmp:
         folder = Path(tmp)
@@ -642,7 +653,7 @@ def main() -> None:
         problems.append(f"only {len(funders)} funders; keeping the previous file")
     if problems:
         raise SystemExit("\n".join(problems[:40]))
-    write(args.out, funders, fiscal_year, args.read_at or datetime.now(timezone.utc).isoformat(timespec="minutes"))
+    write(args.out, funders, fiscal_year, (args.read_at or read_day(args.hud, args.census)).isoformat())
     with_site = sum(1 for f in funders if f.get("website"))
     print(f"{stats['grantees']} HUD grantee rows; {stats['states_and_territories']} states and territories and "
           f"{stats['no_cdbg_or_home']} with no CDBG or HOME money left out; {len(units)} Census units read")

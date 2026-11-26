@@ -26,12 +26,18 @@ export interface FundersMeta {
   census_as_of: string;
 }
 
-/** A name for comparing: no case, accents or punctuation, and "Saint" as "St". */
+/** A name for comparing: no case, accents or punctuation, "Saint" as "St" and "Ft" as "Fort". */
 const fold = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-  .replace(/\bsaint\b/g, "st").replace(/[^a-z0-9]+/g, " ").trim();
+  .replace(/\bsaint\b/g, "st").replace(/\bft\b/g, "fort").replace(/[^a-z0-9]+/g, " ").trim();
 
 const COUNTY_WORD = / (county|parish|municipio)$/;
-const CITY_WORD = / (charter township|township|town|village|borough|city and county|city county|city)$/;
+const CITY_WORD = / (charter township|township|town|village|borough|city and county|city county|city|municipio)$/;
+/** Everyday names for governments the list names another way (both sides as `fold` writes them). */
+const ALSO_KNOWN: Record<string, string> = {
+  "nashville": "nashville davidson", "lexington": "lexington fayette", "macon": "macon bibb county",
+  "houma": "houma terrebonne", "new york city": "new york", "manhattan": "new york", "brooklyn": "new york",
+  "queens": "new york", "bronx": "new york", "staten island": "new york",
+};
 
 /** The funders near the profile's typed cities and counties, in the list's own order (by name), or null when no place
  *  is typed. A typed county takes every funder in it. A typed city takes the funder of that name and every funder in
@@ -47,6 +53,7 @@ export function nearFunders(funders: Funder[], typed: string, counties: Record<s
     const countyOnly = COUNTY_WORD.test(place);
     const bare = place.replace(COUNTY_WORD, "");
     names.add(place);
+    if (ALSO_KNOWN[place]) names.add(ALSO_KNOWN[place]);
     for (const [county, held] of table) {
       if (county === bare || (!countyOnly && held.includes(place))) wanted.add(county);
     }

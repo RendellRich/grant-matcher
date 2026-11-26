@@ -3,9 +3,10 @@ funders apart from grants. Every government and figure in the made-up rows is in
 import gzip
 import io
 import json
+import os
 import re
 import zipfile
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -148,6 +149,20 @@ def test_a_workbook_part_with_a_document_type_or_another_encoding_is_refused(par
     ("Whitepages.com", ""),
     ("http://www.example.com.www.city-data.com/city/x.html", ""),
     ("http://www.avvada.org", ""),  # looks mistyped in the Census file: no link, and no guess in its place
+    ("http://www.mobilcountyal.gov", ""),
+    ("http://www.voanokeva.gov", ""),
+    ("http://www.bristolya.org", ""),
+    ("http://www.ppine.com", ""),
+    ("http://www.grants.passonegon.gov", ""),
+    ("http://www.w.w.w.hopewellva.gov", ""),
+    ("http://www.w.austintexas.gov", ""),
+    ("http://www.w.toaks.org", ""),
+    ("http://www.cityof.meriden.org", ""),
+    ("http://www.city.of.bridgeton.com", ""),
+    ("http://www.austintexas.gov", "http://www.austintexas.gov"),  # only the malformed form is withheld
+    ("http://www.cityof.lawton.ok.us", "http://www.cityof.lawton.ok.us"),
+    ("http://[bad", ""),
+    ("[bad", ""),
     ("", ""),
 ])
 def test_a_website_is_the_census_one_or_none(raw, kept):
@@ -296,7 +311,7 @@ def committed():
 
 def test_the_committed_directory_is_whole_and_labelled(committed):
     rows = committed["funders"]
-    assert committed["fiscal_year"] == "2026" and committed["fetched_at"][:10] >= "2026-11-25"
+    assert committed["fiscal_year"] == "2026" and committed["fetched_at"] == "2026-11-25"  # a date, no time
     assert [s["page"] for s in committed["sources"]] == [funders.HUD_PAGE, funders.CENSUS_PAGE]
     assert len(rows) >= funders.MIN_FUNDERS and len({r["id"] for r in rows}) == len(rows)
     assert {"FL", "KS", "DC", "PR", "WY"} <= {r["state"] for r in rows}
@@ -306,6 +321,8 @@ def test_the_committed_directory_is_whole_and_labelled(committed):
         assert r["programs"] and r["fiscal_year"] == "2026"
         assert bool(r["area"]) == bool(r["counties"])
     assert "@" not in json.dumps(rows)
+    for r in rows:  # no withheld address is in the file
+        assert "website" not in r or funders.website(r["website"]) == r["website"], r["name"]
     plantation = next(r for r in rows if r["state"] == "FL" and r["name"] == "Plantation")
     assert plantation["counties"] == ["Broward"]  # not Sarasota, which has another place of that name
     new_york = next(r for r in rows if r["state"] == "NY" and r["name"] == "New York")
@@ -369,6 +386,17 @@ def test_freshness_lists_the_directory_and_never_its_websites(committed):
     for url, users in links.items():
         if url not in from_directory:
             assert not any("Local funder" in u for u in users)
+
+
+def test_the_read_date_is_the_saved_copys_own_date(tmp_path):
+    older, newer = tmp_path / "hud.xlsx", tmp_path / "census.zip"
+    for path, day in ((older, date(2026, 3, 2)), (newer, date(2026, 4, 5))):
+        path.write_bytes(b"x")
+        noon = datetime(day.year, day.month, day.day, 12).timestamp()
+        os.utime(path, (noon, noon))
+    assert funders.read_day(newer, older) == date(2026, 3, 2)
+    assert funders.read_day(None, newer) == date(2026, 4, 5)
+    assert funders.read_day(None, None) == date.today()
 
 
 def test_a_download_goes_through_the_crawling_rule_with_the_project_agent(tmp_path, monkeypatch):

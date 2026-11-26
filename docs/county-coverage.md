@@ -203,7 +203,7 @@ Built November 25, 2026. "Local funders to ask" on the site lists the local gove
 - **One entry per government.** HUD lists two governments twice (Burlington, North Carolina and Davis County, Utah: their own CDBG row and a HOME consortium row); each is one entry.
 - **HOME consortia.** 148 entries carry a consortium code, and their HOME amount is shown as a consortium's, not that government's alone. That reading comes from the file's layout (each code is on one row); HUD's file doesn't say it in words.
 - **From the Census file** only the unit's name, Census id, kind, population, county and website are read. No street address, job title, person's name or email address is read or stored.
-- **Websites** are the ones governments reported to the Census Bureau, which says it does only limited quality control. None is guessed or searched for, and none was opened or checked. Left blank: cells that aren't a web address (including email addresses), directory sites, and eight addresses that look like a misspelling of the government's own name (`MISTYPED` in `grantmatch/funders.py`: Arvada, Pompano Beach, Lower Merion, Harlingen, Killeen, Taylorsville, Eau Claire and Neenah), since a mistyped domain can belong to anyone. Others like them may have been missed.
+- **Websites** are the ones governments reported to the Census Bureau, which says it does only limited quality control. None is guessed or searched for, and none was opened or checked. A government's listed website may be a department's or a library's site, or another page, as the Census file gives it (Waterloo, Iowa's is under a library domain); it is shown as it stands. Left blank: cells that aren't a web address (including email addresses), directory sites, and eighteen addresses that look misspelled or malformed (`MISTYPED` in `grantmatch/funders.py`), since such a domain can belong to anyone. No other address is put in their place. They belong to Arvada, Pompano Beach, Pembroke Pines, Lower Merion, Eau Claire, Neenah, Mobile County, Roanoke, Bristol (Virginia), Hopewell, Austin, Thousand Oaks, Grants Pass, Harlingen, Killeen, Taylorsville, Meriden and Bridgeton (New Jersey). This was judged by eye from the address beside the government's name; a good address may be among them and a bad one may have been missed.
 - **Names** are HUD's, with "Ft", "Hts" and "Twp" spelled out and county names spelled as `data/counties.json.gz` has them.
 
 ### How a government is matched
@@ -211,7 +211,8 @@ Built November 25, 2026. "Local funders to ask" on the site lists the local gove
 - An urban county by HUD's code (state code, 9, county FIPS code), and only when the names agree too.
 - A city, town or township by name within its state. When several share a name, the kind in HUD's name decides, then municipalities before townships, then Census "city" units, then population of 50,000 or more. If more than one is still left, none is picked. Twelve names HUD words differently are joined by hand (`ALIASES`).
 - State comes from the FIPS code, not the file's mailing address (Texarkana, Arkansas has a Texas address).
-- Counties: the one county the Census file puts the government in (the one it says is most served), spelled as in `data/counties.json.gz`. **A city that spans several counties lists only that one** (Houston shows under Harris, not Fort Bend), though typing the city's own name still finds it. The other counties aren't guessed from place names, since a different place of the same name would add a county the city isn't in. New York City is set to its five counties by hand. Connecticut towns are placed by a name found in exactly one county. A government with no reliable county is left at state level and shows under "Show all". Listing every county of a multi-county city would take the Census places-by-county file joined by FIPS code (the file `grantmatch/counties.py` already reads); not done.
+- Counties: the one county the Census file puts the government in (the one it says is most served), spelled as in `data/counties.json.gz`. **A city that spans several counties lists only that one** (Houston shows under Harris, not Fort Bend). The other counties aren't guessed from place names, since a different place of the same name would add a county the city isn't in. New York City is set to its five counties by hand. Connecticut towns are placed by a name found in exactly one county. A government with no reliable county is left at state level and shows under "Show all". Listing every county of a multi-county city would take the Census places-by-county file joined by FIPS code (the file `grantmatch/counties.py` already reads); not done.
+- **Typing a name on the site** finds a government by the name the list uses (without "City", "Township", "Municipio" and the like, and without accents), with "Ft" read as "Fort" and "Saint" as "St". Short names are also read for Nashville, Lexington, Macon, Houma, New York City and its five boroughs. Other spellings, short forms and parts of a joined name may not find it by name (for example "Macon-Bibb" without "County"); it can still show through its county, and it is always under "Show all".
 - **Not matched to a Census record (28):** Puerto Rico's 27 municipios (the Census listing has none) and Washington Township, New Jersey (several share the name). They have no website.
 - **No county (8):** Fairfield, Hamden and Stratford, Connecticut (the Census file now uses planning regions); Houma-Terrebonne, Louisiana (the file misspells the parish); Baltimore, St. Louis, Richmond and Roanoke (each shares its name with a county that is a different government).
 
@@ -222,15 +223,15 @@ Built November 25, 2026. "Local funders to ask" on the site lists the local gove
 | State | Entries | With website | No website | County matched |
 |---|---|---|---|---|
 | AK | 1 | 1 | 0 | 1 |
-| AL | 16 | 16 | 0 | 16 |
+| AL | 16 | 15 | 1 | 16 |
 | AR | 14 | 13 | 1 | 14 |
 | AZ | 23 | 23 | 0 | 23 |
-| CA | 186 | 185 | 1 | 186 |
+| CA | 186 | 184 | 2 | 186 |
 | CO | 23 | 22 | 1 | 23 |
-| CT | 23 | 23 | 0 | 20 |
+| CT | 23 | 22 | 1 | 20 |
 | DC | 1 | 1 | 0 | 1 |
 | DE | 3 | 3 | 0 | 3 |
-| FL | 88 | 86 | 2 | 88 |
+| FL | 88 | 85 | 3 | 88 |
 | GA | 28 | 28 | 0 | 28 |
 | HI | 4 | 4 | 0 | 4 |
 | IA | 12 | 12 | 0 | 12 |
@@ -252,28 +253,28 @@ Built November 25, 2026. "Local funders to ask" on the site lists the local gove
 | ND | 4 | 4 | 0 | 4 |
 | NE | 4 | 4 | 0 | 4 |
 | NH | 5 | 5 | 0 | 5 |
-| NJ | 60 | 57 | 3 | 60 |
+| NJ | 60 | 56 | 4 | 60 |
 | NM | 5 | 5 | 0 | 5 |
 | NV | 7 | 7 | 0 | 7 |
 | NY | 52 | 49 | 3 | 52 |
 | OH | 46 | 44 | 2 | 46 |
 | OK | 10 | 10 | 0 | 10 |
-| OR | 19 | 18 | 1 | 19 |
+| OR | 19 | 17 | 2 | 19 |
 | PA | 50 | 46 | 4 | 50 |
 | PR | 27 | 0 | 27 | 27 |
 | RI | 6 | 6 | 0 | 6 |
 | SC | 22 | 22 | 0 | 22 |
 | SD | 2 | 2 | 0 | 2 |
 | TN | 19 | 19 | 0 | 19 |
-| TX | 80 | 78 | 2 | 80 |
+| TX | 80 | 77 | 3 | 80 |
 | UT | 19 | 18 | 1 | 19 |
-| VA | 31 | 31 | 0 | 29 |
+| VA | 31 | 28 | 3 | 29 |
 | VT | 1 | 1 | 0 | 1 |
 | WA | 38 | 38 | 0 | 38 |
 | WI | 22 | 20 | 2 | 22 |
 | WV | 9 | 8 | 1 | 9 |
 | WY | 1 | 1 | 0 | 1 |
-| All | 1,264 | 1,210 | 54 | 1,256 |
+| All | 1,264 | 1,200 | 64 | 1,256 |
 
 ### Upkeep
 
