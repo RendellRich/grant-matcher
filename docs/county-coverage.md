@@ -56,6 +56,7 @@ One file per state, `data/local-<ST>.json`: `{"about": "...", "programs": [...]}
 | `url`, `checked` | yes | The official page (https) and the date a person checked it |
 | `opens`, `closes` | no | `yyyy-mm-dd` or `null` |
 | `rolling` | no | `true` for a program that takes applications any time; no `closes` |
+| `by_invitation` | no | `true` when only invited or earlier recipients may apply. "Can we apply?" shows it as something to check; no score change |
 | `deadlines` | no | A sentence that replaces the one made from `opens` and `closes` |
 | `contact`, `subjects`, `web` | no | `web` is a second page, usually an HTML page beside a PDF |
 | `area` | with `places` or `exclude_places` | The words the card uses, for example "Houston" or "suburban Cook County" |
@@ -88,7 +89,7 @@ How a place is matched: the card says "Funds work in <area>" when one of the pro
 - **Tax status.** All seven had said no 501(c)(3) was needed, which was wrong. Cultural Advancement, Cultural Development and the Broward sponsorships require it (`true`). Community Grants, Developing Arts in Neighborhoods, Festivals and Hannibal Cox allow a fiscal agent or another 501(c) type, or ask only for a Florida not-for-profit (`null`).
 - **Match.** All six Miami-Dade programs require one: 100% for five (Community Grants allows part in kind; the others ask for cash), and 100% to 300% from private sources for Festivals. Broward's pages state none; its policy says the Council will not be an event's only funder.
 - **Dates.** Community Grants' fourth quarter opens January 22, 2027 (the entry had no opening date, so it would have read as open now). Opening dates were added to the five closed programs.
-- **Who may apply** now carries the guidelines' limits, among them budget floors and ceilings, and that arts programs for or with children can't use Cultural Advancement, Developing Arts or Hannibal Cox. Cultural Advancement is by invitation or prior recommendation.
+- **Who may apply** now carries the guidelines' limits, among them budget floors and ceilings, and that arts programs for or with children can't use Cultural Advancement, Developing Arts or Hannibal Cox. Cultural Advancement is by invitation or prior recommendation, which "Can we apply?" shows (`by_invitation`).
 - **Broward** gives up to $2,000 for events only, and takes requests any time, 60 to 180 days before the event.
 
 Existing Florida entries, ids and scores are unchanged (`tests/test_florida_unchanged.py`).

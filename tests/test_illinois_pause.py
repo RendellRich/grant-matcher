@@ -126,8 +126,11 @@ def test_the_daily_job_succeeds_and_republishes_the_same_data_without_asking_ill
     (Answer(500), SKIPPED), (requests.ConnectionError("down"), SKIPPED), (None, SKIPPED),
     (gz({"fetched_at": FETCHED, "programs": []}), SKIPPED), (gz({"programs": [program(1, OMB)]}), SKIPPED),
     (b"not gzip", SKIPPED), (DATA, Answer(503)), (DATA, requests.Timeout("slow")),
+    (DATA, b""), (DATA, b"<html>sign in</html>"), (DATA, SKIPPED[:20]), (DATA, gzip.compress(b"not json")),
+    (DATA, gz(["a list"])), (DATA, gz({"fetched_at": FETCHED})),
 ], ids=["server error", "no connection", "no copy anywhere", "no calls", "no date", "corrupt", "skip list error",
-        "skip list timeout"])
+        "skip list timeout", "skip list empty", "skip list not gzip", "skip list cut off", "skip list not json",
+        "skip list not an object", "skip list without rows"])
 def test_when_the_published_files_cannot_be_had_the_run_fails_and_writes_nothing(tmp_path, monkeypatch, data, skipped):
     monkeypatch.setattr(illinois, "LOCAL", tmp_path / "no-snapshot")
     monkeypatch.setattr(illinois, "session", release(data, skipped))

@@ -272,6 +272,9 @@ def test_the_seven_rechecked_florida_entries_are_loaded_with_what_their_guidelin
     }
     assert all(r["match"].startswith("100%") for i, r in new.items() if "miami-dade-" in i)
     assert "match" not in new["local-broward-csc-sponsorships"]  # its pages don't state one
+    assert [i for i, r in records.items() if r.get("by_invitation")] == ["local-miami-dade-cultural-advancement"]
+    assert local.check(entry(by_invitation="yes"), COUNTIES) == ["by_invitation must be true or false"]
+    assert "by_invitation" not in local.to_record(entry(by_invitation=False), COUNTIES)
     cg = new["local-miami-dade-community-grants"]
     assert (cg["opens"], cg["closes"]) == ("2027-01-22", "2027-02-18")  # not open on the day it was checked
     day = date(2026, 11, 25)

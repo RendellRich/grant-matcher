@@ -1,15 +1,20 @@
-"""The adapters keep "the list says no match is needed" apart from silence (tests/fixtures/match-statements.json, read
-here and by web/test/match.test.ts), and that never changes a score."""
+"""The adapters keep "the list says no match is needed" apart from silence, and grantmatch/match_words.py reads a
+program's own words as the card does (tests/fixtures/match-statements.json, read here and by web/test/match.test.ts).
+None of it changes a score."""
+import gzip
 import json
+import re
 from pathlib import Path
 
 import pytest
 
-from grantmatch import california, fetch, illinois, ohio, washington
+from grantmatch import california, fetch, illinois, local, match_words, ohio, washington
 from grantmatch.match import Profile
 from grantmatch.rank_more import score_florida
 
-CASES = json.loads((Path(__file__).parent / "fixtures" / "match-statements.json").read_text(encoding="utf-8"))["cases"]
+FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "match-statements.json").read_text(encoding="utf-8"))
+CASES, WORDS = FIXTURE["cases"], FIXTURE["words"]
+ROOT = Path(__file__).parent.parent
 
 ROW = {"detail": "https://omb.illinois.gov/PUBLIC/GATA/CSFA/Opportunity.aspx?nofo=1", "title": "Reading", "agency": "A",
        "opens": "2026-11-01", "closes": "2027-01-01", "no_end": False, "award_range": ""}
@@ -34,6 +39,40 @@ def test_each_adapter_keeps_what_the_list_said_about_a_match(case):
     assert got["match"] == case["record"]["match"]
     assert ("match_none" in got) == case["record"].get("match_none", False)
     assert got.get("match_none", True) is True
+    assert match_words.statement({**got, "status": "active"}) == case["label"]
+
+
+@pytest.mark.parametrize("case", WORDS, ids=[c["name"] for c in WORDS])
+def test_a_programs_words_read_the_same_as_on_the_card(case):
+    purpose = case.get("purpose", "")
+    assert match_words.words(case["text"], purpose)["says"] == case["says"]
+    program = {"restrictions": case["text"], "objectives": purpose}
+    assert match_words.statement(program) == case["program"]
+    assert match_words.statement({**program, "status": "active", "match": ""}) == case["call"]
+    if case["says"] not in ("none", "silent"):  # an open list saying "none" never wins over words that ask for one
+        listed = match_words.statement({**program, "status": "active", "match": "", "match_none": True})
+        asks = match_words.words(case["text"], purpose)
+        assert listed == "Match not stated" or not (asks["plain"] or asks["asks"])
+
+
+def test_the_florida_records_that_state_a_match_are_never_read_as_silent_or_none():
+    path = ROOT / "data" / "florida.json.gz"
+    recs = {r["id"]: r for r in json.loads(gzip.decompress(path.read_bytes()))["programs"]}
+    for rid in ("fl-87527", "fl-87345", "fl-88595", "fl-88611", "fl-88748", "fl-88798", "fl-90605"):
+        if rid not in recs:  # the weekly catalog moved on; the cut sentences in the fixture still stand
+            continue
+        r = recs[rid]
+        text = " \n ".join(r.get(k) or "" for k in match_words.TEXT_FIELDS)
+        assert match_words.words(text, r["objectives"])["says"] == "unclear", rid
+        assert match_words.statement(r) == "Match not stated", rid
+
+
+def test_the_two_readings_use_the_same_patterns():
+    """Each pattern in match_words.py is in web/src/ready.ts, written the same way."""
+    ts = (ROOT / "web" / "src" / "ready.ts").read_text(encoding="utf-8")
+    for name in ("NONE_NEEDED", "ASKS", "PLAIN_MATCH", "CASH_ONLY", "MATCH"):
+        found = re.search(rf"^const {name} = /(.*)/g?i;$", ts, re.M)
+        assert found and found.group(1) == getattr(match_words, name).pattern, name
 
 
 def test_saying_none_never_changes_a_score():
