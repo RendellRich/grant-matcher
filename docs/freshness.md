@@ -19,13 +19,14 @@ The page watch writes its own report and readings first. If the freshness check 
 | Private and community foundations | the oldest state file's `fetched_at` | `refresh-foundations.yml`, monthly | 45 days |
 | Foundation coverage numbers | `coverage.json` `made_at` | `refresh-foundations.yml`, monthly | 45 days |
 | Hand-kept files and company programs | the oldest `checked` date | a person | 90 days |
+| Local funder directory (HUD and Census) | `data/funders.json.gz` `fetched_at` | a person, once a year (`python -m grantmatch.funders`) | 400 days |
 | County and place names | the 2020 census file | a person, once a census | 4,018 days (about 11 years) |
 
 Illinois is paused (grantmatch/states.py, "paused"): its daily job keeps republishing the last files unchanged, so its date stops moving and it is flagged as old after 3 days. The report says the pause is why. See [state-coverage.md](state-coverage.md) section (f).
 
 A source with no readable date counts as old. A release file whose read failed, or was skipped because the 90 seconds for reading the release ran out, is reported as "could not read": it is not counted as old, and the older copy in `data/` is not read in its place. The built states and their limits come from the registry (`grantmatch/states.py`), so a new state joins with no change here.
 
-**Whether links open.** The public pages the sources are read from (each built state's `pages` in the registry; Grants.gov, the two IRS pages and the Census file for the others), the links on state calls, and the pages behind the hand-kept and company programs. The hand-kept pages are the ones the page watch has just read, so they aren't asked for twice.
+**Whether links open.** The public pages the sources are read from (each built state's `pages` in the registry; Grants.gov, the two IRS pages, the Census county file and the funder directory's HUD and Census pages for the others), the links on state calls, and the pages behind the hand-kept and company programs. The hand-kept pages are the ones the page watch has just read, so they aren't asked for twice.
 
 | Result | When | Counted as dead |
 |---|---|---|
@@ -46,6 +47,7 @@ Every request goes through the project's crawling rule (`off_limits` in `grantma
 - **Federal grant links.** No job opens them: the Grants.gov refresh reads the API, not the grant pages.
 - **Florida catalog links.** The weekly Florida refresh reads the catalog pages, but no link result is recorded.
 - **Foundation websites.** The weekly website check reads them, but no link result is recorded.
+- **Local funder directory websites.** About 1,200 government sites. Nothing opens them: checking them every week would lengthen the paid weekly job. Only the directory's two source pages are checked, which adds 2 pages to a run.
 - **Off-limits hosts**, and pages that turn scripts away.
 
 ## "Last checked" on the cards

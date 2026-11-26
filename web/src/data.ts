@@ -1,6 +1,8 @@
-// Loads the files grantmatch/export_web.py writes. The small public ones (meta, examples, coverage, counties)
-// come with the site; the grant data comes from the private bucket through links the search gate sends.
+// Loads the files grantmatch/export_web.py writes. The small public ones (meta, examples, coverage, counties, the
+// local funder directory) come with the site; the grant data comes from the private bucket through links the search
+// gate sends.
 import type { FileLink } from "./access";
+import type { Funder, FundersMeta } from "./funders";
 import { ELIGIBILITY_UNSTATED } from "./score";
 import { decodeF16, type VectorSet } from "./vectors";
 
@@ -36,6 +38,8 @@ export interface Meta {
   programs?: Record<string, { file: string; source: string; updated?: string; who_listed?: boolean; local_only?: boolean; local?: boolean; paused?: boolean }>;
   /** Every state's catalog status from grantmatch/states.py: built, next, decide, html, blocked, none or unchecked. */
   catalogs?: Record<string, { status: string; source: string }>;
+  /** The local funder directory (funders.ts): which states have a funders-ST.json file, and its sources. */
+  funders?: FundersMeta;
 }
 
 /** grantmatch/coverage.py: registered foundations against what the state files hold. */
@@ -184,3 +188,5 @@ export const shownSources = <K extends string>(keys: K[], hasPrograms: boolean):
   keys.filter((k) => k !== "fl" || hasPrograms);
 /** A state's counties and the cities, towns and Census places in each (grantmatch/counties.py). */
 export const loadCounties = (state: string) => json<Record<string, string[]>>(`counties-${state}.json`);
+/** A state's local funders (grantmatch/funders.py). Funders, not grants: never scored or listed with results. */
+export const loadFunders = (state: string) => json<Funder[]>(`funders-${state}.json`);

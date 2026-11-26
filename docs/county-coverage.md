@@ -4,6 +4,8 @@ What Grant Matcher holds for county and city grants, checked November 25, 2026.
 
 **No free national or state catalog of county or city grants exists in what was searched.** The research looked for one (a web search, the 51-state audit in [state-coverage.md](state-coverage.md), the Socrata and ArcGIS open-data catalogs and the grant platforms local governments use) and found state-agency portals, commercial aggregators that can't be used, and a few regional lists, but no dataset of current county or city calls. "Not found" is not proof that none exists. So every county and city program here is entered by hand from the program's own page, and coverage is partial.
 
+Separately, a [local funder directory](#local-funder-directory) lists local governments that get HUD money, from two federal files. It is a list of funders to ask, not of programs.
+
 ## How a program gets in
 
 1. robots.txt is read first, with the user agent `grant-matcher (github.com/RendellRich/grant-matcher)`. A site that keeps out this crawler, ClaudeBot or another Anthropic agent is off limits, and so is a site whose robots.txt can't be read. The agent is never changed to get around it.
@@ -64,7 +66,7 @@ One file per state, `data/local-<ST>.json`: `{"about": "...", "programs": [...]}
 | `exclude_places` | no | Places in those counties that are not served, for example Chicago in a suburban Cook County program. Not with `places` |
 | `source_note` | no | Something the page gets wrong or leaves unclear; shown on the card as "Note" |
 
-`places`, `exclude_places`, `area`, `match`, `source_note` and a `null` `requires_501c3` came with this batch. In Florida's file only the seven Miami-Dade and Broward programs added later use any of them (`match`, `source_note`, a `null` `requires_501c3`); its earlier entries are unchanged. New entries carry no email addresses. FIPS codes are not stored, because nothing reads them yet; counties are matched by name against `data/counties.json.gz`. Phase 2 would need them.
+`places`, `exclude_places`, `area`, `match`, `source_note` and a `null` `requires_501c3` came with this batch. In Florida's file only the seven Miami-Dade and Broward programs added later use any of them (`match`, `source_note`, a `null` `requires_501c3`); its earlier entries are unchanged. New entries carry no email addresses. FIPS codes are not stored, because nothing reads them; counties are matched by name against `data/counties.json.gz`.
 
 How a place is matched: the card says "Funds work in <area>" when one of the profile's cities or counties is in the program's list, and "Only for work in <area>" (40 points off) when not. A county typed into the profile counts as every place in it, so someone who types a county also matches a city program inside it. In a program for towns and unincorporated areas (Maricopa County CDBG), an organization that types only an unincorporated place's name should add the county.
 
@@ -179,21 +181,114 @@ Every other state and the District of Columbia has no county or city list.
 
 On the site, a list in a state with a state catalog (Florida, California, Illinois, New York, Washington and the others) joins that state's tab. In Arizona, Nevada, Pennsylvania and Texas, which have no state catalog, the tab is "<state> local programs", and the note above the tabs says it holds county and city programs only, entered by hand, as a partial list. Iowa, Illinois, Ohio and Washington lists join their tab only when that state's data file is in the release, as before.
 
+## Local funder directory
+
+Built November 25, 2026. "Local funders to ask" on the site lists the local governments that get HUD formula money. **They are funders, not open grant calls.** HUD money going to a government doesn't mean it funds nonprofits now, and CDBG money for public services is limited and varies. The directory is never ranked or scored, carries no deadline and no "open to nonprofits", stays out of results, the shortlist and the downloads, and neither scorer reads it. It is not the hand-kept programs above: those are calls read from each program's own page.
+
+### Sources and license
+
+| Source | File read | As of | License evidence |
+|---|---|---|---|
+| HUD [FY 2026 formula program allocations](https://www.hud.gov/hud-partners/community-budget-26) | [FY2026-Formula-Allocations-All-Grantees.xlsx](https://www.hud.gov/sites/dfiles/CPD/documents/FY2026-Formula-Allocations-All-Grantees.xlsx), 117,390 bytes | 2026-08-03 (the page's "content current as of") | A work of the U.S. government. [USAGov](https://www.usa.gov/government-copyright) points to 17 U.S.C. 105 for what that means for copyright. No license or terms statement is in the page's text or linked for the file, and HUD's privacy and web management pages, as read, state no limit on reuse or automated reading (the policy documents the web management page links as PDFs were not read) |
+| Census Bureau [Government Units listing](https://www2.census.gov/programs-surveys/gus/datasets/), 2026 | [gov_units_2026.zip](https://www2.census.gov/programs-surveys/gus/datasets/2026/gov_units_2026.zip), 10,795,638 bytes (a workbook and its documentation) | 2026-08-13 (extraction date in the documentation) | A work of the U.S. government. The Bureau's [open data page](https://www.census.gov/topics/research/research-transparency-public-access/open-data.html) says it shares its public data as open data and names commercial activity among its uses. It asks for [citation](https://www.census.gov/about/policies/citation.html); the site and this page name it as the source. The Census API terms don't apply: no API is used |
+
+- Both are free public downloads with no key or account. robots.txt of www.hud.gov, www2.census.gov, www.census.gov and www.usa.gov was read first with the project's agent; none keeps this crawler or an Anthropic agent off these addresses.
+- USAGov also says federal agency logos and trademarks need permission and that nothing may imply endorsement. The site uses neither agency's logo and doesn't say either endorses it.
+- This is a reading of public pages, not legal advice.
+- HUD's FY 2026 file and the Census 2026 file were the newest found on November 25, 2026 (HUD's address for a FY 2027 page answered 404).
+
+### What is kept
+
+- **Kept:** HUD's cities (principal and metro), urban counties, Hawaii's three counties, HOME consortia and the District of Columbia, each with its CDBG and HOME dollars for FY 2026. **Left out:** the non-entitlement rows of the 50 states and Puerto Rico, the 4 insular areas, one urban county with neither program (Jefferson County, Kentucky), and HUD's other programs (ESG, HOPWA, RHP, Housing Trust Fund). States and territories aren't local governments.
+- **One entry per government.** HUD lists two governments twice (Burlington, North Carolina and Davis County, Utah: their own CDBG row and a HOME consortium row); each is one entry.
+- **HOME consortia.** 148 entries carry a consortium code, and their HOME amount is shown as a consortium's, not that government's alone. That reading comes from the file's layout (each code is on one row); HUD's file doesn't say it in words.
+- **From the Census file** only the unit's name, Census id, kind, population, county and website are read. No street address, job title, person's name or email address is read or stored.
+- **Websites** are the ones governments reported to the Census Bureau, which says it does only limited quality control. None is guessed or searched for, and none was opened or checked. Left blank: cells that aren't a web address (including email addresses), directory sites, and eight addresses that look like a misspelling of the government's own name (`MISTYPED` in `grantmatch/funders.py`: Arvada, Pompano Beach, Lower Merion, Harlingen, Killeen, Taylorsville, Eau Claire and Neenah), since a mistyped domain can belong to anyone. Others like them may have been missed.
+- **Names** are HUD's, with "Ft", "Hts" and "Twp" spelled out and county names spelled as `data/counties.json.gz` has them.
+
+### How a government is matched
+
+- An urban county by HUD's code (state code, 9, county FIPS code), and only when the names agree too.
+- A city, town or township by name within its state. When several share a name, the kind in HUD's name decides, then municipalities before townships, then Census "city" units, then population of 50,000 or more. If more than one is still left, none is picked. Twelve names HUD words differently are joined by hand (`ALIASES`).
+- State comes from the FIPS code, not the file's mailing address (Texarkana, Arkansas has a Texas address).
+- Counties: the one county the Census file puts the government in (the one it says is most served), spelled as in `data/counties.json.gz`. **A city that spans several counties lists only that one** (Houston shows under Harris, not Fort Bend), though typing the city's own name still finds it. The other counties aren't guessed from place names, since a different place of the same name would add a county the city isn't in. New York City is set to its five counties by hand. Connecticut towns are placed by a name found in exactly one county. A government with no reliable county is left at state level and shows under "Show all". Listing every county of a multi-county city would take the Census places-by-county file joined by FIPS code (the file `grantmatch/counties.py` already reads); not done.
+- **Not matched to a Census record (28):** Puerto Rico's 27 municipios (the Census listing has none) and Washington Township, New Jersey (several share the name). They have no website.
+- **No county (8):** Fairfield, Hamden and Stratford, Connecticut (the Census file now uses planning regions); Houma-Terrebonne, Louisiana (the file misspells the parish); Baltimore, St. Louis, Richmond and Roanoke (each shares its name with a county that is a different government).
+
+### Directory coverage by state
+
+"County matched" counts entries with at least one county. By level: 201 county governments, 920 cities and 143 others (towns, townships, villages, boroughs, municipios, HOME consortia and the District). 1,249 have CDBG money, 626 HOME, 611 both.
+
+| State | Entries | With website | No website | County matched |
+|---|---|---|---|---|
+| AK | 1 | 1 | 0 | 1 |
+| AL | 16 | 16 | 0 | 16 |
+| AR | 14 | 13 | 1 | 14 |
+| AZ | 23 | 23 | 0 | 23 |
+| CA | 186 | 185 | 1 | 186 |
+| CO | 23 | 22 | 1 | 23 |
+| CT | 23 | 23 | 0 | 20 |
+| DC | 1 | 1 | 0 | 1 |
+| DE | 3 | 3 | 0 | 3 |
+| FL | 88 | 86 | 2 | 88 |
+| GA | 28 | 28 | 0 | 28 |
+| HI | 4 | 4 | 0 | 4 |
+| IA | 12 | 12 | 0 | 12 |
+| ID | 9 | 9 | 0 | 9 |
+| IL | 50 | 49 | 1 | 50 |
+| IN | 26 | 25 | 1 | 26 |
+| KS | 9 | 9 | 0 | 9 |
+| KY | 10 | 10 | 0 | 10 |
+| LA | 15 | 15 | 0 | 14 |
+| MA | 39 | 39 | 0 | 39 |
+| MD | 15 | 15 | 0 | 14 |
+| ME | 6 | 6 | 0 | 6 |
+| MI | 47 | 46 | 1 | 47 |
+| MN | 17 | 17 | 0 | 17 |
+| MO | 16 | 16 | 0 | 15 |
+| MS | 6 | 6 | 0 | 6 |
+| MT | 4 | 4 | 0 | 4 |
+| NC | 34 | 34 | 0 | 34 |
+| ND | 4 | 4 | 0 | 4 |
+| NE | 4 | 4 | 0 | 4 |
+| NH | 5 | 5 | 0 | 5 |
+| NJ | 60 | 57 | 3 | 60 |
+| NM | 5 | 5 | 0 | 5 |
+| NV | 7 | 7 | 0 | 7 |
+| NY | 52 | 49 | 3 | 52 |
+| OH | 46 | 44 | 2 | 46 |
+| OK | 10 | 10 | 0 | 10 |
+| OR | 19 | 18 | 1 | 19 |
+| PA | 50 | 46 | 4 | 50 |
+| PR | 27 | 0 | 27 | 27 |
+| RI | 6 | 6 | 0 | 6 |
+| SC | 22 | 22 | 0 | 22 |
+| SD | 2 | 2 | 0 | 2 |
+| TN | 19 | 19 | 0 | 19 |
+| TX | 80 | 78 | 2 | 80 |
+| UT | 19 | 18 | 1 | 19 |
+| VA | 31 | 31 | 0 | 29 |
+| VT | 1 | 1 | 0 | 1 |
+| WA | 38 | 38 | 0 | 38 |
+| WI | 22 | 20 | 2 | 22 |
+| WV | 9 | 8 | 1 | 9 |
+| WY | 1 | 1 | 0 | 1 |
+| All | 1,264 | 1,210 | 54 | 1,256 |
+
+### Upkeep
+
+Once a year, when HUD publishes new allocations: update the addresses and dates at the top of `grantmatch/funders.py`, run `python -m grantmatch.funders --out data/funders.json.gz`, read the new `MISTYPED` and unmatched lists, and update this section. The weekly freshness report flags the file after 400 days and link-checks only the two source pages. The governments' websites are **not link-checked**: opening about 1,200 sites every week would lengthen the paid weekly job. The site rebuilds when `data/funders.json.gz` reaches main only if something else in the deploy's path list changes too; otherwise the next scheduled data refresh picks it up.
+
 ## Plan
 
 Effort figures are estimates, not measurements.
 
-**Phase 2: a nationwide directory of local funders.** Show "local governments that fund near you", clearly labelled as funders and not as open calls.
-
-- Sources the research identified, both US government files: HUD's FY2026 formula allocations (which cities and urban counties receive CDBG and HOME money) and the Census Bureau's 2025 Government Units file (county and city names and websites). The research counted about 1,047 CDBG cities and 198 urban counties, and about 2,230 county websites; those counts were not rechecked.
-- A CDBG allocation does not prove that a government funds outside nonprofits in a given year, so the page must not say it does.
-- Work: download both files (needs approval), join them by FIPS or government ID, add a data file and a separate section on the page, and tests. About 3 to 5 days.
-- Upkeep: once a year, when HUD publishes allocations.
+**Phase 2: a nationwide directory of local funders. Built** (see [Local funder directory](#local-funder-directory)). A CDBG allocation does not prove that a government funds outside nonprofits in a given year, so the page says it doesn't. The research's counts (about 1,047 CDBG cities and 198 urban counties) matched the file: 607 principal and 440 metro cities, and 198 urban counties with money.
 
 **Phase 3: more counties.** The next 75 counties by population, then CDBG entitlement cities, looking first at public services, arts and human services pages.
 
 - This batch: 48 drafted, 36 loaded (7 of them after a second check). Plan on losing about a quarter to robots.txt, terms or pages that don't support the entry. Read each program's guidelines, not only its page: in this batch they held match and tax status rules the pages left out.
 - About 1 to 2 hours a county for finding, checking and entering, so 75 counties is roughly 2 to 4 weeks of work. A script can draft from permitted pages; a person approves each entry.
-- Add `fips` to entries when phase 2 needs the join.
+- The directory can help pick them: it names every government with CDBG money and, where reported, its website.
 
 **Upkeep for what is loaded now.** The weekly watcher reads every new page (28 more, all read by its reader on November 25, 2026), and the weekly website check reads each program's page. Both runs get a little longer; no workflow or schedule changes. Past programs need a person to look before their usual window each year.

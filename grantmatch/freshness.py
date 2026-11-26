@@ -4,8 +4,8 @@ The page watch (grantmatch/watch.py) reads the pages behind the hand-kept lists.
 the end of the same weekly job, so no new job is needed:
 
   data      the date the data is from (federal, foundations, community foundations, the company list, the
-            county names, the funder website check, the coverage numbers, the built states and the hand-kept
-            files), against how long each may go before it is old
+            county names, the local funder directory, the funder website check, the coverage numbers, the built
+            states and the hand-kept files), against how long each may go before it is old
   links     the public pages the sources are read from, and the links on state calls. Pages the page watch
             has just read are not asked for again. A link is dead when it answers 404 or 410, or can't be reached
             (a timeout, a refused connection, a 5xx) on two checks in a row, and stays dead until it answers.
@@ -22,7 +22,8 @@ later week, oldest first.
 
 Not link-checked: federal grant links (no job opens them; the Grants.gov refresh reads the API, not the grant
 pages), Florida's catalog links and foundation websites (the Florida refresh and the funder website check read
-those pages, but no link result is recorded from them) and pages on off-limits hosts.
+those pages, but no link result is recorded from them), the government websites in the local funder directory
+(about 1,200 of them: nothing opens them, so the weekly job's minutes don't grow) and pages on off-limits hosts.
 
 A finding is listed in full the first time and only counted after that. A release file that couldn't be read is
 reported as that, not as old data.
@@ -48,7 +49,7 @@ from urllib.parse import urlparse
 
 import requests
 
-from . import counties, cycles, local
+from . import counties, cycles, funders, local
 from .cycles import AGENT, TIMEOUT, OffLimits, blocked_by_terms, fetch_page, off_limits
 from .display import STATE_NAMES
 from .export_web import RELEASE
@@ -59,9 +60,10 @@ KEY = "_freshness"  # where the results live inside the page watch's state file
 
 # Days a source's data may be old before it is flagged, by how often it is meant to be read again. A daily
 # source gets two missed runs, a weekly or monthly one a little over one; a snapshot with no job gets two weeks;
-# hand-kept entries match the page watch's 90 days; the Census county file is replaced once a census.
+# hand-kept entries match the page watch's 90 days; the funder directory comes from yearly federal files, so it
+# gets a year and about five weeks; the Census county file is replaced once a census.
 MAX_DAYS = {"twice a day": 3, "daily": 3, "weekly": 10, "monthly": 45, "no job yet": 14, "by hand": 90,
-            "each census": 4018}
+            "yearly": 400, "each census": 4018}
 
 # Public pages of the sources that aren't in the state registry (grantmatch/states.py has the states').
 FEDERAL_PAGE = "https://www.grants.gov/"
@@ -299,6 +301,15 @@ def inventory(today: date, release=None, data_dir: Path = DATA) -> tuple[list[di
     sources[-1]["unusable"] = not isinstance(payload(raw).get("sites"), dict)
     raw, where = asset(release, data_dir, "coverage.json")
     add("coverage", "Foundation coverage numbers", "monthly", stamp_of(raw), where, today)
+
+    # The local funder directory: yearly federal files, committed in data/. Only the two source pages are
+    # link-checked; the governments' own websites never are.
+    path = data_dir / "funders.json.gz"
+    directory = payload(path.read_bytes()) if path.exists() else {}
+    add("funders", "Local funder directory (HUD allocations and Census government units)", "yearly",
+        directory.get("fetched_at"), "repository copy", today, [funders.HUD_PAGE, funders.CENSUS_PAGE],
+        [f"{len(directory.get('funders') or [])} funders, fiscal year {directory.get('fiscal_year', 'unknown')}; "
+         "their websites aren't link-checked"])
 
     add("counties", "County and place names (Census)", "each census",
         CENSUS_YEAR if (data_dir / "counties.json.gz").exists() else None, "repository copy", today, [counties.SOURCE],
@@ -632,6 +643,7 @@ def report(sources: list[dict], links: dict[str, list[str]], memory: dict, past:
               "- Federal grant links: no job opens them (the Grants.gov refresh reads the API, not the grant pages).",
               "- Florida catalog links: the weekly Florida refresh reads the catalog pages; no link result is kept.",
               "- Foundation websites: the weekly website check reads them; no link result is kept.",
+              "- Local funder directory websites: government sites from the Census listing; none are opened.",
               "- Off-limits hosts and pages that turn scripts away (never counted as dead). Hand-kept and company "
               "programs are named under Check by hand" + ("; the other pages:" if shut else ".")]
     rows = []

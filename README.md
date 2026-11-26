@@ -10,6 +10,8 @@ Grant Matcher reads your mission and ranks three kinds of funding against it, te
 - **Other states' grants:** open calls from the state's own list in California, Illinois, Iowa, Ohio, Washington, West Virginia, New Jersey and New York, from the District of Columbia's grants clearinghouse, and from two Minnesota agencies' pages (health and justice programs, not a statewide list). Reading Illinois' list is paused pending the state's OK, so its calls are as last read. For every other state the page says there is no state catalog yet; [docs/state-coverage.md](docs/state-coverage.md) says why for each
 - **County and city programs:** grant programs for nonprofits, such as Manatee County's children's services funding, entered by hand from each program's own page. Florida's list is the fullest; Arizona, California, Illinois, Nevada, New York, Pennsylvania, Texas and Washington have a short list for some counties and cities ([docs/county-coverage.md](docs/county-coverage.md)). No free national or state catalog of county or city grants exists in what was searched, so coverage is partial
 
+It also lists **local funders to ask**: about 1,260 counties, cities and towns that get HUD community development (CDBG) or affordable housing (HOME) money, with their websites where the Census Bureau has one. These are funders, not open grant calls, so they are never ranked or scored ([below](#local-funders-to-ask)).
+
 **Try it:** [rendellrich.github.io/grant-matcher](https://rendellrich.github.io/grant-matcher/). Visitors see the top 3 matches, free accounts the top 10 in each list, and Pro every match.
 
 > This product uses the Grants.gov API but is not endorsed or certified by the U.S. Department of Health and Human Services.
@@ -56,7 +58,7 @@ The public site is a static site in `web/` (Vite, TypeScript, Preact) on GitHub 
 
 - **Matching happens in the browser.** The first time you search with your own mission, the page downloads the same embedding model the data pipeline uses (BAAI/bge-small-en-v1.5, about 67 MB, once) and runs it on your device with [transformers.js](https://github.com/huggingface/transformers.js). The profile and that vector then go to the search function (`supabase/functions/search`), which ranks visitors and free accounts on the server with the same code and returns the top matches; Pro accounts get short-lived links to the data and rank in the browser. Search profiles are not stored; a signed-in search is logged only as a hash. The three examples are scored without the download.
 - **The scoring is the Python scoring, ported.** `web/src/score.ts` is a line-by-line TypeScript port of `grantmatch/match.py` and `grantmatch/rank_more.py`. A parity test scores 18 example profiles in both, including the checkbox groups, fiscal sponsor, online nationwide and young organization cases, and requires the same results, reasons and cautions.
-- **The data lives in a private bucket.** After each refresh, `grantmatch/export_web.py` writes the records and their embeddings (as float16), the deploy workflow uploads them to the Supabase bucket `data` through the ingest function (`grantmatch/server_data.py`), and only the small public files (meta, examples, coverage, changes, counties) ship with the site. The site rebuilds after every successful refresh (federal, Florida, California, Illinois, foundations, funder websites) and whenever the site code or a hand-kept list (`data/corporate.json`, `data/local-*.json`, `data/skip-review.csv`) changes on main.
+- **The data lives in a private bucket.** After each refresh, `grantmatch/export_web.py` writes the records and their embeddings (as float16), the deploy workflow uploads them to the Supabase bucket `data` through the ingest function (`grantmatch/server_data.py`), and only the small public files (meta, examples, coverage, changes, counties, local funders) ship with the site. The site rebuilds after every successful refresh (federal, Florida, California, Illinois, foundations, funder websites) and whenever the site code or a hand-kept list (`data/corporate.json`, `data/local-*.json`, `data/skip-review.csv`) changes on main.
 - **Functions deploy themselves.** The search gate, the weekly email and the deadline reminders each run from one bundled file built in `web/`. When the code they bundle changes on main, the Deploy functions workflow tests it, rebuilds the three bundles, deploys them with the Supabase command-line tool (settings in `supabase/config.toml`) and checks that search answers a visitor. The billing and Stripe webhook functions deploy from source in the same run, with a check that each refuses a caller with no sign-in or signature. It needs the repository secret `SUPABASE_ACCESS_TOKEN`. The ingest function is deployed by hand.
 - **Paid plans and the weekly email** run through Stripe Checkout, a signed Stripe webhook and a scheduled email job. Profiles are saved only for an account that turns the weekly email on. See [docs/billing.md](docs/billing.md) for how it fits together and the go-live steps.
 
@@ -232,6 +234,18 @@ A program that takes applications any time gets `"rolling": true` (and no `close
 
 To add or change one, check that the site's robots.txt and terms allow it (docs/county-coverage.md), edit the file from the official page, update `checked`, and run `python -m grantmatch.local` to check every state's file.
 
+## Local funders to ask
+
+Below the results, a folded section lists the local governments in the profile's state that get HUD formula money, for states with a catalog and without one. It shows the ones near the profile's counties or cities, with a button for the whole state.
+
+**What it is not.** These are funders to ask, not open grant calls. HUD money going to a government doesn't mean it funds nonprofits now, and CDBG money for public services is limited and varies. Nothing in the list is scored, ranked, given a deadline or said to be open to nonprofits. It stays out of the results, the counts, the shortlist and the downloads, and neither scorer reads it.
+
+`grantmatch/funders.py` builds `data/funders.json.gz` from two free U.S. government files: HUD's FY 2026 formula program allocations (CDBG and HOME amounts) and the Census Bureau's 2026 Government Units listing (ids and the websites governments reported). No key, account or paid source. It keeps no street address, person's name or email address, and a website is only ever the Census file's: none is guessed, opened or checked. The export writes one small public file per state (`funders-<ST>.json`). [docs/county-coverage.md](docs/county-coverage.md#local-funder-directory) has the license evidence, the matching rules, what didn't match and the counts per state. It is remade by hand once a year:
+
+```bash
+python -m grantmatch.funders --out data/funders.json.gz
+```
+
 ## Skipped grants review
 
 Every refresh leaves some grants and funders out on purpose, and each one now says who and why, so the reasons can be checked rather than trusted:
@@ -336,6 +350,7 @@ A GitHub Action runs twice a day and pulls every posted and forecasted opportuni
 | New York [Search for Grant Opportunities](https://esupplier.sfs.ny.gov/psp/fscm/SUPPLIER/ERP/c/NY_SUPPUB_FL.AUC_RESP_INQ_AUC.GBL) (web page) | no job yet: the snapshot in `data/`, made November 25, 2026 | none |
 | [District Grants Clearinghouse](https://communityaffairs.dc.gov/node/26) (web page, CC BY 3.0) | no job yet: the snapshot in `data/`, made November 25, 2026 | none |
 | Minnesota [Health](https://www.health.state.mn.us/about/grants/index.html) and [Justice Programs](https://dps.mn.gov/divisions/ojp/ojp-grants/funding-opportunities) grant pages (two agencies) | no job yet: the snapshot in `data/`, made November 25, 2026 | none |
+| [HUD formula allocations](https://www.hud.gov/hud-partners/community-budget-26) and the [Census Government Units listing](https://www2.census.gov/programs-surveys/gus/datasets/) (local funders to ask, `data/funders.json.gz`) | once a year, by hand | none |
 | Pages behind the hand-kept lists (`local-<ST>.json`, `corporate.json`) | weekly | `watch-pages.yml` |
 | [Freshness check](docs/freshness.md): how old the data is, and whether source pages and state call links still open | weekly | `watch-pages.yml` (the same run) |
 | Skipped grants review (`skipped-grants.csv` and the `skip-review` issue) | weekly | `skipped-report.yml` |
@@ -402,6 +417,7 @@ grantmatch/local.py     programs entered by hand: state calls, county and city g
 grantmatch/match_words.py  what a program's words say about matching funds (the Python side of web/src/ready.ts)
 grantmatch/skipped.py   the weekly list of grants left out, and why
 grantmatch/corporate.py company foundations and their local programs (data/corporate.json)
+grantmatch/funders.py   local funders to ask, from HUD allocations and Census government units (not grants)
 grantmatch/watch.py     weekly check of the pages behind both hand-kept lists
 grantmatch/freshness.py   weekly check of data age, source pages and state call links, run with the page watch
 grantmatch/refresh_states.py  one driver for the weekly state adapters (not in a job yet)
@@ -425,7 +441,7 @@ docs/freshness.md       the freshness check, and proposed workflows in docs/prop
 ## Roadmap
 
 - More states' grant catalogs: for 18 states the grant pages checked are web pages, a bid board or a dashboard rather than a data file, 14 are blocked and would need written permission or a published file, and Massachusetts and Mississippi still need a look in a browser (docs/state-coverage.md). A refresh job for New York, DC and Minnesota. Alaska, Hawaii and Pennsylvania were left out by decision on 2026-11-25
-- County and city grants: a nationwide directory of local funders from HUD allocations and Census government units (funders, not open calls), then more counties ([docs/county-coverage.md](docs/county-coverage.md))
+- County and city grants: more counties, using the local funder directory to pick them ([docs/county-coverage.md](docs/county-coverage.md))
 
 ## Why I built it
 

@@ -306,6 +306,9 @@ Each reason is one line with an 18px stroke icon: an accent check for fits, an a
 ### Can we apply?
 Under the reasons, one wrapping line: "Can we apply?" in ink 650, then each check as a 16px icon and a few words (an accent check when it's fine, an amber triangle when it needs a look or stops you; one that stops you is set in 650). No fills, no pills. The details open with the same checks as full sentences. Screen readers hear "Fine", "Check" or "Stops you" before each, and the heading carries the count. A caution or status line the checks repeat stays off the card. A match is never left to be assumed: "No match required" only when the source says none is needed, otherwise "Match not stated" with the amber triangle.
 
+### Local funders to ask
+A folded section below the tab panels and above "Getting ready to apply", built the same way (a 2px cloth rule, a chevron, an h2 in the summary). It sits outside every tab because these are governments to ask, not grants. It opens with a note that begins "These are funders to ask, not open grant calls" in 700, then a status line saying how many are listed and how many match the profile's cities or counties, then a secondary button that shows the whole state or goes back. Entries are ruled, never cards: the government's name in the serif (an h3), one muted line (kind of government, county, the HUD amounts with their fiscal year), and a "Website" link only where there is one, else "No website listed." No score rule, tier chip, deadline, "Open to nonprofits", shortlist button or export. Past ten entries a skip link jumps to the sources line. Screen readers hear "Website for {name} (opens in a new tab)". The list is by name, not ranked.
+
 ### Notes
 Paper fill, 6px corners, 12px by 16px padding, max 66ch. A warning note adds a 1px caution inset outline.
 

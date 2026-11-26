@@ -22,6 +22,7 @@ import requests
 
 from . import embed
 from . import corporate
+from . import funders
 from . import local as local_programs
 from .states import STATE_PROGRAMS, STATES, catalogs
 from .skipped import load_decisions
@@ -306,6 +307,29 @@ def write_local_only(out: Path, meta: dict, links: dict[str, dict] | None = None
                                                   "source": "county and city programs entered by hand"}
 
 
+FUNDER_FIELDS = ("id", "name", "level", "kind", "counties", "area", "programs", "home_consortium", "website")
+
+
+def write_funders(out: Path, meta: dict, path: Path | None = None) -> None:
+    """The local funder directory (grantmatch/funders.py), one small public file per state, only the fields the page
+    shows. It is not grant data: no vectors, no scores, and no scorer or ranking reads it."""
+    data = funders.load(path or LOCAL / "funders.json.gz")
+    if not data:
+        return
+    states: dict[str, list[dict]] = {}
+    for f in data["funders"]:
+        states.setdefault(f["state"], []).append({k: f[k] for k in FUNDER_FIELDS if k in f})
+    for state, rows in states.items():
+        (out / f"funders-{state}.json").write_text(json.dumps(rows, separators=(",", ":"), ensure_ascii=False),
+                                                   encoding="utf-8")
+    hud, census = data["sources"]
+    meta["funders"] = {"states": sorted(states), "fiscal_year": data["fiscal_year"], "census_year": data["census_year"],
+                       "hud_page": hud["page"], "hud_as_of": hud["as_of"],
+                       "census_page": census["page"], "census_as_of": census["as_of"]}
+    size = sum((out / f"funders-{s}.json").stat().st_size for s in states)
+    print(f"funders: {len(data['funders'])} in {len(states)} states, {size / 1e3:.0f} kB")
+
+
 def florida_records(payload: dict) -> tuple[list[dict], list[dict]]:
     """Florida's records for the site: the catalog's programs with review decisions applied, then the county and
     city programs entered by hand (grantmatch/local.py). Returns (all records, the hand-kept ones), so the caller
@@ -447,6 +471,7 @@ def main() -> None:
     if counties_file.exists():
         for state, counties in json.loads(gzip.decompress(counties_file.read_bytes())).items():
             (out / f"counties-{state}.json").write_text(json.dumps(counties, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+    write_funders(out, meta)
     (out / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
     total = sum(p.stat().st_size for p in out.iterdir() if p.is_file())
     print(f"data folder: {total / 1e6:.0f} MB")
