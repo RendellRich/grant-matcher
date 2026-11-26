@@ -73,6 +73,11 @@ REASONS = {
         "Never shown", "The state says nonprofits can't apply",
         "The state's own listing names who may apply, and nonprofits are not among them.",
         "Does the program text say otherwise, or could a nonprofit partner with a city or county?"),
+    "not_taking": (
+        "Left out", "The page says it isn't taking applications",
+        "The agency's page says this one is closed or paused, or that its deadline has passed. A call no date would end "
+        "is also left out when its page doesn't say it is taking applications.",
+        "Has it reopened?"),
     "invitation_only": (
         "Left out", "By invitation only",
         "The state's notice says the agency invites who applies, so an organization can't apply on its own.",

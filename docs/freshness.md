@@ -14,7 +14,8 @@ The page watch writes its own report and readings first. If the freshness check 
 | California, Illinois, Iowa, Ohio, Washington | each state file's `fetched_at` | its own daily job | 3 days |
 | Florida catalog | `florida.json.gz` `fetched_at` | `refresh-florida.yml`, weekly | 10 days |
 | West Virginia, New Jersey | each state file's `fetched_at` | `refresh-states.yml`, weekly | 10 days |
-| New York, District of Columbia, Minnesota | the snapshot's `fetched_at` | no job yet | 14 days |
+| New York, District of Columbia, Minnesota | each state file's `fetched_at` | `refresh-states.yml`, weekly, as on main since November 25 (the registry still says no refresh job; the committed snapshots ship until a run publishes their files) | 14 days |
+| Arkansas, Maryland, Montana, North Dakota, Tennessee, Wyoming | each state file's `fetched_at` | `refresh-states.yml` once on main (the registry says no refresh job until its first run) | 14 days |
 | Funder website check | `cycles.json.gz` `checked_at` | `refresh-websites.yml`, weekly | 10 days |
 | Private and community foundations | the oldest state file's `fetched_at` | `refresh-foundations.yml`, monthly | 45 days |
 | Foundation coverage numbers | `coverage.json` `made_at` | `refresh-foundations.yml`, monthly | 45 days |
@@ -62,7 +63,7 @@ A company program's page that didn't open is noted in the card's details. The fi
 
 The report is the second part of the weekly `page-watch` issue. A finding is listed in full the first time it appears; after that it is only counted under "Still open from earlier reports" (old sources are also named there), and of the freshness findings only new ones count toward posting a comment. So work from the report that first listed it. The keys of what has been reported are in `watch-state.json.gz` under `_freshness`. The source table shows only sources that are new or changed.
 
-1. **Data that is old or missing:** open that source's refresh job and see why it didn't run or publish. For New York, DC and Minnesota, remake the snapshot (`python -m grantmatch.newyork --out data/newyork.json.gz`, and the same for the others) or add the proposed job below.
+1. **Data that is old or missing:** open that source's refresh job and see why it didn't run or publish. For New York, DC and Minnesota, check that "Refresh state lists" has run and published their files (a snapshot can be remade with `python -m grantmatch.newyork --out data/newyork.json.gz`, and the same for the others). For Arkansas, Maryland, Montana, North Dakota, Tennessee and Wyoming, a run that fails usually means the page changed shape: read the page, update the adapter.
 2. **Dead links:** open the page in a browser. If it moved, update the entry's `url` in `data/local-<ST>.json` or `data/corporate.json`, or the adapter and the registry's `pages` for a state. If a program is gone, remove its entry. A state call with a dead link is the state's list to fix; `hide` it in `data/skip-review.csv` if it shouldn't show.
 3. **Closing date passed, no next round entered:** read the program's page. Enter the next window, mark it `rolling`, leave it (it ranks as "Between rounds" when it comes round each year), or remove it. It is listed once, then counted until its dates change.
 4. **Didn't open once:** nothing yet.
@@ -71,31 +72,19 @@ The report is the second part of the weekly `page-watch` issue. A finding is lis
 
 The check never edits an entry.
 
-## Proposed: one weekly job for the five states
+## One weekly job for the state lists
 
-`grantmatch/refresh_states.py` runs every built state but Florida that has no daily job (West Virginia, New Jersey, New York, DC, Minnesota). Each state's addresses are checked against the crawling rule first. A state that fails, or comes back with no open calls, keeps its previous file, the others are still written, the written states are listed in `build/refreshed.txt`, and the exit code is 1.
+`grantmatch/refresh_states.py` runs every built state but Florida that has no daily job. Each state's addresses are checked against the crawling rule first. A state that fails, or comes back with no open calls, keeps its previous file, the others are still written, the written states are listed in `build/refreshed.txt`, and the exit code is 1.
 
-Nothing runs it yet. Two text files hold the proposed workflows:
+The job is in use for West Virginia, New Jersey, New York, DC and Minnesota: on November 25 `.github/workflows/refresh-states.yml` was changed on main to run the driver, and `skipped-report.yml` to download those five states' skipped lists (commit 672e8a5). Whether a run has published their files since wasn't checked here. What is left, once one has:
 
-- [proposed-workflows/refresh-states.yml.txt](proposed-workflows/refresh-states.yml.txt) replaces `.github/workflows/refresh-states.yml`.
-- [proposed-workflows/skipped-report.yml.txt](proposed-workflows/skipped-report.yml.txt) replaces `.github/workflows/skipped-report.yml`, adding the five states' skipped lists and data files.
+1. Set `"refresh": "weekly"` for NY, DC and MN in `grantmatch/states.py`.
+2. Remove `"in_skip_report": False` from WV, NJ, NY, DC and MN in `grantmatch/states.py`.
+3. Update the rows in this page, the README and [state-coverage.md](state-coverage.md) that say the registry has no refresh job for them.
 
-To use them, in PowerShell from the repository's root folder, with `feature/freshness` checked out (the new workflow runs `grantmatch/refresh_states.py`, which is on that branch and not yet on main):
+## Six web-page states added November 26
 
-```powershell
-git switch feature/freshness
-Copy-Item ".\docs\proposed-workflows\refresh-states.yml.txt" ".\.github\workflows\refresh-states.yml"
-Copy-Item ".\docs\proposed-workflows\skipped-report.yml.txt" ".\.github\workflows\skipped-report.yml"
-```
-
-Then:
-
-1. Run the tests (`.venv\Scripts\python.exe -m pytest -q`) and commit the two workflow files on `feature/freshness`. Scheduled workflows run from main, so nothing changes until the branch is merged. Pushing and merging cost Actions minutes and are Ren's call.
-2. After the first successful "Refresh state lists" run on main (Mondays 13:17 UTC), set `"refresh": "weekly"` for NY, DC and MN in `grantmatch/states.py`.
-3. With that run's files on the release, remove `"in_skip_report": False` from WV, NJ, NY, DC and MN in `grantmatch/states.py`.
-4. Update the rows in this page, the README and [state-coverage.md](state-coverage.md) that say New York, DC and Minnesota have no job or that the five states are not in the skipped grants report.
-
-Until step 2, the registry says those three have no refresh job, which stays true. The tests were run on November 25 as they would stand after step 1 and after steps 2 and 3, and passed.
+`grantmatch/refresh_states.py` also runs Arkansas, Maryland, Montana, North Dakota, Tennessee and Wyoming (their registry entries have no refresh set, which the driver includes), so the job on main starts reading them once this code is merged, with no workflow change. After their first successful run on main, set `"refresh": "weekly"` for them. The proposed [skipped-report.yml.txt](proposed-workflows/skipped-report.yml.txt) adds their skipped lists to the Friday report and is not in use; copying it over `.github/workflows/skipped-report.yml` is Ren's call, and after it their `"in_skip_report": False` can be removed. [proposed-workflows/refresh-states.yml.txt](proposed-workflows/refresh-states.yml.txt) differs from the file in use only in its comments. The minutes they add are estimated in [state-coverage.md](state-coverage.md) section (d): about 8 to 20 billed minutes a month, mostly 2 to 3 more minutes on each weekly refresh. The table below does not include them.
 
 ## Actions minutes
 
@@ -104,8 +93,8 @@ Billed per job, rounded up to the minute. A month has 4 or 5 weekly runs.
 | Job | Now, a run | Now, a month | After, a run | After, a month | New a month |
 |---|---|---|---|---|---|
 | `watch-pages.yml` | 1 min (measured once: job 41 s on November 20) | 4 to 5 | 4 min (estimate, range 3 to 5) | 16 to 20 (estimate) | about 12 to 15 (estimate) |
-| `refresh-states.yml`, if the proposed file is copied in | 1 to 2 min (estimate; it has not run yet) | 4 to 10 (estimate) | 2 to 3 min (estimate) | 8 to 15 (estimate) | about 4 to 5 (estimate) |
-| `skipped-report.yml`, if the proposed file is copied in | 1 min (measured twice: 46 and 50 s on November 22) | 4 to 5 | 1 min (estimate) | 4 to 5 | 0 (estimate) |
+| `refresh-states.yml`, with the driver (in use since November 25) | 1 to 2 min (estimate; not measured) | 4 to 10 (estimate) | 2 to 3 min (estimate) | 8 to 15 (estimate) | about 4 to 5 (estimate) |
+| `skipped-report.yml`, with the five states (in use since November 25) | 1 min (measured twice: 46 and 50 s on November 22) | 4 to 5 | 1 min (estimate) | 4 to 5 | 0 (estimate) |
 | **Total new** | | | | | **about 16 to 20 (estimate)** |
 
 How the watch estimate was made:

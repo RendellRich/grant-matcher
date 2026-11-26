@@ -34,7 +34,7 @@ describe("a state with no catalog", () => {
     expect(note("PA")).toContain("Pennsylvania has a machine-readable grant list that isn't read in yet.");
     expect(noCatalogNote(meta, "XX", "Somewhere")).toContain("A source for Somewhere state grants is being looked at.");
     const al: Meta = { ...meta, catalogs: { AL: { status: "html", source: "ADECA" } } };
-    expect(note("AL", al)).toBe("No Alabama state catalog yet. The grant pages checked for Alabama are web pages or a dashboard, not a data file, so they aren't read in yet. Federal grants cover Alabama.");
+    expect(note("AL", al)).toBe("No Alabama state catalog yet. What was checked for Alabama didn't give a grant list that can be read in yet. Federal grants cover Alabama.");
   });
 
   it("claims nothing about a state the research couldn't check", () => {
@@ -49,7 +49,7 @@ describe("a state with no catalog", () => {
   });
 
   it("doesn't call the District of Columbia a state", () => {
-    expect(note("DC")).toBe("No District of Columbia catalog yet. The grant pages checked for the District of Columbia are web pages or a dashboard, not a data file, so they aren't read in yet. Federal grants and foundations cover the District of Columbia.");
+    expect(note("DC")).toBe("No District of Columbia catalog yet. What was checked for the District of Columbia didn't give a grant list that can be read in yet. Federal grants and foundations cover the District of Columbia.");
     const none: Meta = { ...meta, catalogs: { DC: { status: "none", source: "x" } } };
     expect(note("DC", none)).toBe("No District of Columbia catalog yet. No current public list of grants from the District of Columbia was found. Federal grants and foundations cover the District of Columbia.");
     const unchecked: Meta = { ...meta, catalogs: { DC: { status: "unchecked", source: "x" } } };
@@ -133,6 +133,28 @@ describe("the line above a state's open calls", () => {
   it("says when coverage is two agencies, not the state", () => {
     const source = "Minnesota Department of Health and Office of Justice Programs pages only (two agencies, not a statewide list)";
     expect(callsTally("MN", "Minnesota", calls(7, 0, 6), { source }, "")).toContain("(two agencies, not a statewide list)");
+  });
+
+  it("labels every one-agency or short list as partial wherever the page names the state", () => {
+    const source = "Maryland Department of Commerce State Grants table only (a short list, not a statewide list)";
+    expect(callsTally("MD", "Maryland", calls(0, 4), { source, who_listed: false }, "")).toContain("(a short list, not a statewide list)");
+    const app = readFileSync(new URL("../src/app.tsx", import.meta.url), "utf8");
+    const about = readFileSync(new URL("../src/coverage.tsx", import.meta.url), "utf8");
+    const partial: [string, string, string][] = [
+      ["AR", "Arkansas", "Arkansas data from the Arkansas Arts Council's art grants page only."],
+      ["MD", "Maryland", "Maryland data from the State Grants table on the Department of Commerce's nonprofit page only, a short list."],
+      ["ND", "North Dakota", "North Dakota data from the Council on the Arts' grant pages only."],
+      ["WY", "Wyoming", "Wyoming data from the Wyoming Arts Council's grant pages only."],
+      ["TN", "Tennessee", "Tennessee data from the Tennessee Arts Commission's grant pages only."],
+      ["MT", "Montana", "Montana data from the Montana Arts Council's grant pages only."],
+    ];
+    for (const [code, name, footer] of partial) {
+      const note = app.slice(app.indexOf(`{state === "${code}" ? (`));
+      expect(note.slice(0, 400), code).toContain(`<h3>For ${name} state grants</h3>`);
+      expect(note.slice(0, 500), code).toContain("This isn't a statewide list. Only the ");
+      expect(app, code).toContain(footer);
+      expect(about, code).toMatch(new RegExp(`${name} \\((?:arts council only|a short list)\\)`));
+    }
   });
 
   it("doesn't call the District a state or say its list names nonprofits", () => {

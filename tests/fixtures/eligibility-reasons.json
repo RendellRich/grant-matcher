@@ -5,6 +5,7 @@
   "cases": [
     { "id": "ny-blank", "applicant_types": "Not stated on the state's list; read the notice", "reason": "unstated" },
     { "id": "mn-blank", "applicant_types": "Not stated on the agency's page; read the notice", "reason": "unstated" },
+    { "id": "md-table", "applicant_types": "Not stated on the Commerce Department's table; read the notice", "reason": "unstated" },
     { "id": "dc-table", "applicant_types": "Not stated on the District's table; read the notice", "reason": "unstated" },
     { "id": "wv-blank", "applicant_types": "Not stated on the state's listing; read the notice", "reason": "unstated" },
     { "id": "wa-blank", "applicant_types": "Not stated on the portal; read the program page", "reason": "unstated" },

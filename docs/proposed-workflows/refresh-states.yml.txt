@@ -3,10 +3,15 @@ name: Refresh state lists
 # Source copy: docs/proposed-workflows/refresh-states.yml.txt. As a text file there, nothing runs it; it takes
 # effect only once copied over .github/workflows/refresh-states.yml (docs/freshness.md has the command and steps).
 #
-# Every state adapter meant to refresh weekly (West Virginia, New Jersey, New York, the District of Columbia and
-# Minnesota), in one job, through grantmatch/refresh_states.py. The list comes from grantmatch/states.py. A state
-# that fails keeps the file already on the release; the others are still published and the run shows as failed.
-# Billed minutes: estimated 2 to 3 a run, 8 to 15 a month (docs/freshness.md).
+# Every state adapter meant to refresh weekly (West Virginia, New Jersey, New York, the District of Columbia,
+# Minnesota, Arkansas, Maryland, Montana, North Dakota, Tennessee and Wyoming), in one job, through
+# grantmatch/refresh_states.py. The list comes from grantmatch/states.py. A state that fails keeps the file already on
+# the release; the others are still published and the run shows as failed.
+# Billed minutes (estimates, not measured on a runner): 4 to 6 a run, 16 to 30 a month. That is 2 to 3 a run and 8 to
+# 15 a month for the first five states (docs/freshness.md) plus 2 to 3 a run for the six added November 26
+# (docs/state-coverage.md section (d)).
+# Proposed 2026-11-26: only these comment lines differ from the file in use. Nothing needs copying for the six new
+# states to be read, since the job takes its list from the registry.
 
 on:
   schedule:

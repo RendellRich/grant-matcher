@@ -93,6 +93,28 @@ describe("county, city and state programs", () => {
     expect(by(floridaReadiness({ ...call, funding_method: "Advances & Reimbursement(s)" }, profile()).checks).pay.label).toBe("Advance or reimbursement");
   });
 
+  it("don't read as plainly open once an earlier date has passed", () => {
+    const passed = "First-time applicants to this category must: submit a letter requesting entry into the category by October 30. That date has passed; check the notice before you start. Application Deadline: December 18, 2026";
+    const call = local({ level: undefined, status: "active", closes: "2026-12-18", loi: true, application: passed });
+    expect(by(floridaReadiness(call, profile()).checks).open).toMatchObject({ state: "check", label: "Earlier date passed" });
+    expect(by(floridaReadiness(call, profile()).checks).open.note).toContain("Dec 18, 2026");
+    // an earlier date still ahead, or a call that asks for none, stays "Open now"
+    expect(by(floridaReadiness({ ...call, application: "Letter of intent deadline: Dec. 3, 2026." }, profile()).checks).open.label).toBe("Open now");
+    expect(by(floridaReadiness({ ...call, loi: false, application: passed }, profile()).checks).open.label).toBe("Open now");
+  });
+
+  it("don't call a monthly deadline no deadline", () => {
+    const call = local({ level: undefined, status: "active", closes: null, deadlines: "Ongoing", application: "Applications are due on the 15th of each month by 11:59 p.m." });
+    expect(by(floridaReadiness(call, profile()).checks).open).toMatchObject({ state: "ok", label: "Open, due monthly" });
+    expect(by(floridaReadiness({ ...call, application: "Apply any time." }, profile()).checks).open.label).toBe("Open, no deadline");
+  });
+
+  it("show a required match with no amount as one sentence", () => {
+    const call = local({ level: undefined, status: "active", match: "amount not stated", application: "", award: "" });
+    const note = by(floridaReadiness(call, profile()).checks).match.note;
+    expect(note).toBe("Matching funds are required (amount not stated); your profile says you can't provide them.");
+  });
+
   it("call a catalog program a program, not an open call", () => {
     const program = local({ level: undefined, closes: null, application: "", award: "" });
     expect(by(floridaReadiness(program, profile()).checks).open.label).toBe("Ask when it funds");
