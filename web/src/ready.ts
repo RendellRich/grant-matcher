@@ -24,14 +24,14 @@ const ymd = (s?: string | null) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Dat
 const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 
 // Words in a program's own text. "No match required" is said only for words that say none is needed. A line about a
-// cash match alone doesn't (in-kind may still be asked), and neither does text that also asks for a match, or a line
-// limited by "unless", "except" or "for ...". grantmatch/match_words.py is the same reading in Python; change a
+// cash match alone doesn't (in-kind may still be asked), and neither does text that also asks for a match in one of
+// the ASKS or PLAIN_MATCH wordings, or a line followed by one of LIMITED's words. Other wordings can still be missed. grantmatch/match_words.py is the same reading in Python; change a
 // pattern in both (tests/fixtures/match-statements.json holds the shared cases).
 const NONE_NEEDED = /\bno (?:local |minimum )?match(?:ing)?(?: funds?)?(?: is| are)? required\b|\bno match(?:ing)?(?: fund)? requirements?\b|\bno cost[- ]shar(?:e|ing)(?: or match(?:ing(?: funds?)?)?)?(?: is| are)? required\b|\b(?:match(?:ing(?: funds?)?)?|cost[- ]shar(?:e|ing))(?: is| are)? not (?:required|a requirement)\b|\bdo(?:es)? not require (?:a |any )?(?:local )?(?:match(?:ing(?: funds?)?)?|cost[- ]shar(?:e|ing))\b/gi;
 // A "none needed" line that only covers some cases.
-const LIMITED = new RegExp(`(?:${NONE_NEEDED.source})[\\s,]+(?:unless|except|for)\\b`, "i");
+const LIMITED = new RegExp(`(?:${NONE_NEEDED.source})(?:[\\s,]*\\(|[\\s,]+(?:unless|except|for|if|when|during|from|to apply|at the time)\\b)`, "i");
 // Words that ask someone for a match, in the ways the plain patterns miss.
-const ASKS = /\b(?:must|shall)(?: \w+)? be matched\b(?! (?:to|with (?:a |an |the )?(?:mentors?|volunteers?))\b)|\bmatched (?:dollar[- ]for[- ]dollar|on a)\b|\brequired to (?:\w+ )?match\b|\brequir(?:e|es|ed|ing) (?:a |an )?(?:local |cash |in-kind )?matching\b|\bmatching ratios?\b|\bmatch (?:rates?|ratios?|requirements?)\b|\brequired (?:cash |local |in-kind )?match\b|\bmatch(?:es)? required\b|\bfor matching purposes\b|\b(?:company|funding) match(?:es)?\b|\b\d+ ?: ?\d+(?: (?:cash|in-kind|local|funding|or|and))* match|\b\d+[- ]to[- ]\d+ (?:cash |funding )?match|\bpercent(?:age)? (?:cash |local )?match|\bmust (?:\w+ )?(?:provide|contribute)\b[^.]{0,40}\bmatch/i;
+const ASKS = /\b(?:must|shall)(?: \w+)? be matched\b(?! (?:to|with (?:a |an |the )?(?:mentors?|volunteers?))\b)|\bmatched (?:dollar[- ]for[- ]dollar|on a)\b|\brequired to (?:\w+ )?match\b|\brequir(?:e|es|ed|ing) (?:a |an )?(?:local |cash |in-kind )?matching\b|\bmatching ratios?\b|\bmatch (?:rates?|ratios?|requirements?)\b|\brequired (?:cash |local |in-kind )?match\b|\bmatch(?:es)? required\b|\bfor matching purposes\b|\b(?:company|funding) match(?:es)?\b|\b\d+ ?: ?\d+(?: (?:cash|in-kind|local|funding|or|and))* match|\b\d+[- ]to[- ]\d+ (?:cash |funding )?match|\bpercent(?:age)? (?:cash |local )?match|\bmust (?:\w+ )?(?:provide|contribute)\b[^.]{0,40}\bmatch|\bmatch of (?:at least\b|\d{1,3} ?(?:%|percent\b))|\bmatch is needed\b|\bmatch \d+ ?: ?\d+|(?<!encouraged to )\bprovides? matching funds\b/i;
 const PLAIN_MATCH = /\bmatch (?:is |are )?required\b|\brequires? (?:a )?(?:\d{1,3} ?% )?(?:cash |local )?match\b|\b\d{1,3} ?% (?:cash |local )?match\b/i;
 const CASH_ONLY = /\bno cash match/i;
 const MATCH = /\b(?:cash|in-kind|local|dollar-for-dollar|\d{1,3} ?%)\s+match\b|\bmatching (?:funds?|requirement|contribution)s?\b|\bmatch (?:is |are )?required\b|\brequires? (?:a )?(?:cash )?match\b|\bcost[- ]shar(?:e|ing)\b/i;

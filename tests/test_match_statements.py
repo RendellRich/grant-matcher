@@ -73,6 +73,8 @@ def test_the_two_readings_use_the_same_patterns():
     for name in ("NONE_NEEDED", "ASKS", "PLAIN_MATCH", "CASH_ONLY", "MATCH"):
         found = re.search(rf"^const {name} = /(.*)/g?i;$", ts, re.M)
         assert found and found.group(1) == getattr(match_words, name).pattern, name
+    limits = "(?:unless|except|for|if|when|during|from|to apply|at the time)"
+    assert limits in match_words.LIMITED.pattern and limits in re.search(r"^const LIMITED = .*$", ts, re.M).group(0)
 
 
 def test_saying_none_never_changes_a_score():
