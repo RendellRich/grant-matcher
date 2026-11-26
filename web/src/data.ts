@@ -32,8 +32,8 @@ export interface Meta {
   /** States besides Florida with their own programs file: its name, its source and when it was fetched.
    *  who_listed is false when the state's list never says who may apply. local_only is true for a state with no
    *  state catalog whose file holds only hand-kept county and city programs; local is true when any state's file
-   *  holds some of those. */
-  programs?: Record<string, { file: string; source: string; updated?: string; who_listed?: boolean; local_only?: boolean; local?: boolean }>;
+   *  holds some of those. paused is true while reading that state's list is paused (grantmatch/states.py). */
+  programs?: Record<string, { file: string; source: string; updated?: string; who_listed?: boolean; local_only?: boolean; local?: boolean; paused?: boolean }>;
   /** Every state's catalog status from grantmatch/states.py: built, next, decide, html, blocked, none or unchecked. */
   catalogs?: Record<string, { status: string; source: string }>;
 }
@@ -147,7 +147,7 @@ export const grantsPhrase = (state: string, name: string) => `${name} ${state ==
 /** The line above a state's open calls: how many, from where, how fresh, and what isn't covered. Programs kept by
  *  hand (they have a level) aren't the state's list, and some are between rounds, so they are counted apart. */
 export function callsTally(state: string, name: string, records: { nonprofit_eligible: boolean; applicant_types?: string; level?: string }[],
-                           info: { source?: string; who_listed?: boolean } | undefined, updated: string): string {
+                           info: { source?: string; who_listed?: boolean; paused?: boolean } | undefined, updated: string): string {
   const count = (n: number) => n.toLocaleString("en-US");
   const dc = state === "DC";
   const calls = records.filter((r) => !r.level);
@@ -167,11 +167,15 @@ export function callsTally(state: string, name: string, records: { nonprofit_eli
       ? `${listed}; ${count(unstated)} more ${unstated === 1 ? "doesn't" : "don't"} say who may apply.${source ? ` ${source[0].toUpperCase()}${source.slice(1)}.` : ""}`
       : `${listed}${from}${when}.`;
   const plus = hand ? ` Plus ${count(hand)} ${hand === 1 ? "program" : "programs"} entered by hand from ${hand === 1 ? "its own page" : "their own pages"}.` : "";
+  // A paused list (grantmatch/states.py) is old data: say so, with the date it was read.
+  const paused = info?.paused
+    ? ` Reading the ${name} state list is paused until the state gives its OK${updated ? `, so these state calls are as read on ${updated}` : ""}. Newer calls aren't here, and a call may have changed or closed since.`
+    : "";
   if (dc) return line + plus;
   const cover = local
     ? `County and city programs are only partly covered for ${name}: ${count(local)} of those ${local === 1 ? "is a county or city program" : "are county or city programs"}.`
     : `County and city programs aren't covered for ${name} yet.`;
-  return `${line}${plus} ${cover}`;
+  return `${line}${paused}${plus} ${cover}`;
 }
 
 /** The result tabs to show: the state tab only when the profile's state has programs, so a preview's counts from
