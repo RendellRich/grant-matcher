@@ -1,7 +1,7 @@
 name: Refresh state lists
 
-# PROPOSED. This is a text file: nothing runs it. To use it, copy it over .github/workflows/refresh-states.yml
-# (docs/freshness.md has the steps and the registry edits that follow).
+# Source copy: docs/proposed-workflows/refresh-states.yml.txt. As a text file there, nothing runs it; it takes
+# effect only once copied over .github/workflows/refresh-states.yml (docs/freshness.md has the command and steps).
 #
 # Every state adapter meant to refresh weekly (West Virginia, New Jersey, New York, the District of Columbia and
 # Minnesota), in one job, through grantmatch/refresh_states.py. The list comes from grantmatch/states.py. A state

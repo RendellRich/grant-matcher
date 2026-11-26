@@ -1,8 +1,9 @@
 name: Skipped grants review
 
-# PROPOSED. This is a text file: nothing runs it. To use it, copy it over .github/workflows/skipped-report.yml
-# (docs/freshness.md). The change from the current file: it also downloads the skipped lists and data files of
-# the five states refresh-states runs, and passes them to grantmatch.skipped. Same job, same schedule.
+# Source copy: docs/proposed-workflows/skipped-report.yml.txt. As a text file there, nothing runs it; it takes
+# effect only once copied over .github/workflows/skipped-report.yml (docs/freshness.md has the command and steps).
+# The change from the earlier file: it also downloads the skipped lists and data files of the five states
+# refresh-states runs, and passes them to grantmatch.skipped. Same job, same schedule.
 
 # Joins what every refresh left out (skipped-*.json.gz on the data-latest release) with the programs the site
 # never shows or hides, into one CSV with a plain reason per row (grantmatch/skipped.py). The CSV goes on the

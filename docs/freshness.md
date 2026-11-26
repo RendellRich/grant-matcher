@@ -21,6 +21,8 @@ The page watch writes its own report and readings first. If the freshness check 
 | Hand-kept files and company programs | the oldest `checked` date | a person | 90 days |
 | County and place names | the 2020 census file | a person, once a census | 4,018 days (about 11 years) |
 
+Illinois is paused (grantmatch/states.py, "paused"): its daily job keeps republishing the last files unchanged, so its date stops moving and it is flagged as old after 3 days. The report says the pause is why. See [state-coverage.md](state-coverage.md) section (f).
+
 A source with no readable date counts as old. A release file whose read failed, or was skipped because the 90 seconds for reading the release ran out, is reported as "could not read": it is not counted as old, and the older copy in `data/` is not read in its place. The built states and their limits come from the registry (`grantmatch/states.py`), so a new state joins with no change here.
 
 **Whether links open.** The public pages the sources are read from (each built state's `pages` in the registry; Grants.gov, the two IRS pages and the Census file for the others), the links on state calls, and the pages behind the hand-kept and company programs. The hand-kept pages are the ones the page watch has just read, so they aren't asked for twice.
@@ -30,12 +32,14 @@ A source with no readable date counts as old. A release file whose read failed, 
 | ok | the page answers 2xx | no |
 | dead | 404 or 410, or unreachable (a timeout, a refused connection, a 5xx) on two checks in a row, on separate days. It stays dead until it answers 2xx | yes |
 | unreachable | unreachable once | not yet; it is asked for first next week |
-| blocked | robots.txt keeps this crawler or an Anthropic agent out, robots.txt couldn't be read, or the host's terms forbid automation | never; not asked for |
+| blocked | robots.txt keeps this crawler or an Anthropic agent out, robots.txt couldn't be read, the host's terms forbid automation, or the host's state is paused (omb.illinois.gov and il.amplifund.com; not even robots.txt is asked for) | never; not asked for |
 | refused | any other answer that isn't 2xx, 404, 410 or 5xx (400, 401, 403, 405, 406, 429, 451 and so on) | never, unless it was already dead |
 
 Every request goes through the project's crawling rule (`off_limits` in `grantmatch/cycles.py`), redirects included, with the project's own user agent. Only the status is read, not the page. Requests to one host are 2 seconds apart, 10 for communityaffairs.dc.gov, and longer when robots.txt asks. One run asks for at most 150 pages, 20 from one host, and starts no request after 150 seconds of link checking. What doesn't fit waits for a later week, longest unchecked first. With the links in `data/` and the release on November 25, the links it may open come round about every two to three weeks (estimate).
 
 **Stale records.** A hand-kept program whose closing date has passed, with no later window entered, not rolling, and whose page didn't say applications are open at the last website check. Old `checked` dates are listed entry by entry in the page watch's own part of the report. State calls past their deadline are counted in the source table; the export already leaves them out. When the website check's file (`cycles.json.gz`) can't be read, no new past closing date is listed that run, and the ones already reported are kept.
+
+**Check by hand.** Every hand-kept program and company program with a page that is blocked or refused is named, with its list, its slug and why, in a "Check by hand" section. It is listed in full the first time. After that it is counted with the other open findings, and the section still names it every week until its page can be read or the entry changes. The entries that were already like this on November 25 are in [county-coverage.md](county-coverage.md#watched-pages-that-are-now-off-limits).
 
 ### Not link-checked
 
@@ -60,7 +64,8 @@ The report is the second part of the weekly `page-watch` issue. A finding is lis
 2. **Dead links:** open the page in a browser. If it moved, update the entry's `url` in `data/local-<ST>.json` or `data/corporate.json`, or the adapter and the registry's `pages` for a state. If a program is gone, remove its entry. A state call with a dead link is the state's list to fix; `hide` it in `data/skip-review.csv` if it shouldn't show.
 3. **Closing date passed, no next round entered:** read the program's page. Enter the next window, mark it `rolling`, leave it (it ranks as "Between rounds" when it comes round each year), or remove it. It is listed once, then counted until its dates change.
 4. **Didn't open once:** nothing yet.
-5. **Off limits or turned away:** these need a person with a browser, or permission. They are not errors in the data.
+5. **Check by hand:** open each page in a browser, update the entry from it and set its `checked` date. An off-limits page is not an error in the data, and the entry stays.
+6. **Other off-limits or turned-away pages** (source pages and state call links): these need a person with a browser, or permission.
 
 The check never edits an entry.
 
@@ -73,14 +78,22 @@ Nothing runs it yet. Two text files hold the proposed workflows:
 - [proposed-workflows/refresh-states.yml.txt](proposed-workflows/refresh-states.yml.txt) replaces `.github/workflows/refresh-states.yml`.
 - [proposed-workflows/skipped-report.yml.txt](proposed-workflows/skipped-report.yml.txt) replaces `.github/workflows/skipped-report.yml`, adding the five states' skipped lists and data files.
 
-To use them:
+To use them, in PowerShell from the repository's root folder, with `feature/freshness` checked out (the new workflow runs `grantmatch/refresh_states.py`, which is on that branch and not yet on main):
 
-1. Copy each over its workflow file and commit.
-2. After the first successful "Refresh state lists" run, set `"refresh": "weekly"` for NY, DC and MN in `grantmatch/states.py`.
-3. With the new skipped report in place and the files on the release, remove `"in_skip_report": False` from the five states.
-4. Update the rows in this page, the README and [state-coverage.md](state-coverage.md) that say New York, DC and Minnesota have no job.
+```powershell
+git switch feature/freshness
+Copy-Item ".\docs\proposed-workflows\refresh-states.yml.txt" ".\.github\workflows\refresh-states.yml"
+Copy-Item ".\docs\proposed-workflows\skipped-report.yml.txt" ".\.github\workflows\skipped-report.yml"
+```
 
-Until step 2, the registry says those three have no refresh job, which stays true.
+Then:
+
+1. Run the tests (`.venv\Scripts\python.exe -m pytest -q`) and commit the two workflow files on `feature/freshness`. Scheduled workflows run from main, so nothing changes until the branch is merged. Pushing and merging cost Actions minutes and are Ren's call.
+2. After the first successful "Refresh state lists" run on main (Mondays 13:17 UTC), set `"refresh": "weekly"` for NY, DC and MN in `grantmatch/states.py`.
+3. With that run's files on the release, remove `"in_skip_report": False` from WV, NJ, NY, DC and MN in `grantmatch/states.py`.
+4. Update the rows in this page, the README and [state-coverage.md](state-coverage.md) that say New York, DC and Minnesota have no job or that the five states are not in the skipped grants report.
+
+Until step 2, the registry says those three have no refresh job, which stays true. The tests were run on November 25 as they would stand after step 1 and after steps 2 and 3, and passed.
 
 ## Actions minutes
 
@@ -105,5 +118,6 @@ No other job changes. `deploy-site.yml` is not triggered by the check.
 
 - A page that answers 200 with a "not found" message reads as ok.
 - A whole host that disappears shows as "robots.txt could not be read", not as dead; the report counts how many checks in a row that has happened (for the pages the page watch doesn't read).
-- On November 25, robots.txt on omb.illinois.gov and il.amplifund.com answered with a web page, and www.grants.gov's couldn't be read, so under the crawling rule those pages are not opened. The daily Illinois refresh still reads omb.illinois.gov and does not check robots.txt as it runs.
+- On November 25, robots.txt on omb.illinois.gov and il.amplifund.com answered with a web page, and www.grants.gov's couldn't be read, so under the crawling rule those pages are not opened.
+- Illinois reads are paused in the code. The daily Illinois job runs from main, so it keeps reading omb.illinois.gov until the pause is merged there.
 - A card's link result is as old as the last weekly check, and the export picks it up at the next site build.

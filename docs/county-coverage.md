@@ -36,6 +36,8 @@ These entries were already in the lists. Their pages can't be rechecked automati
 | `isl-adult-volunteer-literacy` (IL, two pages) | www.ilsos.gov | robots.txt times out |
 | `uws-summer-care-2027` (FL, its second page) | agency.e-cimpact.com | robots.txt answers with a web page |
 
+Ren's decision, 2026-11-25: these entries stay. The weekly freshness report names each one under "Check by hand" so a person rechecks it in a browser ([freshness.md](freshness.md)).
+
 The weekly website check also stops reading these, so a website status it recorded before (for example "applications are open") drops off at its next run. For a program with no dates, that can move it to "Between rounds".
 
 ## Entry format
@@ -61,16 +63,17 @@ One file per state, `data/local-<ST>.json`: `{"about": "...", "programs": [...]}
 | `exclude_places` | no | Places in those counties that are not served, for example Chicago in a suburban Cook County program. Not with `places` |
 | `source_note` | no | Something the page gets wrong or leaves unclear; shown on the card as "Note" |
 
-`places`, `exclude_places`, `area`, `match`, `source_note` and a `null` `requires_501c3` are new. Florida's file uses none of them and is unchanged. New files carry no email addresses. FIPS codes are not stored, because nothing reads them yet; counties are matched by name against `data/counties.json.gz`. Phase 2 would need them.
+`places`, `exclude_places`, `area`, `match`, `source_note` and a `null` `requires_501c3` came with this batch. In Florida's file only the seven Miami-Dade and Broward programs added later use any of them (`match`, `source_note`, a `null` `requires_501c3`); its earlier entries are unchanged. New entries carry no email addresses. FIPS codes are not stored, because nothing reads them yet; counties are matched by name against `data/counties.json.gz`. Phase 2 would need them.
 
 How a place is matched: the card says "Funds work in <area>" when one of the profile's cities or counties is in the program's list, and "Only for work in <area>" (40 points off) when not. A county typed into the profile counts as every place in it, so someone who types a county also matches a city program inside it. In a program for towns and unincorporated areas (Maricopa County CDBG), an organization that types only an unincorporated place's name should add the county.
 
 ## First batch: what was kept
 
-48 researched entries: 29 loaded, 7 verified and held, 12 dropped. The Cook County CDBG and ESG page became two entries, since ESG requires a match and CDBG doesn't, so the files hold 30.
+48 researched entries: 36 loaded (29 at first, then the 7 held Florida ones) and 12 dropped. The Cook County CDBG and ESG page became two entries, since ESG requires a match and CDBG doesn't, so the files hold 37 of this batch.
 
 | Loaded into | Programs |
 |---|---|
+| `local-FL.json` (+7) | Miami-Dade County Cultural Affairs: Community, Cultural Advancement, Cultural Development, Developing Arts in Neighborhoods, Festivals and Special Events and Hannibal Cox, Jr. grants; Children's Services Council of Broward County sponsorships |
 | `local-AZ.json` (3) | Maricopa County: ESG and CDBG public services, CDBG, HOME CHDO |
 | `local-CA.json` (6) | Los Angeles County arts (2) and Care First grants; San Bernardino County CDBG; Alameda County ARTSFUND; Sacramento County TOT grants |
 | `local-IL.json` (+3) | Cook County violence intervention; Cook County CDBG; Cook County ESG |
@@ -80,7 +83,15 @@ How a place is matched: the card says "Funds work in <area>" when one of the pro
 | `local-TX.json` (8) | Houston Arts Alliance (4); Dallas ArtsActivate; Tarrant County CDBG and ESG; San Antonio arts operating grants |
 | `local-WA.json` (+4) | 4Culture (King County) |
 
-**Held, not loaded:** 7 Florida entries (6 Miami-Dade County Cultural Affairs grants and 1 Children's Services Council of Broward County sponsorship) are in `data/pending/local-FL.json`, which nothing reads. Loading them changes Florida's file and what a Florida profile sees, so it waits for a decision. To load them, move the programs into `data/local-FL.json`. Their linked guidelines were not checked for matching funds or tax status rules (arts grants often require a match), so check those first.
+**The seven held Florida entries** were loaded on 2026-11-25, on Ren's approval, after each was rechecked against its live page and guidelines with the crawling rule. All seven were still supported; none was dropped. What the recheck changed:
+
+- **Tax status.** All seven had said no 501(c)(3) was needed, which was wrong. Cultural Advancement, Cultural Development and the Broward sponsorships require it (`true`). Community Grants, Developing Arts in Neighborhoods, Festivals and Hannibal Cox allow a fiscal agent or another 501(c) type, or ask only for a Florida not-for-profit (`null`).
+- **Match.** All six Miami-Dade programs require one: 100% for five (Community Grants allows part in kind; the others ask for cash), and 100% to 300% from private sources for Festivals. Broward's pages state none; its policy says the Council will not be an event's only funder.
+- **Dates.** Community Grants' fourth quarter opens January 22, 2027 (the entry had no opening date, so it would have read as open now). Opening dates were added to the five closed programs.
+- **Who may apply** now carries the guidelines' limits, among them budget floors and ceilings, and that arts programs for or with children can't use Cultural Advancement, Developing Arts or Hannibal Cox. Cultural Advancement is by invitation or prior recommendation.
+- **Broward** gives up to $2,000 for events only, and takes requests any time, 60 to 180 days before the event.
+
+Existing Florida entries, ids and scores are unchanged (`tests/test_florida_unchanged.py`).
 
 **Dropped:**
 
@@ -105,10 +116,12 @@ How a place is matched: the card says "Funds work in <area>" when one of the pro
 - 501(c)(3) with no other route: Maricopa County CDBG and its homeless services notice (the application offers no other tax status), Cook County CDBG and ESG, and San Antonio arts operating grants. Cook County CDBG capital money also goes to suburban municipalities.
 - Guidelines not read, so match or tax status rules may be missing: Alameda ARTSFUND (constantcontact.com robots.txt can't be read), Dallas ArtsActivate (the file host's robots.txt can't be read), Queens Borough President (a document that needs a browser app), Brooklyn Borough President (a Microsoft form), both Philadelphia Cultural Fund grants (canva.com keeps automated visitors out). Each of these cards says so in its note, except the checklist can't show a match it doesn't know about.
 
+- Florida additions: matches and tax status as above, from the six FY 2026-2027 Miami-Dade guidelines and the Broward sponsorship policy (revised January 2024).
+
 Judgment calls a person may want to change:
 
 - "All rights reserved" or a copyright line with no ban on commercial use was not treated as a ban.
-- No terms page was found linked from houstonartsalliance.com, miamidadearts.org, dallascityhall.com, www.clarkcountynv.gov, arts.alamedacountyca.gov, www.philaculturalfund.org, council.nyc.gov, www.queensbp.nyc.gov or www.brooklynbp.nyc.gov, among others that link only a privacy policy. The three New York City hosts are subdomains of nyc.gov, whose own site couldn't be read.
+- No terms page was found linked from houstonartsalliance.com, miamidadearts.org, dallascityhall.com, www.clarkcountynv.gov, arts.alamedacountyca.gov, www.philaculturalfund.org, council.nyc.gov, www.queensbp.nyc.gov or www.brooklynbp.nyc.gov, among others that link only a privacy policy. None was found linked from the www.cscbroward.org pages read for its sponsorships either. The three New York City hosts are subdomains of nyc.gov, whose own site couldn't be read.
 - The check of terms was a search for automation and reuse wording on the pages linked from each site, then a reading of what it found. It is not legal advice.
 
 ## The 25 largest counties
@@ -123,7 +136,7 @@ The list of counties is the research's; the population order was not rechecked. 
 | Maricopa, AZ | 3 | County programs |
 | San Diego, CA | 0 | Not read: sandiegocounty.gov timed out, robots.txt included |
 | Orange, CA | 0 | None found on the county pages looked at |
-| Miami-Dade, FL | 0 | 6 verified and held (above) |
+| Miami-Dade, FL | 6 | County Cultural Affairs grants |
 | Dallas, TX | 1 | City of Dallas arts only |
 | Kings, NY | 2 | City Council and Borough President |
 | Riverside, CA | 0 | Blocked: rivco.gov robots.txt keeps out ClaudeBot |
@@ -133,7 +146,7 @@ The list of counties is the research's; the population order was not rechecked. 
 | San Bernardino, CA | 1 | County CDBG |
 | Tarrant, TX | 2 | County programs |
 | Bexar, TX | 1 | City of San Antonio only; bexar.org answered with a bot check |
-| Broward, FL | 0 | 1 verified and held; broward.org robots.txt keeps out ClaudeBot |
+| Broward, FL | 1 | Children's Services Council sponsorships; broward.org robots.txt keeps out ClaudeBot |
 | Santa Clara, CA | 0 | Blocked: the county's sites answer with a bot check |
 | Wayne, MI | 0 | Blocked for Detroit by its terms; no county nonprofit grant found |
 | Alameda, CA | 1 | County arts |
@@ -151,7 +164,7 @@ San Diego, Orange, Riverside, Santa Clara, Bexar and the other "not read" notes 
 |---|---|---|---|---|
 | Arizona | 3 | 0 | 3 | Maricopa 3 |
 | California | 6 | 0 | 6 | Los Angeles 3, San Bernardino 1, Alameda 1, Sacramento 1 |
-| Florida | 56 | 7 | 49 | Pinellas 15, Hillsborough 11, Manatee 5, Sarasota 5, Polk 5, Orange 4, Hernando 4, Pasco 3, DeSoto 3, Lee 2, Citrus 2, Charlotte 2, Osceola 1, Seminole 1 |
+| Florida | 63 | 7 | 56 | Pinellas 15, Hillsborough 11, Miami-Dade 6, Manatee 5, Sarasota 5, Polk 5, Orange 4, Hernando 4, Pasco 3, DeSoto 3, Lee 2, Citrus 2, Charlotte 2, Osceola 1, Seminole 1, Broward 1 |
 | Illinois | 13 | 10 | 3 | Cook 3 |
 | Iowa | 6 | 6 | 0 | none |
 | Nevada | 1 | 0 | 1 | Clark 1 |
@@ -178,7 +191,7 @@ Effort figures are estimates, not measurements.
 
 **Phase 3: more counties.** The next 75 counties by population, then CDBG entitlement cities, looking first at public services, arts and human services pages.
 
-- This batch: 48 drafted, 29 loaded and 7 held. Plan on losing about a quarter to robots.txt, terms or pages that don't support the entry. Read each program's guidelines, not only its page: in this batch they held match and tax status rules the pages left out.
+- This batch: 48 drafted, 36 loaded (7 of them after a second check). Plan on losing about a quarter to robots.txt, terms or pages that don't support the entry. Read each program's guidelines, not only its page: in this batch they held match and tax status rules the pages left out.
 - About 1 to 2 hours a county for finding, checking and entering, so 75 counties is roughly 2 to 4 weeks of work. A script can draft from permitted pages; a person approves each entry.
 - Add `fips` to entries when phase 2 needs the join.
 
