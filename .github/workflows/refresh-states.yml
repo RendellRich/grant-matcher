@@ -1,9 +1,12 @@
 name: Refresh state lists
 
-# West Virginia's grants.wv.gov list (grantmatch/westvirginia.py) and New Jersey's Treasury list of state grant
-# opportunities (grantmatch/newjersey.py), weekly, in one job. Later states join the same two steps. The site's
-# export reads these release assets at every deploy (grantmatch/export_web.py), and falls back to the snapshots in
-# data/ until this job has published them. Billed minutes: about 1 to 2 a run, 4 to 9 a month (docs/state-coverage.md).
+# Source copy: docs/proposed-workflows/refresh-states.yml.txt. As a text file there, nothing runs it; it takes
+# effect only once copied over .github/workflows/refresh-states.yml (docs/freshness.md has the command and steps).
+#
+# Every state adapter meant to refresh weekly (West Virginia, New Jersey, New York, the District of Columbia and
+# Minnesota), in one job, through grantmatch/refresh_states.py. The list comes from grantmatch/states.py. A state
+# that fails keeps the file already on the release; the others are still published and the run shows as failed.
+# Billed minutes: estimated 2 to 3 a run, 8 to 15 a month (docs/freshness.md).
 
 on:
   schedule:
@@ -24,20 +27,37 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - name: Read the West Virginia and New Jersey lists
-        run: |
-          python -m grantmatch.westvirginia --out build/westvirginia.json.gz --skipped build/skipped-westvirginia.json.gz
-          python -m grantmatch.newjersey --out build/newjersey.json.gz --skipped build/skipped-newjersey.json.gz
+      - name: Read the state lists
+        run: python -m grantmatch.refresh_states --out build
       - name: Build semantic embeddings
+        # Runs when a state failed above too, so the states that worked are still published.
+        if: ${{ !cancelled() }}
         run: |
-          python -m grantmatch.embed programs build/westvirginia.json.gz build/westvirginia.npz
-          python -m grantmatch.embed programs build/newjersey.json.gz build/newjersey.npz
+          if [ ! -f build/refreshed.txt ]; then echo "::error::The refresh didn't run, so there is nothing to publish."; exit 1; fi
+          : > build/upload.txt
+          failed=0
+          for f in $(cat build/refreshed.txt); do
+            if [ ! -f "build/$f.json.gz" ]; then
+              echo "::warning::build/$f.json.gz is missing; the release keeps its last $f file."
+              failed=1
+            elif python -m grantmatch.embed programs "build/$f.json.gz" "build/$f.npz"; then
+              echo "build/$f.json.gz" >> build/upload.txt
+              echo "build/$f.npz" >> build/upload.txt
+              if [ -f "build/skipped-$f.json.gz" ]; then echo "build/skipped-$f.json.gz" >> build/upload.txt; fi
+            else
+              echo "::warning::$f did not embed; the release keeps its last $f file."
+              failed=1
+            fi
+          done
+          exit $failed
       - name: Publish as data-latest release assets
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if [ ! -s build/upload.txt ]; then echo "::warning::Nothing new to publish."; exit 0; fi
           gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Latest grant data" --notes "Refreshed automatically."
-          gh release upload data-latest build/westvirginia.json.gz build/westvirginia.npz build/skipped-westvirginia.json.gz build/newjersey.json.gz build/newjersey.npz build/skipped-newjersey.json.gz --clobber
+          gh release upload data-latest $(cat build/upload.txt) --clobber
       - name: Keep this schedule from expiring
         if: always()
         env:
