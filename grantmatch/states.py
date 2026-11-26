@@ -62,7 +62,8 @@ STATES: dict[str, dict] = {
     "CO": {"status": "blocked",
            "source": "colorado.gov agency sites turn scripts away; cde.state.co.us robots.txt disallows all crawlers"},
     "CT": {"status": "html",
-           "source": "OPM and Office of the Arts pages (two dated calls); the CTsource Bid Board is filled by script"},
+           "source": "OPM and Office of the Arts pages (check unfinished: two dated calls on the pages read); the CTsource "
+                     "Bid Board is filled by script"},
     "DE": {"status": "none", "source": "Past awards on data.delaware.gov; no open-call dataset"},
     "DC": {"status": "built", "source": "District Grants Clearinghouse (DC.gov, CC BY 3.0)",
            "file": "districtofcolumbia", "catalog": "DC Clearinghouse", "module": "districtofcolumbia",
@@ -72,7 +73,8 @@ STATES: dict[str, dict] = {
            "catalog": "CSFA", "module": "florida", "report": "Florida state catalog", "refresh": "weekly",
            "pages": ["https://apps.fldfs.com/fsaa/catalog.aspx"]},
     "GA": {"status": "html",
-           "source": "Georgia Grants Portal (no applications available) and Criminal Justice Coordinating Council pages"},
+           "source": "Georgia Grants Portal (no applications available) and Criminal Justice Coordinating Council pages "
+                     "(check unfinished)"},
     "HI": {"status": "decide", "source": "HANDS, Hawaii Awards and Notices Data System (undocumented JSON, mostly procurement)"},
     "ID": {"status": "html",
            "source": "Education, Serve Idaho, Health and Welfare, and Parks and Recreation grant pages"},
@@ -89,7 +91,8 @@ STATES: dict[str, dict] = {
            "report": "IowaGrants.gov", "refresh": "daily",
            "pages": ["https://www.iowagrants.gov/storefrontFOList.do"]},
     "KS": {"status": "html",
-           "source": "Kansas Children's Cabinet grants page (one agency); grants.ks.gov turns scripts away"},
+           "source": "Kansas Children's Cabinet and Historical Society pages (check unfinished); grants.ks.gov turns "
+                     "scripts away"},
     "KY": {"status": "html",
            "source": "Kentucky Arts Council (its terms links return 404) and Health and Family Services grant pages"},
     "LA": {"status": "blocked",
@@ -101,7 +104,9 @@ STATES: dict[str, dict] = {
            "report": "Maryland Commerce State Grants table", "refresh": None, "in_skip_report": False,
            "who_listed": False, "pages": ["https://business.maryland.gov/nonprofit-opportunities/"]},
     "MA": {"status": "unchecked", "source": "COMMBUYS public bid search (no grant call seen on its first page of open bids)"},
-    "MI": {"status": "html", "source": "MI Funding Hub (its search page has no grant rows without script)"},
+    "MI": {"status": "html",
+           "source": "MI Funding Hub (check unfinished: its search page has no grant rows without script, and its grant "
+                     "pages weren't opened)"},
     "MN": {"status": "built",
            "source": "Minnesota Department of Health and Office of Justice Programs pages only (two agencies, not a statewide list)",
            "file": "minnesota", "catalog": "Minnesota, 2 agencies", "module": "minnesota",

@@ -160,6 +160,18 @@ def test_the_coverage_page_counts_and_statuses_match_the_registry():
         assert f"| {STATE_NAMES[code]} | {label[states.STATES[code]['status']]} |" in doc, code
 
 
+def test_states_with_unopened_grant_pages_are_marked_check_unfinished():
+    doc = (Path(export_web.__file__).parent.parent / "docs/state-coverage.md").read_text(encoding="utf-8")
+    found, read = doc.split("## (h) Pages read for the states not built")
+    for code in ("CT", "GA", "KS", "MI"):
+        name = STATE_NAMES[code]
+        row = next(line for line in found.splitlines() if line.startswith(f"| {name} | HTML only |"))
+        assert "**check unfinished:**" in row, code
+        row = next(line for line in read.splitlines() if line.startswith(f"| {name} |"))
+        assert "| **unfinished:**" in row, code
+        assert "check unfinished" in states.STATES[code]["source"], code
+
+
 def test_nothing_learned_from_a_page_we_may_not_use_is_recorded():
     root = Path(export_web.__file__).parent.parent
     text = "".join((root / p).read_text(encoding="utf-8") for p in
