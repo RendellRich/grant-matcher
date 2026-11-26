@@ -16,6 +16,7 @@ import { download, toCsv, toIcs } from "./exports";
 import { summariesFile } from "./summary";
 import { exampleForm, ProfileFormView } from "./form";
 import { CoverageNote } from "./coverage";
+import { Funders } from "./funderlist";
 import { BLANK, expandCities, parseProfile, sameForm, STATE_NAMES, type ProfileForm } from "./profile";
 import { federalEntries, isBlank, KINDS, queryText, rankFlorida, rankFoundations, toProfile } from "./rank";
 import {
@@ -664,13 +665,17 @@ export function App() {
               ))}
             </>
           )}
+          {/* Funders to ask, below the results and outside every tab: they are not grants and are never ranked. */}
+          {!blank && meta?.funders?.states.includes(st) ? (
+            <Funders key={st} state={st} stateName={stName} cities={applied.cities} counties={counties[st] ?? null} info={meta.funders} />
+          ) : null}
           {blank ? null : (
             <details class="ready">
               <summary><h2>Getting ready to apply</h2></summary>
               <Checklist state={st} local={Boolean(meta?.programs?.[st]?.local)} />
             </details>
           )}
-          <Footer coverage={!!meta?.coverage} />
+          <Footer coverage={!!meta?.coverage} funders={!!meta?.funders} />
         </main>
       </div>
       <SignIn open={signInOpen} onClose={() => setSignInOpen(false)} />
@@ -1377,12 +1382,13 @@ function Checklist({ state, local }: { state: string; local: boolean }) {
   );
 }
 
-function Footer({ coverage }: { coverage: boolean }) {
+function Footer({ coverage, funders }: { coverage: boolean; funders: boolean }) {
   return (
     <footer class="footer">
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
       <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page, with the date each was checked. A weekly job rereads the pages it may read and flags changes for a person; the rest are left to be checked by hand. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities. New York data from the Statewide Financial System's public search for grant opportunities. District of Columbia data from the District Grants Clearinghouse on DC.gov, licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0<span class="sr-only"> (opens in a new tab)</span></a> and reformatted. Minnesota data from the Department of Health's and the Office of Justice Programs' grant pages only. County and city programs outside Florida are entered by hand from each program's own page, for some counties and cities only.</p>
+      {funders ? <p>Local funders to ask come from HUD's formula allocations and the Census Bureau's Government Units listing, both U.S. government data. They are governments that get HUD money, not open grant calls.</p> : null}
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there. Your shortlist stays in this browser, unless you have Pro and save your profile and shortlist to your account.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>
     </footer>
