@@ -1,6 +1,6 @@
 // A one-page plain-text summary of a grant, for a grant writer to paste into a document or another tool.
 // Built only from what the card already shows, so it never says more than the data does.
-import type { Entry } from "./entries";
+import { callState, type Entry } from "./entries";
 import { readySummary } from "./ready";
 
 const SOURCE: Record<Entry["source"], string> = { fed: "Federal grant", fdn: "Foundation", fl: "State or local program" };
@@ -23,11 +23,8 @@ function section(title: string, lines: string[]): string[] {
 
 function sourceLabel(e: Entry): string {
   if (e.source === "fl" && / program$/.test(e.catalog)) return ""; // "County program" is already the catalog
-  if (e.source === "fl" && e.key.startsWith("fl:ca-")) return "California state grant";
-  if (e.source === "fl" && e.key.startsWith("fl:il-")) return "Illinois state grant";
-  if (e.source === "fl" && e.key.startsWith("fl:ia-")) return "Iowa state grant";
-  if (e.source === "fl" && e.key.startsWith("fl:oh-")) return "Ohio state grant";
-  if (e.source === "fl" && e.key.startsWith("fl:wa-")) return "Washington state grant";
+  const call = e.source === "fl" ? callState(e.key) : null;
+  if (call) return call.code === "DC" ? `${call.name} grant` : `${call.name} state grant`;
   return SOURCE[e.source];
 }
 

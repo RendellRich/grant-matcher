@@ -2,7 +2,7 @@
 import {
   asks501c3, fmtDate, money, type CompanyGiving, type FederalExtra, type GivingHistory, type FederalRec, type FloridaRec, type FoundationOut, type Scored, type Tier, type WebsiteCycle,
 } from "./score";
-import { SUPPORT_TYPES, splitList, type ProfileForm } from "./profile";
+import { STATE_NAMES, SUPPORT_TYPES, splitList, type ProfileForm } from "./profile";
 import { federalReadiness, floridaReadiness, foundationReadiness, type ReadyCheck } from "./ready";
 import type { Profile } from "./score";
 
@@ -284,6 +284,14 @@ export function localWindow(r: FloridaRec, today: Date = new Date()): { due: num
   if (opens && opens.getTime() > t0) return { due, line: `Applications open ${fmtDate(opens)}` };
   if (!due && ((r.status && r.deadlines === "Ongoing") || r.rolling === true)) return { due, line: "Taking applications with no set deadline" };
   return { due, line: due ? "Taking applications now" : undefined };
+}
+
+/** The state an open call came from, read off its key ("fl:ny-..." is New York), for the labels on exports and
+ *  summaries. Null for Florida's catalog and for hand-kept programs. */
+export function callState(key: string): { code: string; name: string } | null {
+  const code = key.match(/^fl:([a-z]{2})-/)?.[1].toUpperCase();
+  const name = code && code !== "FL" ? (STATE_NAMES as Record<string, string>)[code] : undefined;
+  return code && name ? { code, name } : null;
 }
 
 export function floridaEntry(s: Scored<FloridaRec>, hasKw: boolean, p?: Profile): Entry {

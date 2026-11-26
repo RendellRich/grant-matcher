@@ -309,7 +309,9 @@ def main() -> None:
         ids, vecs = program_vectors(records, fetch(f"{spec['file']}.npz"))
         write(out, f"programs-{state}", {"fetched_at": payload.get("fetched_at", ""), "state": state, "records": records}, ids, vecs)
         meta.setdefault("programs", {})[state] = {"file": f"programs-{state}", "source": spec["source"],
-                                                  "updated": payload.get("fetched_at", "")}
+                                                  "updated": payload.get("fetched_at", ""),
+                                                  # a list that never says who may apply (grantmatch/states.py)
+                                                  **({"who_listed": False} if spec.get("who_listed") is False else {})}
 
     # Foundations: private (990-PF) and community/public (Schedule I), one file per state.
     states = foundation_states()

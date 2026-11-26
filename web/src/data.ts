@@ -1,6 +1,7 @@
 // Loads the files grantmatch/export_web.py writes. The small public ones (meta, examples, coverage, counties)
 // come with the site; the grant data comes from the private bucket through links the search gate sends.
 import type { FileLink } from "./access";
+import { ELIGIBILITY_UNSTATED } from "./score";
 import { decodeF16, type VectorSet } from "./vectors";
 
 const BASE = `${import.meta.env.BASE_URL}data/`;
@@ -28,9 +29,10 @@ export interface Meta {
   federal?: string;
   florida?: string;
   coverage?: boolean;
-  /** States besides Florida with their own programs file: its name, its source and when it was fetched. */
-  programs?: Record<string, { file: string; source: string; updated?: string }>;
-  /** Every state's catalog status from grantmatch/states.py: built, next, decide, html, none or unchecked. */
+  /** States besides Florida with their own programs file: its name, its source and when it was fetched.
+   *  who_listed is false when the state's list never says who may apply. */
+  programs?: Record<string, { file: string; source: string; updated?: string; who_listed?: boolean }>;
+  /** Every state's catalog status from grantmatch/states.py: built, next, decide, html, blocked, none or unchecked. */
   catalogs?: Record<string, { status: string; source: string }>;
 }
 
@@ -124,10 +126,35 @@ export function noCatalogNote(meta: Meta | null, state: string, name: string): s
     : status === "decide" ? ` ${The} has a machine-readable grant list that isn't read in yet.`
     : status === "next" ? ` A source for ${grants} is being looked at.`
     : status === "none" ? ` No current public list of ${grants} was found.`
+    : status === "blocked" ? ` Key grant sites for ${the} can't be used here: their rules or terms don't allow it, or they turn automated readers away, so ${grants} aren't read in.`
     : status === "unchecked" ? ` ${Grants} aren't read in yet.`
     : "";
   return `No ${name} ${kind}catalog yet.${why} ${cover}`;
 }
+/** "Ohio state grants", but "District of Columbia grants": the District isn't a state. */
+export const grantsPhrase = (state: string, name: string) => `${name} ${state === "DC" ? "" : "state "}grants`;
+
+/** The line above a state's open calls: how many, from where, how fresh, and what isn't covered. */
+export function callsTally(state: string, name: string, calls: { nonprofit_eligible: boolean; applicant_types?: string }[],
+                           info: { source?: string; who_listed?: boolean } | undefined, updated: string): string {
+  const count = (n: number) => n.toLocaleString("en-US");
+  const dc = state === "DC";
+  const shown = calls.filter((r) => r.nonprofit_eligible);
+  // A call that doesn't say who may apply is shown, but it doesn't "list nonprofits as eligible": counted apart.
+  const unstated = shown.filter((r) => ELIGIBILITY_UNSTATED.test(r.applicant_types ?? "")).length;
+  const from = info?.source ? `, from the ${info.source}` : "";
+  const when = updated ? `, updated ${updated}` : "";
+  const what = `of ${count(calls.length)} open ${name} ${dc ? "" : "state "}grant`;
+  const listed = `${count(shown.length - unstated)} ${what} and loan calls list nonprofits as eligible`;
+  const source = `${from}${when}`.slice(2); // "from the ..., updated ..." as its own sentence
+  const line = info?.who_listed === false
+    ? `${count(shown.length)} ${what} calls are shown${from}${when}. The list doesn't say who may apply, so read each notice.`
+    : unstated
+      ? `${listed}; ${count(unstated)} more ${unstated === 1 ? "doesn't" : "don't"} say who may apply.${source ? ` ${source[0].toUpperCase()}${source.slice(1)}.` : ""}`
+      : `${listed}${from}${when}.`;
+  return dc ? line : `${line} County and city programs aren't covered for ${name} yet.`;
+}
+
 /** The result tabs to show: the state tab only when the profile's state has programs, so a preview's counts from
  *  the last state (a "Kansas programs, 0" tab) don't linger while a new search for a state without one runs. */
 export const shownSources = <K extends string>(keys: K[], hasPrograms: boolean): K[] =>

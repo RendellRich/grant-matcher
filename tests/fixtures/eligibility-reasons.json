@@ -1,0 +1,18 @@
+{
+  "about": "Both scorers read this: tests/test_eligibility_reasons.py and web/test/eligibility.test.ts. Each case is a call's \"who can apply\" text and the eligibility reason its card must give.",
+  "unstated": "Who may apply isn't listed; read the notice",
+  "stated": "Open to nonprofits",
+  "cases": [
+    { "id": "ny-blank", "applicant_types": "Not stated on the state's list; read the notice", "reason": "unstated" },
+    { "id": "mn-blank", "applicant_types": "Not stated on the agency's page; read the notice", "reason": "unstated" },
+    { "id": "dc-table", "applicant_types": "Not stated on the District's table; read the notice", "reason": "unstated" },
+    { "id": "wv-blank", "applicant_types": "Not stated on the state's listing; read the notice", "reason": "unstated" },
+    { "id": "wa-blank", "applicant_types": "Not stated on the portal; read the program page", "reason": "unstated" },
+    { "id": "ia-silent", "applicant_types": "Who may apply isn't stated on the listing; read the notice", "reason": "unstated" },
+    { "id": "il-others", "applicant_types": "Others. Whether nonprofits can apply isn't stated; read the notice", "reason": "unstated" },
+    { "id": "ny-listed", "applicant_types": "Governmental Entity, Not-For-Profit", "reason": "stated" },
+    { "id": "reviewed", "applicant_types": "Shown after review: nonprofits may apply. Not stated on the state's list; read the notice", "reason": "stated" },
+    { "id": "checked", "applicant_types": "Checked against the notice: open to nonprofits", "reason": "stated" },
+    { "id": "amount", "applicant_types": "Nonprofits. Award amounts are not stated.", "reason": "stated" }
+  ]
+}
