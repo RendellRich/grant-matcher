@@ -50,7 +50,7 @@ from . import counties, cycles, local
 from .cycles import AGENT, TIMEOUT, OffLimits, blocked_by_terms, fetch_page, off_limits
 from .display import STATE_NAMES
 from .export_web import RELEASE
-from .states import STATES
+from .states import STATES, paused_host
 
 DATA = local.LOCAL
 KEY = "_freshness"  # where the results live inside the page watch's state file
@@ -198,14 +198,15 @@ def age(stamp: str | None, today: date) -> int | None:
 
 
 def source(key: str, name: str, every: str, stamp: str | None, where: str, today: date,
-           pages: tuple | list = (), notes: tuple | list = (), partial: int = 0) -> dict:
+           pages: tuple | list = (), notes: tuple | list = (), partial: int = 0, paused: str = "") -> dict:
     """One source. `partial` counts the files of a many-file source that couldn't be read."""
     days = age(stamp, today)
     limit = MAX_DAYS[every]
     unread = where == UNREAD
     return {"key": key, "name": name, "every": every, "date": str(stamp)[:10] if days is not None else None,
             "days": days, "limit": limit, "stale": not unread and (days is None or days > limit), "unread": unread,
-            "partial": partial, "where": where, "pages": list(pages), "notes": list(notes)}
+            "partial": partial, "where": where, "pages": list(pages), "paused": paused,
+            "notes": ([f"reading is paused {paused}"] if paused else []) + list(notes)}
 
 
 def _count(n: int, one: str, many: str) -> str:
@@ -320,7 +321,7 @@ def inventory(today: date, release=None, data_dir: Path = DATA) -> tuple[list[di
             notes.append("read from the repository copy; the release has none")
         add(f"state:{code}", s["report"] if STATE_NAMES.get(code, code) in s["report"]
             else f"{STATE_NAMES.get(code, code)}: {s['report']}", s["refresh"] or "no job yet",
-            stamp_of(raw), where, today, s["pages"], notes)
+            stamp_of(raw), where, today, s["pages"], notes, paused=(s.get("paused") or {}).get("why", ""))
 
     # Hand-kept files and the company list: the oldest checked date. The page watch lists each old entry by name.
     entries = _entries(data_dir)
@@ -435,7 +436,7 @@ def plan(urls: list[str], source_pages: set[str], memory: dict) -> list[str]:
 def host_delay(url: str) -> float:
     """Seconds to wait before each request to this host. Reads its robots.txt (kept for the checks that follow),
     except for a host on the terms blocklist, which is never asked for anything."""
-    if blocked_by_terms(url):
+    if paused_host(url) or blocked_by_terms(url):
         return 0.0
     p = urlparse(url)
     rules = cycles._robots_for(f"{p.scheme}://{p.netloc}")
@@ -492,7 +493,8 @@ def findings(sources: list[dict], links: dict[str, list[str]], memory: dict, pas
             said = f"data from {s['date']}, {s['days']} days old" if s["date"] else "no date could be read"
             out.append((f"stale:{s['key']}", "stale",
                         f"- **{s['name']}** (`{s['key']}`): {said}; the limit is {s['limit']} days "
-                        f"(refresh: {s['every']})."))
+                        f"(refresh: {s['every']})."
+                        + (f" Reading is paused {s['paused']}, so this is expected." if s.get("paused") else "")))
     for url in sorted(links):
         m = memory.get(url) or {}
         if m.get("s") == "dead":

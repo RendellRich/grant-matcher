@@ -9,6 +9,12 @@ program pages, which carry the same facts. Like California's portal these are op
 
 Records use the same fields as California's (grantmatch/california.py), so the same scorer reads them.
 
+While the registry marks Illinois "paused" (grantmatch/states.py), nothing is asked of any Illinois host. The same
+command instead copies the files already on this project's own data-latest release, byte for byte (or the data
+file's snapshot in data/, if the release has none), so the daily job still has what it embeds and uploads. The data
+keeps its old fetched_at, so the site shows its date and the freshness check flags it as old. If the published file
+can't be read, or holds no calls, the run fails and writes nothing, so the release is left as it was.
+
 Run:  python -m grantmatch.illinois --out data/illinois.json.gz [--skipped build/skipped-illinois.json.gz]
 """
 from __future__ import annotations
@@ -25,6 +31,9 @@ from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlparse
 
 import requests
+
+from .export_web import LOCAL, RELEASE
+from .states import STATES, paused_host
 
 BASE = "https://omb.illinois.gov/PUBLIC/GATA/CSFA/"
 LIST = BASE + "OpportunityList.aspx"
@@ -137,6 +146,9 @@ def list_rows(page: str) -> list[dict]:
 
 
 def _get(url: str) -> str:
+    why = paused_host(url)
+    if why:
+        raise RuntimeError(f"not requested, {why}: {url}")
     r = session.get(url, timeout=60)
     r.raise_for_status()
     return r.text
@@ -263,7 +275,45 @@ def build_records(rows: list[dict], today: str | None = None, skips: list[dict] 
     return sorted(out.values(), key=lambda r: r["id"])
 
 
+def published(name: str) -> bytes | None:
+    """This project's own last published copy of a file: the data-latest release asset, or the snapshot in data/
+    when the release says it has none (404). Any other failure raises, so an older copy is never put in the place
+    of a newer one that couldn't be read."""
+    r = session.get(RELEASE + name, timeout=120)
+    if r.status_code != 404:
+        r.raise_for_status()
+        return r.content
+    path = LOCAL / name
+    return path.read_bytes() if path.exists() else None
+
+
+def keep_published(out: Path, skipped_out: Path | None = None) -> int:
+    """The paused refresh: write the last published files unchanged, old fetched_at and all. Nothing is written
+    unless every file the job uploads could be had."""
+    raw = published("illinois.json.gz")
+    if not raw:
+        raise RuntimeError("Illinois reads are paused and there is no published illinois.json.gz to keep")
+    payload = json.loads(gzip.decompress(raw))
+    if not payload.get("programs") or not payload.get("fetched_at"):
+        raise RuntimeError("The published illinois.json.gz holds no calls or no date; leaving the release as it is")
+    skipped = published("skipped-illinois.json.gz") if skipped_out is not None else None
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(raw)
+    if skipped_out is not None:
+        if skipped:
+            skipped_out.parent.mkdir(parents=True, exist_ok=True)
+            skipped_out.write_bytes(skipped)
+        else:  # none was ever published, so an empty list replaces nothing
+            from .fetch import write_skips
+            write_skips(skipped_out, [])
+    print(f"Illinois reads are paused {STATES['IL']['paused']['why']}: nothing was asked of an Illinois host. "
+          f"Kept the {len(payload['programs'])} calls read {payload['fetched_at']} in {out}")
+    return len(payload["programs"])
+
+
 def build(out: Path, skipped_out: Path | None = None) -> int:
+    if STATES["IL"].get("paused"):
+        return keep_published(out, skipped_out)
     rows = list_rows(_get(LIST))
     if len(rows) < MIN_ROWS:
         raise RuntimeError(f"Only {len(rows)} rows on the Illinois list; keeping the previous data file")

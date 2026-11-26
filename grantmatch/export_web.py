@@ -23,7 +23,7 @@ import requests
 from . import embed
 from . import corporate
 from . import local as local_programs
-from .states import STATE_PROGRAMS, catalogs
+from .states import STATE_PROGRAMS, STATES, catalogs
 from .skipped import load_decisions
 from .display import assistance_label, bracket_caps, format_address, present, shouting, tidy_name, tidy_text
 
@@ -388,6 +388,8 @@ def main() -> None:
                                                   "updated": payload.get("fetched_at", ""),
                                                   # a list that never says who may apply (grantmatch/states.py)
                                                   **({"who_listed": False} if spec.get("who_listed") is False else {}),
+                                                  # reads paused (grantmatch/states.py): the tab says so, with the date
+                                                  **({"paused": True} if STATES[state].get("paused") else {}),
                                                   **({"local": True} if has_local(extra) else {})}
 
     write_local_only(out, meta, links)

@@ -30,8 +30,15 @@ who may apply (the site then doesn't claim its calls list nonprofits), and add i
 New Jersey share .github/workflows/refresh-states.yml, weekly. Set "in_skip_report": False until
 skipped-report.yml downloads the state's skipped file, so the Friday report doesn't call it missing. The state tab, the exports and the skipped report need no change; add the state's "For <state> state grants" note
 and its sentence in the footer (web/src/app.tsx).
+
+To pause a built state's reads, give its entry "paused": {"why": ..., "hosts": [...]}. Nothing then asks those hosts for
+anything: the adapter republishes its last published files unchanged (grantmatch/illinois.py), the page watch, the
+freshness check and the website check treat the hosts as off limits without a request (cycles.off_limits), the data
+keeps its old date, and the state's tab says reading is paused (export_web.py). Remove the key to resume.
 """
 from __future__ import annotations
+
+from urllib.parse import urlparse
 
 from .display import STATE_NAMES
 
@@ -61,7 +68,11 @@ STATES: dict[str, dict] = {
     "ID": {"status": "html", "source": "Education, Serve Idaho and Health and Welfare grant pages"},
     "IL": {"status": "built", "source": "Illinois Catalog of State Financial Assistance", "file": "illinois",
            "catalog": "Illinois NOFO", "module": "illinois", "report": "Illinois state notices (GATA)", "refresh": "daily",
-           "pages": ["https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx"]},
+           "pages": ["https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx"],
+           # Paused 2026-11-25 on Ren's decision: omb.illinois.gov answers robots.txt with a web page, so the state's
+           # written OK is wanted first. Remove this key to resume. il.amplifund.com is the state's grants system, where
+           # most notices' own pages are.
+           "paused": {"why": "pending the state's written OK", "hosts": ["omb.illinois.gov", "il.amplifund.com"]}},
     "IN": {"status": "blocked",
            "source": "gn.ecivis.com robots.txt disallows all crawlers; in.gov terms bar storing its content in a retrieval system"},
     "IA": {"status": "built", "source": "IowaGrants.gov", "file": "iowa", "catalog": "IowaGrants", "module": "iowa",
@@ -148,6 +159,16 @@ REPORT: dict[str, dict] = {
 }
 
 
+def paused_host(url: str) -> str | None:
+    """Why nothing may be asked of this address's host while its state's reads are paused, or None."""
+    host = (urlparse(url).hostname or "").lower().rstrip(".")
+    for code, s in STATES.items():
+        pause = s.get("paused")
+        if pause and any(host == h or host.endswith("." + h) for h in pause["hosts"]):
+            return f"reading {STATE_NAMES.get(code, code)}'s list is paused {pause['why']}"
+    return None
+
+
 def catalogs() -> dict[str, dict]:
     """What meta.json carries for the site: each state's status and source, so a state with no catalog can say so."""
     return {code: {"status": s["status"], "source": s["source"]} for code, s in sorted(STATES.items())}
@@ -174,6 +195,10 @@ def check() -> list[str]:
             problems.append(f"{code}: in_skip_report is true or false, for built states only")
         if "who_listed" in s and (not built or s["who_listed"] is not False):
             problems.append(f"{code}: who_listed is only ever false, for built states only")
+        if "paused" in s:
+            pause = s["paused"]
+            if not (built and isinstance(pause, dict) and pause.get("why") and pause.get("hosts")):
+                problems.append(f"{code}: paused is why and hosts, for built states only")
         pages = s.get("pages")
         if built != bool(pages) or not all(str(u).startswith("https://") for u in pages or []):
             problems.append(f"{code}: pages is a list of https addresses, for built states only")

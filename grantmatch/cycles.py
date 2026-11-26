@@ -38,6 +38,7 @@ import requests
 from . import local
 from .display import present
 from .export_web import fetch, foundation_states
+from .states import paused_host
 
 AGENT = "grant-matcher/1.0 (+https://github.com/RendellRich/grant-matcher; weekly check of public grant pages)"
 TOKEN = "grant-matcher"  # the name robots.txt rules would use for this crawler
@@ -313,9 +314,13 @@ def _robots_for(root: str) -> tuple[robotparser.RobotFileParser, list[str]] | No
 
 
 def off_limits(url: str) -> str | None:
-    """Why the project may not read this page, or None when it may. A site whose terms are on the blocklist, whose
-    robots.txt couldn't be read, or whose robots.txt keeps out this crawler, ClaudeBot or another Anthropic agent,
-    is off limits; the user agent is never changed to get around it."""
+    """Why the project may not read this page, or None when it may. A host whose state's reads are paused
+    (grantmatch/states.py), a site whose terms are on the blocklist, whose robots.txt couldn't be read, or whose
+    robots.txt keeps out this crawler, ClaudeBot or another Anthropic agent, is off limits; the user agent is never
+    changed to get around it."""
+    why = paused_host(url)
+    if why:
+        return why  # nothing is asked of the host, robots.txt included
     why = blocked_by_terms(url)
     if why:
         return f"site terms: {why}"  # nothing is asked of the host, robots.txt included
