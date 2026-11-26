@@ -304,7 +304,7 @@ The deadline sits right-aligned on the score line in ink, 600, tabular figures. 
 Each reason is one line with an 18px stroke icon: an accent check for fits, an amber triangle for cautions, a muted info or clock icon for other notes. Screen readers hear "Fits", "Caution", "Also" or "Status" before each.
 
 ### Can we apply?
-Under the reasons, one wrapping line: "Can we apply?" in ink 650, then each check as a 16px icon and a few words (an accent check when it's fine, an amber triangle when it needs a look or stops you; one that stops you is set in 650). No fills, no pills. The details open with the same checks as full sentences. Screen readers hear "Fine", "Check" or "Stops you" before each, and the heading carries the count. A caution or status line the checks repeat stays off the card.
+Under the reasons, one wrapping line: "Can we apply?" in ink 650, then each check as a 16px icon and a few words (an accent check when it's fine, an amber triangle when it needs a look or stops you; one that stops you is set in 650). No fills, no pills. The details open with the same checks as full sentences. Screen readers hear "Fine", "Check" or "Stops you" before each, and the heading carries the count. A caution or status line the checks repeat stays off the card. A match is never left to be assumed: "No match required" only when the source says none is needed, otherwise "Match not stated" with the amber triangle.
 
 ### Notes
 Paper fill, 6px corners, 12px by 16px padding, max 66ch. A warning note adds a 1px caution inset outline.
