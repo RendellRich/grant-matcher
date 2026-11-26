@@ -130,6 +130,8 @@ def normalize(item: dict) -> dict:
         "funding_method": "",
         "loi": False,
         "updated": _day(o.get("UpdatedDate")) or _day(o.get("InsertedDate")) or _day(o.get("ApplicationStartDate")),
+        # the list's own yes or no: an explicit false is "none needed", a missing value says nothing
+        **({"match_none": True} if o.get("MatchingRequired") is False else {}),
     }
 
 

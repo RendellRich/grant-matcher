@@ -115,6 +115,11 @@ describe("the line above a state's open calls", () => {
     const source = "West Virginia grants.wv.gov list of available grants";
     expect(callsTally("WV", "West Virginia", calls(3, 1, 3), { source }, "Nov 25")).toBe(
       "3 of 7 open West Virginia state grant and loan calls list nonprofits as eligible; 1 more doesn't say who may apply. From the West Virginia grants.wv.gov list of available grants, updated Nov 25. County and city programs aren't covered for West Virginia yet.");
+    // a paused list (grantmatch/states.py) says so, with the date it was read
+    expect(callsTally("IL", "Illinois", calls(3), { source: "Illinois Catalog of State Financial Assistance", paused: true }, "Nov 25")).toContain(
+      "updated Nov 25. Reading the Illinois state list is paused until the state gives its OK, so these state calls are as read on Nov 25. Newer calls aren't here, and a call may have changed or closed since. County");
+    expect(callsTally("IL", "Illinois", calls(3), { paused: true }, "")).toContain("paused until the state gives its OK. Newer calls aren't here");
+    expect(callsTally("OH", "Ohio", calls(3), { source: "Ohio" }, "Nov 25")).not.toContain("paused");
     expect(callsTally("IA", "Iowa", calls(0, 2), undefined, "")).toBe(
       "0 of 2 open Iowa state grant and loan calls list nonprofits as eligible; 2 more don't say who may apply. County and city programs aren't covered for Iowa yet.");
     expect(callsTally("IA", "Iowa", calls(1, 1), undefined, "Nov 25")).toContain("say who may apply. Updated Nov 25. County");

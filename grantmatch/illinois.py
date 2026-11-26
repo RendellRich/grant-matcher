@@ -198,6 +198,7 @@ def normalize(row: dict, f: dict) -> dict:
                 "Not stated on the state's listing; read the notice"
     objectives = " ".join(t for t in (f.get("Description") or f.get("Short Description", ""), f.get("Objective", "")) if t)
     match = _clean(f.get("Matching Requirement") or f.get("Cost Sharing or Matching Requirements", ""))
+    match_none = match.lower() in ("no", "none")  # the notice says none; a blank or "N/A" says nothing
     match = "" if match.lower() in ("", "no", "none", "n/a") else ("Required" if match.lower() == "yes" else match)
     floor, ceiling = _money(f.get("Award Floor", "")), _money(f.get("Award Ceiling", ""))
     award = [f"{label}: {value}." for label, value in (
@@ -238,6 +239,7 @@ def normalize(row: dict, f: dict) -> dict:
         "funding_method": "",
         "loi": False,
         "updated": _day(f.get("Posted Date", "")) or row["opens"],
+        **({"match_none": True} if match_none else {}),
     }
 
 

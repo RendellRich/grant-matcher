@@ -155,6 +155,7 @@ def normalize(row: dict, tax: dict[str, dict[int, str]]) -> dict:
         "funding_method": "; ".join(m for m in methods if m.lower() != "unspecified"),
         "loi": str(a.get("pre_application") or "").strip().lower() == "yes",
         "updated": (row.get("modified") or "")[:10] or None,
+        **({"match_none": True} if cost_share == "no" else {}),  # a blank says nothing
     }
 
 

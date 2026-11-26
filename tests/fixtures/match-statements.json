@@ -1,0 +1,19 @@
+{
+  "about": "What each list's match field says, and what the card must then show. tests/test_match_statements.py reads the raw value through the Python adapter and checks `record`; web/test/match.test.ts feeds `record` to the card's checklist (web/src/ready.ts) and checks `label`. One file, so the two can't drift.",
+  "cases": [
+    {"adapter": "california", "raw": "25%", "record": {"match": "25%"}, "label": "Match required"},
+    {"adapter": "california", "raw": "Not Required", "record": {"match": "", "match_none": true}, "label": "No match required"},
+    {"adapter": "california", "raw": "", "record": {"match": ""}, "label": "Match not stated"},
+    {"adapter": "illinois", "raw": "Yes", "record": {"match": "Required"}, "label": "Match required"},
+    {"adapter": "illinois", "raw": "No", "record": {"match": "", "match_none": true}, "label": "No match required"},
+    {"adapter": "illinois", "raw": "None", "record": {"match": "", "match_none": true}, "label": "No match required"},
+    {"adapter": "illinois", "raw": "N/A", "record": {"match": ""}, "label": "Match not stated"},
+    {"adapter": "illinois", "raw": "", "record": {"match": ""}, "label": "Match not stated"},
+    {"adapter": "ohio", "raw": true, "record": {"match": "Required"}, "label": "Match required"},
+    {"adapter": "ohio", "raw": false, "record": {"match": "", "match_none": true}, "label": "No match required"},
+    {"adapter": "ohio", "raw": null, "record": {"match": ""}, "label": "Match not stated"},
+    {"adapter": "washington", "raw": "yes", "record": {"match": "Required"}, "label": "Match required"},
+    {"adapter": "washington", "raw": "no", "record": {"match": "", "match_none": true}, "label": "No match required"},
+    {"adapter": "washington", "raw": "", "record": {"match": ""}, "label": "Match not stated"}
+  ]
+}
