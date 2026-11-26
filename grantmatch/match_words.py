@@ -5,9 +5,11 @@ together by shared cases (tests/fixtures/match-statements.json, read by tests/te
 web/test/match.test.ts). Change a pattern in both. No score reads this: points off for a match come only from a
 record's `match` field (grantmatch/rank_more.py).
 
-The rule: "No match required" is said only when the list's field or the words say none is needed. Words that ask for a
-match anywhere beside such a line, or a line limited by "unless", "except" or "for ...", make it unclear; and words
-that ask for a match are never read as silence.
+The rule: "No match required" is said only when the list's field or the words say none is needed. It is not said when
+that line is followed by "(", "unless", "except", "for", "if", "when", "during", "from", "to apply" or "at the time"
+(LIMITED), or when the text or objectives also use one of the wordings in ASKS (or, in the text, PLAIN_MATCH;
+"encouraged to provide matching funds" is not counted). Only
+those wordings are caught; a requirement put another way can still be missed.
 """
 from __future__ import annotations
 
@@ -22,7 +24,8 @@ NONE_NEEDED = re.compile(
     r"|\b(?:match(?:ing(?: funds?)?)?|cost[- ]shar(?:e|ing))(?: is| are)? not (?:required|a requirement)\b"
     r"|\bdo(?:es)? not require (?:a |any )?(?:local )?(?:match(?:ing(?: funds?)?)?|cost[- ]shar(?:e|ing))\b", re.I)
 # A "none needed" line that only covers some cases.
-LIMITED = re.compile(rf"(?:{NONE_NEEDED.pattern})[\s,]+(?:unless|except|for)\b", re.I)
+LIMITED = re.compile(rf"(?:{NONE_NEEDED.pattern})(?:[\s,]*\(|[\s,]+(?:unless|except|for|if|when|during|from|to apply|at the time)\b)",
+                     re.I)
 # Words that ask someone for a match, in the ways the plain patterns below miss.
 ASKS = re.compile(
     r"\b(?:must|shall)(?: \w+)? be matched\b(?! (?:to|with (?:a |an |the )?(?:mentors?|volunteers?))\b)"
@@ -38,7 +41,8 @@ ASKS = re.compile(
     r"|\b\d+ ?: ?\d+(?: (?:cash|in-kind|local|funding|or|and))* match"
     r"|\b\d+[- ]to[- ]\d+ (?:cash |funding )?match"
     r"|\bpercent(?:age)? (?:cash |local )?match"
-    r"|\bmust (?:\w+ )?(?:provide|contribute)\b[^.]{0,40}\bmatch", re.I)
+    r"|\bmust (?:\w+ )?(?:provide|contribute)\b[^.]{0,40}\bmatch"
+    r"|\bmatch of (?:at least\b|\d{1,3} ?(?:%|percent\b))|\bmatch is needed\b|\bmatch \d+ ?: ?\d+|(?<!encouraged to )\bprovides? matching funds\b", re.I)
 PLAIN_MATCH = re.compile(
     r"\bmatch (?:is |are )?required\b|\brequires? (?:a )?(?:\d{1,3} ?% )?(?:cash |local )?match\b"
     r"|\b\d{1,3} ?% (?:cash |local )?match\b", re.I)
