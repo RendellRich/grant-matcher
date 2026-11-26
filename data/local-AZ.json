@@ -1,0 +1,105 @@
+{
+ "about": "Arizona county and city grant programs, entered by hand from each program's own page. Not a complete list. Change an entry only from the official page, and update its checked date (docs/county-coverage.md).",
+ "programs": [
+  {
+   "slug": "maricopa-esg-cdbg-ps-py27",
+   "title": "ESG and CDBG Public Service NOFA (PY2027-28)",
+   "agency": "Maricopa County Human Services Department",
+   "level": "County",
+   "counties": [
+    "Maricopa"
+   ],
+   "objectives": "Emergency shelter and rapid rehousing for people experiencing homelessness.",
+   "who": "Nonprofits or nonprofit collaboratives serving people experiencing homelessness. The application form's only tax status choice is a nonprofit Arizona 501(c)(3).",
+   "requires_501c3": true,
+   "application": "Download the application from the county's notices page and email it before 5 p.m. MST.",
+   "award": "About $1,816,303 in all. Paid by reimbursement; no match required.",
+   "opens": "2026-11-17",
+   "closes": "2026-12-08",
+   "deadlines": "Applications are due Tuesday, December 8, 2026, before 5 p.m. MST.",
+   "subjects": "Homelessness; Housing; Shelter",
+   "url": "https://www.maricopa.gov/DocumentCenter/View/124235/Maricopa-County-Public-Notice-of-Funding-Availability-NOFA-for-ESG-and-CDBG-Public-Services",
+   "web": "https://www.maricopa.gov/3893/Notices-Documents",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "maricopa-cdbg-py27",
+   "title": "CDBG Annual Competitive Application (PY2027-28)",
+   "agency": "Maricopa County Housing and Community Development Division",
+   "level": "County",
+   "counties": [
+    "Maricopa"
+   ],
+   "area": "Maricopa County's small towns and unincorporated areas",
+   "places": [
+    "Cave Creek",
+    "El Mirage",
+    "Fountain Hills",
+    "Gila Bend",
+    "Guadalupe",
+    "Litchfield Park",
+    "Tolleson",
+    "Wickenburg",
+    "Youngtown",
+    "Maricopa",
+    "Maricopa County"
+   ],
+   "objectives": "Projects for low and moderate income people in the Maricopa Urban County: nine small towns and the unincorporated areas. This application takes no public service or operating requests.",
+   "who": "Eligible nonprofit agencies and organizations, which must document 501(c)(3) status, and participating local governments.",
+   "requires_501c3": true,
+   "application": "Apply in the county's Neighborly portal by 5 p.m.",
+   "award": "About $1,750,000 in all. Applicants pay their own administration costs.",
+   "opens": "2026-10-20",
+   "closes": "2026-12-08",
+   "deadlines": "Applications are due Tuesday, December 8, 2026, at 5 p.m.",
+   "subjects": "Community development; Capital",
+   "url": "https://www.maricopa.gov/DocumentCenter/View/124209/NOFA-CDBG-Application-Information-Packet-PY27-28---Amended-10262026",
+   "web": "https://www.maricopa.gov/3893/Notices-Documents",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "maricopa-home-chdo-py27",
+   "title": "HOME CHDO Funding (PY2027-28)",
+   "agency": "Maricopa County Housing and Community Development Division",
+   "level": "County",
+   "counties": [
+    "Maricopa"
+   ],
+   "area": "Maricopa County HOME communities (not Phoenix or Mesa)",
+   "places": [
+    "Avondale",
+    "Chandler",
+    "Gilbert",
+    "Glendale",
+    "Goodyear",
+    "Peoria",
+    "Scottsdale",
+    "Surprise",
+    "Cave Creek",
+    "El Mirage",
+    "Fountain Hills",
+    "Gila Bend",
+    "Guadalupe",
+    "Litchfield Park",
+    "Tolleson",
+    "Wickenburg",
+    "Youngtown",
+    "Maricopa",
+    "Maricopa County"
+   ],
+   "objectives": "Affordable housing development by certified community housing development organizations, outside Phoenix and Mesa.",
+   "who": "Nonprofits certified as a Maricopa County Community Housing Development Organization (CHDO). An IRS determination letter confirming 501(c) tax-exempt status is required.",
+   "requires_501c3": null,
+   "match": "25%",
+   "application": "Apply in the county's Neighborly portal by 5 p.m.",
+   "award": "About $668,000 in all. A 25% non-federal match is required for all activities. Paid by reimbursement.",
+   "opens": "2026-10-20",
+   "closes": "2026-12-08",
+   "deadlines": "Applications are due Tuesday, December 8, 2026, at 5 p.m.",
+   "subjects": "Affordable housing",
+   "url": "https://www.maricopa.gov/DocumentCenter/View/124208/NOFA-HOME-CHDO-Application-Information-Packet-PY27-28",
+   "web": "https://www.maricopa.gov/3893/Notices-Documents",
+   "checked": "2026-11-25"
+  }
+ ]
+}

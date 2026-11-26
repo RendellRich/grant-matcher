@@ -230,6 +230,43 @@ def still_open(records: list[dict], today: date) -> tuple[list[dict], int]:
     return kept, len(records) - len(kept)
 
 
+def hand_kept(state: str) -> list[dict]:
+    """A state's programs entered by hand (data/local-<ST>.json), ready for the site."""
+    extra = local_programs.load(state=state)
+    if extra:
+        sites = website_cycles()
+        for r in extra:
+            tidy_program(r)
+            if sites.get(r["id"]):
+                r["_cycle"] = sites[r["id"]]
+    return extra
+
+
+def has_local(records: list[dict]) -> bool:
+    """Whether any of the programs is a county, city or other local one, not a state call kept by hand."""
+    return any(r.get("level") not in (None, "State") for r in records)
+
+
+def local_only_states() -> list[str]:
+    """States with a hand-kept list and no state catalog of their own: no adapter, and not Florida."""
+    return [s for s in local_programs.states() if s != "FL" and s not in STATE_PROGRAMS]
+
+
+def write_local_only(out: Path, meta: dict) -> None:
+    """A programs file for each state with county and city programs but no state catalog, marked local_only so the
+    site says that is all it holds."""
+    for state in local_only_states():
+        records = hand_kept(state)
+        if not records:
+            continue
+        stamp = f"{max(r['checked'] for r in records)}T12:00+00:00"  # noon, so no US time zone shows the day before
+        ids, vecs = program_vectors(records, None)
+        write(out, f"programs-{state}", {"fetched_at": stamp, "state": state, "records": records}, ids, vecs)
+        meta.setdefault("programs", {})[state] = {"file": f"programs-{state}", "updated": stamp, "local_only": True,
+                                                  "local": has_local(records),
+                                                  "source": "county and city programs entered by hand"}
+
+
 def florida_records(payload: dict) -> tuple[list[dict], list[dict]]:
     """Florida's records for the site: the catalog's programs with review decisions applied, then the county and
     city programs entered by hand (grantmatch/local.py). Returns (all records, the hand-kept ones), so the caller
@@ -297,21 +334,19 @@ def main() -> None:
         for r in records:
             r["_catalog"] = f"{spec['catalog']} {r.get('number', '')}".strip()
             r["_assist"] = (r.get("assistance") or "").replace("; ", " or ")
-        # State calls the adapter can't see, entered by hand (data/local-<ST>.json, grantmatch/local.py)
-        extra = local_programs.load(state=state)
-        if extra:
-            sites = website_cycles()
-            for r in extra:
-                tidy_program(r)
-                if sites.get(r["id"]):
-                    r["_cycle"] = sites[r["id"]]
-            records += extra
+        # State calls the adapter can't see, and county and city programs, entered by hand (data/local-<ST>.json,
+        # grantmatch/local.py)
+        extra = hand_kept(state)
+        records += extra
         ids, vecs = program_vectors(records, fetch(f"{spec['file']}.npz"))
         write(out, f"programs-{state}", {"fetched_at": payload.get("fetched_at", ""), "state": state, "records": records}, ids, vecs)
         meta.setdefault("programs", {})[state] = {"file": f"programs-{state}", "source": spec["source"],
                                                   "updated": payload.get("fetched_at", ""),
                                                   # a list that never says who may apply (grantmatch/states.py)
-                                                  **({"who_listed": False} if spec.get("who_listed") is False else {})}
+                                                  **({"who_listed": False} if spec.get("who_listed") is False else {}),
+                                                  **({"local": True} if has_local(extra) else {})}
+
+    write_local_only(out, meta)
 
     # Foundations: private (990-PF) and community/public (Schedule I), one file per state.
     states = foundation_states()
@@ -417,7 +452,8 @@ def golden(out: Path, examples: dict, path: Path) -> None:
     frame = load_frame(fed)
     ca = load("programs-CA") if (out / "programs-CA.json.gz").exists() else None
     # Every other state with a programs file, through the same scorer, so a new adapter's records are checked too.
-    others = {st: load(f"programs-{st}") for st in STATE_PROGRAMS if st != "CA" and (out / f"programs-{st}.json.gz").exists()}
+    others = {st: load(f"programs-{st}") for st in sorted(set(STATE_PROGRAMS) | set(local_only_states()))
+              if st != "CA" and (out / f"programs-{st}.json.gz").exists()}
     cases = []
     for key, ex in examples.items():
         q = np.array(ex["vector"], dtype=np.float32)

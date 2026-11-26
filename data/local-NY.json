@@ -1,0 +1,97 @@
+{
+ "about": "New York county and city grant programs, entered by hand from each program's own page. Not a complete list. Change an entry only from the official page, and update its checked date (docs/county-coverage.md).",
+ "programs": [
+  {
+   "slug": "nyc-council-discretionary-fy27",
+   "title": "City Council Discretionary Funding (FY2027)",
+   "agency": "New York City Council",
+   "level": "City",
+   "counties": [
+    "Bronx",
+    "Kings",
+    "New York",
+    "Queens",
+    "Richmond"
+   ],
+   "area": "New York City",
+   "places": [
+    "New York",
+    "New York City",
+    "Manhattan",
+    "Brooklyn",
+    "Queens",
+    "Bronx",
+    "Staten Island",
+    "New York County",
+    "Kings County",
+    "Queens County",
+    "Bronx County",
+    "Richmond County"
+   ],
+   "objectives": "City Council discretionary expense funding for community organizations.",
+   "who": "Not-for-profit community-based organizations with IRS tax-exempt status, usually 501(c)(3); some other 501(c) types may qualify. Fiscal sponsors and fiscal conduits are not allowed.",
+   "requires_501c3": null,
+   "application": "Submit the Council application in the January to February filing period.",
+   "award": "Not stated on the page.",
+   "opens": "2026-01-05",
+   "closes": "2026-02-18",
+   "deadlines": "FY2027 applications closed February 18, 2026. The Council opens a filing period each year; no next date is published.",
+   "subjects": "Social services; Community",
+   "url": "https://council.nyc.gov/budget/fy2027-discretionary-funding-expense-application-filing-period/",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "nyc-queens-bp-expense",
+   "title": "Borough President Discretionary Expense Funding",
+   "agency": "Office of the Queens Borough President",
+   "level": "City",
+   "counties": [
+    "Queens"
+   ],
+   "area": "Queens",
+   "places": [
+    "Queens",
+    "Queens County"
+   ],
+   "objectives": "Discretionary funding for nonprofit programmatic expenses in Queens.",
+   "who": "Nonprofits that meet the office's guidelines.",
+   "requires_501c3": null,
+   "application": "The page gives January to June for applications; nonprofits must meet the office's guidelines.",
+   "award": "Not stated on the page.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "Applications are taken January to June; the page gives no exact dates.",
+   "subjects": "Community",
+   "url": "https://www.queensbp.nyc.gov/budget/",
+   "source_note": "The office's guidelines are in a document that couldn't be read, so check them for matching funds and tax status rules.",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "nyc-brooklyn-bp-expense",
+   "title": "Borough President Discretionary Expense Funding",
+   "agency": "Office of the Brooklyn Borough President",
+   "level": "City",
+   "counties": [
+    "Kings"
+   ],
+   "area": "Brooklyn",
+   "places": [
+    "Brooklyn",
+    "Kings",
+    "Kings County"
+   ],
+   "objectives": "Programs, services and events of nonprofits that directly support Brooklyn and its residents.",
+   "who": "Nonprofit organizations.",
+   "requires_501c3": null,
+   "application": "Complete the Discretionary Expense Funding Application linked on the page.",
+   "award": "Not stated on the page.",
+   "opens": null,
+   "closes": null,
+   "deadlines": "The page gives no application dates.",
+   "subjects": "Community",
+   "url": "https://www.brooklynbp.nyc.gov/departments/budget/",
+   "source_note": "The page gives no tax status or matching rules for this funding, and the application form wasn't read.",
+   "checked": "2026-11-25"
+  }
+ ]
+}

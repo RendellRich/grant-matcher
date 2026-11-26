@@ -1,0 +1,47 @@
+{
+ "about": "Pennsylvania county and city grant programs, entered by hand from each program's own page. Not a complete list. Change an entry only from the official page, and update its checked date (docs/county-coverage.md).",
+ "programs": [
+  {
+   "slug": "phila-cultural-fund-art-culture",
+   "title": "Art and Culture Grant (2027-2029)",
+   "agency": "Philadelphia Cultural Fund (city-funded)",
+   "level": "City",
+   "counties": [
+    "Philadelphia"
+   ],
+   "objectives": "General operating support over three years for art and culture organizations.",
+   "who": "501(c)(3) or fiscally sponsored organizations in Philadelphia with average budgets up to $1.5 million.",
+   "requires_501c3": null,
+   "application": "Apply through the fund's grants page.",
+   "award": "$10,000 in 2027, a three-year grant.",
+   "opens": "2026-11-04",
+   "closes": "2026-12-18",
+   "deadlines": "Applications opened November 4, 2026 and are due December 18, 2026, at 11:59 p.m. ET.",
+   "subjects": "Arts; Culture",
+   "url": "https://www.philaculturalfund.org/grants-programs",
+   "source_note": "The fund's resource guide couldn't be read (its host doesn't allow it), so check it for matching funds rules.",
+   "checked": "2026-11-25"
+  },
+  {
+   "slug": "phila-cultural-fund-community-impact",
+   "title": "Community Impact Grant (2027-2029)",
+   "agency": "Philadelphia Cultural Fund (funded by the William Penn Foundation)",
+   "level": "City",
+   "counties": [
+    "Philadelphia"
+   ],
+   "objectives": "Added unrestricted support for smaller Art and Culture grantees.",
+   "who": "Art and Culture grantees with average budgets up to $500,000.",
+   "requires_501c3": null,
+   "application": "Apply through the fund's grants page.",
+   "award": "$10,000 more, for selected grantees.",
+   "opens": "2026-11-04",
+   "closes": "2026-12-18",
+   "deadlines": "Applications opened November 4, 2026 and are due December 18, 2026, at 11:59 p.m. ET.",
+   "subjects": "Arts; Culture",
+   "url": "https://www.philaculturalfund.org/grants-programs",
+   "source_note": "The fund's resource guide couldn't be read (its host doesn't allow it), so check it for matching funds rules.",
+   "checked": "2026-11-25"
+  }
+ ]
+}

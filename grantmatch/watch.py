@@ -11,7 +11,9 @@ report of what needs review:
            are ignored)
   blank    the page came back with almost no text, which usually means it is built in the browser
            and needs a person (or a real browser) to read it
-  error    the page could not be reached; blocked means robots.txt asks automated visitors to stay out
+  error    the page could not be reached; blocked means the page is off limits and was not read: robots.txt
+           couldn't be read, or keeps out this crawler, ClaudeBot or another Anthropic agent, or the host's
+           terms forbid automation (grantmatch/cycles.py). A blocked entry is reported, never deleted
   stale    the entry's checked date is older than --stale-days
 
 It never edits an entry. A person reads the page and updates the entry and its checked date.
@@ -34,7 +36,7 @@ from pathlib import Path
 
 import requests
 
-from .cycles import CLOSED, OPEN, TIMEOUT, allowed, page_text, session, snippet
+from .cycles import CLOSED, OPEN, TIMEOUT, OffLimits, fetch_page, page_text, snippet
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 MAX_BYTES = 8_000_000
@@ -104,11 +106,9 @@ def kind(url: str, content_type: str) -> str:
 
 def read(url: str) -> dict:
     """{"s": "ok", "text": ...} or {"s": "blocked" | "error", "why": ...}."""
-    if not allowed(url):
-        return {"s": "blocked", "why": "robots.txt asks automated visitors to stay out"}
     try:
-        with session().get(url, timeout=TIMEOUT, allow_redirects=True, stream=True,
-                           headers={"Accept": "text/html,application/pdf,*/*;q=0.8"}) as r:
+        with fetch_page(url, timeout=TIMEOUT, stream=True,
+                        headers={"Accept": "text/html,application/pdf,*/*;q=0.8"}) as r:
             if not r.ok:
                 return {"s": "error", "why": f"HTTP {r.status_code}"}
             body = b""
@@ -129,6 +129,8 @@ def read(url: str) -> dict:
                 text = page_text(raw)
             else:
                 return {"s": "error", "why": f"unexpected file type {r.headers.get('content-type', '')}"}
+    except OffLimits as e:
+        return {"s": "blocked", "why": str(e)}
     except requests.RequestException as e:
         return {"s": "error", "why": type(e).__name__}
     except Exception as e:  # a broken PDF or Word file
@@ -218,7 +220,7 @@ def assess(row: dict, reading: dict, before: dict | None, today: date, stale_day
 # ---------------- the report ----------------
 
 LABEL = {"status": "Status wording", "changed": "Page changed", "blank": "Blank page", "error": "Could not reach",
-         "blocked": "Blocked by robots.txt", "stale": "Entry is old"}
+         "blocked": "Blocked by robots.txt or site terms", "stale": "Entry is old"}
 ORDER = ["status", "error", "changed", "blank", "blocked", "stale"]
 
 

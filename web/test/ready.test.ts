@@ -1,8 +1,10 @@
 // "Can we apply?" (src/ready.ts): each source's facts against the profile, and the card lines they replace.
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { federalEntry, floridaEntry, foundationEntry } from "../src/entries";
 import { federalReadiness, floridaReadiness, foundationReadiness, readySummary, type ReadyCheck } from "../src/ready";
 import { scoreFederal, scoreFlorida, scoreFoundations, type FederalRec, type FloridaRec, type FoundationRec, type Profile } from "../src/score";
+import { grantSummary } from "../src/summary";
 
 const profile = (extra: Partial<Profile> = {}): Profile => ({
   mission: "Free literacy tutoring for children.", keywords: ["literacy", "children"], has501c3: "Yes",
@@ -155,5 +157,52 @@ describe("company foundations limited to named counties", () => {
     expect(outside.score).toBe(Math.max(0, plain - 40));
     expect(outside.cautions).toContain("Only for work in the 1 counties Sample Power serves in Florida");
     expect(noCities.cautions.at(-1)).toMatch(/add your cities to check$/);
+  });
+});
+
+describe("a hand-kept program whose tax status rule isn't a yes or no", () => {
+  const clean = "Nothing in the way that we can see";
+  const question = "This program's tax status rule isn't a simple yes or no; read Who can apply before you start.";
+  // Every such entry in the county and city files, as the card sees it, checked on a day when it is open.
+  const entries = ["AZ", "CA", "IL", "NV", "NY", "PA", "TX", "WA"].flatMap((st) =>
+    (JSON.parse(readFileSync(new URL(`../../data/local-${st}.json`, import.meta.url), "utf8")).programs as Record<string, unknown>[])
+      .filter((e) => e.level !== "State" && e.requires_501c3 === null)
+      .map((e) => ({ ...e, id: `local-${st.toLowerCase()}-${e.slug}`, applicant_types: e.who, restrictions: "",
+        nonprofit_eligible: true, earmark: false, csfa: "", assistance: "Grant", contact: "" }) as unknown as FloridaRec));
+  const openDay = (r: FloridaRec) => (r.closes ? new Date(`${r.closes}T12:00:00`) : new Date(2026, 10, 25));
+
+  it("never reads as a clean yes to an organization without 501(c)(3)", () => {
+    expect(entries.map((e) => e.id)).toEqual(expect.arrayContaining([
+      "local-pa-phila-cultural-fund-art-culture", "local-pa-phila-cultural-fund-community-impact",
+      "local-wa-king-4culture-facility-development", "local-ca-alameda-artsfund-2027"]));
+    const open = { ...entries[0], id: "local-tx-open", rolling: true, closes: null, opens: null, match: undefined,
+      applicant_types: "Nonprofits.", application: "Apply online.", award: "Not stated.", deadlines: "Any time." } as FloridaRec;
+    for (const r of [open, ...entries]) {
+      for (const has501c3 of ["No", "Pending"] as const) {
+        for (const fiscalSponsor of [false, true]) {
+          for (const canCostShare of [false, true]) {
+            const p = profile({ has501c3, fiscalSponsor, canCostShare, today: openDay(r) });
+            const { checks } = floridaReadiness(r, p);
+            expect(readySummary(checks), r.id).not.toBe(clean);
+            expect(checks.filter((c) => c.key === "501c3"), r.id).toEqual([{ key: "501c3", state: "check", label: "Check tax status", note: question }]);
+          }
+        }
+      }
+    }
+  });
+
+  it("says the same in the copied summary", () => {
+    const r = entries.find((e) => e.id === "local-pa-phila-cultural-fund-art-culture")!;
+    const p = profile({ has501c3: "No", fiscalSponsor: false, canCostShare: false, today: openDay(r) });
+    const text = grantSummary(floridaEntry(scoreFlorida([r], p, null)[0], true, p), p.today);
+    expect(text).toContain("CAN WE APPLY? 1 THING TO CHECK");
+    expect(text).toContain(`- Check: ${question}`);
+    expect(text).not.toContain(clean);
+  });
+
+  it("adds nothing once the organization has the status, or for a state program", () => {
+    const keys = (r: FloridaRec, has501c3: "Yes" | "No") => floridaReadiness(r, profile({ has501c3 })).checks.map((c) => c.key);
+    expect(keys(entries[0], "Yes")).not.toContain("501c3");
+    expect(keys({ ...entries[0], level: undefined } as FloridaRec, "No")).not.toContain("501c3");
   });
 });

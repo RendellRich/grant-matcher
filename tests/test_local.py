@@ -38,7 +38,7 @@ def test_bad_entries_are_named():
     assert any("slug" in p for p in problems)
     assert "unknown county 'Atlantis'" in problems
     assert any(p.startswith("opens") for p in problems)
-    assert "requires_501c3 must be true or false" in problems
+    assert "requires_501c3 must be true, false or null" in problems
     assert "url must start with https://" in problems
     assert local.check(entry(opens="2027-02-01"), COUNTIES) == ["opens is after closes"]
 
@@ -184,3 +184,162 @@ def test_programs_between_rounds_rank_below_open_ones():
     assert list(out["id"]) == ["local-ia-open", "local-ia-closed"]
     assert out.iloc[0]["score"] - out.iloc[1]["score"] == 15
     assert rank_more.BETWEEN_ROUNDS in out.iloc[1]["cautions"]
+
+
+TX = {"Harris": ["Houston", "Pasadena"], "Tarrant": ["Arlington", "Bedford", "Fort Worth"]}
+NY = {"Kings": ["New York"], "New York": ["New York"]}
+
+
+def test_a_city_program_names_only_its_places():
+    e = entry(level="City", counties=["Harris"], area="Houston", places=["Houston"])
+    assert local.check(e, TX, "TX") == []
+    r = local.to_record(e, TX, state="TX")
+    assert r["places"] == ["houston"] and r["area"] == "Houston"
+    p = Profile(mission=PROFILE.mission, keywords=PROFILE.keywords)
+
+    def where(cities):
+        row = score_florida([r], p, cities=cities).iloc[0]
+        return [x for x in list(row["reasons"]) + list(row["cautions"]) if "Houston" in x]
+
+    assert where(["Houston"]) == ["Funds work in Houston, where you work"]
+    assert where(["Pasadena"]) == ["Only for work in Houston"]  # same county, outside the city
+
+
+def test_places_left_out_of_a_county():
+    e = entry(counties=["Tarrant"], area="Tarrant County outside Fort Worth", exclude_places=["Fort Worth"])
+    assert local.check(e, TX, "TX") == []
+    r = local.to_record(e, TX, state="TX")
+    assert r["places"] == ["arlington", "bedford", "tarrant", "tarrant county"]
+    assert r["area"] == "Tarrant County outside Fort Worth"
+
+
+def test_places_are_checked_against_the_counties():
+    def problems(state="TX", known=TX, **kw):
+        return local.check(entry(**{"counties": ["Harris"], **kw}), known, state)
+
+    assert problems(area="Dallas", places=["Dallas"]) == ["places: 'Dallas' is not a place in its counties"]
+    assert problems(area="x", exclude_places=["Harris"]) == ["exclude_places: 'Harris' is not a place in its counties"]
+    assert problems(places=["Houston"]) == ["places needs an area, the words the card uses for them"]
+    assert problems(area="Houston") == ["area is only used with places or exclude_places"]
+    assert "use places or exclude_places, not both" in problems(area="x", places=["Houston"], exclude_places=["Pasadena"])
+    assert "places must be a list of place names" in problems(area="x", places="Houston")
+    assert "a statewide program has no places" in problems(counties=["Statewide"], area="x", places=["Houston"])
+    assert problems("NY", NY, counties=["Kings"], area="Brooklyn", places=["Brooklyn", "Kings County"]) == []
+    assert problems(area="x", places=["Brooklyn"]) == ["places: 'Brooklyn' is not a place in its counties"]
+
+
+def test_a_source_note_is_carried_only_when_there_is_one():
+    assert "source_note" not in local.to_record(entry(), COUNTIES)
+    r = local.to_record(entry(source_note="The page gives two dates."), COUNTIES)
+    assert r["source_note"] == "The page gives two dates."
+    assert local.check(entry(source_note=""), COUNTIES) == ["source_note must be a sentence"]
+
+
+def test_every_county_and_city_file_is_clean():
+    import re
+    from grantmatch import cycles
+    email = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+    for st in ("AZ", "CA", "NV", "NY", "PA", "TX", "IL", "WA"):
+        rows = [r for r in local.load(state=st) if r["level"] != "State"]
+        assert rows, st
+        for r in rows:
+            assert r["id"].startswith(f"local-{st.lower()}-") and len(f"fl:{r['id']}") <= 63
+            assert r["places"] and r["area"] and r["checked"] >= "2026-11-25"
+            assert not [k for k, v in r.items() if isinstance(v, str) and email.search(v)], r["id"]
+            for url in (r["url"], r["web"]):
+                assert not cycles.blocked_by_terms(url), url
+
+
+def test_the_held_florida_entries_are_ready_but_not_loaded():
+    from pathlib import Path
+    pending = local.load(Path(local.LOCAL) / "pending" / "local-FL.json")
+    assert len(pending) == 7
+    loaded = {r["id"] for r in local.load()}
+    assert not loaded & {r["id"] for r in pending}
+    assert not any(c for c in ("Miami-Dade", "Broward")
+                   for e in json.loads(local.file_for("FL").read_text(encoding="utf-8"))["programs"] if c in e["counties"])
+
+
+def test_no_florida_slug_reads_as_another_states_key():
+    from grantmatch.display import STATE_NAMES
+    for e in json.loads(local.file_for("FL").read_text(encoding="utf-8"))["programs"]:
+        assert e["slug"][2] != "-" or e["slug"][:2].upper() not in STATE_NAMES, e["slug"]
+
+
+def test_a_state_with_no_catalog_gets_a_local_only_file(tmp_path, monkeypatch):
+    import numpy as np
+
+    from grantmatch import embed, export_web
+
+    monkeypatch.setattr(export_web, "LOCAL_ONLY", True)
+    monkeypatch.setattr(embed, "embed_texts", lambda texts: np.ones((len(texts), 384), dtype=np.float32))
+    assert export_web.local_only_states() == ["AZ", "NV", "PA", "TX"]  # CA, IL, NY and WA have their own adapters
+    meta = {}
+    export_web.write_local_only(tmp_path, meta)
+    assert sorted(meta["programs"]) == ["AZ", "NV", "PA", "TX"]
+    tx = meta["programs"]["TX"]
+    assert tx["local_only"] and tx["local"] and tx["file"] == "programs-TX" and tx["updated"] == "2026-11-25T12:00+00:00"
+    payload = json.loads(gzip.decompress((tmp_path / "programs-TX.json.gz").read_bytes()))
+    assert payload["vec_ids"] == [r["id"] for r in payload["records"]]
+    assert all(r["level"] != "State" and r["_title"] for r in payload["records"])
+
+
+def test_a_built_states_hand_kept_programs_join_its_tab():
+    from grantmatch import export_web
+    for st, n in (("IL", 3), ("WA", 4), ("CA", 6), ("NY", 3)):
+        rows = export_web.hand_kept(st)
+        assert export_web.has_local(rows) and sum(r["level"] != "State" for r in rows) == n, st
+    assert not export_web.has_local(export_web.hand_kept("OH"))
+
+
+def test_a_required_match_costs_points_when_you_cant_cost_share():
+    assert local.check(entry(match="25%"), COUNTIES) == []
+    assert local.check(entry(match=""), COUNTIES) == ["match must say how much, for example 25%"]
+    plain = local.to_record(entry(), COUNTIES)
+    assert "match" not in plain  # records without one are as they were
+    r = local.to_record(entry(match="25%"), COUNTIES)
+
+    def one(rec, share):
+        p = Profile(mission=PROFILE.mission, keywords=PROFILE.keywords, can_cost_share=share)
+        return score_florida([rec], p, cities=["Bradenton"]).iloc[0]
+
+    assert "Requires matching funds (25%)" in one(r, False)["cautions"]
+    assert one(plain, False)["score"] - one(r, False)["score"] == 20
+    assert one(r, True)["score"] == one(plain, True)["score"]
+
+
+def test_a_tax_status_answer_can_be_neither_yes_nor_no():
+    e = entry(requires_501c3=None)
+    assert local.check(e, COUNTIES) == []
+    missing = {k: v for k, v in e.items() if k != "requires_501c3"}
+    assert local.check(missing, COUNTIES) == ["requires_501c3 must be true, false or null"]
+    r = local.to_record(e, COUNTIES)
+    assert r["requires_501c3"] is None
+    pending = Profile(mission=PROFILE.mission, keywords=PROFILE.keywords, has_501c3="No")
+    assert not [c for c in score_florida([r], pending, cities=["Bradenton"]).iloc[0]["cautions"] if "501(c)(3)" in c]
+
+
+def test_the_match_and_tax_status_rules_found_in_the_guidelines():
+    records = {r["id"]: r for st in ("AZ", "CA", "IL", "TX", "WA") for r in local.load(state=st)}
+    matches = {i: r["match"] for i, r in records.items() if "match" in r}
+    assert matches == {
+        "local-az-maricopa-home-chdo-py27": "25%", "local-ca-lac-arts-ogp": "100% cash",
+        "local-ca-lac-arts-ciag": "100% cash", "local-il-cook-esg-2026": "100%", "local-tx-tarrant-esg-py2027": "100%",
+    }
+    required = sorted(i for i, r in records.items() if r.get("level") not in (None, "State") and r["requires_501c3"] is True)
+    assert required == ["local-az-maricopa-cdbg-py27", "local-az-maricopa-esg-cdbg-ps-py27", "local-il-cook-cdbg-2026",
+                        "local-il-cook-esg-2026", "local-tx-san-antonio-arts-operational-fy27"]
+    sb = records["local-ca-sbc-cdbg-py2027"]
+    assert len(sb["places"]) == 14 and "surrounding communities" in sb["source_note"]
+
+
+def test_words_about_a_match_agree_with_the_match_field():
+    # The card reads a program's words too (web/src/ready.ts), so they must not suggest a match that isn't required.
+    import re
+    for st in ("AZ", "CA", "IL", "NV", "NY", "PA", "TX", "WA"):
+        for r in local.load(state=st):
+            if r["level"] == "State" or "match" in r:
+                continue
+            words = " ".join((r["applicant_types"], r["application"], r["award"], r["deadlines"]))
+            if re.search(r"matching|\bmatch\b", words, re.I):
+                assert re.search(r"no match required", words, re.I), r["id"]

@@ -1,5 +1,5 @@
 {
-  "about": "Washington state calls with their own application windows that FundHubWA leaves out, entered by hand from each program's own page: Department of Commerce social service and capital grants, Office of Crime Victims Advocacy funding, and ArtsWA grants. grantmatch/local.py checks this file and turns each entry into a Washington program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
+  "about": "Washington state calls with their own application windows that FundHubWA leaves out, entered by hand from each program's own page: Department of Commerce social service and capital grants, Office of Crime Victims Advocacy funding, and ArtsWA grants. Also King County programs. grantmatch/local.py checks this file and turns each entry into a Washington program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
   "programs": [
     {
       "slug": "commerce-workfirst-providers",
@@ -220,6 +220,90 @@
       "url": "https://www.commerce.wa.gov/cci/",
       "web": "https://www.commerce.wa.gov/contracting/",
       "checked": "2026-11-24"
+    },
+    {
+      "slug": "king-4culture-art-projects",
+      "title": "Art Projects",
+      "agency": "4Culture (King County's cultural funding agency)",
+      "level": "County",
+      "counties": [
+        "King"
+      ],
+      "objectives": "Art projects of any medium shared with King County communities.",
+      "who": "Individual artists and art groups based in King County. Nonprofit status is not required.",
+      "requires_501c3": false,
+      "application": "Apply on 4Culture's site.",
+      "award": "Up to $15,000.",
+      "opens": null,
+      "closes": "2027-03-10",
+      "deadlines": "Applications are due March 10, 2027, at 5 p.m.",
+      "subjects": "Arts",
+      "url": "https://www.4culture.org/grants/art-projects/",
+      "source_note": "4Culture says its posted guidelines describe the previous cycle and will be updated before applications open.",
+      "checked": "2026-11-25"
+    },
+    {
+      "slug": "king-4culture-heritage-projects",
+      "title": "Heritage Projects",
+      "agency": "4Culture (King County's cultural funding agency)",
+      "level": "County",
+      "counties": [
+        "King"
+      ],
+      "objectives": "Documentation, exhibits and interpretation of heritage and history in King County.",
+      "who": "King County residents, and organizations, community groups, municipalities, Tribal governments and unincorporated or fiscally sponsored groups located and working in King County.",
+      "requires_501c3": false,
+      "application": "Apply on 4Culture's site.",
+      "award": "$2,000 to $15,000. Paid by reimbursement.",
+      "opens": null,
+      "closes": "2027-03-10",
+      "deadlines": "Applications are due March 10, 2027, at 5 p.m.",
+      "subjects": "History; Heritage",
+      "url": "https://www.4culture.org/grants/heritage-projects/",
+      "source_note": "4Culture says its posted guidelines describe the previous cycle and will be updated before applications open.",
+      "checked": "2026-11-25"
+    },
+    {
+      "slug": "king-4culture-open",
+      "title": "Open 4Culture",
+      "agency": "4Culture (King County's cultural funding agency)",
+      "level": "County",
+      "counties": [
+        "King"
+      ],
+      "objectives": "A first 4Culture grant for arts, heritage and historic preservation projects.",
+      "who": "Individuals, and groups based in King County with an arts, heritage or preservation mission, that are new to 4Culture. Nonprofit status is not required.",
+      "requires_501c3": false,
+      "application": "Applications reopen in April 2027; apply at least three months before the project or event.",
+      "award": "Up to $2,500.",
+      "opens": null,
+      "closes": null,
+      "deadlines": "Applications reopen April 2027, then ongoing, due three months before the event.",
+      "subjects": "Arts; Culture",
+      "url": "https://www.4culture.org/grants/open-4culture/",
+      "source_note": "4Culture says its posted guidelines describe the previous cycle and will be updated before applications open.",
+      "checked": "2026-11-25"
+    },
+    {
+      "slug": "king-4culture-facility-development",
+      "title": "Building for Equity: Project Development",
+      "agency": "4Culture (King County's cultural funding agency)",
+      "level": "County",
+      "counties": [
+        "King"
+      ],
+      "objectives": "Planning and early design for cultural facility projects.",
+      "who": "King County-based nonprofit arts, cultural, heritage, preservation, science and technology organizations, Tribal governments, public agencies, and cultural or science groups fiscally sponsored by a 501(c)(3).",
+      "requires_501c3": null,
+      "application": "Intent to apply by March 25, 2027, then the final application.",
+      "award": "Up to $50,000.",
+      "opens": null,
+      "closes": "2027-04-08",
+      "deadlines": "Intent to apply due March 25, 2027; final application due April 8, 2027, at 5 p.m.",
+      "subjects": "Capital; Arts",
+      "url": "https://www.4culture.org/grants/project-development/",
+      "source_note": "4Culture says its posted guidelines describe the previous cycle and will be updated before applications open.",
+      "checked": "2026-11-25"
     }
   ]
 }

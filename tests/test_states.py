@@ -129,8 +129,8 @@ def test_the_export_drops_closed_snapshot_calls_but_not_florida_or_hand_kept_pro
     src = inspect.getsource(export_web.main)
     loop = src[src.index("for state, spec in STATE_PROGRAMS.items()"):]
     # still_open runs on the adapter's records before the hand-kept ones join, and never on Florida's
-    assert loop.index("still_open(payload[\"programs\"]") < loop.index("local_programs.load(state=state)")
-    assert "still_open" not in inspect.getsource(export_web.florida_records)
+    assert loop.index("still_open(payload[\"programs\"]") < loop.index("hand_kept(state)")
+    assert "still_open" not in inspect.getsource(export_web.florida_records) + inspect.getsource(export_web.write_local_only)
     assert "still_open" not in src[:src.index("for state, spec in STATE_PROGRAMS.items()")]
 
 
