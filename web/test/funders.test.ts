@@ -88,6 +88,9 @@ describe("everyday names find their government", () => {
     ["PR", "Mayaguez", "Mayaguez Municipio"],
     ["PR", "Manati", "Manati Municipio"],
     ["PR", "Bayam\u00f3n", "Bayamon Municipio"],
+    // counties.json.gz and the funder's counties hold this name as UTF-8 read as Latin-1
+    ["NM", "Do\u00f1a Ana County", "Las Cruces"],
+    ["NM", "Dona Ana County", "Las Cruces"],
   ])("%s: %s", (state, typed, name) => {
     expect(found(state, typed)).toContain(name);
   });

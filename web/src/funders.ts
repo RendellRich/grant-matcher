@@ -26,8 +26,13 @@ export interface FundersMeta {
   census_as_of: string;
 }
 
+/** counties-ST.json holds a few names as UTF-8 read as Latin-1 (the n with a tilde in Dona Ana is two characters);
+ *  this puts them right and leaves other text alone. */
+const readable = (s: string) => s.replace(/\u00c3[\u0080-\u00bf]/g,
+  (m) => new TextDecoder().decode(Uint8Array.from(m, (c) => c.charCodeAt(0))));
+
 /** A name for comparing: no case, accents or punctuation, "Saint" as "St" and "Ft" as "Fort". */
-const fold = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+const fold = (s: string) => readable(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
   .replace(/\bsaint\b/g, "st").replace(/\bft\b/g, "fort").replace(/[^a-z0-9]+/g, " ").trim();
 
 const COUNTY_WORD = / (county|parish|municipio)$/;
