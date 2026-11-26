@@ -33,7 +33,7 @@ skipped-report.yml downloads the state's skipped file, so the Friday report does
 and its sentence in the footer (web/src/app.tsx).
 
 A state read from web pages can use grantmatch/webpages.py (the crawling rule, record fields and dropped rows), as
-arkansas.py, maryland.py, northdakota.py, tennessee.py and wyoming.py do.
+arkansas.py, maryland.py, montana.py, northdakota.py, tennessee.py and wyoming.py do.
 
 To pause a built state's reads, give its entry "paused": {"why": ..., "hosts": [...]}. Nothing then asks those hosts for
 anything: the adapter republishes its last published files unchanged (grantmatch/illinois.py), the page watch, the
@@ -111,7 +111,10 @@ STATES: dict[str, dict] = {
     "MS": {"status": "unchecked",
            "source": "Agency pages; the Human Services procurement table is filled by script and wasn't read"},
     "MO": {"status": "html", "source": "Natural Resources, Arts Council and ServMO grant pages (mo.gov data policy requires state disclaimers)"},
-    "MT": {"status": "html", "source": "Montana Arts Council pages (one dated call) and the WebGrants storefront"},
+    "MT": {"status": "built", "source": "Montana Arts Council grant pages only (one agency, not a statewide list)",
+           "file": "montana", "catalog": "Montana, 1 agency", "module": "montana", "report": "Montana Arts Council",
+           "refresh": None, "in_skip_report": False,
+           "pages": ["https://art.mt.gov/artsed", "https://art.mt.gov/artsinhealth", "https://art.mt.gov/sig"]},
     "NE": {"status": "blocked", "source": "nebraska.gov terms bar robots and scrapers without written permission"},
     "NV": {"status": "blocked", "source": "airtable.com robots.txt disallows the state's shared grant view"},
     "NH": {"status": "blocked", "source": "nh.gov agency sites turn scripts away"},
@@ -133,7 +136,9 @@ STATES: dict[str, dict] = {
     "OH": {"status": "built", "source": "Ohio Grants Partnership", "file": "ohio", "catalog": "Ohio", "module": "ohio",
            "report": "Ohio Grants Partnership", "refresh": "daily",
            "pages": ["https://grants.ohio.gov/funding-opportunities/find-current-opportunities"]},
-    "OK": {"status": "html", "source": "Oklahoma Arts Council grants page (one agency); OK Grants needs registration"},
+    "OK": {"status": "html",
+           "source": "oklahoma.gov pages (terms linked as its operator's bar robots and scrapers; held until it is settled "
+                     "whether they cover the site)"},
     "OR": {"status": "none", "source": "Two housing datasets on data.oregon.gov, both empty"},
     "PA": {"status": "decide", "source": "pa.gov Discover State Grants (the site's own search proxy)"},
     "RI": {"status": "blocked", "source": "gn.ecivis.com robots.txt disallows all crawlers"},
@@ -148,7 +153,7 @@ STATES: dict[str, dict] = {
     "TX": {"status": "blocked",
            "source": "txsmartbuy.gov robots.txt disallows all crawlers; no usable terms were confirmed for the eGrants page"},
     "UT": {"status": "html",
-           "source": "Utah Funding Opportunities Portal (Looker Studio report); agency pages with no dated call found"},
+           "source": "Utah Funding Opportunities Portal (Looker Studio report); agency pages with no open call for nonprofits found"},
     "VT": {"status": "blocked", "source": "agriculture.vermont.gov (its robots.txt disallows ClaudeBot)"},
     "VA": {"status": "html",
            "source": "Governor's Office Grants directory (its policy link returns 404; virginia.gov allows fair use only)"},

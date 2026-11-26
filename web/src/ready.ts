@@ -215,7 +215,18 @@ function windowCheck(r: FloridaRec, local: boolean, call: boolean, today: Date):
   if (opens && opens.getTime() > t0) {
     return { key: "open", state: "check", label: `Opens ${shortDate(opens)}`, note: `Applications open ${shortDate(opens)}${closes ? ` and close ${shortDate(closes)}` : ""}.` };
   }
-  if (closes && closes.getTime() >= t0) return { key: "open", state: "ok", label: "Open now", note: `Taking applications now; due ${shortDate(closes)}.` };
+  if (closes && closes.getTime() >= t0) {
+    // The list's own note (loi, and "That date has passed" in How to apply): a letter or request some or all
+    // applicants had to send by an earlier date. A plain "Open now" would read as open to them too.
+    if (call && r.loi === true && /\bThat date has passed\b/.test(String(r.application ?? ""))) {
+      return { key: "open", state: "check", label: "Earlier date passed", note: `Due ${shortDate(closes)}, but an earlier date has passed. Read "How to apply" to see whether it rules you out.` };
+    }
+    return { key: "open", state: "ok", label: "Open now", note: `Taking applications now; due ${shortDate(closes)}.` };
+  }
+  // A call taken every month has a deadline, so it isn't "no set deadline".
+  if (call && r.deadlines === "Ongoing" && /\bdue\b[^.]*\b(?:each|every) month\b/i.test(String(r.application ?? ""))) {
+    return { key: "open", state: "ok", label: "Open, due monthly", note: 'Taking applications every month; "How to apply" gives the day.' };
+  }
   if ((call && r.deadlines === "Ongoing") || (local && r.rolling === true)) return { key: "open", state: "ok", label: "Open, no deadline", note: "Taking applications with no set deadline." };
   if (local) {
     return { key: "open", state: "check", label: "Between rounds", note: "No application window is open now; the Deadlines line says when the next round is expected." };

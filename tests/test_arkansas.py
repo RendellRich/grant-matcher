@@ -34,7 +34,9 @@ def test_each_program_is_read_with_the_pages_dates_and_eligibility():
 
 def test_the_match_is_the_pages_words_and_silence_stays_silent():
     recs, _ = built()
-    assert recs["ar-general-operating-support"]["match"] == "Required"
+    # shown on the card as "Matching funds are required (amount not stated)"
+    assert recs["ar-general-operating-support"]["match"] == "amount not stated"
+    assert match_words.statement(recs["ar-general-operating-support"]) == match_words.REQUIRED
     assert recs["ar-arts-in-education-major"]["match"] == "1:1, half may be in-kind"
     tour = recs["ar-arts-on-tour"]
     assert tour["match"] == "" and "match_none" not in tour and match_words.statement(tour) == match_words.NOT_STATED
@@ -61,7 +63,7 @@ def test_a_program_the_page_pauses_is_left_out_whatever_its_dates():
     ("<li>All Arts in Education Major grants open Oct. 15. Applications are due Jan. 29, 2027.</li>", ""),
     ("Year One application is due Jan. 14, 2027.", "Year One application is due in January."),
     ("GENERAL OPERATING SUPPORT</strong>", "OPERATING SUPPORT</strong>"),
-    ("Application Deadline Ongoing.", "Application Deadline to be announced."),
+    ("Application Deadline Ongoing.", "Apply soon."),
     ("This grant is currently closed for applications.", "Apply 60 days before your event."),
     ("These grants are awarded to", "Grants go to"),
 ])
@@ -112,3 +114,41 @@ def test_operating_support_says_the_intent_date_and_income_floor_first():
     assert "That date has passed" not in gos["application"]
     later = built(today="2026-12-10")[0]["ar-general-operating-support"]
     assert "That date has passed; check the notice before you start." in later["application"]
+
+
+def tour_gone(page):
+    recs, skips = built(page=page)
+    return "ar-arts-on-tour" not in recs and "Arts on Tour grant" in [s["name"] for s in skips]
+
+
+@pytest.mark.parametrize("said", [
+    "Applications are no longer being accepted.", "We are no longer taking applications.",
+    "Funds have been depleted for FY27.", "All FY27 funds have been awarded.", "This grant opportunity has closed.",
+    "Funding has been exhausted.", "The fund is fully committed.", "Check back next spring.",
+])
+def test_closed_words_inside_the_section_or_naming_the_program_take_arts_on_tour_off(said):
+    line = "<p>Application Deadline Ongoing.</p>"
+    assert tour_gone(PAGE.replace(line, f"{line}<p>{said}</p>"))
+    assert tour_gone(PAGE.replace("<h3>How To Apply</h3>", f"<h3>How To Apply</h3><p>Arts on Tour: {said}</p>"))
+
+
+def test_a_deadline_that_no_longer_says_it_is_taking_applications_takes_it_off():
+    for line in ("Application Deadline to be announced.", "Application Deadline Closed."):
+        assert tour_gone(PAGE.replace("Application Deadline Ongoing.", line)), line
+
+
+def test_a_note_on_a_programs_heading_closes_it_with_or_without_its_apply_button():
+    page = PAGE.replace("ARTS ON TOUR GRANT</strong>", "ARTS ON TOUR GRANT (Closed for this cycle)</strong>")
+    assert tour_gone(page)
+    recs, skips = built(page=PAGE.replace("GENERAL OPERATING SUPPORT</strong>", "GENERAL OPERATING SUPPORT (Paused)</strong>"))
+    assert "ar-general-operating-support" not in recs
+    assert ("General Operating Support (year one)", "not_taking") in [(s["name"], s["reason"]) for s in skips]
+
+
+def test_a_when_to_apply_line_about_arts_on_tour_is_read_with_it():
+    page = PAGE.replace("<li>Mini grants are closed", "<li>Arts on Tour is paused.</li><li>Mini grants are closed")
+    assert tour_gone(page)
+
+
+def test_closed_mini_grants_do_not_close_arts_on_tour():
+    assert "ar-arts-on-tour" in built()[0]

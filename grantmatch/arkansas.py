@@ -6,6 +6,10 @@ Arts on Tour, which the page says takes applications on an ongoing basis. The Co
 left out while the page says it is closed. Mini grants (closed on the "When To Apply" list), the artist grants and
 Major Arts Partners (no date of its own) aren't read.
 
+Arts on Tour has no date to end it, so it is listed only while its "Application Deadline" line says it takes
+applications and nothing said of it says it is closed, paused or out of money (grantmatch/webpages.py). A program's
+heading may carry a note, as in "(Closed for this cycle)", which counts too.
+
 Because the page is prose, the run stops, keeping the previous data file, when the "When To Apply" list holds a line
 this doesn't understand, or when a program's section or date is gone: a person then reads the page and updates this.
 robots.txt (none, 404) and the privacy policy were checked on 2026-11-26 (docs/state-coverage.md).
@@ -38,7 +42,10 @@ WHEN = {
     "gos_later": re.compile(r"^General Operating Support FY\d+ Years Two and Three application is due\b", re.I),
     "aie": re.compile(r"^All Arts in Education Major grants open\b.*\bApplications are due\b", re.I),
     "mini": re.compile(r"^Mini grants are closed\b", re.I),
+    "tour": re.compile(r"\bArts on Tour\b", re.I),  # a notice about it: read with the program, below
 }
+# A line elsewhere on the page that is about Arts on Tour, or about every grant.
+ABOUT_TOUR = re.compile(r"\bArts on Tour\b|\ball (?:grants|grant programs|programs|applications|funding)\b", re.I)
 HEADINGS = ("ARTS ON TOUR GRANT", "GENERAL OPERATING SUPPORT", "AIE ARTS CURRICULUM PROJECT")
 PROJECT = "COMMUNITY ARTS PROJECT"
 CHANGED = "keeping the previous data file"
@@ -69,9 +76,20 @@ def _is_program(text: str) -> bool:
             and bare not in ("APPLY NOW", "APPLY HERE"))
 
 
+def _is_heading(text: str, name: str) -> bool:
+    """The program's name, with or without a note in brackets after it."""
+    return bool(re.fullmatch(rf"{re.escape(name)}(?:\s*\([^)]*\))?", text))
+
+
+def _note(lines: list[dict], heading: str) -> str:
+    """The note in brackets after a program's name, or ""."""
+    text = next((x["text"] for x in lines if _is_heading(x["text"], heading)), "")
+    return text[len(heading):].strip(" ()")
+
+
 def _section(lines: list[dict], heading: str) -> list[str]:
     """The lines under a program's name, up to its apply button."""
-    start = next((i for i, x in enumerate(lines) if x["text"] == heading), None)
+    start = next((i for i, x in enumerate(lines) if _is_heading(x["text"], heading)), None)
     if start is None:
         raise RuntimeError(f"No '{heading}' section on the Arkansas Arts Council page; {CHANGED}")
     out = []
@@ -81,6 +99,9 @@ def _section(lines: list[dict], heading: str) -> list[str]:
         if _is_program(x["text"]):
             break   # the next program started first: this one's apply button is gone, so where it ends isn't known
         out.append(x["text"])
+    # a section closed in its heading may well have no apply button
+    if webpages.doubt([_note(lines, heading)]):
+        return out
     raise RuntimeError(f"The '{heading}' section on the Arkansas page has no end; {CHANGED}")
 
 
@@ -99,22 +120,29 @@ def parse(page: str, today: str | None = None) -> list[dict]:
     when = _when(lines)
     tour, operating, curriculum = (_sentences(" ".join(_section(lines, h))) for h in HEADINGS)
 
-    def row(key, title, sentences, who, **fields):
-        if not who:
+    def row(key, title, heading, sentences, who, **fields):
+        # a note on the heading that says closed, paused or the like closes the program, whatever its section says
+        note = _note(lines, heading)
+        noted = f"{heading} ({note})" if webpages.doubt([note]) else ""
+        closed = noted or webpages.not_taking(sentences, today)
+        if not who and not closed:
             raise RuntimeError(f"No eligibility sentence for {title} on the Arkansas page; {CHANGED}")
         record = webpages.record("AR", key, title, AGENCY, LIST, LIST, who, bool(NONPROFIT.search(who)), today=today,
                                  **fields)
-        return {"record": record, "closed": webpages.not_taking(sentences, today)}
+        return {"record": record, "closed": closed}
 
     deadline = next((s for s in tour if s.lower().startswith("application deadline")), "")
-    rolling = bool(re.search(r"\bongoing\b", deadline, re.I))
-    if not rolling and not webpages.not_taking(tour, today):
-        raise RuntimeError(f"Arts on Tour no longer says its deadline is ongoing; {CHANGED}")
-    out = [row("arts-on-tour", "Arts on Tour grant", tour, _first(tour, r"\bcan apply\b"),
-               rolling=rolling, deadline_words=deadline, objectives=" ".join(tour[:2]),
-               award=_first(tour, r"\bpercent\b|\$\d"),
-               funding_method="Reimbursement" if _first(tour, r"\breimburses\b") else "",
-               application=f"{deadline} {APPLY_HOW}")]
+    if not deadline and not webpages.doubt([*tour, _note(lines, HEADINGS[0])]):
+        raise RuntimeError(f"Arts on Tour no longer has an 'Application Deadline' line; {CHANGED}")
+    first = row("arts-on-tour", "Arts on Tour grant", HEADINGS[0], tour, _first(tour, r"\bcan apply\b"),
+                rolling=webpages.taking([deadline]), deadline_words=deadline, objectives=" ".join(tour[:2]),
+                award=_first(tour, r"\bpercent\b|\$\d"),
+                funding_method="Reimbursement" if _first(tour, r"\breimburses\b") else "",
+                application=f"{deadline} {APPLY_HOW}")
+    # no date ends it, so its row carries what the page says of it: kept only on a yes and nothing against it
+    first["rolling"] = [deadline]
+    first["about"] = [*tour, *(x["text"] for x in lines if ABOUT_TOUR.search(x["text"]))]
+    out = [first]
 
     match = _first(operating, r"\bmatching funds\b")
     dates = [when[k] for k in ("gos_opens", "gos_intent", "gos_one", "gos_later") if k in when]
@@ -126,24 +154,25 @@ def parse(page: str, today: str | None = None) -> list[dict]:
         intent += " That date has passed; check the notice before you start."
     who = sorted((s for s in operating if re.search(r"\bestablished nonprofit\b|\bprogram is for\b", s, re.I)),
                  key=lambda s: "$" not in s)
-    out.append(row("general-operating-support", "General Operating Support (year one)", operating, " ".join(who),
-                   closes=webpages.day(when["gos_one"]), objectives=" ".join(operating[:1]),
-                   match="Required" if re.search(r"\brequires\b", match, re.I) else "",
+    out.append(row("general-operating-support", "General Operating Support (year one)", HEADINGS[1], operating,
+                   " ".join(who), closes=webpages.day(when["gos_one"]), objectives=" ".join(operating[:1]),
+                   # the page says only that some are required; the card shows this after "Matching funds are required"
+                   match="amount not stated" if re.search(r"\brequires\b", match, re.I) else "",
                    restrictions=" ".join(t for t in (_first(operating, r"\bmay only be spent\b"), match) if t),
                    award=_first(operating, r"\brequested amount\b"), loi="gos_intent" in when,
                    application=" ".join(t for t in [intent, *dates, APPLY_HOW] if t)))
 
     matched = _first(curriculum, r"\b1:1 match\b")
-    out.append(row("arts-in-education-major", "Arts in Education major grants", curriculum,
+    out.append(row("arts-in-education-major", "Arts in Education major grants", HEADINGS[2], curriculum,
                    _first(curriculum, r"\bare awarded to\b"), closes=webpages.day(when["aie"]),
                    objectives=" ".join(curriculum[:2]),
                    match=("1:1, half may be in-kind" if "50% in-kind" in matched else "1:1") if matched else "",
                    award=matched or _first(curriculum, r"\bup to \$"),
                    application=f"{when['aie']} {APPLY_HOW}"))
 
-    if any(x["text"] == PROJECT for x in lines):
+    if any(_is_heading(x["text"], PROJECT) for x in lines):
         project = _sentences(" ".join(_section(lines, PROJECT)))
-        closed = webpages.not_taking(project, today)
+        closed = webpages.not_taking([_note(lines, PROJECT), *project], today)
         if not closed:
             raise RuntimeError(f"The Community Arts Project grant no longer says it is closed; {CHANGED}")
         record = webpages.record("AR", "community-arts-project", "Community Arts Project grant", AGENCY, LIST, LIST,

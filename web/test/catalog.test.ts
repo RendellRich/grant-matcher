@@ -146,6 +146,7 @@ describe("the line above a state's open calls", () => {
       ["ND", "North Dakota", "North Dakota data from the Council on the Arts' grant pages only."],
       ["WY", "Wyoming", "Wyoming data from the Wyoming Arts Council's grant pages only."],
       ["TN", "Tennessee", "Tennessee data from the Tennessee Arts Commission's grant pages only."],
+      ["MT", "Montana", "Montana data from the Montana Arts Council's grant pages only."],
     ];
     for (const [code, name, footer] of partial) {
       const note = app.slice(app.indexOf(`{state === "${code}" ? (`));

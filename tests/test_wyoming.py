@@ -118,3 +118,21 @@ def test_closed_now_beside_a_future_window_stays_and_closed_without_one_goes():
     for said in ("Applications are closed.", "This grant is on hold."):
         one = page("Sample Grant", f"<h4>Grant Closes: March 1, 2027</h4><p>Open to nonprofits. {said}</p>")
         assert wy.build_records([wy.parse_grant(one, wy.LIST, TODAY)], TODAY) == [], said
+
+
+def test_a_grant_with_no_dates_is_never_listed_as_open_whatever_it_says():
+    rolling = page("Community Support Grant", "<p>Applications are accepted year-round.</p><p>Open to organizations.</p>")
+    with pytest.raises(RuntimeError, match="no closing date or rounds"):
+        wy.parse_grant(rolling, wy.LIST + "community-support/", TODAY)
+
+
+def test_the_uei_requirement_is_the_grants_own_or_the_grants_pages_for_organizations():
+    own = SUPPORT.replace("</ul>", "<li>A UEI (Unique Entity Identifier) is required to apply</li></ul>")
+    r = wy.parse_grant(own, wy.LIST + "community-support/", TODAY)["record"]
+    assert "A UEI (Unique Entity Identifier) is required to apply." in r["restrictions"]
+    shared = "Organizations receiving federal funds are required to have a Unique Entity Identifier (UEI)."
+    listing = GRANTS.replace("<h3", f"<p>{shared}</p><h3", 1)
+    rows = wy.read_rows(listing, page_of, TODAY)
+    for row in rows:
+        r = row["record"]
+        assert (shared in r["restrictions"]) is r["nonprofit_eligible"], r["id"]

@@ -76,3 +76,18 @@ def test_a_saved_copy_is_read_without_the_network(tmp_path, monkeypatch):
     out = tmp_path / "md.json.gz"
     assert md.build(out, tmp_path / "skipped.json.gz", page) == 4
     assert json.loads(gzip.decompress(out.read_bytes()))["state"] == "MD"
+
+
+@pytest.mark.parametrize("cell", ["Rolling (closed)", "Rolling - funds exhausted", "Rolling; paused", "TBD"])
+def test_a_rolling_row_is_listed_only_while_its_cell_says_so_and_nothing_else(cell):
+    skips = []
+    recs = md.build_records(md.parse(PAGE.replace("<td>Rolling</td>", f"<td>{cell}</td>")), today=TODAY, skips=skips)
+    assert "Sample Training Grant" not in {r["title"] for r in recs}
+    assert "Sample Training Grant" in {s["name"] for s in skips}
+
+
+def test_a_notice_above_the_table_closes_the_rolling_row():
+    page = PAGE.replace('<figure class="wp-block-table is-style-stripes">',
+                        '<p>Funding has been exhausted.</p><figure class="wp-block-table is-style-stripes">')
+    recs = md.build_records(md.parse(page), today=TODAY)
+    assert "Sample Training Grant" not in {r["title"] for r in recs}

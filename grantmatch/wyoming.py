@@ -2,7 +2,8 @@
 
 wyoarts.state.wy.us/grants/ links one page per grant. Each gives either "Grant Opens" and "Grant Closes" dates or the
 year's rounds ("Round Three: Jan 1 - Feb 1, 2027"); the next round that hasn't closed is shown. Who may apply and the
-match are the page's own sentences. A run stops, keeping the previous data file, when the list is gone or a grant's
+match are the page's own sentences. So is the UEI requirement: the grant page's, or else, for a grant organizations may
+apply for, the grants page's (which asks it of organizations receiving federal funds). A run stops, keeping the previous data file, when the list is gone or a grant's
 page gives neither form of date. robots.txt and the privacy policy the site links were checked on 2026-11-26
 (docs/state-coverage.md).
 
@@ -31,6 +32,7 @@ WHO = (re.compile(r"\bopen to\b|\bis available to\b", re.I), re.compile(r"\b(?:i
 ROUND = re.compile(r"^Round \w+:\s*([A-Z][a-z]+)\.? (\d{1,2})(?:, (\d{4}))?\s*[\u2013\u2014-]\s*([A-Z][a-z]+)\.? (\d{1,2}), (\d{4})")
 MONTHS = {m: i + 1 for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
 CHANGED = "keeping the previous data file"
+UEI = re.compile(r"\bUEI\b|\bUnique Entity Identifier\b")
 HOW = "Apply in the Council's online grant system from the grant's page."
 
 
@@ -50,6 +52,12 @@ def parse(page: str) -> list[str]:
     return found
 
 
+def _uei(texts: list[str]) -> str:
+    """The first sentence that requires a UEI, or ""."""
+    return next((s for t in texts for s in re.split(r"(?<=[.!?])\s+", t)
+                 if UEI.search(s) and re.search(r"\brequired\b", s, re.I)), "")
+
+
 def _round(m: re.Match) -> tuple[str, str] | None:
     """(opens, closes) of a "Round Two: Aug 1 - Sept 1, 2026" line; the start takes the end's year unless it says."""
     try:
@@ -67,7 +75,7 @@ def _said(iso: str) -> str:
     return f"{d:%B} {d.day}, {d.year}"
 
 
-def parse_grant(page: str, url: str, today: str | None = None) -> dict:
+def parse_grant(page: str, url: str, today: str | None = None, for_organizations: str = "") -> dict:
     """One grant's page: {"record": ..., "closed": the page's words, when it says it isn't taking applications}."""
     today = today or date.today().isoformat()
     start = page.find("<h1")
@@ -99,20 +107,25 @@ def parse_grant(page: str, url: str, today: str | None = None) -> dict:
     cash = re.search(r"\brequires? a (\d+:\d+) cash match\b", " ".join(matches), re.I)
     notes = list(dict.fromkeys(t for t, _ in rounds)) + sentences(re.compile(r"\bmust be submitted\b", re.I))[:1]
     window = f"Applications open {_said(opens)} and close {_said(closes)}." if opens else ""
+    nonprofit = webpages.open_to_nonprofits(" ".join(dict.fromkeys([*named, *barred])))
+    uei = _uei(texts) or (for_organizations if nonprofit else "")
     record = webpages.record(
         "WY", webpages.slug(title), title, AGENCY, url, LIST,
         applicants or "Not stated on the agency's page; read the notice",
-        webpages.open_to_nonprofits(" ".join(dict.fromkeys([*named, *barred]))),
+        nonprofit,
         closes=closes, opens=opens, objectives=texts[0] if texts else "",
         award=next((t for t in texts if "$" in t and re.search(r"\bup to\b|\beligible to receive\b|\beach\b", t, re.I)), ""),
-        match=f"{cash.group(1)} cash" if cash else "", restrictions=" ".join(matches),
+        match=f"{cash.group(1)} cash" if cash else "",
+        restrictions=" ".join(f"{t.rstrip('.')}." for t in [*matches, uei] if t),
         application=" ".join(t for t in [window, *notes, HOW] if t), today=today)
     return {"record": record, "closed": webpages.not_taking(texts, today, opens)}
 
 
 def read_rows(page: str, grant_page, today: str | None = None) -> list[dict]:
     """One row per grant. `grant_page(url)` gives a grant's page."""
-    return [parse_grant(grant_page(url), url, today) for url in parse(page)]
+    start = page.find("<h1")
+    shared = _uei([x["text"] for x in _lines(page[start if start > 0 else 0:])])
+    return [parse_grant(grant_page(url), url, today, shared) for url in parse(page)]
 
 
 def build_records(rows: list[dict], today: str | None = None, skips: list[dict] | None = None) -> list[dict]:

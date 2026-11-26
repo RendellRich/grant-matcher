@@ -151,3 +151,32 @@ def test_the_labels_say_which_match_is_whose():
     rec = nd.normalize(card, program, TODAY)
     assert rec["match"] == "10% for Sample Title 1 Schools; 30% for Other Schools"
     assert "Sample Title 1 Schools: May request" in rec["award"] and "Other Schools: May request" in rec["award"]
+
+
+@pytest.mark.parametrize("what, open_", [
+    ("Two grants of $5,000 to individual artists for new artwork", False),
+    ("Up to $4,500 for master traditional artists to pass on skills", False),
+    ("Grants to sample individual artists", False),
+    ("Operating support to arts organizations", True),
+    ("Up to $2,000 for a sample event", True),
+])
+def test_a_card_with_no_who_line_is_read_by_its_what_line(what, open_):
+    card = {"title": "Sample", "url": "https://www.arts.nd.gov/sample", "what": what, "who": "",
+            "deadline": "April 30, 2027", "passed": ""}
+    r = nd.normalize(card, None, TODAY)
+    assert r["nonprofit_eligible"] is open_
+    silent = what == "Up to $2,000 for a sample event"
+    assert r["applicant_types"].startswith("Not stated" if silent else "As the Council's card puts it:")
+
+
+def test_individual_artist_grants_stay_closed_to_nonprofits_once_next_years_dates_appear():
+    recs, _ = built(GRANTS.replace("April 30, 2026", "April 30, 2027"))
+    assert recs["nd-artist-growth"]["nonprofit_eligible"] is False
+
+
+def test_a_card_with_no_date_is_never_kept_whatever_it_says():
+    grants = GRANTS.replace("<p><strong>Deadline:</strong> April 23, 2026 (annual)</p><p>*deadline has passed</p>",
+                            "<p><strong>Deadline:</strong> Ongoing</p>")
+    recs, skips = built(grants)
+    assert "nd-accessibility-grant" not in recs
+    assert ("nd-accessibility-grant", "not_taking") in [(s["id"], s["reason"]) for s in skips]

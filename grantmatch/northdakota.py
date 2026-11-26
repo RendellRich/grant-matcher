@@ -3,7 +3,8 @@
 www.arts.nd.gov/grants ("Grants at a Glance") has a card per program: what it pays, who it is for and its deadline,
 with "deadline has passed" under the past ones. A card whose deadline is relative ("6 weeks prior to project start
 date") is read on the program's own page, which gives the date applications close for the year, the award, the match
-and, for some, who is eligible. A run stops, keeping the previous data file, when the cards are gone or such a page no
+and, for some, who is eligible. A card with no "Who" line is read by its "What" line ("grants to individual artists"
+leaves nonprofits out). A run stops, keeping the previous data file, when the cards are gone or such a page no
 longer gives its closing date. robots.txt and North Dakota's disclaimer, privacy and security pages were checked on
 2026-11-26 (docs/state-coverage.md).
 
@@ -32,6 +33,9 @@ RELATIVE = re.compile(r"\bweeks? prior to (?:the )?(?:project|start)", re.I)
 CLOSES = re.compile(r"Applications for FY\d+ will close on ([A-Z][a-z]+\.? \d{1,2}, \d{4})")
 PASSED = re.compile(r"\bdeadline has passed\b", re.I)
 CHANGED = "keeping the previous data file"
+# A "What" line that gives the money to people, for a card with no "Who" line.
+PEOPLE = re.compile(r"\bindividual artists\b|\b(?:to|for) (?:individuals|(?:master(?: traditional)?|traditional) artists)\b",
+                    re.I)
 HOW = "Apply in the Council's online grants system; read the program's guidelines first."
 
 
@@ -119,6 +123,14 @@ def normalize(card: dict, program: dict | None = None, today: str | None = None)
     about = program.get("about", "")
     # The opening sentence names who the money is for on some pages ("... for North Dakota nonprofit art organizations").
     applicants = " ".join(t for t in (who, about if NONPROFIT.search(about) and not program.get("eligible") else "") if t)
+    nonprofit = webpages.open_to_nonprofits(applicants)
+    if not applicants:
+        # no "Who" line: the card's "What" still says when the money goes to people, or to organizations
+        what = card["what"]
+        for_organizations = bool(NONPROFIT.search(what) or webpages.ORGANIZATIONS.search(what))
+        if PEOPLE.search(what) or for_organizations:
+            applicants = f"As the Council's card puts it: {what.rstrip('.')}."
+            nonprofit = for_organizations and webpages.open_to_nonprofits(what)
     shares = list(dict.fromkeys(program.get("match", [])))
     if len({share for share, _ in shares}) > 1:
         named = all(label for _, label in shares)
@@ -130,7 +142,7 @@ def normalize(card: dict, program: dict | None = None, today: str | None = None)
     return webpages.record(
         "ND", webpages.slug(card["title"]), card["title"], AGENCY, card["url"], LIST,
         applicants or "Not stated on the agency's page; read the notice",
-        webpages.open_to_nonprofits(applicants),
+        nonprofit,
         closes=closes, deadline_words=card["deadline"], objectives=about or card["what"],
         award=program.get("award") or card["what"], match=match,
         funding_method="Reimbursement" if re.search(r"\breimbursement grant\b", about, re.I) else "",
@@ -145,6 +157,7 @@ def read_rows(page: str, program_page, today: str | None = None) -> list[dict]:
     for card in parse(page):
         program = None
         relative = bool(RELATIVE.search(card["deadline"]))
+        # (a card with no "Who" line is read by its "What" line instead, in normalize)
         left_out = not webpages.open_to_nonprofits(card["who"]) and any(d >= today for d in _dates(card))
         if (relative and not card["passed"]) or left_out:
             program = parse_program(program_page(card["url"]))
