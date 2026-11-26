@@ -12,6 +12,8 @@ the end of the same weekly job, so no new job is needed:
             A page that is off limits (robots.txt, unread robots.txt, terms) or that answers any other error
             (400, 401, 403, 405, 429...) is reported on its own and never counted dead
   records   hand-kept programs whose closing date has passed with no next round entered
+  by hand   hand-kept programs and company programs with a page that is off limits or turns automated readers away,
+            so nothing can recheck it: each is named under "Check by hand" for a person to open in a browser
 
 Pages are asked for only through cycles.fetch_page, which applies the project's crawling rule (off_limits) to the
 address and every redirect and sends the project's own user agent. Requests to one host are spaced out, longer
@@ -348,6 +350,33 @@ def inventory(today: date, release=None, data_dir: Path = DATA) -> tuple[list[di
     return sources, links, past_deadlines(entries, sites, today)
 
 
+def hand_pages(data_dir: Path) -> list[dict]:
+    """Each hand-kept program and company program with the pages it points to."""
+    rows = [{"list": f"local-{state}", "key": e.get("slug", ""), "name": e.get("title", ""),
+             "urls": list(dict.fromkeys(u for u in (e.get("url"), e.get("web")) if _web(u)))}
+            for state, e in _entries(data_dir)]
+    corp_file = data_dir / "corporate.json"
+    firms = json.loads(corp_file.read_text(encoding="utf-8")).get("foundations", []) if corp_file.exists() else []
+    for f in firms:
+        program = f.get("program") or {}
+        if _web(program.get("url")):
+            rows.append({"list": "corporate", "key": str(f.get("ein", "")), "urls": [program["url"]],
+                         "name": f"{f.get('company', '')}: {program.get('name', '')}".rstrip(": ")})
+    return rows
+
+
+def by_hand(pages: list[dict], memory: dict) -> list[dict]:
+    """The entries with a page that couldn't be looked at (blocked or turned away at its last check). A dead page
+    is listed with the dead links instead, and one that didn't open once may open next week."""
+    out = []
+    for row in pages:
+        shut = [(u, memory[u].get("why", "")) for u in row["urls"]
+                if (memory.get(u) or {}).get("s") in ("blocked", "refused")]
+        if shut:
+            out.append({**row, "shut": shut})
+    return out
+
+
 # ---------------- checking links ----------------
 
 def from_code(code: int) -> dict:
@@ -485,7 +514,8 @@ def _cut(lines: list[str]) -> list[str]:
     return lines[:SHOWN] + ([f"- and {more} more"] if more > 0 else [])
 
 
-def findings(sources: list[dict], links: dict[str, list[str]], memory: dict, past: list[dict]) -> list[tuple[str, str, str]]:
+def findings(sources: list[dict], links: dict[str, list[str]], memory: dict, past: list[dict],
+             hand: list[dict] = ()) -> list[tuple[str, str, str]]:
     """Everything that needs a person, each as (a key that stays the same from week to week, its kind, its line)."""
     out = []
     for s in sources:
@@ -504,13 +534,18 @@ def findings(sources: list[dict], links: dict[str, list[str]], memory: dict, pas
     for p in past:
         out.append((f"past:{p['list']}/{p['key']}/{p['closes']}", "past",
                     f"- `{p['list']}` / `{p['key']}`: {p['name']}, closed {p['closes']}"))
+    for h in hand:
+        out.append((f"hand:{h['list']}/{h['key']}", "hand",
+                    f"- `{h['list']}` / `{h['key']}`: {h['name']}. "
+                    + "; ".join(f"{url} : {why}" for url, why in h["shut"])))
     return out
 
 
 # kind: (heading for new ones, one, many) for the carried-over count
 KINDS = {"stale": ("Data that is old or missing", "old source", "old sources"),
          "dead": ("Dead links", "dead link", "dead links"),
-         "past": ("Closing date passed, no next round entered", "closing date passed", "closing dates passed")}
+         "past": ("Closing date passed, no next round entered", "closing date passed", "closing dates passed"),
+         "hand": ("Check by hand", "entry to check by hand", "entries to check by hand")}
 
 
 def condition(s: dict, memory: dict) -> str:
@@ -521,10 +556,11 @@ def condition(s: dict, memory: dict) -> str:
 
 
 def report(sources: list[dict], links: dict[str, list[str]], memory: dict, past: list[dict], stats: dict,
-           today: date, watched: set[str], previous: dict) -> tuple[str, int, list[str], dict[str, str]]:
+           today: date, watched: set[str], previous: dict,
+           hand: list[dict] = ()) -> tuple[str, int, list[str], dict[str, str]]:
     """(the section added to the page watch's report, how many findings are new, the keys of the findings already
     reported, each source's condition). New findings are listed in full; ones reported before are only counted."""
-    items = findings(sources, links, memory, past)
+    items = findings(sources, links, memory, past, hand)
     reported = set(previous.get("flagged") or [])
     # With no website check to read, hold new past closing dates: some may be programs that say they are open.
     no_websites = any(s.get("unusable") for s in sources)
@@ -548,8 +584,20 @@ def report(sources: list[dict], links: dict[str, list[str]], memory: dict, past:
              + f"; {stats['deferred']} planned pages ran out of time and {never} links have not been checked yet."]
     for kind, (heading, _, _) in KINDS.items():
         mine = [line for _, k, line in shown if k == kind]
-        if mine:
+        if mine and kind != "hand":
             lines += ["", f"## New: {heading[0].lower()}{heading[1:]}", "", *mine]
+    # Its own section, every run: new entries in full, then the ones already reported, still by name.
+    listed = [line for _, k, line in shown if k == "hand"]
+    carried_keys = {i[0] for i in carried if i[1] == "hand"}
+    waiting = [f"{h['name']} (`{h['list']}/{h['key']}`)" for h in hand if f"hand:{h['list']}/{h['key']}" in carried_keys]
+    if listed or waiting:
+        lines += ["", "## Check by hand", "",
+                  "A page of each of these is off limits or turns automated readers away, so nothing rechecks it. Open "
+                  "it in a browser, update the entry from the page and set its `checked` date."]
+        if listed:
+            lines += ["", "New:", "", *listed]
+        if waiting:
+            lines += ["", f"Reported before and still to check by hand ({len(waiting)}): {'; '.join(waiting)}."]
     if len(new) > len(shown):
         lines += ["", f"{len(new) - len(shown)} more new findings didn't fit here; a later report lists them."]
     if carried:
@@ -573,17 +621,19 @@ def report(sources: list[dict], links: dict[str, list[str]], memory: dict, past:
         lines += _cut([f"- {u} : {memory[u].get('why', '')}" for u in once])
 
     shut: dict[tuple[str, str], list[str]] = {}
+    named = {url for h in hand for url, _ in h["shut"]}
     for url in links:
         m = memory.get(url) or {}
-        # The watched pages that are blocked or turned away are already in the page watch's own list above.
-        if m.get("s") in ("blocked", "refused") and url not in watched:
+        # The watched pages that are blocked or turned away are in the page watch's own list above, and the
+        # hand-kept ones are under Check by hand.
+        if m.get("s") in ("blocked", "refused") and url not in watched | named:
             shut.setdefault((urlparse(url).netloc, m.get("why", "")), []).append(url)
     lines += ["", "## Not link-checked", "",
               "- Federal grant links: no job opens them (the Grants.gov refresh reads the API, not the grant pages).",
               "- Florida catalog links: the weekly Florida refresh reads the catalog pages; no link result is kept.",
               "- Foundation websites: the weekly website check reads them; no link result is kept.",
               "- Off-limits hosts and pages that turn scripts away (never counted as dead). Hand-kept and company "
-              "pages are in the page watch's list above" + ("; the others:" if shut else ".")]
+              "programs are named under Check by hand" + ("; the other pages:" if shut else ".")]
     rows = []
     for (host, why), urls in sorted(shut.items()):
         weeks = max(memory[u].get("b", 1) for u in urls)
@@ -636,11 +686,12 @@ def check(previous: dict | None, watch_readings: dict[str, dict], today: date, r
     memory = {u: m for u, m in old.items() if u in links or str(m.get("d", "")) >= keep_after}
     for url, reading in readings.items():
         memory[url] = remember(old.get(url), reading, today)
+    hand = by_hand(hand_pages(data_dir), memory)
     text, count, keys, conditions = report(sources, links, memory, past, stats, today, set(watch_readings) | set(skip),
-                                           previous)
+                                           previous, hand)
     return {"text": text, "flagged": count,
             "memory": {"checked": today.isoformat(), "links": memory, "flagged": keys, "sources": conditions},
-            "stats": stats, "sources": sources, "past": past, "links": links}
+            "stats": stats, "sources": sources, "past": past, "links": links, "hand": hand}
 
 
 def main() -> None:

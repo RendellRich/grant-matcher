@@ -245,7 +245,9 @@ def test_one_run_flags_old_data_dead_links_and_past_deadlines(tmp_path):
         assert kind in blocked
     assert "calls.example.org" in blocked and "county.example.org" not in blocked  # the watch lists its own
     dead = [u for u, m in memory.items() if m["s"] == "dead"]
-    assert result["flagged"] == len(dead) + len(result["past"]) + sum(s["stale"] for s in result["sources"])
+    assert [h["key"] for h in result["hand"]] == ["any-time"] and "## Check by hand" in text
+    assert result["flagged"] == (len(dead) + len(result["past"]) + len(result["hand"])
+                                 + sum(s["stale"] for s in result["sources"]))
     assert "\u2014" not in text
 
 
@@ -338,6 +340,66 @@ def test_without_the_website_check_no_new_past_closing_date_is_listed(tmp_path, 
     assert key in again["memory"]["flagged"] and "`old-grant`" not in again["text"]
     back = run(again["memory"], date(2026, 11, 29), readable=True)
     assert back["flagged"] == 0  # not new again
+
+
+# ---------------- pages a person has to check ----------------
+
+def section(text: str) -> str:
+    return text.split("## Check by hand")[1].split("\n## ")[0] if "## Check by hand" in text else ""
+
+
+def test_an_entry_whose_page_cannot_be_read_is_named_once_then_counted_with_its_name(tmp_path):
+    off = {"s": "blocked", "why": "robots.txt keeps ClaudeBot out"}
+    watched = {"https://county.example.org/old": off,
+               "https://county.example.org/any": {"s": "error", "why": "HTTP 403"},
+               "https://sample.example.com/giving": {"s": "ok", "text": "x"}}
+    first, _ = run_check(tmp_path, watched=watched)
+    new = section(first["text"])
+    assert "`local-FL` / `old-grant`: Old Grant. https://county.example.org/old : robots.txt keeps ClaudeBot out" in new
+    assert "`local-FL` / `any-time`: Any Time. https://county.example.org/any : HTTP 403" in new
+    assert "Reported before" not in new and "sample.example.com" not in new
+    assert {"hand:local-FL/old-grant", "hand:local-FL/any-time"} <= set(first["memory"]["flagged"])
+
+    second, _ = run_check(tmp_path, previous=first["memory"], watched=watched, today=date(2026, 11, 27))
+    again = section(second["text"])
+    assert second["flagged"] == 0 and "New:" not in again and "https://county.example.org" not in second["text"]
+    assert ("Reported before and still to check by hand (2): Old Grant (`local-FL/old-grant`); "
+            "Any Time (`local-FL/any-time`).") in again
+    assert "2 entries to check by hand" in second["text"]  # counted with the other open findings
+
+    # a page that opens again leaves the list; a company page that stops opening joins it as new
+    changed = {**watched, "https://county.example.org/any": {"s": "ok", "text": "x"},
+               "https://sample.example.com/giving": off}
+    third, _ = run_check(tmp_path, previous=second["memory"], watched=changed, today=date(2026, 11, 28))
+    said = section(third["text"])
+    assert third["flagged"] == 1 and "`corporate` / `1`: Sample Co" in said and "(1): Old Grant" in said
+    assert "hand:local-FL/any-time" not in third["memory"]["flagged"]
+
+
+def test_every_hand_kept_page_the_county_notes_list_as_unreadable_is_named(monkeypatch):
+    """docs/county-coverage.md, "Watched pages that are now off limits": each entry is named for a person."""
+    from urllib.parse import urlparse
+    listed = {"childrensboard.org", "www.bradentonpd.com", "unitedwaysuncoast.org", "cms1files.revize.com",
+              "www.ohiohistory.org", "humanitiesiowa.submittable.com", "www.scgov.net", "s3.us-east-1.amazonaws.com",
+              "www.fldoe.org", "www.myfloridalegal.com", "www.ilsos.gov", "agency.e-cimpact.com"}
+    doc = (export_web.LOCAL.parent / "docs" / "county-coverage.md").read_text(encoding="utf-8")
+    table = doc.split("### Watched pages that are now off limits")[1].split("\n## ")[0]
+    slugs = set(__import__("re").findall(r"`([a-z0-9]+(?:-[a-z0-9]+)+)`", table))
+    assert len(slugs) == 12 and all(h in table for h in listed)
+    watched = {r["url"]: {"s": "blocked", "why": "robots.txt could not be read"}
+               if (urlparse(r["url"]).hostname or "") in listed else {"s": "ok", "text": "x"} for r in watch.targets()}
+    linker = lambda urls: ({}, {"pages": 0, "hosts": 0, "deferred": len(urls), "seconds": 0})  # noqa: E731
+    first = freshness.check(None, watched, TODAY, release=no_release, linker=linker)
+    named = {h["key"] for h in first["hand"]}
+    assert slugs <= named, slugs - named
+    for h in first["hand"]:
+        assert f"`{h['list']}` / `{h['key']}`" in section(first["text"]), h["key"]
+    second = freshness.check(first["memory"], watched, date(2026, 11, 27), release=no_release, linker=linker)
+    for h in first["hand"]:
+        assert f"(`{h['list']}/{h['key']}`)" in section(second["text"]), h["key"]
+    assert second["flagged"] == 0
+    assert len(watch.with_freshness("page line\n" * 20000, first["text"])) <= watch.MAX_REPORT
+    assert "\u2014" not in first["text"]
 
 
 # ---------------- a release that can't be read ----------------
