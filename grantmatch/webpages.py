@@ -1,4 +1,5 @@
-"""What the adapters for states read from web pages share (arkansas.py, maryland.py, northdakota.py, wyoming.py).
+"""What the adapters for states read from web pages share (arkansas.py, maryland.py, northdakota.py, tennessee.py,
+wyoming.py).
 
 Every page is asked for with cycles.fetch_page: the project's own user agent, and the terms blocklist and the host's
 robots.txt checked before each address, redirects included. A page that can't be read stops the run, so the last
@@ -19,19 +20,76 @@ from pathlib import Path
 
 from .cycles import DATE, fetch_page
 from .display import without_email
+from .minnesota import NONPROFIT
 
 PAUSE = 2  # seconds between requests to one site; none of these hosts' robots.txt asks for more
 
-# A page's own words that it isn't taking applications, whatever its dates say.
-NOT_TAKING = re.compile(
-    r"\btemporarily paused\b|\bpaused applications\b|\bapplications (?:are|have been) (?:temporarily )?(?:paused|suspended)\b"
-    r"|\b(?:currently|is) closed for (?:applications|this cycle)\b|\bnot (?:currently )?accepting applications\b", re.I)
+# A page's own words that it isn't taking applications. STOPPED holds whatever the dates say. CLOSED does too, except
+# when it is only the wait before a window the page also gives, or is about an earlier fiscal year (not_taking below).
+STOPPED = re.compile(
+    r"\btemporarily (?:paused|closed|suspended)\b|\bpaused applications\b|\bon hold\b"
+    r"|\b(?:is|are|has been|have been) (?:currently |temporarily )?paused\b"
+    r"|\bno longer (?:accepting|accepts?) (?:new |grant )?(?:applications|proposals)\b"
+    r"|\b(?:grants?|program|applications?|round|cycle|funding)(?: \w+){0,4}? (?:is|are|has been|have been) "
+    r"(?:currently )?suspended\b", re.I)
+CLOSED = re.compile(
+    r"\b(?:applications?|application (?:period|window|portal)(?: for [\w ]{0,40}?)?"
+    r"|grants?(?: (?:cycle|round|portal|program|application|opportunity))?|program|round|cycle|portal|submissions?)"
+    r" (?:is|are) (?:now |currently )?closed\b(?! out\b)"
+    r"|\bclosed (?:for|to) (?:new )?(?:applications|applicants|this cycle|requests|proposals)\b"
+    r"|\bnot (?:currently )?accepting (?:new )?applications\b"
+    r"|\bapplications are not (?:currently )?(?:being )?accepted\b", re.I)
+FISCAL_YEAR = re.compile(r"\b(?:Fiscal Year |FY ?)(\d{4}|\d{2})\b", re.I)
+WILL_OPEN = re.compile(r"\bwill (?:re)?open (?:in |on )?(January|February|March|April|May|June|July|August|September|"
+                       r"October|November|December)(?: \d{1,2},?)? (\d{4})", re.I)
+# Words that say organizations, or nonprofits, may not apply: taken out before looking for who may.
+ORGANIZATION = r"(?:(?:non-?\s?profit|not[- ]for[- ]profit)(?: arts?)?(?: organi[sz]ations?)?s?|organi[sz]ations?)"
+NOT_ORGANIZATIONS = re.compile(
+    rf"\b{ORGANIZATION}\s+(?:(?:are|is) (?:not eligible|ineligible)|(?:are|is) not (?:able|permitted|allowed) to apply"
+    rf"|(?:cannot|can not|may not) apply)"
+    rf"|\bnot (?:open|available) to [^.;,]*?\b{ORGANIZATION}\b"
+    rf"|\b(?:not|no)\s+(?:to |for |by )?(?:an? )?{ORGANIZATION}\b"
+    r"|(?<!not-)(?<!not )\bfor[- ]profit(?: organi[sz]ations?| businesses)?", re.I)
+ORGANIZATIONS = re.compile(r"\borgani[sz]ations?\b", re.I)
 INVITATION = re.compile(r"\bby invitation only\b|\binvitation[- ]only\b", re.I)
 LOAN = re.compile(r"\bloans?\b(?!\s+(?:repayment|forgiveness))|\brevolving (?:loan )?funds?\b", re.I)
 
 
 def clean(s: str | None) -> str:
     return re.sub(r"\s+", " ", (s or "").replace("\xa0", " ").replace("​", "").replace("﻿", "")).strip()
+
+
+def open_to_nonprofits(who: str) -> bool:
+    """Whether the page's words on who may apply leave a nonprofit in: nonprofits or organizations named, other than
+    to say they can't apply. Blank words are kept (the card says to read the notice)."""
+    if not who:
+        return True
+    rest = NOT_ORGANIZATIONS.sub(" ", who)
+    return bool(NONPROFIT.search(rest) or ORGANIZATIONS.search(rest))
+
+
+def _only_waiting(sentence: str, text: str, today: str, opens: str | None) -> bool:
+    """A "closed" sentence that doesn't close the call shown: about an earlier fiscal year, or the wait before the
+    window the page gives."""
+    current = int(today[:4]) + (1 if int(today[5:7]) >= 7 else 0)   # a state fiscal year starts in July
+    years = [int(y) if len(y) == 4 else 2000 + int(y) for y in FISCAL_YEAR.findall(sentence)]
+    if years and all(y < current for y in years):
+        return True
+    if opens and opens > today:
+        return True
+    said = WILL_OPEN.search(text)
+    return bool(opens and said and day(f"{said.group(1)} 1, {said.group(2)}")[:7] == opens[:7])
+
+
+def not_taking(texts: list[str], today: str | None = None, opens: str | None = None) -> str:
+    """The sentence that says the call isn't being taken, or "". `opens` is the date the page says the window opens."""
+    today = today or date.today().isoformat()
+    for text in texts:
+        text = clean(text)
+        for sentence in re.split(r"(?<=[.!?])\s+", text):
+            if STOPPED.search(sentence) or (CLOSED.search(sentence) and not _only_waiting(sentence, text, today, opens)):
+                return sentence
+    return ""
 
 
 def get(url: str) -> str:
@@ -48,23 +106,31 @@ def get_next(url: str) -> str:
 
 
 def day(text: str | None) -> str | None:
-    """The first full date in the text: "Dec. 3, 2026", "March 26, 2027" or "12/09/26"."""
+    """The date a deadline line means: "Dec. 3, 2026", "March 26, 2027" or "12/09/26". With more than one, the date
+    after "due", "closes" or the like, else the end of a range ("11/01/26 - 12/15/26"), else the first."""
     text = clean(text)
-    found = DATE.search(text)
-    short = re.search(r"\b(\d{1,2})/(\d{1,2})/(\d{2})\b", text)
-    if found and not (short and short.start() < found.start()):
-        if found.group("mon"):
-            parts, fmt = f"{found.group('mon')[:3]} {found.group('day')} {found.group('year')}", "%b %d %Y"
+    found = []
+    for m in re.finditer(rf"{DATE.pattern}|\b(?P<sm>\d{{1,2}})/(?P<sd>\d{{1,2}})/(?P<sy>\d{{2}})\b", text, re.I):
+        if m.group("mon"):
+            parts, fmt = f"{m.group('mon')[:3]} {m.group('day')} {m.group('year')}", "%b %d %Y"
+        elif m.group("m"):
+            parts, fmt = f"{m.group('m')}/{m.group('d')}/{m.group('y')}", "%m/%d/%Y"
         else:
-            parts, fmt = f"{found.group('m')}/{found.group('d')}/{found.group('y')}", "%m/%d/%Y"
-    elif short:
-        parts, fmt = "/".join(short.groups()), "%m/%d/%y"
-    else:
+            parts, fmt = f"{m.group('sm')}/{m.group('sd')}/{m.group('sy')}", "%m/%d/%y"
+        try:
+            found.append((m.start(), m.end(), datetime.strptime(parts, fmt).date().isoformat()))
+        except ValueError:
+            pass
+    if not found:
         return None
-    try:
-        return datetime.strptime(parts, fmt).date().isoformat()
-    except ValueError:
-        return None
+    if len(found) > 1:
+        said = re.search(r"\b(?:due|deadline|closes?|until|through|by)\b", text, re.I)
+        after = [d for start, _, d in found if said and start >= said.end()]
+        if after:
+            return after[0]
+        if re.fullmatch(r"\s*(?:-|\u2013|\u2014|to|through)\s*", text[found[0][1]:found[1][0]]):
+            return found[1][2]
+    return found[0][2]
 
 
 def slug(title: str) -> str:
@@ -74,7 +140,8 @@ def slug(title: str) -> str:
 def record(state: str, key: str, title: str, agency: str, url: str, web: str, applicant_types: str,
            nonprofit_eligible: bool, *, closes: str | None = None, opens: str | None = None, rolling: bool = False,
            deadline_words: str = "", objectives: str = "", award: str = "", match: str = "", restrictions: str = "",
-           application: str = "", funding_method: str = "", loi: bool = False, today: str | None = None) -> dict:
+           application: str = "", funding_method: str = "", loi: bool = False, match_none: bool = False,
+           today: str | None = None) -> dict:
     today = today or date.today().isoformat()
     title = without_email(clean(title))
     loan = bool(LOAN.search(title))
@@ -107,6 +174,8 @@ def record(state: str, key: str, title: str, agency: str, url: str, web: str, ap
         "funding_method": funding_method,
         "loi": loi,
         "updated": None,
+        # only when the page says none is needed, as the lists with a match field do
+        **({"match_none": True} if match_none else {}),
     }
     return {k: without_email(v) if isinstance(v, str) else v for k, v in rec.items()}
 

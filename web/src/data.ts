@@ -130,7 +130,7 @@ export function noCatalogNote(meta: Meta | null, state: string, name: string): s
   if (status === "built") return `${The} ${kind}grants aren't available right now. ${cover}`;
   // Each says no more than the research showed (grantmatch/states.py): "unchecked" makes no claim at all.
   const Grants = kind ? `${The} state grants` : `Grants from ${the}`;
-  const why = status === "html" ? ` The grant pages checked for ${the} are web pages or a dashboard, not a data file, so they aren't read in yet.`
+  const why = status === "html" ? ` What was checked for ${the} didn't give a grant list that can be read in yet.`
     : status === "decide" ? ` ${The} has a machine-readable grant list that isn't read in yet.`
     : status === "next" ? ` A source for ${grants} is being looked at.`
     : status === "none" ? ` No current public list of ${grants} was found.`

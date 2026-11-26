@@ -98,3 +98,23 @@ def test_saved_copies_are_read_without_the_network(tmp_path, monkeypatch):
     out = tmp_path / "wy.json.gz"
     assert wy.build(out, tmp_path / "skipped.json.gz", tmp_path) == 3
     assert json.loads(gzip.decompress(out.read_bytes()))["state"] == "WY"
+
+
+@pytest.mark.parametrize("who", [
+    "This grant is open to individual artists. Organizations are not eligible.",
+    "Individual artists, not organizations, are eligible.",
+    "Nonprofit organizations are not eligible; this is open to individual artists only.",
+])
+def test_words_that_shut_organizations_out_are_not_read_as_naming_them(who):
+    one = page("Sample Grant", f"<h4>Grant Closes: March 1, 2027</h4><p>{who}</p>")
+    assert wy.parse_grant(one, wy.LIST, TODAY)["record"]["nonprofit_eligible"] is False
+
+
+def test_closed_now_beside_a_future_window_stays_and_closed_without_one_goes():
+    waiting = page("Community Support Grant", """<h4>Grant Opens: February 15, 2027</h4><h4>Grant Closes: March 26, 2027</h4>
+<p>Open to nonprofit organizations.</p>
+<p>The application period for this grant is currently closed. The FY28 application will open in February 2027.</p>""")
+    assert wy.parse_grant(waiting, wy.LIST, TODAY)["closed"] == ""
+    for said in ("Applications are closed.", "This grant is on hold."):
+        one = page("Sample Grant", f"<h4>Grant Closes: March 1, 2027</h4><p>Open to nonprofits. {said}</p>")
+        assert wy.build_records([wy.parse_grant(one, wy.LIST, TODAY)], TODAY) == [], said

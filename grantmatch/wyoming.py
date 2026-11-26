@@ -20,13 +20,12 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 from . import webpages
-from .minnesota import NONPROFIT, _lines
+from .minnesota import _lines
 
 LIST = "https://wyoarts.state.wy.us/grants/"
 AGENCY = "Wyoming Arts Council"
 SOURCE = "Wyoming Arts Council grant pages (wyoarts.state.wy.us), one agency only"
 MIN_ROWS = 3  # the Council lists five grants; fewer than this means the page changed shape
-ORGANIZATIONS = re.compile(r"\borganizations?\b", re.I)
 # Who may apply, the plainer wording first: "eligible to receive up to ..." is often about the amount.
 WHO = (re.compile(r"\bopen to\b|\bis available to\b", re.I), re.compile(r"\b(?:is|are) eligible\b", re.I))
 ROUND = re.compile(r"^Round \w+:\s*([A-Z][a-z]+)\.? (\d{1,2})(?:, (\d{4}))?\s*[\u2013\u2014-]\s*([A-Z][a-z]+)\.? (\d{1,2}), (\d{4})")
@@ -92,10 +91,10 @@ def parse_grant(page: str, url: str, today: str | None = None) -> dict:
     def sentences(pattern: re.Pattern) -> list[str]:
         return [t for t in texts if pattern.search(t)]
 
-    eligible = next((found[:1] for found in map(sentences, WHO) if found), [])
-    eligible += sentences(re.compile(r"\bartists cannot apply\b", re.I))[:1]
-    applicants = " ".join(dict.fromkeys(eligible))
-    named = eligible[0] if eligible else ""
+    named = next((found[:1] for found in map(sentences, WHO) if found), [])
+    barred = sentences(webpages.NOT_ORGANIZATIONS)[:1]
+    artists = sentences(re.compile(r"\bartists cannot apply\b", re.I))[:1]
+    applicants = " ".join(dict.fromkeys([*named, *artists, *barred]))
     matches = sentences(re.compile(r"\bmatch\b", re.I))[:2]
     cash = re.search(r"\brequires? a (\d+:\d+) cash match\b", " ".join(matches), re.I)
     notes = list(dict.fromkeys(t for t, _ in rounds)) + sentences(re.compile(r"\bmust be submitted\b", re.I))[:1]
@@ -103,12 +102,12 @@ def parse_grant(page: str, url: str, today: str | None = None) -> dict:
     record = webpages.record(
         "WY", webpages.slug(title), title, AGENCY, url, LIST,
         applicants or "Not stated on the agency's page; read the notice",
-        bool(NONPROFIT.search(named) or ORGANIZATIONS.search(named)) if named else True,
+        webpages.open_to_nonprofits(" ".join(dict.fromkeys([*named, *barred]))),
         closes=closes, opens=opens, objectives=texts[0] if texts else "",
         award=next((t for t in texts if "$" in t and re.search(r"\bup to\b|\beligible to receive\b|\beach\b", t, re.I)), ""),
         match=f"{cash.group(1)} cash" if cash else "", restrictions=" ".join(matches),
         application=" ".join(t for t in [window, *notes, HOW] if t), today=today)
-    return {"record": record, "closed": next((t for t in texts if webpages.NOT_TAKING.search(t)), "")}
+    return {"record": record, "closed": webpages.not_taking(texts, today, opens)}
 
 
 def read_rows(page: str, grant_page, today: str | None = None) -> list[dict]:

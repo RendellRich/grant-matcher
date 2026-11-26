@@ -84,3 +84,31 @@ def test_a_saved_copy_is_read_without_the_network(tmp_path, monkeypatch):
     page.write_text(PAGE.replace(", 2027", ", 2099").replace(", 2026", ", 2099"), encoding="utf-8")
     assert ar.build(out, tmp_path / "skipped.json.gz", page) == 3
     assert json.loads(gzip.decompress(out.read_bytes()))["state"] == "AR"
+
+
+@pytest.mark.parametrize("after", [0, 1, 2, 3])
+def test_a_missing_apply_button_stops_the_run_whichever_section_it_ends(after):
+    """Without it a section would run into the next program and borrow its words ("closed", a match)."""
+    marks = [i for i, line in enumerate(PAGE.split("\n")) if "APPLY NOW</a>" in line or "APPLY HERE</a>" in line]
+    assert len(marks) == 4
+    lines = PAGE.split("\n")
+    del lines[marks[after]]
+    with pytest.raises(RuntimeError, match="has no end"):
+        ar.parse("\n".join(lines), TODAY)
+
+
+def test_closed_wording_takes_arts_on_tour_off():
+    page = PAGE.replace("<p>Application Deadline Ongoing.</p>",
+                        "<p>Application Deadline Ongoing.</p><p>Applications are currently closed.</p>")
+    recs, skips = built(page=page)
+    assert "ar-arts-on-tour" not in recs
+    assert ("Arts on Tour grant", "not_taking") in [(s["name"], s["reason"]) for s in skips]
+
+
+def test_operating_support_says_the_intent_date_and_income_floor_first():
+    gos = built()[0]["ar-general-operating-support"]
+    assert gos["application"].startswith("Letter of intent deadline: Dec. 3, 2026, for new or newly returning applicants.")
+    assert gos["applicant_types"].startswith("The program is for local arts agencies") and "$50,000" in gos["applicant_types"]
+    assert "That date has passed" not in gos["application"]
+    later = built(today="2026-12-10")[0]["ar-general-operating-support"]
+    assert "That date has passed; check the notice before you start." in later["application"]

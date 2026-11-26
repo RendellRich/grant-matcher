@@ -34,7 +34,7 @@ describe("a state with no catalog", () => {
     expect(note("PA")).toContain("Pennsylvania has a machine-readable grant list that isn't read in yet.");
     expect(noCatalogNote(meta, "XX", "Somewhere")).toContain("A source for Somewhere state grants is being looked at.");
     const al: Meta = { ...meta, catalogs: { AL: { status: "html", source: "ADECA" } } };
-    expect(note("AL", al)).toBe("No Alabama state catalog yet. The grant pages checked for Alabama are web pages or a dashboard, not a data file, so they aren't read in yet. Federal grants cover Alabama.");
+    expect(note("AL", al)).toBe("No Alabama state catalog yet. What was checked for Alabama didn't give a grant list that can be read in yet. Federal grants cover Alabama.");
   });
 
   it("claims nothing about a state the research couldn't check", () => {
@@ -49,7 +49,7 @@ describe("a state with no catalog", () => {
   });
 
   it("doesn't call the District of Columbia a state", () => {
-    expect(note("DC")).toBe("No District of Columbia catalog yet. The grant pages checked for the District of Columbia are web pages or a dashboard, not a data file, so they aren't read in yet. Federal grants and foundations cover the District of Columbia.");
+    expect(note("DC")).toBe("No District of Columbia catalog yet. What was checked for the District of Columbia didn't give a grant list that can be read in yet. Federal grants and foundations cover the District of Columbia.");
     const none: Meta = { ...meta, catalogs: { DC: { status: "none", source: "x" } } };
     expect(note("DC", none)).toBe("No District of Columbia catalog yet. No current public list of grants from the District of Columbia was found. Federal grants and foundations cover the District of Columbia.");
     const unchecked: Meta = { ...meta, catalogs: { DC: { status: "unchecked", source: "x" } } };
@@ -145,6 +145,7 @@ describe("the line above a state's open calls", () => {
       ["MD", "Maryland", "Maryland data from the State Grants table on the Department of Commerce's nonprofit page only, a short list."],
       ["ND", "North Dakota", "North Dakota data from the Council on the Arts' grant pages only."],
       ["WY", "Wyoming", "Wyoming data from the Wyoming Arts Council's grant pages only."],
+      ["TN", "Tennessee", "Tennessee data from the Tennessee Arts Commission's grant pages only."],
     ];
     for (const [code, name, footer] of partial) {
       const note = app.slice(app.indexOf(`{state === "${code}" ? (`));

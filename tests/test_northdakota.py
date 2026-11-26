@@ -104,3 +104,50 @@ def test_saved_copies_are_read_without_the_network(tmp_path, monkeypatch):
     out = tmp_path / "nd.json.gz"
     assert nd.build(out, tmp_path / "skipped.json.gz", tmp_path) == 3
     assert json.loads(gzip.decompress(out.read_bytes()))["state"] == "ND"
+
+
+def test_cards_for_organizations_are_open_to_nonprofits_from_the_card_alone():
+    for who in ("Arts and non-arts organizations", "Arts & non-arts organizations", "Organizations & individuals"):
+        card = {"title": "A", "url": nd.LIST, "what": "", "who": who, "deadline": "April 26, 2026", "passed": ""}
+        assert nd.normalize(card, None, "2026-03-01")["nonprofit_eligible"] is True, who
+    recs, _ = built_on("2026-03-01")
+    assert recs["nd-accessibility-grant"]["nonprofit_eligible"] and recs["nd-community-arts-access"]["nonprofit_eligible"]
+
+
+def built_on(today):
+    recs = nd.build_records(nd.read_rows(GRANTS, page_of_any, today), today=today)
+    return {r["id"]: r for r in recs}, today
+
+
+def page_of_any(url):
+    return PAGES.get(url.rsplit("/", 1)[-1], PROGRAM)
+
+
+def test_the_next_round_is_shown_not_the_last():
+    for today, closes in (("2026-03-01", "2026-04-26"), ("2026-04-26", "2026-04-26"), ("2026-05-01", "2026-09-20")):
+        assert built_on(today)[0]["nd-community-arts-access"]["closes"] == closes, today
+    assert "nd-community-arts-access" not in built_on("2026-09-21")[0]
+
+
+def test_a_dated_card_that_leaves_nonprofits_out_is_checked_on_its_own_page():
+    dated = GRANTS.replace("<p><strong>Who:</strong> Educational institutions</p><p><strong>Deadline:</strong> 6 weeks prior to project start date</p>",
+                           "<p><strong>Who:</strong> Educational institutions</p><p><strong>Deadline:</strong> April 30, 2027</p>")
+    assert dated != GRANTS
+    asked = []
+    rows = nd.read_rows(dated, lambda url: asked.append(url) or RESIDENCE, TODAY)
+    assert any(u.endswith("/artist-residence") for u in asked)
+    air = {r["record"]["id"]: r["record"] for r in rows}["nd-artist-in-residence"]
+    assert air["nonprofit_eligible"] is True and air["closes"] == "2027-04-30"
+
+
+def test_the_labels_say_which_match_is_whose():
+    labelled = RESIDENCE.replace("<li>A minimum 10% cash match is required.</li><li>A minimum 30% cash match is required.</li>",
+                                 "</ul><p>Sample Title 1 Schools:</p><ul><li>May request up to $3,000. A minimum 10% cash match is required.</li></ul>"
+                                 "<p>Other Schools:</p><ul><li>May request up to $3,000. A minimum 30% cash match is required.</li>")
+    assert labelled != RESIDENCE
+    program = nd.parse_program(labelled)
+    card = {"title": "Artist in Residence", "url": nd.LIST, "what": "", "who": "Educational institutions",
+            "deadline": "6 weeks prior to project start date", "passed": ""}
+    rec = nd.normalize(card, program, TODAY)
+    assert rec["match"] == "10% for Sample Title 1 Schools; 30% for Other Schools"
+    assert "Sample Title 1 Schools: May request" in rec["award"] and "Other Schools: May request" in rec["award"]

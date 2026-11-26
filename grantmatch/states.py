@@ -6,7 +6,8 @@ Each of the 50 states and the District of Columbia has an entry with its status:
   next       a machine-readable source exists and is worth an adapter next (none at the moment)
   decide     a machine-readable source works, but Ren decided to leave it out (2026-11-25; docs/state-coverage.md
              section (c) gives the reasons)
-  html       the grant pages checked are web pages, a dashboard or a bid system, not a data file
+  html       the grant pages checked are web pages, a dashboard or a bid system, not a data file, and no adapter
+             has been built from them (docs/state-coverage.md gives each state's reason)
   blocked    robots.txt or a site's terms keep our crawler or this use out, or the site turns scripts away, for
              the pages that would carry the state's calls. Nothing is read from them, and nothing learned from a
              page we may not use is recorded here: only the host and the reason
@@ -32,7 +33,7 @@ skipped-report.yml downloads the state's skipped file, so the Friday report does
 and its sentence in the footer (web/src/app.tsx).
 
 A state read from web pages can use grantmatch/webpages.py (the crawling rule, record fields and dropped rows), as
-arkansas.py, maryland.py, northdakota.py and wyoming.py do.
+arkansas.py, maryland.py, northdakota.py, tennessee.py and wyoming.py do.
 
 To pause a built state's reads, give its entry "paused": {"why": ..., "hosts": [...]}. Nothing then asks those hosts for
 anything: the adapter republishes its last published files unchanged (grantmatch/illinois.py), the page watch, the
@@ -60,7 +61,8 @@ STATES: dict[str, dict] = {
            "pages": ["https://www.grants.ca.gov/"]},
     "CO": {"status": "blocked",
            "source": "colorado.gov agency sites turn scripts away; cde.state.co.us robots.txt disallows all crawlers"},
-    "CT": {"status": "html", "source": "CTsource Bid Board (Nonprofit Grant Program rounds); past awards on data.ct.gov"},
+    "CT": {"status": "html",
+           "source": "OPM and Office of the Arts pages (two dated calls); the CTsource Bid Board is filled by script"},
     "DE": {"status": "none", "source": "Past awards on data.delaware.gov; no open-call dataset"},
     "DC": {"status": "built", "source": "District Grants Clearinghouse (DC.gov, CC BY 3.0)",
            "file": "districtofcolumbia", "catalog": "DC Clearinghouse", "module": "districtofcolumbia",
@@ -69,9 +71,11 @@ STATES: dict[str, dict] = {
     "FL": {"status": "built", "source": "Florida Catalog of State Financial Assistance", "file": "florida",
            "catalog": "CSFA", "module": "florida", "report": "Florida state catalog", "refresh": "weekly",
            "pages": ["https://apps.fldfs.com/fsaa/catalog.aspx"]},
-    "GA": {"status": "html", "source": "Georgia Grants Portal (OPB only, empty when checked)"},
+    "GA": {"status": "html",
+           "source": "Georgia Grants Portal (no applications available) and Criminal Justice Coordinating Council pages"},
     "HI": {"status": "decide", "source": "HANDS, Hawaii Awards and Notices Data System (undocumented JSON, mostly procurement)"},
-    "ID": {"status": "html", "source": "Education, Serve Idaho and Health and Welfare grant pages"},
+    "ID": {"status": "html",
+           "source": "Education, Serve Idaho, Health and Welfare, and Parks and Recreation grant pages"},
     "IL": {"status": "built", "source": "Illinois Catalog of State Financial Assistance", "file": "illinois",
            "catalog": "Illinois NOFO", "module": "illinois", "report": "Illinois state notices (GATA)", "refresh": "daily",
            "pages": ["https://omb.illinois.gov/PUBLIC/GATA/CSFA/OpportunityList.aspx"],
@@ -97,7 +101,7 @@ STATES: dict[str, dict] = {
            "report": "Maryland Commerce State Grants table", "refresh": None, "in_skip_report": False,
            "who_listed": False, "pages": ["https://business.maryland.gov/nonprofit-opportunities/"]},
     "MA": {"status": "unchecked", "source": "COMMBUYS public bid search (no grant call seen on its first page of open bids)"},
-    "MI": {"status": "html", "source": "MI Funding Hub grant pages and sitemap"},
+    "MI": {"status": "html", "source": "MI Funding Hub (its search page has no grant rows without script)"},
     "MN": {"status": "built",
            "source": "Minnesota Department of Health and Office of Justice Programs pages only (two agencies, not a statewide list)",
            "file": "minnesota", "catalog": "Minnesota, 2 agencies", "module": "minnesota",
@@ -107,7 +111,7 @@ STATES: dict[str, dict] = {
     "MS": {"status": "unchecked",
            "source": "Agency pages; the Human Services procurement table is filled by script and wasn't read"},
     "MO": {"status": "html", "source": "Natural Resources, Arts Council and ServMO grant pages (mo.gov data policy requires state disclaimers)"},
-    "MT": {"status": "html", "source": "Montana WebGrants storefront (nothing clearly current; terms unconfirmed)"},
+    "MT": {"status": "html", "source": "Montana Arts Council pages (one dated call) and the WebGrants storefront"},
     "NE": {"status": "blocked", "source": "nebraska.gov terms bar robots and scrapers without written permission"},
     "NV": {"status": "blocked", "source": "airtable.com robots.txt disallows the state's shared grant view"},
     "NH": {"status": "blocked", "source": "nh.gov agency sites turn scripts away"},
@@ -133,14 +137,18 @@ STATES: dict[str, dict] = {
     "OR": {"status": "none", "source": "Two housing datasets on data.oregon.gov, both empty"},
     "PA": {"status": "decide", "source": "pa.gov Discover State Grants (the site's own search proxy)"},
     "RI": {"status": "blocked", "source": "gn.ecivis.com robots.txt disallows all crawlers"},
-    "SC": {"status": "html", "source": "South Carolina Arts Commission grants page (one agency)"},
+    "SC": {"status": "html",
+           "source": "South Carolina Arts Commission grants page (one agency; rolling grants paused)"},
     "SD": {"status": "html",
            "source": "Department of Social Services and other agency pages (the sd.gov disclaimer couldn't be read)"},
-    "TN": {"status": "html",
-           "source": "Tennessee Arts Commission grants pages (one agency); tn.gov turns scripts away"},
+    "TN": {"status": "built", "source": "Tennessee Arts Commission grant pages only (one agency, not a statewide list)",
+           "file": "tennessee", "catalog": "Tennessee, 1 agency", "module": "tennessee",
+           "report": "Tennessee Arts Commission", "refresh": None, "in_skip_report": False,
+           "pages": ["https://tnartscommission.org/grants/"]},
     "TX": {"status": "blocked",
            "source": "txsmartbuy.gov robots.txt disallows all crawlers; no usable terms were confirmed for the eGrants page"},
-    "UT": {"status": "html", "source": "Utah Funding Opportunities Portal (Looker Studio report)"},
+    "UT": {"status": "html",
+           "source": "Utah Funding Opportunities Portal (Looker Studio report); agency pages with no dated call found"},
     "VT": {"status": "blocked", "source": "agriculture.vermont.gov (its robots.txt disallows ClaudeBot)"},
     "VA": {"status": "html",
            "source": "Governor's Office Grants directory (its policy link returns 404; virginia.gov allows fair use only)"},

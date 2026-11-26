@@ -9,7 +9,7 @@ import pytest
 from grantmatch import export_web, refresh_states, skipped, states
 
 ROOT = export_web.LOCAL.parent
-CODES = ["AR", "DC", "MD", "MN", "NJ", "NY", "ND", "WV", "WY"]   # the registry's order
+CODES = ["AR", "DC", "MD", "MN", "NJ", "NY", "ND", "TN", "WV", "WY"]   # the registry's order
 
 
 def test_the_driver_runs_every_built_state_that_has_no_daily_job():
@@ -43,7 +43,7 @@ def test_one_state_failing_keeps_its_file_and_does_not_stop_the_others(tmp_path,
     (tmp_path / "minnesota.json.gz").write_bytes(b"last week")
     fake_adapters(monkeypatch, broken={"MN"}, silent={"NJ"})
     done, failed = refresh_states.refresh(tmp_path, allowed=lambda url: None)
-    assert done == ["AR", "DC", "MD", "NY", "ND", "WV", "WY"] and sorted(failed) == ["MN", "NJ"]
+    assert done == ["AR", "DC", "MD", "NY", "ND", "TN", "WV", "WY"] and sorted(failed) == ["MN", "NJ"]
     assert "page changed shape" in failed["MN"] and "no data file" in failed["NJ"]
     assert (tmp_path / "minnesota.json.gz").read_bytes() == b"last week"
     assert not (tmp_path / "newjersey.json.gz").exists() and not (tmp_path / "skipped-minnesota.json.gz").exists()

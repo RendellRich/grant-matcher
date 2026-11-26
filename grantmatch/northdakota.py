@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import re
+from datetime import date
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
@@ -81,49 +82,73 @@ def parse_program(page: str) -> dict:
             found.append(x["text"])
         return found
 
-    sentences = re.split(r"(?<=\.)\s+", text)
+    # A match belongs to the label above it ("Title 1 and/or 21st Century Schools:"), when the page has one.
+    shares, label = [], ""
+    for x in lines:
+        if x["head"]:
+            label = ""
+        elif x["text"].endswith(":"):
+            label = x["text"].rstrip(":").strip()
+        shares += [(m.group(1), label) for m in re.finditer(r"(\d{1,2})% (?:cash )?match (?:is )?required", x["text"], re.I)]
     return {
         "closes": webpages.day(closes.group(1)) if closes else None,
-        "closed": next((s for s in sentences if webpages.NOT_TAKING.search(s)), ""),
+        "closed": webpages.not_taking([x["text"] for x in lines]),
         # the opening paragraph is its own line, so photo captions above it never come along
         "about": next((x["text"] for x in lines if re.search(r"\bprovides? up to \$", x["text"], re.I)), ""),
         "eligible": " ".join(under("eligibility")),
-        "award": " ".join(t for t in under("award") if "$" in t),
-        "match": [m.group(1) for m in re.finditer(r"(\d{1,2})% (?:cash )?match (?:is )?required", text, re.I)],
+        # amounts, and the labels that say whose they are
+        "award": " ".join(t for t in under("award") if "$" in t or t.endswith(":")),
+        "match": shares,
     }
+
+
+def _dates(card: dict) -> list[str]:
+    """The full dates in a card's deadline."""
+    return [d for d in (webpages.day(t) for t in re.findall(r"[A-Z][a-z]+\.? \d{1,2}, \d{4}", card["deadline"])) if d]
 
 
 def normalize(card: dict, program: dict | None = None, today: str | None = None) -> dict:
     program = program or {}
+    today = today or date.today().isoformat()
     relative = bool(RELATIVE.search(card["deadline"]))
-    # A card with dates lists each round's: the latest is the last chance, and a passed one is dropped for it.
-    dates = [d for d in (webpages.day(t) for t in re.findall(r"[A-Z][a-z]+\.? \d{1,2}, \d{4}", card["deadline"])) if d]
-    closes = program.get("closes") if relative else (max(dates) if dates else None)
+    # A card with dates lists each round's: the next one is shown, or the last when all have passed (so it is dropped).
+    dates = _dates(card)
+    ahead = [d for d in dates if d >= today]
+    closes = program.get("closes") if relative else (min(ahead) if ahead else max(dates) if dates else None)
     who = program.get("eligible") or card["who"]
     about = program.get("about", "")
     # The opening sentence names who the money is for on some pages ("... for North Dakota nonprofit art organizations").
     applicants = " ".join(t for t in (who, about if NONPROFIT.search(about) and not program.get("eligible") else "") if t)
-    shares = sorted(set(program.get("match", [])), key=int)
+    shares = list(dict.fromkeys(program.get("match", [])))
+    if len({share for share, _ in shares}) > 1:
+        named = all(label for _, label in shares)
+        match = ("; " if named else " or ").join(f"{share}% for {label}" if named else f"{share}%" for share, label in shares)
+    else:
+        match = f"{shares[0][0]}%" if shares else ""
     notes = [f"Deadline as the Council gives it: {card['deadline']}." if card["deadline"] else "",
              "Apply at least six weeks before your project starts." if relative else "", HOW]
     return webpages.record(
         "ND", webpages.slug(card["title"]), card["title"], AGENCY, card["url"], LIST,
         applicants or "Not stated on the agency's page; read the notice",
-        bool(NONPROFIT.search(applicants)) if applicants else True,
+        webpages.open_to_nonprofits(applicants),
         closes=closes, deadline_words=card["deadline"], objectives=about or card["what"],
-        award=program.get("award") or card["what"], match=" or ".join(f"{s}%" for s in shares),
+        award=program.get("award") or card["what"], match=match,
         funding_method="Reimbursement" if re.search(r"\breimbursement grant\b", about, re.I) else "",
         application=" ".join(t for t in notes if t), today=today)
 
 
 def read_rows(page: str, program_page, today: str | None = None) -> list[dict]:
-    """One row per card. `program_page(url)` gives a program's page; only cards with a relative deadline need it."""
+    """One row per card. `program_page(url)` gives a program's page. It is needed for a relative deadline, and for an
+    open card whose own words leave nonprofits out ("Educational institutions"), since the page may name them."""
+    today = today or date.today().isoformat()
     out = []
     for card in parse(page):
         program = None
-        if RELATIVE.search(card["deadline"]) and not card["passed"]:
+        relative = bool(RELATIVE.search(card["deadline"]))
+        left_out = not webpages.open_to_nonprofits(card["who"]) and any(d >= today for d in _dates(card))
+        if (relative and not card["passed"]) or left_out:
             program = parse_program(program_page(card["url"]))
-            if not program["closes"] and not program["closed"]:
+            if relative and not program["closes"] and not program["closed"]:
                 raise RuntimeError(f"North Dakota's {card['title']} page no longer says when applications close; {CHANGED}")
         record = normalize(card, program, today)
         closed = (program or {}).get("closed", "")

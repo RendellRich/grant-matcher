@@ -3,7 +3,7 @@ import pytest
 
 from grantmatch import cycles, refresh_states, states, webpages
 
-MODULES = ("arkansas", "maryland", "northdakota", "wyoming")
+MODULES = ("arkansas", "maryland", "northdakota", "tennessee", "wyoming")
 
 
 def test_a_page_off_limits_is_never_asked_for(monkeypatch):
@@ -27,7 +27,7 @@ def test_every_request_goes_through_the_projects_fetch_and_agent():
 
 def test_the_weekly_driver_checks_each_new_adapters_list_before_running_it():
     import importlib
-    for code in ("AR", "MD", "ND", "WY"):
+    for code in ("AR", "MD", "ND", "TN", "WY"):
         assert code in refresh_states.weekly_states()
         module = importlib.import_module(f"grantmatch.{states.STATES[code]['module']}")
         assert "LIST" in refresh_states.ADDRESSES and module.LIST in states.STATES[code]["pages"], code
@@ -64,3 +64,57 @@ def test_no_email_address_is_kept():
     r = webpages.record("ND", "a", "A", "Agency", "https://x", "https://x", "Write someone@example.org", True,
                         application="Email grants@example.org")
     assert not [v for v in r.values() if isinstance(v, str) and "@" in v]
+
+
+@pytest.mark.parametrize("text, want", [
+    ("11/01/26 - 12/15/26", "2026-12-15"), ("Opens 12/01/26, due 01/15/27", "2027-01-15"),
+    ("January 5, 2027 through February 1, 2027", "2027-02-01"), ("December 18, 2026 (NEW earlier deadline)", "2026-12-18"),
+])
+def test_a_range_gives_its_closing_date(text, want):
+    assert webpages.day(text) == want
+
+
+@pytest.mark.parametrize("said", [
+    "Applications are closed.", "This grant is closed for applications.", "Applications are currently closed.",
+    "We are no longer accepting applications.", "Arts on Tour is on hold until July.", "This program has been suspended.",
+    "The grant is now closed.", "Applications are temporarily closed.",
+    "AE-CI applications are not being accepted for new projects.", "The FY27 application is now closed as of 9/8/2026.",
+])
+def test_the_ways_a_page_says_it_is_not_taking_applications(said):
+    assert webpages.not_taking([said], "2026-11-26") == said
+
+
+@pytest.mark.parametrize("said", [
+    "Applicants must not be debarred or suspended.", "Late applications will not be accepted.",
+    "All other counties not listed above are now closed.", "Grants must be closed out by June 15.",
+])
+def test_other_words_do_not_close_a_call(said):
+    assert webpages.not_taking([said], "2026-11-26") == ""
+
+
+def test_closed_beside_a_later_window_or_about_an_earlier_year_does_not_close_the_call():
+    # the wording on Wyoming's pages, beside windows that open in 2027
+    wait = "The application period for this grant is currently closed. The FY28 application will open in February 2027."
+    assert webpages.not_taking([wait], "2026-11-26", "2027-02-15") == ""
+    assert webpages.not_taking([wait], "2027-02-20", "2027-02-15") == ""   # the line is out of date once it opens
+    old = "The Fiscal Year 2026 Sample Grant application period is now closed."
+    assert webpages.not_taking([old], "2026-11-26", "2027-01-01") == ""
+    assert webpages.not_taking([old], "2027-01-15", "2027-01-01") == ""
+    # with no later window, closed is closed; and a pause holds whatever the window says
+    assert webpages.not_taking(["Applications are closed."], "2026-11-26") != ""
+    assert webpages.not_taking(["This grant is on hold."], "2026-11-26", "2027-02-15") != ""
+
+
+@pytest.mark.parametrize("who, open_", [
+    ("Arts and non-arts organizations", True), ("Arts & non-arts organizations", True), ("Organizations & individuals", True),
+    ("Organizations", True), ("Non-profit organizations", True), ("501(c)3 arts organizations", True), ("", True),
+    ("Individual artists cannot apply. The grant is available to organizations.", True),
+    ("Open to nonprofit organizations. For-profit organizations are not eligible.", True),
+    ("This grant is open to individual artists. Organizations are not eligible.", False),
+    ("Individual artists, not organizations, are eligible.", False),
+    ("Nonprofit organizations are not eligible; this is open to individual artists only.", False),
+    ("Non-profit organizations are not eligible", False), ("This grant is open to individuals.", False),
+    ("Educational institutions", False), ("Public K-12 Schools", False),
+])
+def test_who_may_apply_in_the_pages_words(who, open_):
+    assert webpages.open_to_nonprofits(who) is open_
