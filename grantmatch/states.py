@@ -123,8 +123,8 @@ STATES: dict[str, dict] = {
            "pages": ["https://www.health.state.mn.us/about/grants/index.html",
                      "https://dps.mn.gov/divisions/ojp/ojp-grants/funding-opportunities"]},
     "MS": {"status": "html",
-           "source": "Arts Commission, Volunteer Mississippi, Human Services and Environmental Quality pages (three dated "
-                     "calls entered by hand; no list built)"},
+           "source": "Arts Commission, Volunteer Mississippi and Human Services pages (held: ms.gov's privacy policy "
+                     "names a Terms of Use Agreement that hasn't been read)"},
     "MO": {"status": "built",
            "source": "Missouri Natural Resources grant notices, Arts Council and ServMO pages only (three agencies, not a statewide list)",
            "file": "missouri", "catalog": "Missouri, 3 agencies", "module": "missouri",
