@@ -301,11 +301,11 @@ def test_a_state_with_no_catalog_gets_a_local_only_file(tmp_path, monkeypatch):
     monkeypatch.setattr(export_web, "LOCAL_ONLY", True)
     monkeypatch.setattr(embed, "embed_texts", lambda texts: np.ones((len(texts), 384), dtype=np.float32))
     # CA, IL, NY and WA have their own adapters
-    assert export_web.local_only_states() == ["AZ", "CT", "KS", "MA", "NV", "PA", "TX"]
+    assert export_web.local_only_states() == ["AZ", "CT", "KS", "MA", "MS", "NV", "PA", "TX"]
     meta = {}
     export_web.write_local_only(tmp_path, meta)
-    assert sorted(meta["programs"]) == ["AZ", "CT", "KS", "MA", "NV", "PA", "TX"]
-    assert not meta["programs"]["MA"]["local"] and meta["programs"]["MA"]["source"] == "state programs entered by hand"
+    assert sorted(meta["programs"]) == ["AZ", "CT", "KS", "MA", "MS", "NV", "PA", "TX"]
+    assert not meta["programs"]["MA"]["local"] and meta["programs"]["MS"]["source"] == "state programs entered by hand"
     assert not meta["programs"]["CT"]["local"] and meta["programs"]["KS"]["source"] == "state programs entered by hand"
     tx = meta["programs"]["TX"]
     assert tx["local_only"] and tx["local"] and tx["file"] == "programs-TX" and tx["updated"] == "2026-11-25T12:00+00:00"
@@ -390,24 +390,68 @@ def test_connecticut_and_kansas_hand_entries_are_loaded_and_watched():
     assert {r["id"] for r in ct + ks} <= set(local.site_targets())
 
 
-def test_massachusetts_hand_entries_are_loaded_and_watched_and_mississippi_is_held():
+def test_massachusetts_and_mississippi_hand_entries_are_loaded_and_watched():
     from grantmatch import cycles, freshness
 
-    ma = local.load(state="MA")
-    assert [(r["id"], r["closes"], r["rolling"]) for r in ma] == [
+    ma, ms = local.load(state="MA"), local.load(state="MS")
+    assert [(r["id"], r["closes"], r["rolling"]) for r in ma + ms] == [
         ("local-ma-pathmaker-training-provider", "2027-04-16", False),
-        ("local-ma-cyber-resilient-massachusetts", None, True)]
-    assert all("nonprofit" in r["applicant_types"].lower() for r in ma)  # entered only where the page says so
-    assert local.load(state="MS") == []  # held for Ren (docs/state-coverage.md section (k))
-    assert all(r["level"] == "State" and len(f"fl:{r['id']}") <= 63 for r in ma)
-    watched = {row["key"] for row in freshness.hand_pages(local.LOCAL) if row["list"] == "local-MA"}
-    assert watched == {r["id"].split("-", 2)[2] for r in ma}
-    assert {r["id"] for r in ma} <= set(local.site_targets())
+        ("local-ma-cyber-resilient-massachusetts", None, True),
+        ("local-ms-sexual-risk-avoidance-education", "2026-12-10", False),
+        ("local-ms-americorps-state-formula", "2027-01-15", False),
+        ("local-ms-creative-aging-grant", "2027-03-01", False)]
+    # entered only where the page says a nonprofit may apply
+    assert all("nonprofit" in r["applicant_types"].lower() or "501(c)(3)" in r["applicant_types"] for r in ma + ms)
+    assert all(r["level"] == "State" and len(f"fl:{r['id']}") <= 63 for r in ma + ms)
+    watched = {row["key"] for row in freshness.hand_pages(local.LOCAL) if row["list"] in ("local-MA", "local-MS")}
+    assert watched == {r["id"].split("-", 2)[2] for r in ma + ms}
+    assert {r["id"] for r in ma + ms} <= set(local.site_targets())
     # no entry reads a host whose terms keep this use out; doe.mass.edu isn't swept up by the www.mass.edu entry
-    assert not any(cycles.blocked_by_terms(u) for r in ma for u in (r["url"], r["web"]))
+    assert not any(cycles.blocked_by_terms(u) for r in ma + ms for u in (r["url"], r["web"]))
     for url in ("https://massculturalcouncil.org/", "https://www.masscec.com/", "https://www.mass.edu/"):
         assert cycles.blocked_by_terms(url), url
     assert not cycles.blocked_by_terms("https://www.doe.mass.edu/")
+
+
+def test_every_request_to_arts_ms_gov_waits_its_crawl_delay(monkeypatch):
+    from datetime import date
+    from types import SimpleNamespace
+    from urllib import robotparser
+
+    import requests
+
+    from grantmatch import cycles, freshness, watch
+
+    layout = "Crawl-delay: 10\n# START YOAST BLOCK\nUser-agent: *\nDisallow:\n"  # as arts.ms.gov serves it
+    parser = robotparser.RobotFileParser()
+    parser.parse(layout.splitlines())
+    assert parser.crawl_delay(cycles.AGENT) is None  # why the delay is written down in cycles.CRAWL_DELAYS
+
+    now, asked = [1000.0], []
+
+    def get(url, **kwargs):
+        asked.append((now[0], url))
+        r = requests.Response()
+        r.status_code, r.url, r.encoding = 200, url, "utf-8"
+        r.headers["content-type"] = "text/html"
+        r._content = (layout if url.endswith("/robots.txt") else "<p>x</p>").encode()
+        r._content_consumed = True
+        return r
+
+    monkeypatch.setattr(cycles, "session", lambda: SimpleNamespace(get=get))
+    monkeypatch.setattr(cycles, "time", SimpleNamespace(monotonic=lambda: now[0],
+                                                        sleep=lambda s: now.__setitem__(0, now[0] + s)))
+    monkeypatch.setattr(cycles, "_robots", {})
+    monkeypatch.setattr(cycles, "_next_turn", {})
+    monkeypatch.setattr(cycles, "grants_page", lambda raw, base: "https://arts.ms.gov/grants/")
+    page = "https://arts.ms.gov/grants-for-organizations/creative-aging-grant/"
+    cycles.check(page, date(2026, 11, 27))  # the website check: robots.txt, the page, a second page
+    watch.read(page)  # the page watch
+    freshness.link_reading(page)  # the freshness check
+    assert [u.removeprefix("https://arts.ms.gov") for _, u in asked][:3] == [
+        "/robots.txt", "/grants-for-organizations/creative-aging-grant/", "/grants/"]
+    assert len(asked) == 5 and all(b[0] - a[0] >= 10 for a, b in zip(asked, asked[1:]))
+    assert freshness.host_delay(page) == 10
 
 
 def test_the_website_check_waits_a_hosts_crawl_delay_before_its_second_page(monkeypatch):
