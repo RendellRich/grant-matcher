@@ -205,7 +205,22 @@ describe("a state with county and city programs but no state catalog", () => {
   it("names the tab local and leaves the state-call wording out", () => {
     const app = readFileSync(new URL("../src/app.tsx", import.meta.url), "utf8");
     expect(app).toContain("fl: localOnly ? [`${state} local programs`, `${state} local programs`, `${state} local program`]");
-    expect(app).toContain("localOnly ? localTally(stName, all.length) : callsTally(st, stName, all, info, updated)");
+    expect(app).toContain("localOnly ? localTally(stName, all.length, Boolean(info?.local)) : callsTally(st, stName, all, info, updated)");
+  });
+});
+
+describe("hand-kept state programs in a state with no state catalog", () => {
+  const meta: Meta = {
+    states: ["CT"],
+    programs: { CT: { file: "programs-CT", source: "state programs entered by hand", local_only: true, local: false } },
+    catalogs: { CT: { status: "html", source: "portal.ct.gov" } },
+  };
+
+  it("are called state programs, a few and not a statewide list", () => {
+    const note = noCatalogNote(meta, "CT", "Connecticut")!;
+    expect(note).toContain("The Connecticut programs tab has a few state programs only");
+    expect(note).not.toContain("county");
+    expect(localTally("Connecticut", 2, false)).toContain("2 state programs in Connecticut, entered by hand");
   });
 });
 

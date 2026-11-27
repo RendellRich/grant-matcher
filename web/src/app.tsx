@@ -213,7 +213,9 @@ export function App() {
   const st = applied.state;
   const stName = STATE_NAMES[st] ?? st;
   const localOnly = Boolean(meta?.programs?.[st]?.local_only);
-  const NOUN = nouns(stName, localOnly);
+  // Hand-kept state programs only (no county or city ones) aren't "local".
+  const handState = localOnly && !meta?.programs?.[st]?.local;
+  const NOUN = nouns(stName, localOnly && !handState);
   // The state tab follows the profile's state: Florida's catalog and county programs, or another state's open calls.
   const progFile = programsFile(meta, st);
   const hasProgs = Boolean(progFile);
@@ -595,7 +597,7 @@ export function App() {
               : total ? <><strong>{n(total, "strong match", "strong matches")}</strong> for this profile: {listing}.</>
               : <><strong>No strong matches yet.</strong> {shownOrder.map((k) => n(possible[k], `possible ${NOUN[k][2]}`, `possible ${NOUN[k][1]}`)).join(", ")}. More specific key words usually help.</>}
           </h1>
-          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : localOnly ? ` and some county and city programs in ${stName}` : hasProgs ? ` and ${grantsPhrase(st, stName)}` : ""}, ranked against your mission with the reasons spelled out.</p>
+          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : handState ? ` and a few ${stName} state programs entered by hand` : localOnly ? ` and some county and city programs in ${stName}` : hasProgs ? ` and ${grantsPhrase(st, stName)}` : ""}, ranked against your mission with the reasons spelled out.</p>
           <p class="notice">{NOTICE}</p>
         </div>
       </header>
@@ -1013,7 +1015,7 @@ export function App() {
     const picks = shown.filter((e) => e.tier !== "Long shot");
     return (
       <>
-        {tally("fl", localOnly ? localTally(stName, all.length) : callsTally(st, stName, all, info, updated), shown)}
+        {tally("fl", localOnly ? localTally(stName, all.length, Boolean(info?.local)) : callsTally(st, stName, all, info, updated), shown)}
         {narrowBar("fl", flEntries, shown, "programs")}
         <details class="filters">
           <summary>How the score works</summary>
@@ -1025,7 +1027,7 @@ export function App() {
                 : <li>Points off for matching funds you can't provide, for loans, and for student aid paid to individuals or schools</li>}
               {localOnly ? null : <li>A call that pays by reimbursement gets a caution, not a lower score</li>}
               {info?.local ? <li>County and city programs lose points when your cities are outside the area they serve, or when they require 501(c)(3) status you don't have yet</li> : null}
-              {info?.local ? <li>Programs entered by hand lose points between rounds, when no application window is open or announced</li> : null}
+              {info?.local || localOnly ? <li>Programs entered by hand lose points between rounds, when no application window is open or announced</li> : null}
               <li>Strong is 60 and up, possible is 35 to 59</li>
             </ul>
           </div>

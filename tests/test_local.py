@@ -300,10 +300,11 @@ def test_a_state_with_no_catalog_gets_a_local_only_file(tmp_path, monkeypatch):
 
     monkeypatch.setattr(export_web, "LOCAL_ONLY", True)
     monkeypatch.setattr(embed, "embed_texts", lambda texts: np.ones((len(texts), 384), dtype=np.float32))
-    assert export_web.local_only_states() == ["AZ", "NV", "PA", "TX"]  # CA, IL, NY and WA have their own adapters
+    assert export_web.local_only_states() == ["AZ", "CT", "KS", "NV", "PA", "TX"]  # CA, IL, NY and WA have their own adapters
     meta = {}
     export_web.write_local_only(tmp_path, meta)
-    assert sorted(meta["programs"]) == ["AZ", "NV", "PA", "TX"]
+    assert sorted(meta["programs"]) == ["AZ", "CT", "KS", "NV", "PA", "TX"]
+    assert not meta["programs"]["CT"]["local"] and meta["programs"]["KS"]["source"] == "state programs entered by hand"
     tx = meta["programs"]["TX"]
     assert tx["local_only"] and tx["local"] and tx["file"] == "programs-TX" and tx["updated"] == "2026-11-25T12:00+00:00"
     payload = json.loads(gzip.decompress((tmp_path / "programs-TX.json.gz").read_bytes()))
@@ -370,3 +371,18 @@ def test_words_about_a_match_agree_with_the_match_field():
             words = " ".join((r["applicant_types"], r["application"], r["award"], r["deadlines"]))
             if re.search(r"matching|\bmatch\b", words, re.I):
                 assert re.search(r"no match required", words, re.I), r["id"]
+
+
+def test_connecticut_and_kansas_hand_entries_are_loaded_and_watched():
+    from grantmatch import freshness
+
+    ct, ks = local.load(state="CT"), local.load(state="KS")
+    assert [(r["id"], r["closes"]) for r in ct + ks] == [
+        ("local-ct-arts-endowment-fund", "2026-12-15"),
+        ("local-ct-opm-nonprofit-grant-program", "2027-01-05"),
+        ("local-ks-early-childhood-block-grant", "2027-01-08")]
+    assert all(r["level"] == "State" and len(f"fl:{r['id']}") <= 63 for r in ct + ks)
+    watched = {(row["list"], row["key"]) for row in freshness.hand_pages(local.LOCAL)}
+    assert {("local-CT", "arts-endowment-fund"), ("local-CT", "opm-nonprofit-grant-program"),
+            ("local-KS", "early-childhood-block-grant")} <= watched
+    assert {r["id"] for r in ct + ks} <= set(local.site_targets())
