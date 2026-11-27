@@ -46,7 +46,7 @@ TOKEN = "grant-matcher"  # the name robots.txt rules would use for this crawler
 ANTHROPIC_AGENTS = ("ClaudeBot", "Claude-User", "Claude-SearchBot", "Claude-Web", "anthropic-ai")
 # Hosts whose terms forbid automated reading or commercial reuse (Grant Matcher is a paid product), or whose terms
 # can't be read to find out. robots.txt doesn't say this, so the list is kept by hand: add a host with its reason
-# when a terms page says so. A host covers its subdomains. Last reviewed November 25, 2026.
+# when a terms page says so. A host covers its subdomains. Last reviewed November 27, 2026.
 BLOCKED_HOSTS = {
     "surveymonkey.com": "its Acceptable Uses Policy bars automated extraction without written permission",
     "eunasolutions.com": "the Euna Supplier Network terms bar screen scraping without a license",
@@ -67,6 +67,9 @@ BLOCKED_HOSTS = {
     "detroitmi.gov": "its privacy and disclaimer page prohibits commercial use without written permission",
     "kingcounty.gov": "its terms of use bar publishing or commercially exploiting its content without permission",
     "thechildrenstrust.org": "its terms of use prohibit copying, reproducing or reselling its resources",
+    "massculturalcouncil.org": "its terms bar robots and spiders without permission, and commercial use",
+    "masscec.com": "its terms bar gathering its content with robots, scrapers or crawlers",
+    "www.mass.edu": "its terms bar reproducing site content without permission",  # not mass.edu: doe.mass.edu is separate
 }
 MAX_REDIRECTS = 10
 MAX_ROBOTS_BYTES = 5_000_000  # far past any real robots.txt; a bigger one counts as unreadable

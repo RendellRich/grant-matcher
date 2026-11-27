@@ -1,0 +1,62 @@
+{
+  "about": "Mississippi state grant calls entered by hand from each agency's own page: Mississippi has no state catalog here (docs/state-coverage.md), so this is not a statewide list. grantmatch/local.py checks this file and turns each entry into a Mississippi program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
+  "programs": [
+    {
+      "slug": "sexual-risk-avoidance-education",
+      "title": "Sexual Risk Avoidance Education (SRAE) Program request for proposals",
+      "agency": "Mississippi Department of Human Services, Division of Youth Services",
+      "level": "State",
+      "counties": ["Statewide"],
+      "objectives": "Sexual risk avoidance education and supportive youth services for youth ages 10 to 19 across Mississippi, including youth in the community, schools, juvenile justice, foster care and underserved rural areas.",
+      "who": "Qualified 501(c)(3) nonprofit organizations or governmental entities.",
+      "requires_501c3": true,
+      "application": "Find the request for proposals in the open procurements table on the Department's page.",
+      "award": "No amount is given in the table.",
+      "opens": null,
+      "closes": "2026-12-10",
+      "deadlines": "The open procurements table gives December 10, 2026 as the expiration date.",
+      "source_note": "The table is filled by script, so the weekly page check can't see changes to it: check it in a browser. The request for proposals, a PDF with the exact due time, wasn't opened.",
+      "subjects": "Youth; Health education; Prevention; Families",
+      "url": "https://www.mdhs.ms.gov/support/procurement/open/",
+      "checked": "2026-11-27"
+    },
+    {
+      "slug": "americorps-state-formula",
+      "title": "AmeriCorps State Formula Grants, FY 2027",
+      "agency": "Volunteer Mississippi, the Mississippi Commission for Volunteer Service",
+      "level": "State",
+      "counties": ["Statewide"],
+      "objectives": "Grants for programs that put AmeriCorps members to work on community needs. Organizations that don't already manage AmeriCorps State and National funding may apply only for a planning grant.",
+      "who": "Public or private nonprofit organizations, including faith-based and community organizations, institutions of higher education, government entities, labor organizations, partnerships and consortia, and tribes.",
+      "requires_501c3": null,
+      "application": "Read the notice of funding and the application instructions on Volunteer Mississippi's page; formula applications go through the America Learns grant system.",
+      "award": "The amount isn't stated on the page.",
+      "match": "24% in the first three-year funding period, cash or in-kind",
+      "opens": null,
+      "closes": "2027-01-15",
+      "deadlines": "Due January 15, 2027 at 5:00 p.m. Central.",
+      "subjects": "AmeriCorps; National service; Volunteers; Community development",
+      "url": "https://www.volunteermississippi.org/funding-opportunities/",
+      "checked": "2026-11-27"
+    },
+    {
+      "slug": "creative-aging-grant",
+      "title": "Creative Aging Grant, Round 1",
+      "agency": "Mississippi Arts Commission",
+      "level": "State",
+      "counties": ["Statewide"],
+      "objectives": "Skills-based arts learning for adults 55 and over, led by teaching artists.",
+      "who": "Mississippi-based organizations with 501(c)(3) status, or units of local government, libraries and county or municipal agencies. Individuals, K-12 schools and colleges can't apply.",
+      "requires_501c3": true,
+      "application": "Apply online in the Arts Commission's E-Grant system. First-time applicants are encouraged to talk to the Commission first.",
+      "award": "$2,000 to $8,000. Up to $24,000 in total is available in Round 1.",
+      "match": "One to one, cash and in-kind (in-kind up to half of the match)",
+      "opens": "2027-02-01",
+      "closes": "2027-03-01",
+      "deadlines": "Round 1 runs February 1 to March 1, 2027. Round 2 is April 1 to May 1, 2027; rounds 3 and 4 depend on funding.",
+      "subjects": "Arts; Older adults; Arts education",
+      "url": "https://arts.ms.gov/grants-for-organizations/creative-aging-grant/",
+      "checked": "2026-11-27"
+    }
+  ]
+}

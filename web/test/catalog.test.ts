@@ -222,6 +222,17 @@ describe("hand-kept state programs in a state with no state catalog", () => {
     expect(note).not.toContain("county");
     expect(localTally("Connecticut", 2, false)).toContain("2 state programs in Connecticut, entered by hand");
   });
+
+  it("say so in a blocked state too (Massachusetts), after why there is no catalog", () => {
+    const ma: Meta = {
+      states: ["MA"],
+      programs: { MA: { file: "programs-MA", source: "state programs entered by hand", local_only: true, local: false } },
+      catalogs: { MA: { status: "blocked", source: "mass.gov" } },
+    };
+    const note = noCatalogNote(ma, "MA", "Massachusetts")!;
+    expect(note).toContain("Key grant sites for Massachusetts can't be used here");
+    expect(note).toContain("The Massachusetts programs tab has state programs only");
+  });
 });
 
 describe("hand-kept programs beside a state's open calls", () => {
