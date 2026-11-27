@@ -454,6 +454,35 @@ def test_every_request_to_arts_ms_gov_waits_its_crawl_delay(monkeypatch):
     assert freshness.host_delay(page) == 10
 
 
+def test_volunteer_mississippi_waits_between_robots_txt_and_every_page(monkeypatch):
+    from datetime import date
+    from types import SimpleNamespace
+
+    import requests
+
+    from grantmatch import cycles
+
+    now, asked = [1000.0], []
+
+    def get(url, **kwargs):
+        asked.append((now[0], url))
+        r = requests.Response()
+        r.status_code, r.url, r.encoding = 200, url, "utf-8"
+        r.headers["content-type"] = "text/html"
+        r._content = b"User-agent: *\nCrawl-delay: 10\n" if url.endswith("/robots.txt") else b"<p>x</p>"
+        r._content_consumed = True
+        return r
+
+    clock = SimpleNamespace(monotonic=lambda: now[0], sleep=lambda s: now.__setitem__(0, now[0] + s))
+    monkeypatch.setattr(cycles, "session", lambda: SimpleNamespace(get=get))
+    monkeypatch.setattr(cycles, "time", clock)
+    monkeypatch.setattr(cycles, "_robots", {})
+    monkeypatch.setattr(cycles, "_next_turn", {})
+    monkeypatch.setattr(cycles, "grants_page", lambda raw, base: "https://www.volunteermississippi.org/grants/")
+    cycles.check("https://www.volunteermississippi.org/funding-opportunities/", date(2026, 11, 27))
+    assert len(asked) == 3 and all(b[0] - a[0] >= 10 for a, b in zip(asked, asked[1:]))
+
+
 def test_the_website_check_waits_a_hosts_crawl_delay_before_its_second_page(monkeypatch):
     from datetime import date
     from urllib import robotparser

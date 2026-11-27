@@ -233,8 +233,9 @@ def site_url(raw) -> str:
 # Hosts only part of which may be read: host -> the path every address has to start with. Nothing else on the host is
 # asked for (robots.txt aside), a redirect included. Kentucky: Ren's decision, 2026-11-27.
 ONLY_UNDER = {"artscouncil.ky.gov": "/grants/"}
-# Hosts whose Crawl-delay Python's parser misses: arts.ms.gov's robots.txt puts it before any User-agent line.
-CRAWL_DELAYS = {"arts.ms.gov": 10.0}
+# Hosts whose Crawl-delay is held to on every request, the first page after robots.txt included. arts.ms.gov puts its
+# line before any User-agent line, where Python's parser misses it.
+CRAWL_DELAYS = {"arts.ms.gov": 10.0, "volunteermississippi.org": 10.0, "www.volunteermississippi.org": 10.0}
 _next_turn: dict[str, float] = {}
 _turn_lock = threading.Lock()
 _local = threading.local()
