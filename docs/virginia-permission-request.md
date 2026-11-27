@@ -4,7 +4,7 @@ Drafted 2026-11-27. Ren sends it, or not. Nothing has been sent.
 
 **To:** virginiawebmaster@vita.virginia.gov (virginia.gov's privacy policy, https://www.virginia.gov/privacy-policy/, names this address for requests for explicit permission to copy contents, read again 2026-11-27)
 
-**Subject:** Permission to read two grant listing pages once a week
+**Subject:** Permission to read Virginia grant listing pages
 
 Hello,
 
@@ -17,7 +17,7 @@ I would like to read these public pages automatically:
 
 How I would read them:
 
-- About once a week, one request per page.
+- A few requests a week for each page at most: weekly jobs read each listed page, and may also open one more page it links to on the same site.
 - With a user agent that says who is asking: grant-matcher/1.0 (+https://github.com/RendellRich/grant-matcher; weekly check of public grant pages)
 - Following each site's robots.txt.
 - No logins, no forms and no file downloads.

@@ -14,9 +14,7 @@ Each of the 50 states and the District of Columbia has an entry with its status:
   none       nowhere the research looked has a current public list of state grant calls: past awards only, a
              login wall, or a list that is empty or abandoned. If any page it looked at posts current calls, the
              state is html instead
-  unchecked  the research couldn't establish the answer (Massachusetts: the public bid search loads, but no grant
-             call was seen on it; Mississippi: the one table that might list current calls is filled by script and
-             wasn't read). Nothing is claimed about these states
+  unchecked  the research couldn't establish the answer. Nothing is claimed about these states (none at the moment)
 
 Florida is built too, but keeps its own export (florida.py writes a catalog of programs, not open calls, with
 county programs and its own vectors). Every other built state is listed in STATE_PROGRAMS, which export_web
@@ -112,7 +110,9 @@ STATES: dict[str, dict] = {
            "file": "maryland", "catalog": "Maryland, short list", "module": "maryland",
            "report": "Maryland Commerce State Grants table", "refresh": None, "in_skip_report": False,
            "who_listed": False, "pages": ["https://business.maryland.gov/nonprofit-opportunities/"]},
-    "MA": {"status": "unchecked", "source": "COMMBUYS public bid search (no grant call seen on its first page of open bids)"},
+    "MA": {"status": "blocked",
+           "source": "mass.gov and doe.mass.edu terms limit reuse; massculturalcouncil.org, masscec.com and www.mass.edu "
+                     "terms bar robots or reproduction"},
     "MI": {"status": "html",
            "source": "MI Funding Hub (not practical: its search page has no grant rows without script, and its site map "
                      "lists about 1,500 grant pages)"},
@@ -122,8 +122,9 @@ STATES: dict[str, dict] = {
            "report": "Minnesota (Health and Justice Programs pages)", "refresh": None, "in_skip_report": False,
            "pages": ["https://www.health.state.mn.us/about/grants/index.html",
                      "https://dps.mn.gov/divisions/ojp/ojp-grants/funding-opportunities"]},
-    "MS": {"status": "unchecked",
-           "source": "Agency pages; the Human Services procurement table is filled by script and wasn't read"},
+    "MS": {"status": "html",
+           "source": "Arts Commission, Volunteer Mississippi, Human Services and Environmental Quality pages (three dated "
+                     "calls entered by hand; no list built)"},
     "MO": {"status": "built",
            "source": "Missouri Natural Resources grant notices, Arts Council and ServMO pages only (three agencies, not a statewide list)",
            "file": "missouri", "catalog": "Missouri, 3 agencies", "module": "missouri",

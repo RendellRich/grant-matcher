@@ -46,7 +46,7 @@ TOKEN = "grant-matcher"  # the name robots.txt rules would use for this crawler
 ANTHROPIC_AGENTS = ("ClaudeBot", "Claude-User", "Claude-SearchBot", "Claude-Web", "anthropic-ai")
 # Hosts whose terms forbid automated reading or commercial reuse (Grant Matcher is a paid product), or whose terms
 # can't be read to find out. robots.txt doesn't say this, so the list is kept by hand: add a host with its reason
-# when a terms page says so. A host covers its subdomains. Last reviewed November 25, 2026.
+# when a terms page says so. A host covers its subdomains. Last reviewed November 27, 2026.
 BLOCKED_HOSTS = {
     "surveymonkey.com": "its Acceptable Uses Policy bars automated extraction without written permission",
     "eunasolutions.com": "the Euna Supplier Network terms bar screen scraping without a license",
@@ -67,6 +67,9 @@ BLOCKED_HOSTS = {
     "detroitmi.gov": "its privacy and disclaimer page prohibits commercial use without written permission",
     "kingcounty.gov": "its terms of use bar publishing or commercially exploiting its content without permission",
     "thechildrenstrust.org": "its terms of use prohibit copying, reproducing or reselling its resources",
+    "massculturalcouncil.org": "its terms bar robots and spiders without permission, and commercial use",
+    "masscec.com": "its terms bar gathering its content with robots, scrapers or crawlers",
+    "www.mass.edu": "its terms bar reproducing site content without permission",  # not mass.edu: doe.mass.edu is separate
 }
 MAX_REDIRECTS = 10
 MAX_ROBOTS_BYTES = 5_000_000  # far past any real robots.txt; a bigger one counts as unreadable
@@ -230,6 +233,11 @@ def site_url(raw) -> str:
 # Hosts only part of which may be read: host -> the path every address has to start with. Nothing else on the host is
 # asked for (robots.txt aside), a redirect included. Kentucky: Ren's decision, 2026-11-27.
 ONLY_UNDER = {"artscouncil.ky.gov": "/grants/"}
+# Hosts whose Crawl-delay is held to on every request, the first page after robots.txt included. arts.ms.gov puts its
+# line before any User-agent line, where Python's parser misses it.
+CRAWL_DELAYS = {"arts.ms.gov": 10.0, "volunteermississippi.org": 10.0, "www.volunteermississippi.org": 10.0}
+_next_turn: dict[str, float] = {}
+_turn_lock = threading.Lock()
 _local = threading.local()
 _robots: dict[str, tuple[robotparser.RobotFileParser, list[str]] | None] = {}  # None: couldn't be read
 _robots_lock = threading.Lock()
@@ -284,6 +292,20 @@ def robots_disallows(lines: list[str], token: str, path: str) -> bool:
     return not best[1]
 
 
+def wait_turn(url: str) -> None:
+    """Hold a request to a CRAWL_DELAYS host until its delay has passed since the last one, across threads."""
+    host = (urlparse(url).hostname or "").lower()
+    delay = CRAWL_DELAYS.get(host)
+    if not delay:
+        return
+    with _turn_lock:
+        now = time.monotonic()
+        at = max(now, _next_turn.get(host, now))
+        _next_turn[host] = at + delay
+    if at > now:
+        time.sleep(at - now)
+
+
 def _robots_for(root: str) -> tuple[robotparser.RobotFileParser, list[str]] | None:
     """The site's rules, or None when they couldn't be read. Only two answers settle it: 200 (the rules) and 404 or
     410 (there are none). A 200 that is a web page (a sign-in, a bot check, a "not found" page) isn't the rules. That,
@@ -295,6 +317,7 @@ def _robots_for(root: str) -> tuple[robotparser.RobotFileParser, list[str]] | No
             return _robots[root]
     lines = None
     try:
+        wait_turn(root)
         # Asked for as text: some servers answer 406 to a request for HTML.
         r = session().get(root + "/robots.txt", timeout=TIMEOUT, allow_redirects=True,
                           headers={"Accept": "text/plain,*/*;q=0.8"})
@@ -354,6 +377,7 @@ def fetch_page(url: str, **kwargs) -> requests.Response:
         why = off_limits(url)
         if why:
             raise OffLimits(why)
+        wait_turn(url)
         r = session().get(url, allow_redirects=False, **kwargs)
         if not r.is_redirect:
             return r
