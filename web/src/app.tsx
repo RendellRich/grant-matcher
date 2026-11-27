@@ -597,7 +597,7 @@ export function App() {
               : total ? <><strong>{n(total, "strong match", "strong matches")}</strong> for this profile: {listing}.</>
               : <><strong>No strong matches yet.</strong> {shownOrder.map((k) => n(possible[k], `possible ${NOUN[k][2]}`, `possible ${NOUN[k][1]}`)).join(", ")}. More specific key words usually help.</>}
           </h1>
-          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : handState ? ` and a few ${stName} state programs entered by hand` : localOnly ? ` and some county and city programs in ${stName}` : hasProgs ? ` and ${grantsPhrase(st, stName)}` : ""}, ranked against your mission with the reasons spelled out.</p>
+          <p class="lede">Federal grants, private and community foundations{st === "FL" ? " and Florida state and county programs" : handState ? ` and ${stName} state programs entered by hand` : localOnly ? ` and some county and city programs in ${stName}` : hasProgs ? ` and ${grantsPhrase(st, stName)}` : ""}, ranked against your mission with the reasons spelled out.</p>
           <p class="notice">{NOTICE}</p>
         </div>
       </header>

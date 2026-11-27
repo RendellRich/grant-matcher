@@ -216,9 +216,9 @@ describe("hand-kept state programs in a state with no state catalog", () => {
     catalogs: { CT: { status: "html", source: "portal.ct.gov" } },
   };
 
-  it("are called state programs, a few and not a statewide list", () => {
+  it("are called state programs and not a statewide list", () => {
     const note = noCatalogNote(meta, "CT", "Connecticut")!;
-    expect(note).toContain("The Connecticut programs tab has a few state programs only");
+    expect(note).toContain("The Connecticut programs tab has state programs only");
     expect(note).not.toContain("county");
     expect(localTally("Connecticut", 2, false)).toContain("2 state programs in Connecticut, entered by hand");
   });

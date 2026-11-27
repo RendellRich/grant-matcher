@@ -386,3 +386,20 @@ def test_connecticut_and_kansas_hand_entries_are_loaded_and_watched():
     assert {("local-CT", "arts-endowment-fund"), ("local-CT", "opm-nonprofit-grant-program"),
             ("local-KS", "early-childhood-block-grant")} <= watched
     assert {r["id"] for r in ct + ks} <= set(local.site_targets())
+
+
+def test_the_website_check_waits_a_hosts_crawl_delay_before_its_second_page(monkeypatch):
+    from datetime import date
+    from urllib import robotparser
+
+    from grantmatch import cycles
+
+    rules = robotparser.RobotFileParser()
+    rules.parse(["User-agent: *", "Crawl-delay: 10"])
+    seen = []
+    monkeypatch.setattr(cycles, "_robots", {"https://example.org": (rules, [])})
+    monkeypatch.setattr(cycles, "get", lambda url: seen.append(url) or (url, "<p>x</p>"))
+    monkeypatch.setattr(cycles, "grants_page", lambda raw, base: "https://example.org/grants/")
+    monkeypatch.setattr(cycles.time, "sleep", seen.append)
+    cycles.check("https://example.org/a", date(2026, 11, 27))
+    assert seen == ["https://example.org/a", 10.0, "https://example.org/grants/"]

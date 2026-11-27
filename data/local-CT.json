@@ -8,7 +8,7 @@
       "level": "State",
       "counties": ["Statewide"],
       "objectives": "General operating support for Connecticut arts organizations, usable for programming, administrative or operational costs, capital projects, equipment or the organization's own endowment.",
-      "who": "Connecticut-based arts organizations with 501(c)(3) status that are in good standing with the Secretary of the State, have an active charity registration, spend at least 51% of their yearly expenses on arts activities and raised more than $15,000 in private-sector donor contributions for their two most recently completed fiscal years. First-time applicants confirm eligibility with the program manager before applying.",
+      "who": "Connecticut-based arts organizations with 501(c)(3) status that are in good standing with the Secretary of the State, have an active charity registration, spend at least 51% of their yearly expenses on arts activities and raised more than $15,000 in private-sector donor contributions for their two most recently completed fiscal years, with an IRS Form 990 or 990-EZ showing those contributions filed before the due date. First-time applicants who haven't had an Office of the Arts grant confirm eligibility first.",
       "requires_501c3": true,
       "application": "Apply online in the Connecticut Office of the Arts e-granting portal.",
       "award": "The amount isn't stated on the pages read.",

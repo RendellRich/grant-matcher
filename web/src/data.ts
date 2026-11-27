@@ -140,7 +140,7 @@ export function noCatalogNote(meta: Meta | null, state: string, name: string): s
   const partial = !localOnly ? ""
     : meta.programs?.[state]?.local
       ? ` The ${name} local programs tab has county and city programs only, entered by hand from each program's own page: a partial list, not every county or city.`
-      : ` The ${name} programs tab has a few state programs only, entered by hand from each program's own page: not a statewide list.`;
+      : ` The ${name} programs tab has state programs only, entered by hand from each program's own page: not a statewide list.`;
   return `No ${name} ${kind}catalog yet.${why}${partial} ${cover}`;
 }
 /** The line above the local programs of a state with no state catalog. */

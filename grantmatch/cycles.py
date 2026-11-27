@@ -402,6 +402,12 @@ def check(url: str, today: date) -> dict:
     pages = [(final, raw)]
     inner_url = grants_page(raw, final)
     if inner_url:
+        # A second page of the same site waits as long as its robots.txt asks (already read for the first page).
+        at = urlparse(inner_url)
+        rules = _robots.get(f"{at.scheme}://{at.netloc}")
+        asked = rules[0].crawl_delay(AGENT) if rules else None
+        if asked:
+            time.sleep(float(asked))
         inner = get(inner_url)
         if inner:
             pages.append(inner)

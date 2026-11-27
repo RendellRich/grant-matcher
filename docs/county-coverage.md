@@ -167,9 +167,11 @@ San Diego, Orange, Riverside, Santa Clara, Bexar and the other "not read" notes 
 |---|---|---|---|---|
 | Arizona | 3 | 0 | 3 | Maricopa 3 |
 | California | 6 | 0 | 6 | Los Angeles 3, San Bernardino 1, Alameda 1, Sacramento 1 |
+| Connecticut | 2 | 2 | 0 | none |
 | Florida | 63 | 7 | 56 | Pinellas 15, Hillsborough 11, Miami-Dade 6, Manatee 5, Sarasota 5, Polk 5, Orange 4, Hernando 4, Pasco 3, DeSoto 3, Lee 2, Citrus 2, Charlotte 2, Osceola 1, Seminole 1, Broward 1 |
 | Illinois | 13 | 10 | 3 | Cook 3 |
 | Iowa | 6 | 6 | 0 | none |
+| Kansas | 1 | 1 | 0 | none |
 | Nevada | 1 | 0 | 1 | Clark 1 |
 | New York | 3 | 0 | 3 | Kings 2, Queens 2, Bronx 1, New York 1, Richmond 1 |
 | Ohio | 6 | 6 | 0 | none |
@@ -177,9 +179,9 @@ San Diego, Orange, Riverside, Santa Clara, Bexar and the other "not read" notes 
 | Texas | 8 | 0 | 8 | Harris 4, Tarrant 2, Dallas 1, Bexar 1 |
 | Washington | 14 | 10 | 4 | King 4 |
 
-Every other state and the District of Columbia has no county or city list.
+Every other state and the District of Columbia has no county or city list (Connecticut's and Kansas's lists are state calls only).
 
-On the site, a list in a state with a state catalog (Florida, California, Illinois, New York, Washington and the others) joins that state's tab. In Arizona, Nevada, Pennsylvania and Texas, which have no state catalog, the tab is "<state> local programs", and the note above the tabs says it holds county and city programs only, entered by hand, as a partial list. Iowa, Illinois, Ohio and Washington lists join their tab only when that state's data file is in the release, as before.
+On the site, a list in a state with a state catalog (Florida, California, Illinois, New York, Washington and the others) joins that state's tab. In Arizona, Nevada, Pennsylvania and Texas, which have no state catalog, the tab is "<state> local programs", and the note above the tabs says it holds county and city programs only, entered by hand, as a partial list. Connecticut and Kansas have no state catalog either: their tab is "<state> programs" and the note says it holds state programs only, entered by hand, not a statewide list. Iowa, Illinois, Ohio and Washington lists join their tab only when that state's data file is in the release, as before.
 
 ## Local funder directory
 
