@@ -1,39 +1,16 @@
-# Virginia permission request (draft, not sent)
+# Virginia permission (the request draft is superseded)
 
-Drafted 2026-11-27. Ren sends it, or not. Nothing has been sent.
+**Permission:** verbal, by phone to Ren, 2026-11-27, not yet in writing.
 
-**To:** virginiawebmaster@vita.virginia.gov (virginia.gov's privacy policy, https://www.virginia.gov/privacy-policy/, names this address for requests for explicit permission to copy contents, read again 2026-11-27)
+The request email drafted earlier on 2026-11-27 is superseded and shouldn't be sent (its text is in this file's git history). A short confirmation email is drafted for Ren to send, to get the permission in writing. It hasn't been sent.
 
-**Subject:** Permission to read Virginia grant listing pages
-
-Hello,
-
-I run Grant Matcher, a tool that helps small nonprofits find grants they could apply for. It lists each open grant's name, agency, deadline, who may apply and a short description, and links back to the agency's own page. Grant Matcher has paid subscription plans (Pro and Consultant). Subscribers get saved shortlists and a weekly email of new matches, and your listings could appear in those.
-
-I would like to read these public pages automatically:
+**What it is used for**, as the request draft named it, and nothing else:
 
 - The Governor's Office grants directory: https://www.governor.virginia.gov/constituent-services/grants/
 - The grant pages of the Department of Criminal Justice Services on www.dcjs.virginia.gov
 
-How I would read them:
+Not the Commission for the Arts. No conditions are recorded.
 
-- A few requests a week for each page at most: weekly jobs read each listed page, and may also open one more page it links to on the same site.
-- With a user agent that says who is asking: grant-matcher/1.0 (+https://github.com/RendellRich/grant-matcher; weekly check of public grant pages)
-- Following each site's robots.txt.
-- No logins, no forms and no file downloads.
+**Where it stands.** Both sources were read on 2026-11-27 and gave no call that could be entered ([state-coverage.md](state-coverage.md) section (l)), so no Virginia page is listed and the weekly jobs ask neither site for anything. If a call is listed later, they would read its page about twice a week and might ask for one more page or file it links to on the same site; say that in anything sent to Virginia.
 
-virginia.gov's privacy policy gives visitors permission for fair use and asks anyone in doubt to request explicit permission. So I am asking: may I copy and show these listing details in a paid product? A written yes or no would help. If there are conditions, such as a credit line or a disclaimer, I will follow them. If these pages are not yours to give permission for, could you tell me who to ask?
-
-Thank you,
-
-[Your name]
-[Your email]
-[Your phone, optional]
-
----
-
-Notes for Ren, not part of the email:
-
-- The Commission for the Arts (vca.virginia.gov) is left out: its policy wording has no such limit, and its grant pages gave no dates on 2026-11-26.
-- The Department of Criminal Justice Services has its own privacy policy with the same fair use wording. Its address wasn't re-read for a contact, so you may want to send it a copy.
-- No Virginia grant page was read for this draft.
+**If it isn't confirmed in writing, or is withdrawn:** read nothing more from these pages, and remove any entry taken from them.

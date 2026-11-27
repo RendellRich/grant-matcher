@@ -172,7 +172,7 @@ San Diego, Orange, Riverside, Santa Clara, Bexar and the other "not read" notes 
 | Illinois | 13 | 10 | 3 | Cook 3 |
 | Iowa | 6 | 6 | 0 | none |
 | Kansas | 1 | 1 | 0 | none |
-| Massachusetts | 2 | 2 | 0 | none |
+| Massachusetts | 7 | 7 | 0 | none |
 | Mississippi | 3 | 3 | 0 | none |
 | Nevada | 1 | 0 | 1 | Clark 1 |
 | New York | 3 | 0 | 3 | Kings 2, Queens 2, Bronx 1, New York 1, Richmond 1 |

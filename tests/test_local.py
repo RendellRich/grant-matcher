@@ -397,6 +397,11 @@ def test_massachusetts_and_mississippi_hand_entries_are_loaded_and_watched():
     assert [(r["id"], r["closes"], r["rolling"]) for r in ma + ms] == [
         ("local-ma-pathmaker-training-provider", "2027-04-16", False),
         ("local-ma-cyber-resilient-massachusetts", None, True),
+        ("local-ma-social-enterprise-operating", "2026-12-07", False),
+        ("local-ma-wastewater-energy-recovery", None, True),
+        ("local-ma-masstrails", "2027-02-02", False),
+        ("local-ma-forest-reserves", "2027-02-18", False),
+        ("local-ma-landscape-partnership", "2027-03-11", False),
         ("local-ms-sexual-risk-avoidance-education", "2026-12-10", False),
         ("local-ms-americorps-state-formula", "2027-01-15", False),
         ("local-ms-creative-aging-grant", "2027-03-01", False)]
@@ -411,6 +416,25 @@ def test_massachusetts_and_mississippi_hand_entries_are_loaded_and_watched():
     for url in ("https://massculturalcouncil.org/", "https://www.masscec.com/", "https://www.mass.edu/"):
         assert cycles.blocked_by_terms(url), url
     assert not cycles.blocked_by_terms("https://www.doe.mass.edu/")
+
+
+def test_the_phone_permission_is_recorded_and_its_scope_kept():
+    from urllib.parse import urlparse
+
+    from grantmatch import export_web
+
+    root = export_web.LOCAL.parent
+    words = "verbal, by phone to Ren, 2026-11-27, not yet in writing"
+    for name in ("grantmatch/states.py", "data/local-MA.json", "docs/state-coverage.md",
+                 "docs/virginia-permission-request.md", "README.md"):
+        assert words in (root / name).read_text(encoding="utf-8"), name
+    # Massachusetts: mass.gov and the earlier Technology Collaborative pages only, never doe.mass.edu
+    hosts = {urlparse(u).hostname for r in local.load(state="MA") for u in (r["url"], r["web"])}
+    assert hosts == {"www.mass.gov", "masstech.org"}
+    # no call page is a file to download
+    assert not [r["id"] for r in local.load(state="MA") if r["url"].endswith("/download")]
+    # Virginia gave no call to enter, so it has no list (an empty one would show an empty tab)
+    assert "VA" not in local.states()
 
 
 def test_every_request_to_arts_ms_gov_waits_its_crawl_delay(monkeypatch):
