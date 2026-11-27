@@ -464,6 +464,8 @@ def plan(urls: list[str], source_pages: set[str], memory: dict) -> list[str]:
     chosen, per_host = [], {}
     for url in sorted(urls, key=rank):
         host = (urlparse(url).hostname or "").lower()
+        if host in cycles.ONLY_UNDER:  # read by its adapter alone, so one request a page a week
+            continue
         if len(chosen) >= MAX_PAGES:
             break
         if per_host.get(host, 0) >= PER_HOST:

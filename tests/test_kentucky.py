@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from grantmatch import cycles
+from grantmatch import freshness
 from grantmatch import kentucky as ky
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -65,3 +66,8 @@ def test_nothing_outside_the_grant_pages_is_asked_for(url, monkeypatch):
     asked = []
     monkeypatch.setattr(cycles, "_robots_for", lambda root: asked.append(root))
     assert "/grants/" in cycles.off_limits(url) and asked == []   # not even robots.txt for a page we won't read
+
+
+def test_the_freshness_check_asks_nothing_of_the_host():
+    other = "https://art.mt.gov/sig"
+    assert freshness.plan([ky.LIST, other], {ky.LIST}, {}) == [other]
