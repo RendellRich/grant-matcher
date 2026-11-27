@@ -1,5 +1,8 @@
 // CSV and calendar files, built in the browser and handed over as downloads.
+import { noticeLines, noticesFor } from "./disclaimers";
+import { callState, programState, type Entry } from "./entries";
 import type { FederalExtra, FederalRec, Scored } from "./score";
+import { STAGE_LABEL, type Item } from "./shortlist";
 
 type Cell = string | number | boolean | null | undefined;
 
@@ -39,4 +42,20 @@ export function toIcs(rows: Scored<FederalRec & FederalExtra>[]): string {
   }
   lines.push("END:VCALENDAR");
   return lines.join("\r\n") + "\r\n";
+}
+
+export function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
+  const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
+    : callState(e.key) ? `${callState(e.key)!.name} grant` : `${programState(e.key)} program`);
+  // a last column, only when one of these calls comes from a source that requires its words to travel with it
+  const noted = noticesFor(items.map((e) => e.key)).length > 0;
+  const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url",
+    ...(noted ? ["required_notice"] : [])];
+  return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
+    items.map((e) => {
+      const row = [src(e), e.score, e.tier, e.title, e.catalog, e.facts.join("; "), e.side,
+        [...e.fits, ...e.also, ...e.status].join("; "), e.cautions.join("; "), e.url,
+        ...(noted ? [noticeLines([e.key]).join(" ")] : [])];
+      return withStage ? [e.stage ? STAGE_LABEL[e.stage] : "", e.stageAt ? e.stageAt.slice(0, 10) : "", ...row] : row;
+    }));
 }

@@ -1,6 +1,7 @@
 // The weekly email's content: which strong matches are new for a saved profile, and the email that lists them.
 // Used by supabase/functions/weekly-email. Scores exactly the way a search does (preview.ts), so the email never
 // lists a grant the page wouldn't show as a strong match.
+import { noticeLines } from "../disclaimers";
 import type { Entry, SourceKey } from "../entries";
 import type { ProfileForm } from "../profile";
 import type { RankSources } from "../rank";
@@ -47,15 +48,18 @@ const why = (e: Entry) => e.fits[0] ?? "";
 function block(fresh: Entry[], site: string, limit: number): { html: string; text: string[] } {
   const shown = fresh.slice(0, limit);
   const more = fresh.length - shown.length;
+  const notes = noticeLines(shown.map((e) => e.key));
   const html = shown.map((e) => `
     <tr><td style="padding:14px 0;border-top:1px solid #e0e2d9">
       <div style="font-size:12px;color:#5a5e53;text-transform:uppercase;letter-spacing:.04em">${esc(LABEL[e.source] ?? "")}${e.side ? ` &middot; ${esc(e.side)}` : ""}</div>
       <a href="${esc(e.url || site)}" style="font-size:17px;font-weight:600;color:#355025">${esc(e.title)}</a>
       ${why(e) ? `<div style="margin-top:4px;color:#23261f">${esc(why(e))}</div>` : ""}
-    </td></tr>`).join("") + (more > 0 ? `<tr><td style="padding:14px 0;border-top:1px solid #e0e2d9">And ${more} more.</td></tr>` : "");
+    </td></tr>`).join("") + (more > 0 ? `<tr><td style="padding:14px 0;border-top:1px solid #e0e2d9">And ${more} more.</td></tr>` : "")
+    + notes.map((n) => `<tr><td style="padding:12px 0;border-top:1px solid #e0e2d9;font-size:13px;color:#23261f">${esc(n)}</td></tr>`).join("");
   const text = [
     ...shown.flatMap((e) => [`${e.title}`, `${LABEL[e.source] ?? ""}${e.side ? ` | ${e.side}` : ""}`, ...(why(e) ? [why(e)] : []), e.url || site, ""]),
     ...(more > 0 ? [`And ${more} more.`, ""] : []),
+    ...notes.flatMap((n) => [n, ""]),
   ];
   return { html, text };
 }

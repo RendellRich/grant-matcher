@@ -29,7 +29,7 @@ OPEN_WORDS = [
 ]
 
 
-MODULES = ("arkansas", "maryland", "montana", "northdakota", "tennessee", "wyoming")
+MODULES = ("arkansas", "kentucky", "maryland", "missouri", "montana", "northdakota", "tennessee", "wyoming")
 
 
 def test_a_page_off_limits_is_never_asked_for(monkeypatch):
@@ -53,7 +53,7 @@ def test_every_request_goes_through_the_projects_fetch_and_agent():
 
 def test_the_weekly_driver_checks_each_new_adapters_list_before_running_it():
     import importlib
-    for code in ("AR", "MD", "MT", "ND", "TN", "WY"):
+    for code in ("AR", "KY", "MD", "MO", "MT", "ND", "TN", "WY"):
         assert code in refresh_states.weekly_states()
         module = importlib.import_module(f"grantmatch.{states.STATES[code]['module']}")
         assert "LIST" in refresh_states.ADDRESSES and module.LIST in states.STATES[code]["pages"], code

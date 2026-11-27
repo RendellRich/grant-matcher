@@ -5,7 +5,7 @@ name: Skipped grants review
 # The change from the earlier file: it also downloads the skipped lists and data files of the five states
 # refresh-states runs, and passes them to grantmatch.skipped. Same job, same schedule.
 # Proposed 2026-11-26, not in use: it also takes the skipped lists and data files of Arkansas, Maryland, Montana,
-# North Dakota, Tennessee and Wyoming.
+# North Dakota, Tennessee and Wyoming, and (2026-11-27) of Kentucky and Missouri.
 
 # Joins what every refresh left out (skipped-*.json.gz on the data-latest release) with the programs the site
 # never shows or hides, into one CSV with a plain reason per row (grantmatch/skipped.py). The CSV goes on the
@@ -44,9 +44,10 @@ jobs:
             -p 'skipped-districtofcolumbia.json.gz' -p 'skipped-minnesota.json.gz' \
             -p 'skipped-arkansas.json.gz' -p 'skipped-maryland.json.gz' -p 'skipped-northdakota.json.gz' \
             -p 'skipped-wyoming.json.gz' -p 'skipped-tennessee.json.gz' -p 'skipped-montana.json.gz' \
+            -p 'skipped-kentucky.json.gz' -p 'skipped-missouri.json.gz' \
             -p 'skipped-foundations.jsonl.gz' -p 'skipped-community.jsonl.gz' || true
           gh release download data-latest -D build --clobber -p florida.json.gz -p california.json.gz -p illinois.json.gz -p iowa.json.gz -p ohio.json.gz -p washington.json.gz -p westvirginia.json.gz -p newjersey.json.gz -p newyork.json.gz -p districtofcolumbia.json.gz -p minnesota.json.gz || true
-          gh release download data-latest -D build --clobber -p arkansas.json.gz -p maryland.json.gz -p northdakota.json.gz -p wyoming.json.gz -p tennessee.json.gz -p montana.json.gz || true
+          gh release download data-latest -D build --clobber -p arkansas.json.gz -p maryland.json.gz -p northdakota.json.gz -p wyoming.json.gz -p tennessee.json.gz -p montana.json.gz -p kentucky.json.gz -p missouri.json.gz || true
           gh release download data-latest -D build/prev --clobber -p skipped-grants.csv || echo "No earlier report; this is the first."
           ls -la build/skips build || true
       - name: Build the report
@@ -60,6 +61,7 @@ jobs:
             --arkansas build/arkansas.json.gz --maryland build/maryland.json.gz \
             --northdakota build/northdakota.json.gz --wyoming build/wyoming.json.gz \
             --tennessee build/tennessee.json.gz --montana build/montana.json.gz \
+            --kentucky build/kentucky.json.gz --missouri build/missouri.json.gz \
             --previous build/prev/skipped-grants.csv \
             --csv build/skipped-grants.csv --md build/skipped-report.md \
             --csv-link "https://github.com/${{ github.repository }}/releases/download/data-latest/skipped-grants.csv"
