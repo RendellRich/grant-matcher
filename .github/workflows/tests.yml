@@ -1,14 +1,24 @@
 name: Tests
 
+# Runs once per change, not twice: pushes to main run here, and every other branch runs through its pull
+# request. Draft pull requests skip the job (work is checked locally first); marking a PR ready runs it once.
+# A newer push to the same pull request cancels the older run.
 on:
   push:
+    branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
 
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
