@@ -116,7 +116,8 @@ REASONS = {
 }
 
 COLUMNS = ["Source", "Status", "Reason", "Name", "Funder or agency", "State", "City", "ID", "Details", "Link",
-           "Assets", "Tax year", "First seen", "Review decision", "Review note"]
+           "Assets", "Tax year", "First seen", "Review decision", "Review note",
+           "Required notice"]
 
 
 def _read_rows(path: Path) -> tuple[list[dict], str]:
@@ -267,6 +268,8 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
     at = lines.index("## By source and reason")
     lines[at:at] = [x for note in notes for x in (note, "")]
     text = "\n".join(lines) + "\n"
+    for r in out:  # the CSV shows the listings too
+        r['Required notice'] = DISCLAIMERS.get(r['State'], {}).get('text', '')
     if len(text) > 60000:  # GitHub caps an issue body at 65,536 characters
         text = text[:60000].rsplit("\n", 1)[0] + "\n\n(Cut to fit the issue; the CSV has everything.)\n"
     return out, text

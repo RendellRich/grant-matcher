@@ -96,6 +96,12 @@ def test_the_required_disclaimer_is_the_states_words():
 def test_the_skipped_report_carries_the_disclaimer_only_when_it_lists_missouri_calls():
     row = {"source": "missouri", "id": "mo-a", "name": "A", "funder": "F", "state": "MO", "reason": "not_taking",
            "detail": "", "url": ""}
-    text = skipped.build([row], {}, {}, "2026-11-27", [])[1]
+    out, text = skipped.build([row], {}, {}, "2026-11-27", [])
+    assert out[0]["Required notice"] == REQUIRED
     assert text.index(f"Notice for Missouri listings: {REQUIRED}") < text.index("| A |")
     assert "Notice for" not in skipped.build([{**row, "state": "OH", "source": "ohio"}], {}, {}, "2026-11-27", [])[1]
+
+
+def test_saying_nonprofits_cannot_apply_does_not_count_as_naming_them():
+    assert mo._names_nonprofits("Nonprofit organizations may apply.")
+    assert not mo._names_nonprofits("Nonprofit organizations are not eligible.")

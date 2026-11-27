@@ -216,12 +216,12 @@ function SummaryActions({ e }: { e: Entry }) {
 const PAGE = 40;
 const FIRST_POSSIBLE = 10;
 
-/** Strong matches (up to 40) and the first 10 possible ones, then 40 more at a time; long shots behind a switch. */
 /** The words a source requires wherever its listings are shown, for the states among these keys. */
 export function RequiredNotice(p: { keys: string[] }) {
   return <>{noticesFor(p.keys).map((n) => <p class="note" key={n.name}><strong>Notice for {n.name} listings:</strong> {n.text}</p>)}</>;
 }
 
+/** Strong matches (up to 40) and the first 10 possible ones, then 40 more at a time; long shots behind a switch. */
 export function ResultList(p: {
   name: string; noun: string; entries: Entry[]; marked: Set<string>; onMark: (e: Entry) => void; action?: MarkAction;
   sorts?: [string, ((a: Entry, b: Entry) => number) | null][]; exports?: preact.ComponentChildren; narrowed?: boolean;

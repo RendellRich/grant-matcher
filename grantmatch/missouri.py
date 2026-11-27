@@ -46,6 +46,11 @@ UNSTATED = "Not stated on the agency's page; read the notice"
 DATE_WORDS = r"([A-Z][a-z]+ \d{1,2}, \d{4})"
 
 
+def _names_nonprofits(who: str) -> bool:
+    """Nonprofits named, and not only to say they can't apply."""
+    return bool(NONPROFIT.search(who)) and webpages.open_to_nonprofits(who)
+
+
 def _sentences(texts: list[str]) -> list[str]:
     return [s for t in texts for s in re.split(r"(?<=[.!?])\s+", t) if s]
 
@@ -97,7 +102,7 @@ def program(page: str, notice: dict, today: str) -> dict:
     about = next((x["text"] for x in lines[start:] if not x["head"] and len(x["text"]) > 80), "")
     record = webpages.record(
         "MO", webpages.slug(notice["title"]), notice["title"], NATURAL, notice["url"], LIST, " ".join(who),
-        bool(NONPROFIT.search(" ".join(who))), closes=notice["closes"], opens=notice["opens"], objectives=about,
+        _names_nonprofits(" ".join(who)), closes=notice["closes"], opens=notice["opens"], objectives=about,
         award=" ".join(award), match=_first(award, r"\brequire[sd]? (?:to provide match|a cost[- ]share of|a match of)\b"),
         application=" ".join(_section(lines, r"^Application Process$")), today=today)
     if "Grant Amounts" in award:   # "Revolving Fund" in a title reads as a loan, but this part of the fund gives grants
@@ -135,7 +140,7 @@ def express(page: str, who: str, today: str) -> dict:
     if not closed and not deadline:
         raise RuntimeError(f"The Missouri Express Grants page no longer gives its deadline rule; {CHANGED}")
     record = webpages.record(
-        "MO", "express-grants", "Express Grants", ARTS, EXPRESS, GRANTS, who, bool(NONPROFIT.search(who)),
+        "MO", "express-grants", "Express Grants", ARTS, EXPRESS, GRANTS, who, _names_nonprofits(who),
         rolling=True, deadline_words=deadline, objectives=_first(texts, r"\bExpress Grants are designed\b"),
         award=_first(texts, r"\bmaximum request amount\b"),
         match_none=bool(_first(texts, r"\bno matching funds are required\b")),
@@ -155,7 +160,7 @@ def annual(page: str, who: str, today: str) -> dict:
     programs = _first(texts, r"\bWe are accepting applications for these programs\b")
     record = webpages.record(
         "MO", f"annual-grants-fy{year}", f"Annual Grants FY{year}, new applicants (Intent to Apply)", ARTS, GRANTS,
-        GRANTS, who, bool(NONPROFIT.search(who)), closes=webpages.day(due), objectives=programs,
+        GRANTS, who, _names_nonprofits(who), closes=webpages.day(due), objectives=programs,
         match=_first(texts, r"\baward cannot exceed 50% of total project expenses\b"),
         application=f"Intent to Apply deadline for new applicants: {due}. The application itself comes after it; "
                     "read the grants page for its date. Apply in the Council's SmartSimple grant portal.",
