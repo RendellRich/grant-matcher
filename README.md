@@ -467,7 +467,7 @@ docs/freshness.md       the freshness check, and proposed workflows in docs/prop
 
 ## Roadmap
 
-- More states' grant catalogs: for 11 states the grant pages checked are web pages, a bid board or a dashboard with no list built from them (Virginia waits on a permission request, Oklahoma and South Dakota were skipped, Connecticut was one dated call short, and South Carolina could follow: docs/state-coverage.md sections (c), (g), (h) and (j)), and 15 are blocked and would need written permission or a published file (Massachusetts' hosts are in section (k)). Alaska, Hawaii and Pennsylvania were left out by decision on 2026-11-25
+- More states' grant catalogs: for 12 states the grant pages checked are web pages, a bid board or a dashboard with no list built from them (Virginia gave permission by phone but no call met the entry rule, Oklahoma and South Dakota were skipped, Connecticut was one dated call short, and South Carolina could follow: docs/state-coverage.md sections (c), (g), (h), (j) and (l)), and 14 are blocked and would need written permission or a published file. Alaska, Hawaii and Pennsylvania were left out by decision on 2026-11-25
 - County and city grants: more counties, using the local funder directory to pick them ([docs/county-coverage.md](docs/county-coverage.md))
 
 ## Why I built it
