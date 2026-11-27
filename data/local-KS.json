@@ -1,0 +1,23 @@
+{
+  "about": "Kansas state grant calls entered by hand from each program's own page: Kansas has no state catalog here (docs/state-coverage.md), so this is not a statewide list. grantmatch/local.py checks this file and turns each entry into a Kansas program record; the weekly page watcher rereads every page. Change an entry only from the official page, and update its checked date.",
+  "programs": [
+    {
+      "slug": "early-childhood-block-grant",
+      "title": "Early Childhood Block Grant, SFY28 competition",
+      "agency": "Kansas Children's Cabinet and Trust Fund",
+      "level": "State",
+      "counties": ["Statewide"],
+      "objectives": "Competitive grants for preschool and research-based child development services, with a focus on underserved areas and children needing additional supports.",
+      "who": "The Cabinet says block grant funds go to school districts, child care centers, Head Start sites and community programs that provide preschool and research-based child development services. Read the competition page for who may apply.",
+      "requires_501c3": null,
+      "application": "See the Cabinet's SFY28 grant competition page.",
+      "award": "The amount isn't stated here; see the competition page.",
+      "opens": null,
+      "closes": "2027-01-08",
+      "deadlines": "SFY28 applications are due January 8, 2027.",
+      "subjects": "Early childhood; Preschool; Child development; Education; Families",
+      "url": "https://kschildrenscabinet.gov/ecbg_sfy28/",
+      "checked": "2026-11-26"
+    }
+  ]
+}

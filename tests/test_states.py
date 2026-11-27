@@ -162,16 +162,16 @@ def test_the_coverage_page_counts_and_statuses_match_the_registry():
         assert f"| {STATE_NAMES[code]} | {label[states.STATES[code]['status']]} |" in doc, code
 
 
-def test_states_with_unopened_grant_pages_are_marked_check_unfinished():
+def test_the_four_states_checked_further_are_no_longer_marked_unfinished():
     doc = (Path(export_web.__file__).parent.parent / "docs/state-coverage.md").read_text(encoding="utf-8")
-    found, read = doc.split("## (h) Pages read for the states not built")
+    found, finished = doc.split("## (j) Connecticut, Georgia, Kansas and Michigan")
+    assert "check is unfinished" not in doc and "check unfinished" not in doc.lower()
     for code in ("CT", "GA", "KS", "MI"):
         name = STATE_NAMES[code]
         row = next(line for line in found.splitlines() if line.startswith(f"| {name} | HTML only |"))
-        assert "**check unfinished:**" in row, code
-        row = next(line for line in read.splitlines() if line.startswith(f"| {name} |"))
-        assert "| **unfinished:**" in row, code
-        assert "check unfinished" in states.STATES[code]["source"], code
+        assert "Skipped 2026-11-27" in row and "(section (j))" in row, code
+        assert f"- **{name}.**" in finished, code
+        assert "unfinished" not in states.STATES[code]["source"], code
 
 
 def test_nothing_learned_from_a_page_we_may_not_use_is_recorded():

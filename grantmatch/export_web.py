@@ -292,8 +292,8 @@ def local_only_states() -> list[str]:
 
 
 def write_local_only(out: Path, meta: dict, links: dict[str, dict] | None = None) -> None:
-    """A programs file for each state with county and city programs but no state catalog, marked local_only so the
-    site says that is all it holds."""
+    """A programs file for each state with hand-kept programs but no state catalog, marked local_only so the
+    site says that is all it holds; "local" tells county and city programs from state ones."""
     for state in local_only_states():
         records = hand_kept(state)
         if not records:
@@ -304,7 +304,7 @@ def write_local_only(out: Path, meta: dict, links: dict[str, dict] | None = None
         write(out, f"programs-{state}", {"fetched_at": newest, "state": state, "records": records}, ids, vecs)
         meta.setdefault("programs", {})[state] = {"file": f"programs-{state}", "updated": newest, "local_only": True,
                                                   "local": has_local(records),
-                                                  "source": "county and city programs entered by hand"}
+                                                  "source": f"{'county and city' if has_local(records) else 'state'} programs entered by hand"}
 
 
 FUNDER_FIELDS = ("id", "name", "level", "kind", "counties", "area", "programs", "home_consortium", "website")

@@ -137,14 +137,15 @@ export function noCatalogNote(meta: Meta | null, state: string, name: string): s
     : status === "blocked" ? ` Key grant sites for ${the} can't be used here: their rules or terms don't allow it, or they turn automated readers away, so ${grants} aren't read in.`
     : status === "unchecked" ? ` ${Grants} aren't read in yet.`
     : "";
-  const partial = localOnly
-    ? ` The ${name} local programs tab has county and city programs only, entered by hand from each program's own page: a partial list, not every county or city.`
-    : "";
+  const partial = !localOnly ? ""
+    : meta.programs?.[state]?.local
+      ? ` The ${name} local programs tab has county and city programs only, entered by hand from each program's own page: a partial list, not every county or city.`
+      : ` The ${name} programs tab has state programs only, entered by hand from each program's own page: not a statewide list.`;
   return `No ${name} ${kind}catalog yet.${why}${partial} ${cover}`;
 }
 /** The line above the local programs of a state with no state catalog. */
-export const localTally = (name: string, count: number) =>
-  `${count.toLocaleString("en-US")} county and city ${count === 1 ? "program" : "programs"} in ${name}, entered by hand from each program's own page. This is partial coverage, with no ${name} state catalog; each card shows when it was checked.`;
+export const localTally = (name: string, count: number, local = true) =>
+  `${count.toLocaleString("en-US")} ${local ? "county and city" : "state"} ${count === 1 ? "program" : "programs"} in ${name}, entered by hand from each program's own page. This is partial coverage, with no ${name} state catalog; each card shows when it was checked.`;
 /** "Ohio state grants", but "District of Columbia grants": the District isn't a state. */
 export const grantsPhrase = (state: string, name: string) => `${name} ${state === "DC" ? "" : "state "}grants`;
 
