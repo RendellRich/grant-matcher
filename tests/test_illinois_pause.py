@@ -195,6 +195,8 @@ def test_the_freshness_check_flags_the_old_data_says_it_is_paused_and_asks_illin
     web = Session(default=Answer(content=b""))
     monkeypatch.setattr(cycles, "_robots", {})
     monkeypatch.setattr(cycles, "session", lambda: web)
+    # every link, not just what fits one week's cap: this is about what happens to the paused ones when planned
+    monkeypatch.setattr(freshness, "MAX_PAGES", 10_000)
 
     def linker(urls):
         mine = [u for u in urls if "illinois" in u or "amplifund" in u]

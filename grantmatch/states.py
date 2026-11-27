@@ -33,7 +33,8 @@ skipped-report.yml downloads the state's skipped file, so the Friday report does
 and its sentence in the footer (web/src/app.tsx).
 
 A state read from web pages can use grantmatch/webpages.py (the crawling rule, record fields and dropped rows), as
-arkansas.py, maryland.py, montana.py, northdakota.py, tennessee.py and wyoming.py do.
+arkansas.py, kentucky.py, maryland.py, missouri.py, montana.py, northdakota.py, tennessee.py and wyoming.py do. A source
+that requires its own words wherever its listings show goes in web/src/disclaimers.json (Missouri).
 
 To pause a built state's reads, give its entry "paused": {"why": ..., "hosts": [...]}. Nothing then asks those hosts for
 anything: the adapter republishes its last published files unchanged (grantmatch/illinois.py), the page watch, the
@@ -42,9 +43,16 @@ keeps its old date, and the state's tab says reading is paused (export_web.py). 
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from urllib.parse import urlparse
 
 from .display import STATE_NAMES
+
+# {state code: {"name", "text"}}: words a source requires wherever its listings are shown. The web app reads the same
+# file (web/src/disclaimers.ts).
+DISCLAIMERS: dict[str, dict] = json.loads(
+    (Path(__file__).resolve().parent.parent / "web" / "src" / "disclaimers.json").read_text(encoding="utf-8"))
 
 STATUSES = ("built", "next", "decide", "html", "blocked", "none", "unchecked")
 
@@ -93,8 +101,9 @@ STATES: dict[str, dict] = {
     "KS": {"status": "html",
            "source": "Kansas Children's Cabinet and Historical Society pages (check unfinished); grants.ks.gov turns "
                      "scripts away"},
-    "KY": {"status": "html",
-           "source": "Kentucky Arts Council (its terms links return 404) and Health and Family Services grant pages"},
+    "KY": {"status": "built", "source": "Kentucky Arts Council grant pages only (one agency, not a statewide list)",
+           "file": "kentucky", "catalog": "Kentucky, 1 agency", "module": "kentucky", "report": "Kentucky Arts Council",
+           "refresh": None, "in_skip_report": False, "pages": ["https://artscouncil.ky.gov/grants/"]},
     "LA": {"status": "blocked",
            "source": "The arts division's robots.txt disallows ClaudeBot; health, law enforcement, volunteer and parks sites turn scripts away"},
     "ME": {"status": "blocked", "source": "maine.gov turns scripts away, robots.txt included"},
@@ -115,7 +124,13 @@ STATES: dict[str, dict] = {
                      "https://dps.mn.gov/divisions/ojp/ojp-grants/funding-opportunities"]},
     "MS": {"status": "unchecked",
            "source": "Agency pages; the Human Services procurement table is filled by script and wasn't read"},
-    "MO": {"status": "html", "source": "Natural Resources, Arts Council and ServMO grant pages (mo.gov data policy requires state disclaimers)"},
+    "MO": {"status": "built",
+           "source": "Missouri Natural Resources grant notices, Arts Council and ServMO pages only (three agencies, not a statewide list)",
+           "file": "missouri", "catalog": "Missouri, 3 agencies", "module": "missouri",
+           "report": "Missouri (Natural Resources, Arts Council, ServMO)", "refresh": None, "in_skip_report": False,
+           "pages": ["https://dnr.mo.gov/public-notices-comments?field_pub_notice_topic_name_value=grant",
+                     "https://missouriartscouncil.org/grants/", "https://missouriartscouncil.org/apply-for-funding/",
+                     "https://missouriartscouncil.org/express-grants/", "https://serv.mo.gov/grant-opportunities/"]},
     "MT": {"status": "built", "source": "Montana Arts Council grant pages only (one agency, not a statewide list)",
            "file": "montana", "catalog": "Montana, 1 agency", "module": "montana", "report": "Montana Arts Council",
            "refresh": None, "in_skip_report": False,
@@ -142,15 +157,15 @@ STATES: dict[str, dict] = {
            "report": "Ohio Grants Partnership", "refresh": "daily",
            "pages": ["https://grants.ohio.gov/funding-opportunities/find-current-opportunities"]},
     "OK": {"status": "html",
-           "source": "oklahoma.gov pages (terms linked as its operator's bar robots and scrapers; held until it is settled "
-                     "whether they cover the site)"},
+           "source": "oklahoma.gov pages (skipped by decision 2026-11-27: Tyler Technologies terms bar bots)"},
     "OR": {"status": "none", "source": "Two housing datasets on data.oregon.gov, both empty"},
     "PA": {"status": "decide", "source": "pa.gov Discover State Grants (the site's own search proxy)"},
     "RI": {"status": "blocked", "source": "gn.ecivis.com robots.txt disallows all crawlers"},
     "SC": {"status": "html",
            "source": "South Carolina Arts Commission grants page (one agency; rolling grants paused)"},
     "SD": {"status": "html",
-           "source": "Department of Social Services and other agency pages (the sd.gov disclaimer couldn't be read)"},
+           "source": "Department of Social Services and Arts Council pages (skipped by decision 2026-11-27: the sd.gov "
+                     "disclaimer has no readable text and the Arts Council's robots.txt couldn't be read)"},
     "TN": {"status": "built", "source": "Tennessee Arts Commission grant pages only (one agency, not a statewide list)",
            "file": "tennessee", "catalog": "Tennessee, 1 agency", "module": "tennessee",
            "report": "Tennessee Arts Commission", "refresh": None, "in_skip_report": False,
@@ -161,7 +176,8 @@ STATES: dict[str, dict] = {
            "source": "Utah Funding Opportunities Portal (Looker Studio report); agency pages with no open call for nonprofits found"},
     "VT": {"status": "blocked", "source": "agriculture.vermont.gov (its robots.txt disallows ClaudeBot)"},
     "VA": {"status": "html",
-           "source": "Governor's Office Grants directory (its policy link returns 404; virginia.gov allows fair use only)"},
+           "source": "Governor's Office Grants directory (waiting on a permission request, not sent: virginia.gov "
+                     "allows fair use only)"},
     "WA": {"status": "built", "source": "FundHubWA (Washington Department of Commerce)", "file": "washington",
            "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily",
            "pages": ["https://fundhub.wa.gov/funding/"]},

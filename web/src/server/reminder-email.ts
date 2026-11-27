@@ -1,5 +1,6 @@
 // The deadline reminder email: the shortlisted grants due in about two weeks or three days, in one message.
 // Used by supabase/functions/deadline-reminders.
+import { noticeLines } from "../disclaimers";
 
 /** One account's reminders that are due to go out, from public.due_reminders(). */
 export interface ReminderAccount {
@@ -30,12 +31,15 @@ export function reminderEmail(a: ReminderAccount, site: string, turnOff: string)
       <a href="${esc(x.url || site)}" style="font-size:17px;font-weight:600;color:#355025">${esc(x.title)}</a>
       <div style="margin-top:4px;color:#23261f"><strong>${esc(day(x.due))}</strong>, ${esc(when(x.days))}</div>
     </td></tr>`).join("");
+  const notes = noticeLines(items.map((x) => x.key));
+  const noteRows = notes.map((n) => `<tr><td style="padding:12px 0;border-top:1px solid #e0e2d9;font-size:13px;color:#23261f">${esc(n)}</td></tr>`).join("");
   const html = `<!DOCTYPE html><html><body style="margin:0;background:#fcfcfa">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;font:16px/1.5 Arial,Helvetica,sans-serif;color:#23261f">
 <tr><td style="font-weight:700;font-size:20px;padding-bottom:4px">Grant Matcher</td></tr>
 <tr><td style="padding-bottom:12px">${items.length === 1 ? "A deadline on your shortlist is coming up." : "Deadlines on your shortlist are coming up."}</td></tr>
 ${rows}
+${noteRows}
 <tr><td style="padding:18px 0;border-top:1px solid #e0e2d9"><a href="${esc(site)}" style="display:inline-block;background:#55642a;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600">Open your shortlist</a></td></tr>
 <tr><td style="font-size:13px;color:#5a5e53">Dates are the ones you set, or the listed deadline. Always confirm with the funder.<br>
 Mark a grant Submitted on your shortlist and its reminders stop. You get these because you turned on deadline reminders in Grant Matcher. <a href="${esc(turnOff)}" style="color:#5a5e53">Turn them off</a>.<br>
@@ -45,6 +49,7 @@ Grant Matcher by Solutions by Rich LLC &middot; ren@solutionsbyrich.com</td></tr
     items.length === 1 ? "Grant Matcher: a deadline on your shortlist is coming up." : "Grant Matcher: deadlines on your shortlist are coming up.",
     "",
     ...items.flatMap((x) => [x.title, `${day(x.due)}, ${when(x.days)}${x.client_label ? ` | for ${x.client_label}` : ""}`, x.url || site, ""]),
+    ...notes.flatMap((n) => [n, ""]),
     `Open your shortlist: ${site}`,
     "",
     "Mark a grant Submitted on your shortlist and its reminders stop.",

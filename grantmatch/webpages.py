@@ -1,5 +1,5 @@
-"""What the adapters for states read from web pages share (arkansas.py, maryland.py, montana.py, northdakota.py,
-tennessee.py, wyoming.py).
+"""What the adapters for states read from web pages share (arkansas.py, kentucky.py, maryland.py, missouri.py,
+montana.py, northdakota.py, tennessee.py, wyoming.py).
 
 Every page is asked for with cycles.fetch_page: the project's own user agent, and the terms blocklist and the host's
 robots.txt checked before each address, redirects included. A page that can't be read stops the run, so the last
@@ -262,11 +262,13 @@ def record(state: str, key: str, title: str, agency: str, url: str, web: str, ap
     return {k: without_email(v) if isinstance(v, str) else v for k, v in rec.items()}
 
 
-def keep_open(source: str, rows: list[dict], today: str | None = None, skips: list[dict] | None = None) -> list[dict]:
+def keep_open(source: str, rows: list[dict], today: str | None = None, skips: list[dict] | None = None,
+              nonprofits_only: bool = False) -> list[dict]:
     """The open calls among `rows`, each {"record": ..., "closed": the page's words, when it says it isn't taking
     applications}. A rolling or undated call, which no date will end, also gives "rolling" (the page's words on when it
     takes applications) and "about" (everything the page says of it): it is kept only when "rolling" says it is taking
-    applications and nothing in "about" says otherwise. Rows dropped are added to skips, when given."""
+    applications and nothing in "about" says otherwise. A row with "skip" (reason, detail) is dropped for that reason,
+    and with nonprofits_only so is a call a nonprofit can't apply to. Rows dropped are added to skips, when given."""
     today = today or date.today().isoformat()
     out: dict[str, dict] = {}
     for row in rows:
@@ -276,7 +278,9 @@ def keep_open(source: str, rows: list[dict], today: str | None = None, skips: li
         reason = detail = ""
         rolling = "rolling" in row or rec["deadlines"] == "Ongoing"
         closed = row.get("closed") or (doubt(row.get("about", []), today) if rolling else "")
-        if not rec["title"]:
+        if row.get("skip"):
+            reason, detail = row["skip"]
+        elif not rec["title"]:
             reason, detail = "no_title", "The page's entry has no title"
         elif closed:
             reason, detail = "not_taking", f"The page says: {clean(closed)[:200]}"
@@ -288,6 +292,8 @@ def keep_open(source: str, rows: list[dict], today: str | None = None, skips: li
             reason, detail = "not_taking", "No date may end this call, and the page doesn't say it is taking applications"
         elif INVITATION.search(f"{rec['title']} {rec['applicant_types']}"):
             reason, detail = "invitation_only", "The listing says: by invitation only"
+        elif nonprofits_only and not rec["nonprofit_eligible"]:
+            reason, detail = "state_not_nonprofit", f"Who can apply: {rec['applicant_types']}"[:400]
         elif rec["id"] in out:
             reason, detail = "duplicate", "The same title is listed twice"
         if reason:

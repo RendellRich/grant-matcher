@@ -10,9 +10,9 @@ import {
 } from "./data";
 import { embedMission } from "./embed";
 import {
-  callState, isNarrowed, narrow, NO_NARROW, profileNarrow, programState, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
+  isNarrowed, narrow, NO_NARROW, profileNarrow, SIZE_BANDS, type Entry, type Narrow, type SourceKey,
 } from "./entries";
-import { download, toCsv, toIcs } from "./exports";
+import { download, entriesCsv, toCsv, toIcs } from "./exports";
 import { summariesFile } from "./summary";
 import { exampleForm, ProfileFormView } from "./form";
 import { CoverageNote } from "./coverage";
@@ -25,7 +25,7 @@ import {
 } from "./score";
 import { SignIn } from "./signin";
 import { EmailOff, WeeklyEmail } from "./weekly";
-import { EntryView, IconAlert, IconDownload, IconMark, ResultList, type MarkAction } from "./ui";
+import { EntryView, IconAlert, IconDownload, IconMark, RequiredNotice, ResultList, type MarkAction } from "./ui";
 import { embedParent, listen, loadedLabel, payloadFor, post, PROTOCOL, type Incoming, type LoadedFrom, type PipelineItem } from "./parent";
 import { markNew, markOrgNew, newSince, strongKeys, type Fresh, type OrgSeen } from "./seen";
 import {
@@ -1093,18 +1093,6 @@ function pickRest(f: ProfileForm): Partial<ProfileForm> {
     budget_band: f.budget_band, can_cost_share: f.can_cost_share };
 }
 
-function entriesCsv(items: (Entry & Partial<Pick<Item, "stage" | "stageAt">>)[], withStage = false): string {
-  const src = (e: Entry) => (e.source === "fed" ? "Federal grant" : e.source === "fdn" ? "Foundation"
-    : callState(e.key) ? `${callState(e.key)!.name} grant` : `${programState(e.key)} program`);
-  const head = ["source", "score", "tier", "name", "catalog", "details", "deadline_or_size", "reasons", "cautions", "url"];
-  return toCsv(withStage ? ["stage", "stage_date", ...head] : head,
-    items.map((e) => {
-      const row = [src(e), e.score, e.tier, e.title, e.catalog, e.facts.join("; "), e.side,
-        [...e.fits, ...e.also, ...e.status].join("; "), e.cautions.join("; "), e.url];
-      return withStage ? [e.stage ? STAGE_LABEL[e.stage] : "", e.stageAt ? e.stageAt.slice(0, 10) : "", ...row] : row;
-    }));
-}
-
 function fmtStamp(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
@@ -1144,6 +1132,7 @@ function ShortlistPanel({ list, listed, synced }: { list: Shortlist; listed: Lis
         <p class="quiet">{groups.map((g) => `${g.items.length} ${g.label.toLowerCase()}`).join(", ")}. {synced ? "Kept with your account, on every device." : "Kept in this browser on this device."} Scores are from when you added each one.</p>
         <p class="sr-only" role="status">{moved?.text ?? ""}</p>
       </div>
+      <RequiredNotice keys={list.items.map((e) => e.key)} />
       {soon.length ? (
         <section class="coming-up" aria-labelledby="coming-up-h">
           <h3 id="coming-up-h" class="section-head">Coming up <span class="quiet">(next 30 days)</span></h3>
@@ -1399,6 +1388,24 @@ function Checklist({ state, local }: { state: string; local: boolean }) {
           </ul>
         </>
       ) : null}
+      {state === "MO" ? (
+        <>
+          <h3>For Missouri state grants</h3>
+          <ul>
+            <li>This isn't a statewide list. Only the Department of Natural Resources' grant notices, the Arts Council's grant pages and ServMO's grant page are read.</li>
+            <li>Some of these are loans, which the card says. ServMO's page doesn't say who may apply, so read the notice. A ServMO call may need a Notice of Intent first; "How to apply" gives its date.</li>
+          </ul>
+        </>
+      ) : null}
+      {state === "KY" ? (
+        <>
+          <h3>For Kentucky state grants</h3>
+          <ul>
+            <li>This isn't a statewide list. Only the Kentucky Arts Council's grant pages are read, one agency; other Kentucky agencies post calls on their own pages.</li>
+            <li>Operating grants have revenue limits and other entry rules; "Who can apply" on the card lists them. Grants for schools only aren't shown.</li>
+          </ul>
+        </>
+      ) : null}
       {state === "MT" ? (
         <>
           <h3>For Montana state grants</h3>
@@ -1441,7 +1448,7 @@ function Footer({ coverage, funders }: { coverage: boolean; funders: boolean }) 
     <footer class="footer">
       {coverage ? <CoverageNote /> : null}
       <p>{NOTICE}</p>
-      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page, with the date each was checked. A weekly job rereads the pages it may read and flags changes for a person; the rest are left to be checked by hand. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities. New York data from the Statewide Financial System's public search for grant opportunities. District of Columbia data from the District Grants Clearinghouse on DC.gov, licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0<span class="sr-only"> (opens in a new tab)</span></a> and reformatted. Minnesota data from the Department of Health's and the Office of Justice Programs' grant pages only. Arkansas data from the Arkansas Arts Council's art grants page only. Maryland data from the State Grants table on the Department of Commerce's nonprofit page only, a short list. North Dakota data from the Council on the Arts' grant pages only. Wyoming data from the Wyoming Arts Council's grant pages only. Tennessee data from the Tennessee Arts Commission's grant pages only. Montana data from the Montana Arts Council's grant pages only. County and city programs outside Florida are entered by hand from each program's own page, for some counties and cities only.</p>
+      <p>Federal data from the Grants.gov API, refreshed twice a day. Foundation data from IRS Form 990-PF and Form 990 Schedule I e-file returns. Florida data from the Department of Financial Services Catalog of State Financial Assistance, and state agency calls, county and city programs and community foundation grant cycles entered by hand from each program's own page, with the date each was checked. A weekly job rereads the pages it may read and flags changes for a person; the rest are left to be checked by hand. California data from the California Grants Portal, published by the California State Library. Illinois data from the Catalog of State Financial Assistance's list of open funding notices, kept by the Governor's Office of Management and Budget. Iowa data from the posted funding opportunities on IowaGrants.gov. Ohio data from the Ohio Grants Partnership's list of current funding opportunities. Washington data from FundHubWA, the Washington Department of Commerce's funding portal. West Virginia data from the state's list of available grants on grants.wv.gov. New Jersey data from the Department of the Treasury's list of state grant opportunities. New York data from the Statewide Financial System's public search for grant opportunities. District of Columbia data from the District Grants Clearinghouse on DC.gov, licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0<span class="sr-only"> (opens in a new tab)</span></a> and reformatted. Minnesota data from the Department of Health's and the Office of Justice Programs' grant pages only. Arkansas data from the Arkansas Arts Council's art grants page only. Maryland data from the State Grants table on the Department of Commerce's nonprofit page only, a short list. North Dakota data from the Council on the Arts' grant pages only. Wyoming data from the Wyoming Arts Council's grant pages only. Tennessee data from the Tennessee Arts Commission's grant pages only. Montana data from the Montana Arts Council's grant pages only. Missouri data from the Department of Natural Resources' grant notices, the Arts Council's grant pages and ServMO's grant page only, reformatted. Kentucky data from the Kentucky Arts Council's grant pages only. County and city programs outside Florida are entered by hand from each program's own page, for some counties and cities only.</p>
       {funders ? <p>Local funders to ask come from HUD's formula allocations and the Census Bureau's Government Units listing, both U.S. government data. They are governments that get HUD money, not open grant calls.</p> : null}
       <p>Scores are a starting point for your own review, not a guarantee of eligibility. Your profile is sent to Grant Matcher's search server to rank the grants and isn't saved there. Your shortlist stays in this browser, unless you have Pro and save your profile and shortlist to your account.</p>
       <p>Source code: <a href="https://github.com/RendellRich/grant-matcher">github.com/RendellRich/grant-matcher</a></p>

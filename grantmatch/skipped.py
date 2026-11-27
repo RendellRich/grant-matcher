@@ -28,7 +28,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .states import REPORT
+from .states import DISCLAIMERS, REPORT
 
 LOCAL = Path(__file__).resolve().parent.parent / "data"
 
@@ -78,6 +78,10 @@ REASONS = {
         "The agency's page says this one is closed or paused, or that its deadline has passed. A call no date would end "
         "is also left out when its page doesn't say it is taking applications.",
         "Has it reopened?"),
+    "page_not_read": (
+        "Left out", "Its own page is on a site that isn't read",
+        "The notice links a program page on another site, so who may apply isn't known.",
+        "Could a nonprofit apply? If so, it could be entered by hand."),
     "invitation_only": (
         "Left out", "By invitation only",
         "The state's notice says the agency invites who applies, so an organization can't apply on its own.",
@@ -112,7 +116,8 @@ REASONS = {
 }
 
 COLUMNS = ["Source", "Status", "Reason", "Name", "Funder or agency", "State", "City", "ID", "Details", "Link",
-           "Assets", "Tax year", "First seen", "Review decision", "Review note"]
+           "Assets", "Tax year", "First seen", "Review decision", "Review note",
+           "Required notice"]
 
 
 def _read_rows(path: Path) -> tuple[list[dict], str]:
@@ -257,7 +262,14 @@ def build(rows: list[dict], previous: dict[tuple[str, str], str], decisions: dic
                       "Most are left out because they give nothing to organizations; those are in the CSV. "
                       "These are the largest of the ones that might still be worth approaching.", ""]
             lines += table(biggest, 30, with_assets=True)
+    # a source that requires its words wherever its listings show gets them above the lists, where no cut reaches
+    notes = [f"Notice for {n['name']} listings: {n['text']}" for code, n in DISCLAIMERS.items()
+             if any(r.get("state") == code for r in rows)]
+    at = lines.index("## By source and reason")
+    lines[at:at] = [x for note in notes for x in (note, "")]
     text = "\n".join(lines) + "\n"
+    for r in out:  # the CSV shows the listings too
+        r['Required notice'] = DISCLAIMERS.get(r['State'], {}).get('text', '')
     if len(text) > 60000:  # GitHub caps an issue body at 65,536 characters
         text = text[:60000].rsplit("\n", 1)[0] + "\n\n(Cut to fit the issue; the CSV has everything.)\n"
     return out, text

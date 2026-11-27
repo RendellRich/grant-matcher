@@ -227,6 +227,9 @@ def site_url(raw) -> str:
     return s
 
 
+# Hosts only part of which may be read: host -> the path every address has to start with. Nothing else on the host is
+# asked for (robots.txt aside), a redirect included. Kentucky: Ren's decision, 2026-11-27.
+ONLY_UNDER = {"artscouncil.ky.gov": "/grants/"}
 _local = threading.local()
 _robots: dict[str, tuple[robotparser.RobotFileParser, list[str]] | None] = {}  # None: couldn't be read
 _robots_lock = threading.Lock()
@@ -325,6 +328,9 @@ def off_limits(url: str) -> str | None:
     if why:
         return f"site terms: {why}"  # nothing is asked of the host, robots.txt included
     p = urlparse(url)
+    under = ONLY_UNDER.get((p.hostname or "").lower().rstrip("."))
+    if under and not p.path.startswith(under):
+        return f"only the pages under {under} on this host may be read"
     rules = _robots_for(f"{p.scheme}://{p.netloc}")
     if rules is None:
         return UNREAD_ROBOTS

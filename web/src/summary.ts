@@ -1,5 +1,6 @@
 // A one-page plain-text summary of a grant, for a grant writer to paste into a document or another tool.
 // Built only from what the card already shows, so it never says more than the data does.
+import { noticeLines } from "./disclaimers";
 import { callState, checkedLabel, DEAD_LINK, type Entry } from "./entries";
 import { readySummary } from "./ready";
 
@@ -54,6 +55,7 @@ export function grantSummary(e: Entry, today: Date = new Date()): string {
     out.push(...section(`Largest grants (${e.grantsWhere || "latest return"})`,
       e.grants.slice(0, 5).map((g) => `- ${g.to}, ${g.place}, ${g.amount}${g.purpose ? `: ${clip(g.purpose, 120)}` : ""}`)));
   }
+  out.push(...section("Required notice", noticeLines([e.key])));
   out.push("", "---", `From Grant Matcher on ${day(today)}. Check the funder's own page before you apply; deadlines and rules change.`);
   return out.join("\n") + "\n";
 }

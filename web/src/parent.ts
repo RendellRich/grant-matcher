@@ -6,6 +6,7 @@
 // (to save in ETO) and public facts about a grant or funder (to add to ETO's funding pipeline). Nothing is
 // sent anywhere else.
 
+import { noticeLines } from "./disclaimers";
 import type { Entry } from "./entries";
 import { parseProfile, type ProfileForm } from "./profile";
 
@@ -64,6 +65,7 @@ export function payloadFor(e: Entry): SendPayload {
   const quote = row(e, "On its website")?.text ?? null;
   const applyLink = row(e, "Application link")?.href ?? row(e, "Page checked")?.href ?? null;
   const source = e.source === "fed" ? "federal" : e.source === "fdn" ? "foundation" : "florida";
+  const notice = noticeLines([e.key]).join(" ");
   return {
     key: e.key, source, title: e.title,
     funder: e.source === "fdn" ? e.title : e.agency ?? "",
@@ -74,7 +76,8 @@ export function payloadFor(e: Entry): SendPayload {
     amount_low: e.source === "fed" ? e.amountLow ?? null : e.source === "fdn" ? e.sortMedian ?? null : null,
     amount_high: e.source === "fed" ? e.amountHigh ?? null : e.source === "fdn" ? e.sortMedian ?? null : null,
     catalog: e.catalog,
-    summary: (e.summary ?? "").slice(0, 1000),
+    // a required notice is never cut: the summary gives up the room
+    summary: notice ? `${(e.summary ?? "").slice(0, 999 - notice.length)} ${notice}`.trim() : (e.summary ?? "").slice(0, 1000),
     fits: e.fits.slice(0, 8), cautions: e.cautions.slice(0, 8),
     website_note: quote, score: e.score, tier: e.tier,
   };

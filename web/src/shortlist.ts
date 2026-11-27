@@ -3,6 +3,7 @@
 // Kept in this browser under the same key as before stages existed. Pro accounts also save it to the account
 // (sync.ts), so it follows them to other devices.
 
+import { noticeLines } from "./disclaimers";
 import type { Entry } from "./entries";
 
 export type Stage = "saved" | "applying" | "submitted";
@@ -147,7 +148,7 @@ export function shortlistIcs(items: Item[], listed: Listed, today: Date, stamp: 
     const next = ymd(new Date(parseYmd(d.date).getTime() + 36 * 3_600_000)).replace(/-/g, "");
     lines.push("BEGIN:VEVENT", `UID:shortlist-${x.key.replace(":", "-")}@grant-matcher`, `DTSTAMP:${st}`,
       `DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${next}`, `SUMMARY:${icsText(`${label}: ${x.title}`).slice(0, 150)}`,
-      `DESCRIPTION:${icsText([x.catalog, x.url].filter(Boolean).join(" "))}`);
+      `DESCRIPTION:${icsText([x.catalog, x.url, ...noticeLines([x.key])].filter(Boolean).join(" "))}`);
     if (x.url) lines.push(`URL:${x.url}`);
     for (const [n, word] of [[14, "Two weeks"], [3, "Three days"]] as const) {
       lines.push("BEGIN:VALARM", "ACTION:DISPLAY", `TRIGGER:-P${n}D`, `DESCRIPTION:${icsText(`${word} until ${label.toLowerCase()}: ${x.title}`)}`, "END:VALARM");

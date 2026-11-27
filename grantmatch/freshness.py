@@ -75,7 +75,7 @@ CENSUS_YEAR = "2020-01-01"  # the county names file is the 2020 places-by-county
 MAX_PAGES = 150     # pages asked for in one run (robots.txt, once a host, comes on top)
 PER_HOST = 20       # pages from one host in one run
 HOST_DELAY = 2.0    # seconds before each request to a host; more when its robots.txt asks
-SLOW_HOSTS = {"communityaffairs.dc.gov": 10.0}  # asks for 10 seconds between requests
+SLOW_HOSTS = {"communityaffairs.dc.gov": 10.0, "artscouncil.ky.gov": 10.0}  # each asks for 10 seconds between requests
 TIME_BUDGET = 150   # seconds of link checking; no new request starts past it
 RELEASE_BUDGET = 90  # seconds of reading the release; files after it are reported as not read
 WORKERS = 8
@@ -464,6 +464,8 @@ def plan(urls: list[str], source_pages: set[str], memory: dict) -> list[str]:
     chosen, per_host = [], {}
     for url in sorted(urls, key=rank):
         host = (urlparse(url).hostname or "").lower()
+        if host in cycles.ONLY_UNDER:  # read by its adapter alone, so one request a page a week
+            continue
         if len(chosen) >= MAX_PAGES:
             break
         if per_host.get(host, 0) >= PER_HOST:
