@@ -56,6 +56,17 @@ def test_finds_the_grants_page_on_the_same_site():
     assert grants_page(raw, "https://www.example.org/") == "https://www.example.org/grants/how-to-apply"
 
 
+def test_a_file_is_never_followed_as_the_grants_page():
+    # mass.gov serves its files from a bare /download, with no extension
+    files = ("/doc/grant-rfp-fy2027/download", "/doc/grant-application-template/download/", "/files/grants.PDF?v=2",
+             "/files/apply-for-a-grant.pptx", "/files/grant-budget.csv")
+    raw = "".join(f'<a href="{f}">Apply for a grant: grant funding application</a>' for f in files)
+    base = "https://www.mass.gov/how-to/apply"
+    assert grants_page(raw, base) is None
+    for page in ("/grants", "/grants.aspx", "/downloads/how-to-apply-for-grants"):
+        assert grants_page(raw + f'<a href="{page}">Grants</a>', base) == "https://www.mass.gov" + page
+
+
 def test_apply_link_goes_to_outside_portals():
     raw = '<a href="https://example.submittable.com/submit"> Apply now </a><a href="/apply">Apply for a job</a>'
     assert apply_link(raw, "https://example.org/") == "https://example.submittable.com/submit"

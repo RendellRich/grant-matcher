@@ -11,6 +11,6 @@ The request email drafted earlier on 2026-11-27 is superseded and shouldn't be s
 
 Not the Commission for the Arts. No conditions are recorded.
 
-**Where it stands.** Both sources were read on 2026-11-27 and gave no call that could be entered ([state-coverage.md](state-coverage.md) section (l)), so no Virginia page is listed and the weekly jobs ask neither site for anything. If a call is listed later, they would read its page about twice a week and might ask for one more page or file it links to on the same site; say that in anything sent to Virginia.
+**Where it stands.** Both sources, and Criminal Justice Services' grant and program pages, were read on 2026-11-27 and gave no call that could be entered ([state-coverage.md](state-coverage.md) section (l)), so no Virginia page is listed and the weekly jobs ask neither site for anything. If a call is listed later, they would read its page about twice a week and might ask for one more page it links to on the same site, not a link to a file; say that in anything sent to Virginia, and first limit the jobs to the permitted paths (`cycles.ONLY_UNDER`).
 
 **If it isn't confirmed in writing, or is withdrawn:** read nothing more from these pages, and remove any entry taken from them.

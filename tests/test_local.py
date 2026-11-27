@@ -478,6 +478,37 @@ def test_every_request_to_arts_ms_gov_waits_its_crawl_delay(monkeypatch):
     assert freshness.host_delay(page) == 10
 
 
+def test_mass_gov_requests_are_spaced_across_a_jobs_pages(monkeypatch):
+    from types import SimpleNamespace
+
+    import requests
+
+    from grantmatch import cycles, freshness, watch
+
+    now, asked = [1000.0], []
+
+    def get(url, **kwargs):
+        asked.append((now[0], url))
+        r = requests.Response()
+        r.status_code, r.url, r.encoding = 200, url, "utf-8"
+        r.headers["content-type"] = "text/html"
+        r._content = b"User-agent: *\n" if url.endswith("/robots.txt") else b"<p>x</p>"
+        r._content_consumed = True
+        return r
+
+    clock = SimpleNamespace(monotonic=lambda: now[0], sleep=lambda s: now.__setitem__(0, now[0] + s))
+    monkeypatch.setattr(cycles, "session", lambda: SimpleNamespace(get=get))
+    monkeypatch.setattr(cycles, "time", clock)
+    monkeypatch.setattr(cycles, "_robots", {})
+    monkeypatch.setattr(cycles, "_next_turn", {})
+    pages = [r["url"] for r in local.load(state="MA") if r["url"].startswith("https://www.mass.gov/")]
+    for page in pages:
+        watch.read(page)  # the page watch
+    assert len(pages) == 5 and len(asked) == 6  # robots.txt and each page
+    assert all(b[0] - a[0] >= 2.5 for a, b in zip(asked, asked[1:]))
+    assert freshness.host_delay(pages[0]) == 2.5
+
+
 def test_volunteer_mississippi_waits_between_robots_txt_and_every_page(monkeypatch):
     from datetime import date
     from types import SimpleNamespace
