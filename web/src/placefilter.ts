@@ -17,11 +17,14 @@ export function stateChoices(meta: Meta | null, home: string): string[] {
 export const countyChoices = (counties: Record<string, string[]> | null | undefined): [string, string][] =>
   Object.keys(counties ?? {}).map((c): [string, string] => [c, readable(c)]).sort((a, b) => a[1].localeCompare(b[1]));
 
-export const countyWord = (state: string) => (state === "LA" ? "parish" : "county");
+export const countyWord = (state: string) => (state === "LA" ? "parish" : state === "PR" ? "municipio" : "county");
 
-/** "Manatee County", "Acadia Parish"; Alaska's areas and the District go by their own names. */
+// Alaska's areas, the District and Virginia (where the list mixes counties and independent cities) go by name alone.
+const BARE = ["AK", "DC", "VA"];
+
+/** "Manatee County", "Acadia Parish", "Ponce Municipio", or the name alone. */
 export const countyPhrase = (state: string, county: string) =>
-  state === "AK" || state === "DC" ? readable(county) : `${readable(county)} ${state === "LA" ? "Parish" : "County"}`;
+  BARE.includes(state) ? readable(county) : `${readable(county)} ${countyWord(state).replace(/^./, (c) => c.toUpperCase())}`;
 
 /** Whether money limited to `places` (grantmatch/local.py writes them) can be spent in this county. A list that
  *  names whole counties is matched on those; one that names only towns, on the county's towns. */

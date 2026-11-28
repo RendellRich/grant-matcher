@@ -1,7 +1,7 @@
 // The state and county result filters (placefilter.ts).
 import { describe, expect, it } from "vitest";
 import { isNarrowed, narrow, NO_NARROW, type Entry } from "../src/entries";
-import { countyChoices, countyPhrase, foundationsByCounty, programsOutside, servesCounty, stateChoices } from "../src/placefilter";
+import { countyChoices, countyPhrase, countyWord, foundationsByCounty, programsOutside, servesCounty, stateChoices } from "../src/placefilter";
 import type { FloridaRec, FoundationRec } from "../src/score";
 
 const towns = ["Bradenton", "Longboat Key", "St. Petersburg"];
@@ -19,6 +19,9 @@ describe("what the filters offer", () => {
     expect(countyPhrase("FL", "Manatee")).toBe("Manatee County");
     expect(countyPhrase("LA", "Acadia")).toBe("Acadia Parish");
     expect(countyPhrase("DC", "District of Columbia")).toBe("District of Columbia");
+    expect(countyPhrase("VA", "Alexandria")).toBe("Alexandria"); // an independent city, not "Alexandria County"
+    expect(countyPhrase("PR", "Ponce")).toBe("Ponce Municipio");
+    expect(["FL", "LA", "PR", "VA"].map(countyWord)).toEqual(["county", "parish", "municipio", "county"]);
   });
 });
 

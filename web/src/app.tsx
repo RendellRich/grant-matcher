@@ -54,6 +54,8 @@ const n = (count: number, one: string, many: string) => `${count.toLocaleString(
 const NO_KEYS = new Set<string>();
 const NO_PLACE = { state: "", county: "" }; // "": the profile's state, any county
 const AWAY = ["(another state)"]; // stands in for the profile's cities when ranking another state's lists
+// A closed select changes on every arrow key (Windows), so a picked state is asked for once the choice rests.
+const PICK_WAIT = 500;
 type Links = Partial<Record<SourceKey, FileLink | null>>;
 const ANSWER_WAIT = 15_000; // how long to wait for ETO before saying it didn't answer
 
@@ -280,6 +282,7 @@ export function App() {
   const vst = full && place.state ? place.state : st; // the state on screen
   const away = vst !== st;
   const county = full ? place.county : "";
+  useEffect(() => { if (!county) setNar((m) => (m.fdn.onRecord ? { ...m, fdn: { ...m.fdn, onRecord: false } } : m)); }, [county]);
   // A picked state's files come from the gate too, only once it is picked. null: they couldn't be had.
   const [elsewhere, setElsewhere] = useState<Record<string, Links | null>>({});
   useEffect(() => {
@@ -290,20 +293,22 @@ export function App() {
       setElsewhere((m) => ({ ...m, [vst]: files }));
       if (files) loadState(vst, files);
     };
-    search({ ...applied, state: vst }, vector, ctl.signal)
-      .then((g) => got(g.state === "full" ? g.files : null))
-      .catch(() => got(null));
-    return () => ctl.abort();
+    const timer = window.setTimeout(() => {
+      needCounties(vst);
+      search({ ...applied, state: vst }, vector, ctl.signal)
+        .then((g) => got(g.state === "full" ? g.files : null))
+        .catch(() => got(null));
+    }, PICK_WAIT);
+    return () => { ctl.abort(); window.clearTimeout(timer); };
   }, [gate, vst]);
 
   const [counties, setCounties] = useState<Record<string, Record<string, string[]> | null>>({});
-  useEffect(() => {
-    for (const s of new Set([st, vst])) {
-      if (s in counties) continue;
-      setCounties((m) => ({ ...m, [s]: null }));
-      loadCounties(s).then((c) => setCounties((m) => ({ ...m, [s]: c }))).catch(() => undefined);
-    }
-  }, [st, vst]);
+  function needCounties(s: string) {
+    if (s in counties) return;
+    setCounties((m) => ({ ...m, [s]: null }));
+    loadCounties(s).then((c) => setCounties((m) => ({ ...m, [s]: c }))).catch(() => undefined);
+  }
+  useEffect(() => needCounties(st), [st]);
   const cityList = useMemo(() => expandCities(applied.cities, counties[st] ?? null), [applied.cities, counties, st]);
 
   // ---------- scoring ----------
@@ -608,8 +613,10 @@ export function App() {
   };
 
   // ---------- render ----------
-  // A picked state with programs gets their tab even when the profile's own state has none.
-  const addFl = away && !keys.includes("fl") && applied.funder_types.includes("florida") && Boolean(programsFile(meta, vst));
+  // A picked state with programs gets their tab even when the profile's own state has none. Once open, the tab stays
+  // while states are picked on it: taking it away would drop the focused State select.
+  const addFl = Boolean(full) && !keys.includes("fl") && applied.funder_types.includes("florida")
+    && (tab === "fl" || (away && Boolean(programsFile(meta, vst))));
   const tabKeys: SourceKey[] = addFl ? [...shownOrder, "fl"] : shownOrder;
   const awayList = (k: SourceKey) => (k === "fdn" ? shownFdn : shownFl);
   const viewCount = (k: SourceKey, tier: "Strong" | "Possible") => (away && k !== "fed"
@@ -754,12 +761,15 @@ export function App() {
   function panel(k: string) {
     if (k === "shortlist") return <ShortlistPanel list={shortlist} listed={listed} synced={synced} />;
     if (pv) return previewPanel(k as SourceKey);
-    if ((k === "fed" || !away) && missing(k as SourceKey)) return <p class="note">This data isn't available right now. Try again in a few minutes.</p>;
-    if (away && k !== "fed") {
-      const files = elsewhere[vst];
-      if (files === null) return awayNote(`${vName} data couldn't be loaded. Try again in a few minutes.`);
-      if (files && !files[k as SourceKey]) {
-        return awayNote((k === "fl" && noCatalogNote(meta, vst, vName)) || `${vName} ${NOUN[k as SourceKey][1]} aren't available yet.`);
+    const unavailable = "This data isn't available right now. Try again in a few minutes.";
+    if (k === "fed" && missing(k)) return <p class="note">{unavailable}</p>;
+    if (k !== "fed" && full) {
+      const source = k as SourceKey;
+      const files = away ? elsewhere[vst] : full.files;
+      if (files === null) return awayNote(source, `${vName} data couldn't be loaded. Try again in a few minutes.`);
+      if (files && !files[source]) {
+        return awayNote(source, (source === "fl" && noCatalogNote(meta, vst, vName))
+          || (away ? `${vName} ${NOUN[source][1]} aren't available yet.` : unavailable));
       }
     }
     if (k === "fed") return federalPanel();
@@ -796,22 +806,31 @@ export function App() {
 
   function pickState(state: string) {
     setPlace({ state, county: "" });
-    // choices that were about the last state's list
-    setNar((m) => ({ ...m, fl: { ...m.fl, agency: "" }, fdn: { ...m.fdn, local: false, onRecord: false } }));
-  }
-  function pickCounty(c: string) {
-    setPlace({ ...place, county: c });
-    if (!c) setN("fdn", { onRecord: false });
+    // Choices about the last state's list. Another state's list has no New marks or "your cities", so a box left
+    // checked would disappear while still filtering.
+    setNar((m) => ({ ...m, fl: { ...m.fl, agency: "", fresh: false }, fdn: { ...m.fdn, local: false, fresh: false, newHere: false } }));
   }
 
-  /** A picked state with nothing to show still needs the way back. */
-  function awayNote(text: string) {
+  /** A list that is loading, failed or isn't there. The filters keep their place above the words (the empty first
+   *  slot stands for the count line), so the State select stays mounted and keeps focus. */
+  function held(k: SourceKey, body: preact.ComponentChildren) {
     return (
+      <>
+        {null}
+        {full ? narrowBar(k, [], [], NOUN[k][1], true) : null}
+        {body}
+      </>
+    );
+  }
+
+  /** A state with nothing to show, with the way back when it was picked here. */
+  function awayNote(k: SourceKey, text: string) {
+    return held(k, (
       <>
         <p class="note">{text}</p>
         {away ? <button type="button" class="link-btn" onClick={() => pickState("")}>Show {stName} again</button> : null}
       </>
-    );
+    ));
   }
 
   /** What the state and county choices do to this tab, in words. */
@@ -839,10 +858,10 @@ export function App() {
   }
 
   /** The visible filters for one source: search, then the source's own choices, then what they hide. */
-  function narrowBar(k: SourceKey, all: Entry[], shown: Entry[], noun: string) {
+  function narrowBar(k: SourceKey, all: Entry[], shown: Entry[], noun: string, waiting = false) {
     const n = nar[k];
     const agencies = k === "fdn" ? [] : [...new Set(all.map((e) => e.agency).filter(Boolean) as string[])].sort();
-    const on = isNarrowed(cur(k)) || (k !== "fed" && away);
+    const on = !waiting && (isNarrowed(cur(k)) || (k !== "fed" && away)); // nothing to count while there is no list
     const id = (s: string) => `${k}-${s}`;
     // Every count here is of strong and possible matches, the same pool the tab and the line under the filters count.
     const pool = all.filter((e) => e.tier !== "Long shot");
@@ -851,7 +870,7 @@ export function App() {
     const since = etoSeen ? etoSeen.since : fresh[k]?.since;
     const onCount = Object.entries(n).filter(([key, v]) => key !== "q" && Boolean(v)).length + (away ? 1 : 0) + (county ? 1 : 0);
     const countyList = countyChoices(counties[vst]);
-    const withRecord = fdnByCounty ? count((e) => !fdnByCounty.outside.has(e.key) && !fdnByCounty.unrecorded.has(e.key)) : "0";
+    const withRecord = fdnByCounty ? ` (${count((e) => !fdnByCounty.outside.has(e.key) && !fdnByCounty.unrecorded.has(e.key))})` : "";
     const check = (key: "apply" | "open" | "local" | "no501" | "cycle" | "corp" | "steady" | "firstTime" | "newHere" | "onRecord", label: string) => (
       <label class="check"><input type="checkbox" checked={Boolean(n[key])} onChange={(e) => setN(k, { [key]: (e.target as HTMLInputElement).checked })} /><span>{label}</span></label>
     );
@@ -874,8 +893,8 @@ export function App() {
             </select>
           </div>
           <div class="field">
-            <label for={id("county")}>{countyWord(vst) === "parish" ? "Parish" : "County"}</label>
-            <select id={id("county")} value={county} disabled={!countyList.length} onChange={(e) => pickCounty((e.target as HTMLSelectElement).value)}>
+            <label for={id("county")}>{countyWord(vst).replace(/^./, (c) => c.toUpperCase())}</label>
+            <select id={id("county")} value={county} disabled={!countyList.length} onChange={(e) => setPlace({ ...place, county: (e.target as HTMLSelectElement).value })}>
               <option value="">Any {countyWord(vst)}</option>
               {countyList.map(([v, label]) => <option value={v} key={v}>{label}</option>)}
             </select>
@@ -936,7 +955,7 @@ export function App() {
             <fieldset class="narrow-group">
               <legend>Place and type</legend>
               {away ? null : check("local", "Based in or funding your cities")}
-              {county ? check("onRecord", `Only with an address or listed grant in ${countyPhrase(vst, county)} (${withRecord})`) : null}
+              {county ? check("onRecord", `Only with an address or listed grant in ${countyPhrase(vst, county)}${withRecord}`) : null}
               {pool.some((e) => e.corp) ? check("corp", `Company foundations (${count((e) => e.corp)})`) : null}
             </fieldset>
           </div>
@@ -1077,9 +1096,9 @@ export function App() {
   }
 
   function foundationPanel() {
-    if (!meta?.states.includes(vst)) return awayNote(`Foundation data for ${vName} isn't available yet.${away ? "" : " Florida is covered today."}`);
-    if (vfdnSrc?.state === "error") return awayNote("The foundation list could not be loaded right now. Try again in a few minutes.");
-    if (!shownFdn || vfdnSrc?.state !== "ready") return loading("foundations");
+    if (!meta?.states.includes(vst)) return awayNote("fdn", `Foundation data for ${vName} isn't available yet.${away ? "" : " Florida is covered today."}`);
+    if (vfdnSrc?.state === "error") return awayNote("fdn", "The foundation list could not be loaded right now. Try again in a few minutes.");
+    if (!shownFdn || vfdnSrc?.state !== "ready") return held("fdn", loading("foundations"));
     const recs = vfdnSrc.data.records;
     const kindCount = (k: string) => recs.filter((r) => (r.kind || "Private foundation") === k).length;
     const shown = narrowed("fdn", shownFdn);
@@ -1132,8 +1151,8 @@ export function App() {
   /** Another state's open calls (grantmatch/california.py): each has its own dates, match and payment terms. A state
    *  with no catalog shows only its hand-kept county and city programs. */
   function callsPanel() {
-    if (vfl.state === "error") return awayNote(`${vName} program data could not be loaded right now. Try again in a few minutes.`);
-    if (!shownFl || vfl.state !== "ready") return loading(`${vName} programs`);
+    if (vfl.state === "error") return awayNote("fl", `${vName} program data could not be loaded right now. Try again in a few minutes.`);
+    if (!shownFl || vfl.state !== "ready") return held("fl", loading(`${vName} programs`));
     const all = vfl.data.records;
     const info = meta?.programs?.[vst];
     const updated = vfl.data.fetchedAt ? fmtStamp(vfl.data.fetchedAt) : "";
@@ -1174,8 +1193,8 @@ export function App() {
 
   function floridaPanel() {
     if (vst !== "FL") return callsPanel();
-    if (vfl.state === "error") return awayNote("Florida program data could not be loaded right now. Try again in a few minutes.");
-    if (!shownFl || vfl.state !== "ready") return loading("Florida programs");
+    if (vfl.state === "error") return awayNote("fl", "Florida program data could not be loaded right now. Try again in a few minutes.");
+    if (!shownFl || vfl.state !== "ready") return held("fl", loading("Florida programs"));
     const all = vfl.data.records;
     const stateAll = all.filter((r) => !r.level);
     const open = stateAll.filter((r) => r.nonprofit_eligible && !r.earmark).length;
