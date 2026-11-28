@@ -205,7 +205,7 @@ describe("a state with county and city programs but no state catalog", () => {
   it("names the tab local and leaves the state-call wording out", () => {
     const app = readFileSync(new URL("../src/app.tsx", import.meta.url), "utf8");
     expect(app).toContain("fl: localOnly ? [`${state} local programs`, `${state} local programs`, `${state} local program`]");
-    expect(app).toContain("localOnly ? localTally(stName, all.length, Boolean(info?.local)) : callsTally(st, stName, all, info, updated)");
+    expect(app).toContain("vLocalOnly ? localTally(vName, all.length, Boolean(info?.local)) : callsTally(vst, vName, all, info, updated)");
   });
 });
 
