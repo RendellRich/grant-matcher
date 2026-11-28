@@ -382,6 +382,8 @@ export interface Narrow {
   steady?: boolean; // only foundations that gave in each of the last four years
   firstTime?: boolean; // only foundations that often fund groups new to them
   newHere?: boolean; // only foundations that started giving in the person's places in their latest year
+  onRecord?: boolean; // with a county picked, only foundations with something on file there (placefilter.ts)
+  not?: Set<string>; // keys the county filter takes out (placefilter.ts)
 }
 
 export const NO_NARROW: Narrow = {
@@ -409,7 +411,7 @@ function haystack(e: Entry): string {
 }
 
 export function isNarrowed(n: Narrow): boolean {
-  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local || n.no501 || n.fresh || n.cycle || n.reach || n.corp || n.steady || n.firstTime || n.newHere);
+  return Boolean(n.q.trim() || n.size || n.before || n.agency || n.apply || n.open || n.local || n.no501 || n.fresh || n.cycle || n.reach || n.corp || n.steady || n.firstTime || n.newHere || n.not);
 }
 
 /** Entries that pass every filter that applies to their source. Every word typed must appear. */
@@ -419,6 +421,7 @@ export function narrow(entries: Entry[], n: Narrow): Entry[] {
   const band = SIZE_BANDS[n.size];
   const before = n.before ? new Date(`${n.before}T23:59:59`).getTime() : null;
   return entries.filter((e) => {
+    if (n.not?.has(e.key)) return false;
     if (n.fresh && !e.isNew) return false;
     if (words.length && !words.every((w) => haystack(e).includes(w))) return false;
     if (n.agency && e.agency !== n.agency) return false;

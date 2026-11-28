@@ -87,3 +87,13 @@ describe("eto:seen", () => {
     expect((readMessage({ type: "eto:seen", keys: Array.from({ length: 6000 }, (_, i) => `fed:${i}`) }) as { keys: string[] }).keys).toHaveLength(5000);
   });
 });
+
+describe("long match keys", () => {
+  it("keeps a key of up to 200 characters after the prefix whole, and turns away a longer one", () => {
+    const real = "fl:dc-fy27-lead-poisoning-prevention-outreach-for-new-and-expectant-parents-7d94d5";
+    const longest = `fed:${"a".repeat(200)}`;
+    expect(readMessage({ type: "eto:seen", keys: [real, longest, `${longest}a`] })).toMatchObject({ keys: [real, longest] });
+    expect(readMessage({ type: "eto:sent", key: longest, ok: true, status: "saved" })).toMatchObject({ key: longest });
+    expect(readMessage({ type: "eto:in-pipeline", items: [{ key: longest }] })).toMatchObject({ items: [{ key: longest }] });
+  });
+});

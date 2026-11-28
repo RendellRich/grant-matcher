@@ -93,7 +93,8 @@ export type Incoming =
   | { type: "eto:seen"; keys: string[]; since: string | null };
 
 /** A match key as ETO stores it: "fed:355824", "fdn:591234567", "fl:10.123". */
-export const MATCH_KEY = /^(fed|fdn|fl):[A-Za-z0-9._-]{1,60}$/;
+export const MATCH_KEY = /^(fed|fdn|fl):[A-Za-z0-9._-]{1,200}$/;
+const KEY_LENGTH = 204; // the longest key MATCH_KEY allows, so a long one is never cut and then fails to match
 
 const str = (v: unknown, max = 300) => (typeof v === "string" ? v.slice(0, max) : "");
 
@@ -109,11 +110,11 @@ export function readMessage(data: unknown): Incoming | null {
         type: "eto:in-pipeline",
         items: (Array.isArray(d.items) ? d.items : []).slice(0, 5000)
           .filter((x): x is Record<string, unknown> => !!x && typeof x === "object" && typeof (x as Record<string, unknown>).key === "string")
-          .map((x) => ({ key: str(x.key, 80), stage: str(x.stage, 60), closed: x.closed === true })),
+          .map((x) => ({ key: str(x.key, KEY_LENGTH), stage: str(x.stage, 60), closed: x.closed === true })),
       };
     case "eto:sent": {
       const status = d.status === "saved" || d.status === "exists" ? d.status : "error";
-      return { type: "eto:sent", key: str(d.key, 80), ok: d.ok === true && status !== "error", status, stage: str(d.stage, 60), message: str(d.message) };
+      return { type: "eto:sent", key: str(d.key, KEY_LENGTH), ok: d.ok === true && status !== "error", status, stage: str(d.stage, 60), message: str(d.message) };
     }
     case "eto:profile-saved":
       return { type: "eto:profile-saved", ok: d.ok === true, message: str(d.message) };
