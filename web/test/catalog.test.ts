@@ -223,7 +223,7 @@ describe("hand-kept state programs in a state with no state catalog", () => {
     expect(localTally("Connecticut", 2, false)).toContain("2 state programs in Connecticut, entered by hand");
   });
 
-  it("say so in a blocked state too (Massachusetts), after why there is no catalog", () => {
+  it("say so in a blocked state too, after why there is no catalog", () => {
     const ma: Meta = {
       states: ["MA"],
       programs: { MA: { file: "programs-MA", source: "state programs entered by hand", local_only: true, local: false } },

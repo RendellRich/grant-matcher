@@ -143,13 +143,13 @@ def test_every_state_has_the_status_the_research_established():
     assert by["built"] == {"AR", "CA", "DC", "FL", "IA", "IL", "KY", "MD", "MN", "MO", "MT", "ND", "NJ", "NY", "OH", "TN",
                            "WA", "WV", "WY"}
     # robots.txt, terms or a refusal to scripts keep the pages out
-    assert by["blocked"] == {"AL", "CO", "IN", "LA", "MA", "ME", "NC", "NE", "NH", "NM", "NV", "RI", "TX", "VT", "WI"}
+    assert by["blocked"] == {"AL", "CO", "IN", "LA", "ME", "NC", "NE", "NH", "NM", "NV", "RI", "TX", "VT", "WI"}
     assert by["unchecked"] == set()   # Massachusetts and Mississippi were closed out on 2026-11-27
     # "none" only where nowhere the research looked posts current state calls
     assert by["none"] == {"AZ", "DE", "OR"} and by["decide"] == {"AK", "HI", "PA"} and by["next"] == set()
     # of the 18 web-page states looked at on 2026-11-26, six had pages that could be built, and two more once Ren
     # allowed them on 2026-11-27 (docs/state-coverage.md)
-    assert by["html"] == {"CT", "GA", "ID", "KS", "MI", "MS", "OK", "SC", "SD", "UT", "VA"}
+    assert by["html"] == {"CT", "GA", "ID", "KS", "MA", "MI", "MS", "OK", "SC", "SD", "UT", "VA"}
 
 
 def test_the_coverage_page_counts_and_statuses_match_the_registry():

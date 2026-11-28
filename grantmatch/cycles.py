@@ -107,6 +107,8 @@ DATE = re.compile(
     r"|\b(?P<m>\d{1,2})/(?P<d>\d{1,2})/(?P<y>20\d\d)\b", re.I)
 GRANT_LINK = re.compile(r"\b(?:grants?|apply|application|funding|rfp|opportunit\w*|how to apply|guidelines|nonprofits?)\b", re.I)
 SKIP_LINK = re.compile(r"\.(?:pdf|docx?|xlsx?|jpe?g|png|zip)(?:$|\?)|^mailto:|^tel:|^javascript:|facebook|twitter|instagram|linkedin|youtube", re.I)
+# A path that serves a file: an extension, or a bare /download (mass.gov's file links). Not followed as a grants page.
+FILE_PATH = re.compile(r"(?:/download|\.(?:pdf|docx?|xls[xm]?|pptx?|csv|rtf|od[tsp]|txt|zip|jpe?g|png|gif))/?$", re.I)
 
 
 def page_text(raw: str) -> str:
@@ -137,7 +139,7 @@ def grants_page(raw: str, base: str) -> str | None:
         p = urlparse(url)
         if p.scheme not in ("http", "https") or p.netloc.lower().removeprefix("www.") != host:
             continue
-        if url.rstrip("/") == base.rstrip("/"):
+        if url.rstrip("/") == base.rstrip("/") or FILE_PATH.search(p.path):
             continue
         score = 2 * len(GRANT_LINK.findall(label)) + len(GRANT_LINK.findall(p.path.replace("-", " ").replace("/", " ")))
         if score > best_score:
@@ -234,8 +236,10 @@ def site_url(raw) -> str:
 # asked for (robots.txt aside), a redirect included. Kentucky: Ren's decision, 2026-11-27.
 ONLY_UNDER = {"artscouncil.ky.gov": "/grants/"}
 # Hosts whose Crawl-delay is held to on every request, the first page after robots.txt included. arts.ms.gov puts its
-# line before any User-agent line, where Python's parser misses it.
-CRAWL_DELAYS = {"arts.ms.gov": 10.0, "volunteermississippi.org": 10.0, "www.volunteermississippi.org": 10.0}
+# line before any User-agent line, where Python's parser misses it. www.mass.gov asks for no delay; the 2.5 seconds are
+# this project's own, so a job's several pages don't arrive at once.
+CRAWL_DELAYS = {"arts.ms.gov": 10.0, "volunteermississippi.org": 10.0, "www.volunteermississippi.org": 10.0,
+                "www.mass.gov": 2.5}
 _next_turn: dict[str, float] = {}
 _turn_lock = threading.Lock()
 _local = threading.local()

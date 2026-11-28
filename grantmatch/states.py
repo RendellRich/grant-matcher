@@ -110,9 +110,10 @@ STATES: dict[str, dict] = {
            "file": "maryland", "catalog": "Maryland, short list", "module": "maryland",
            "report": "Maryland Commerce State Grants table", "refresh": None, "in_skip_report": False,
            "who_listed": False, "pages": ["https://business.maryland.gov/nonprofit-opportunities/"]},
-    "MA": {"status": "blocked",
-           "source": "mass.gov and doe.mass.edu terms limit reuse; massculturalcouncil.org, masscec.com and www.mass.edu "
-                     "terms bar robots or reproduction"},
+    # mass.gov only, permission: verbal, by phone to Ren, 2026-11-27, not yet in writing. doe.mass.edu stays out, and
+    # massculturalcouncil.org, masscec.com and www.mass.edu stay blocked (cycles.BLOCKED_HOSTS).
+    "MA": {"status": "html",
+           "source": "mass.gov call pages and Technology Collaborative pages (calls entered by hand; no list built)"},
     "MI": {"status": "html",
            "source": "MI Funding Hub (not practical: its search page has no grant rows without script, and its site map "
                      "lists about 1,500 grant pages)"},
@@ -176,9 +177,10 @@ STATES: dict[str, dict] = {
     "UT": {"status": "html",
            "source": "Utah Funding Opportunities Portal (Looker Studio report); agency pages with no open call for nonprofits found"},
     "VT": {"status": "blocked", "source": "agriculture.vermont.gov (its robots.txt disallows ClaudeBot)"},
+    # The two sources named only, permission: verbal, by phone to Ren, 2026-11-27, not yet in writing.
     "VA": {"status": "html",
-           "source": "Governor's Office Grants directory (waiting on a permission request, not sent: virginia.gov "
-                     "allows fair use only)"},
+           "source": "Governor's Office Grants directory (no years, no eligibility) and Criminal Justice Services grants "
+                     "page (no deadline ahead): no call entered"},
     "WA": {"status": "built", "source": "FundHubWA (Washington Department of Commerce)", "file": "washington",
            "catalog": "FundHubWA", "module": "washington", "report": "FundHubWA (Washington)", "refresh": "daily",
            "pages": ["https://fundhub.wa.gov/funding/"]},
